@@ -363,6 +363,19 @@ at the same speed from `FRAME0`.
   are fitted two-shot / close-up from the front-right (camera ≈ local (1.6, 1.4, 3.2) and (2.1, 1.7, 2.0)), not the
   `WHISPER` preset (that one is for s07's opposite whisper; **s06/s07: re-verify `WHISPER` with Jesus at yaw 0.2,
   and note s05 puts him back on JV**). b06 = CUT to OTS stepped in, pulling back to `OTS`.
+- **AS BUILT rev 3 (review fixes):** the arm around is a real side hug. During b02 (offscreen) Jesus sidles in from
+  `JV_OUT` to **`JV_HUG`** (edgeprops: `JV_OUT` 14 cm closer = JV + 0.14 m; hip and sleeve on the velvet), leans into
+  it (`body.tilt` 0.1, head roll 0.1). edgeprops `aroundContact`/`aroundArm` defaults: palm at world height **1.22**
+  on the bulge of its right flank, as far round toward its back as the arm reaches (aPref −1.48, palm 0.30–0.47 m from
+  his shoulder), elbow bent out and down (pole = outward normal + down + a little toward its back), fingers spread
+  along the curve. Seen from the front the hand goes behind its curve, so the **b03 camera is ~24° right of front**
+  (orbit about local (0.3, 1.72, −0.8), dist 3.7 → 3.4, 1.78 m high): the forearm visibly crosses the curve and
+  vanishes behind its silhouette (from Jesus's side his own body hides the arm). The Void's RIGHT arm drops stiff to its
+  side for b03 (out of the arm's way), back to the knot as it bends to listen. b04: Jesus steps back out to `JV_OUT` as
+  he pivots to whisper (the verified hood room); the listening crouch now TIPS the hood down toward him (head pitch
+  0.22, roll 0.30, crouch 0.65, tilt −0.08: hood clearance ≥ 3.8 cm). b05 CU is ~15 % wider (fov 41 → 39) with his
+  whole head + cupped hand in the left third (y ≈ 470–590); stage 2.0 s lower lids to 0.84, the 2.6 s corner twitches
+  bigger. b06: he settles back onto `JV_HUG` as he drops to his heels (s04 holds it).
 
 ### s04 cosmic_laughter (43.8–60.4) — tod 0.14 → 0.19, look s04 (more bloom for stars)
 - **b01 (0.9 s silent)** CAM close two-shot of the heads, locked ◇ `EDGE.shot([0.45, 1.85, −0.8], {dist 2.4, yaw −20,
@@ -407,6 +420,16 @@ at the same speed from `FRAME0`.
   **The b13 shot starts early, at b11+1.68** (the user's jaw drop as it sails overhead), low at the user's
   right-front; the pair are off-frame right; the rose-gold hero tree is hidden for that shot only (edgeprops
   `hideDuring`, it would stand right behind the sneaker); final gaze frame-right/up toward the pair, held.
+- **AS BUILT rev 3 (review fixes):** Jesus on `JV_HUG` (pressed against its flank, tilt + head lean 0.1, the arm round
+  behind its curve, s03's arm-around) through b11; b13 slides him back to JV. **b11 pats:** the hand slides out round
+  its flank onto the near side (angle −0.48, height 1.17) and pats it in rhythm (9 cm lifts at 2.1 Hz; palm lands
+  b11+0.54 + n·0.476), back round it during b13 (offscreen). **Coughs** (b08+0.02, b08+0.36, "COUGHING" b07+0.88,
+  b10+0.02): the grin snaps to a round 'O' for ~6 frames, the hood dips ~7°, the body jolts, the eyes pop; a puff of
+  6–10 big warm gold/white HDR stars (+ soft gold halos) flies out toward the lens and up, clearing the hood within
+  ~7 frames. b07/b08 camera widened to the whole hood with pink sky round it (dist 4.7 → 4.35, fov 38, pitch −8,
+  mouth y ≈ 620). **Little galaxy flight**: 0.6 s arc (up, out past Jesus's nose toward the lens, down; ×1.45 size in
+  the air ≈ 140–180 px), bounce b10+0.98, hop lands b10+1.28 (rest point unchanged); the b09/b10 camera holds the arc
+  and tilts down from pop+0.3 to pop+0.75 so the bounce lands at y ≈ 760–820. Look: s04 `bloomRadius` 0.3.
 
 ### s05 a_pretty_good_sense_of_humor (60.4–77.8) — tod 0.19 → 0.25
 - **b01 "Then Jesus looks at the Twitter user,"** `JESUS_CU` medium (dist 2.4, face y≈400), his left arm still around
@@ -822,7 +845,7 @@ Between s14 and s15 (offscreen) the Void has risen and shuffled from VSIT to V15
 |---|---|---|---|
 | s01→s02 | (chase upstream) → empty bend; user & Void offscreen | user running, sobbing, phone in LEFT fist; Void hem lifted, hand half-raised | title gone by s01b02+1.0; tod 0.03 continuous; seeds from the set |
 | s02→s03 | Jesus mid-walk ≈ (−0.1, 0.4) → JV; user at U; Void at V | user seated, RIGHT hand up (`defend`), phone clutched LEFT; Void hands knotted at its middle; Jesus same walk phase function across the cut | phone glow on (feed); no galaxies yet |
-| s03→s04 | Jesus **JV_OUT** (JV + 0.28 m, yaw 0.2), Void V (unbent), user U | Void's hand over its mouth, quivering; Jesus LEFT arm around it (stays until s05 end), heels down; user phone raised as a shield | `extra.stars` 1.6 on the Void → keep at start of s04 |
+| s03→s04 | Jesus **JV_HUG** (JV + 0.14 m, yaw 0.2, tilt/head lean 0.1 into it), Void V (unbent), user U | Void's hand over its mouth, quivering; Jesus LEFT arm around it (stays until s05 end), heels down; user phone raised as a shield | `extra.stars` 1.6 on the Void → keep at start of s04 |
 | s04→s05 | Jesus back on JV (slid there offscreen in s04b13), Void V, user U | Void doubled over (lean ~0.2), both hands on the belly → wheezy aftershocks; Jesus laughing, LEFT arm around it at 1.3 m; user flattened on elbows, jaw open | big galaxy at `GALAXY.from` (galaxyAt); little galaxy flat at the user's sneaker; drifting stars from the laugh still fading (ease alpha to 0 by s05b02) |
 | s05→s06 | same | Jesus "tee-hee" smile stiffening; Void giggly; user staring, RIGHT hand up, tear | little galaxy at sneaker |
 | s06→s07 | same | Jesus amused pressed line; Void hand over mouth, eyes narrowed at the user | — |
@@ -862,6 +885,10 @@ cool and dim) plus per-scene deltas:
 | s18–s19 | 0.68–0.70 | 0.36–0.38 | 0.98–1.0 | 0.97–0.98 | −0.10…−0.08 | the magician drains colour (dust patches desaturate the floor) |
 | s20–s21 | 0.70–0.72 | 0.32 | 1.04 | 1.0 | −0.05 | slapstick: slightly brighter, readable motion |
 | s22 | 0.90 (threshold 0.62, radius 0.7) | 0.24 | 1.15 | 1.04 | +0.04 | cosmic violet / teal / rose with gold star cores; the warmest the bonus gets |
+
+Bloom radius rule (review fix): the sparkle-heavy dark scenes keep `bloomRadius` ≤ 0.3 (s04, s08, s18–s22; s22 clamps
+the cosmos blend too) and the bonus looks raise `bloomThreshold` (s18–s21 0.95, s22 0.85): the half-res bloom's lowest
+mips, upsampled bilinearly, otherwise draw a 20–30 px square glow box round every small bright sprite on a dark sky.
 
 Colour script: **warm golden dusk** (peach, gold, mint, lilac; the Void a compact indigo pocket) → **late dusk**
 (deeper rose and lilac, the pocket larger and starrier during the armour beats) → **sunset** (red-gold sun sinking, violet

@@ -1,5 +1,5 @@
 {
-  "_note": "s03 the_whisper — cues matched to web/src/scenes/s03.js (rev 2). Jesus's footfalls come from s02's walk phase (jesusWalkS02); the hop lands on 'void' (s03b01+1.58); his palm lands on the velvet at s03b03+0.72 and pats once on 'it' (+1.06); the joke lands at s03b05+3.2. Pans follow screen position.",
+  "_note": "s03 the_whisper — cues matched to web/src/scenes/s03.js (rev 3). Jesus's footfalls come from s02's walk phase (jesusWalkS02); the hop lands on 'void' (s03b01+1.58); during the user's close-up (b02, offscreen) he sidles in against the Void's flank (edgeprops JV_HUG); his arm goes round it and the palm lands behind its curve at s03b03+0.72 and pats once on 'it' (+1.06); he steps back out to JV_OUT as he pivots to whisper (b04 rustles) and settles back in during b06 (the soft steps there); the joke lands at s03b05+3.2. Pans follow screen position.",
   "sfx": [
     {"t": "s03b01+0.129", "name": "footsteps_soft", "until": "s03b01+0.42", "gain_db": -3, "pan": -0.35},
     {"t": "s03b01+0.629", "name": "footsteps_soft", "until": "s03b01+0.92", "gain_db": -3, "pan": -0.3},

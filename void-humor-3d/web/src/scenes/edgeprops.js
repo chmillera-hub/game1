@@ -111,10 +111,10 @@ export function voidNormal(vd, y, ang) {
 // for the arm around it or the whisper; STAGING §8). s04b13 (him offscreen) slides him back onto JV for s05.
 export const JOUT = 0.28;
 export const JV_OUT = (() => { const J = EDGE.M.JV.p, V = EDGE.M.V.p, d = [J[0] - V[0], J[2] - V[2]], n = Math.hypot(d[0], d[1]); return [J[0] + d[0] / n * JOUT, 0, J[2] + d[1] / n * JOUT]; })();
-// The HUG mark (s03b03 -> s04b11): from JV_OUT he sidles HUG_IN closer and HUG_ROT (rad, about the Void's axis) round
-// its right flank, so his hip and sleeve touch the velvet and his arm can wrap round the curve toward its back
-// (from JV_OUT he stood ~0.4 m off its front-right: the arm could only stick out sideways into its front).
-export const HUG_IN = 0.14, HUG_ROT = -0.3;
+// The HUG mark (s03b03 -> s04b11): from JV_OUT he sidles HUG_IN closer (optionally HUG_ROT rad round its axis toward
+// its side; 0 keeps s03's whisper geometry and s04's framings), so his hip and sleeve touch the velvet and his arm can
+// wrap round the curve toward its back (from JV_OUT he stood ~0.4 m off its front-right: the arm stuck out sideways).
+export const HUG_IN = 0.14, HUG_ROT = 0;
 export function hugMark(rot = HUG_ROT, inn = HUG_IN) { const V = EDGE.M.V.p, d = [JV_OUT[0] - V[0], JV_OUT[2] - V[2]], r = Math.hypot(d[0], d[1]) - inn, a = Math.atan2(d[0], d[1]) + rot; return [V[0] + r * Math.sin(a), 0, V[2] + r * Math.cos(a)]; }
 export const JV_HUG = hugMark();
 /** arm-around contact height (world): below his shoulder, on the bulge of the Void's right flank (the upper arm angles down onto the curve) */
@@ -138,13 +138,19 @@ export function aroundContact(vd, jesus, h = AROUND_H, reachMax = 0.47, aPref = 
   const tb = voidSurface(vd, h, a - 0.05, 0).sub(voidSurface(vd, h, a + 0.05, 0)).normalize();
   return { p: best[0], a, n, tb, sh };
 }
+/** a contact frame like aroundContact()'s, on the Void's velvet at rest-height h and angle a (for blends / pats) */
+export function contactAt(vd, h, a) {
+  const n = voidNormal(vd, h, a);
+  const tb = voidSurface(vd, h, a - 0.05, 0).sub(voidSurface(vd, h, a + 0.05, 0)).normalize();
+  return { p: voidSurface(vd, h, a, 0.012), a, n, tb };
+}
 /**
  * the `armL` pose for the arm around the Void: the upper arm angles down and back over its curve, elbow bent and out
  * off the velvet (pole = outward + down + toward its back), the forearm wraps round the curve, fingers spread on the
  * velvet toward its back. lift (m): the hand lifts off along the normal (pats).
  */
 export function aroundArm(c, reach = 1, lift = 0) {
-  const PW = globalThis.__pole || [0.8, -0.5, 0.15];
+  const PW = [0.8, -0.5, 0.15];
   const pole = c.n.clone().multiplyScalar(PW[0]).add(new THREE.Vector3(0, PW[1], 0)).addScaledVector(c.tb, PW[2]).normalize();
   const tgt = c.p.clone().addScaledVector(c.n, 0.8 * lift).add(new THREE.Vector3(0, 0.35 * lift, 0));
   const fing = c.tb.clone().add(new THREE.Vector3(0, -0.18, 0)).addScaledVector(c.n, -0.12).normalize();
@@ -207,6 +213,7 @@ export function drawSkyGalaxy(ps, t) {
 
 // ------------------------------------------------------------------------------------------------ little galaxy
 const R_LG = 0.15;                                     // "dinner plate": 0.3 m across
+const FLY_SCALE = 1.45;                                // its size in the air (s04b09-b10 flight), back to 1 on the hop
 // stage-local key points (EDGE frame)
 export const LITTLE_GALAXY = {
   bounce: [0.4, 0, -0.2],                              // first (and only) bounce on the grass
@@ -217,7 +224,7 @@ export const LITTLE_GALAXY = {
 };
 const LG = LITTLE_GALAXY;
 const tPop = () => T('s04b10') + 0.39;                 // the big hiccup in the s04b10 cough audio, on "galaxies"
-const tBounce = () => tPop() + 0.34;
+const tBounce = () => tPop() + 0.6;                    // a visible arc (up, out toward the lens, down) before the bounce
 const tHop = () => tBounce() + 0.3;
 // it rolls at a steady pace (seen small in the s04b11 wide, rolling toward the user), and the last ~0.35 m happen in
 // the first 0.75 s of s04b13: it rolls into that shot from frame-right, decelerates, spirals to a stop at the sneaker
@@ -267,11 +274,16 @@ export function littleGalaxyAt(t, opts = {}) {
     phase = 'fly';
     const u = (t - t0) / (tBounce() - t0);
     const a = opts.from ? toV(opts.from) : W(LG.fromDefault), b = W(LG.bounce).setY(R_LG * 0.7);
-    c = a.clone().lerp(b, u); c.y = lerp(a.y, b.y, u) + 0.35 * Math.sin(Math.PI * u) * (1 - u);
-    const ang = 7.5 * (t - t0);
-    N = V3(Math.cos(ang), 0.6, Math.sin(ang)).normalize();
+    // quadratic arc: shoots up and out toward the camera side (stage +z, a little screen-left) from the mouth, then
+    // drops onto the bounce point (gravity-like ease: fast out, hangs at the top, falls)
+    const ctl = a.clone().lerp(b, 0.3).add(V3(0, 1.25, 0)).add(V3(...EDGE.W(-0.85, 0, 0.8)).sub(V3(...EDGE.W(0, 0, 0))));
+    const v = 1 - u;
+    c = a.clone().multiplyScalar(v * v).addScaledVector(ctl, 2 * v * u).addScaledVector(b, u * u);
+    const ang = 6.0 * (t - t0);
+    N = V3(Math.cos(ang), 0.9, Math.sin(ang)).normalize();
     spin = 9 * (t - t0);
-    scale = 0.35 + 0.65 * smooth((t - t0) / 0.1);
+    scale = (0.35 + 0.65 * smooth((t - t0) / 0.1)) * FLY_SCALE;      // big in the air (>= 140 px in the s04b09 shot)
+    c.y += (FLY_SCALE - 1) * R_LG * u;                              // (its bigger rim clears the grass at the bounce)
   } else if (t < tHop()) {                              // hop after the bounce, still tumbling a little
     phase = 'hop';
     const u = (t - tBounce()) / (tHop() - tBounce());
@@ -282,6 +294,8 @@ export function littleGalaxyAt(t, opts = {}) {
     const tumble = (1 - u) * 1.3;
     N = axle.clone().applyAxisAngle(d, tumble).normalize();
     spin = 9 * (tBounce() - t0) + 6 * (t - tBounce());
+    scale = lerp(FLY_SCALE, 1, smooth(u));                           // settles to its plate size as it hops
+    c.y += (scale - 1) * R_LG;
   } else {
     // rolling on its edge (steady, then decelerating) -> coin wobble (Euler's disk) -> flat
     const L = rollLen(), dur = tStop() - tHop();

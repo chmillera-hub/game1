@@ -109,6 +109,20 @@ export function pix(cam, p) {
   return [Math.round((v.x * 0.5 + 0.5) * 720), Math.round((1 - (v.y * 0.5 + 0.5)) * 1280)];
 }
 
+// ------------------------------------------------------------------------------------------- exposure
+// The bonus read too dark on phones (frame means ~30/255; the ~300 kbps encode crushes murky floorboards into blocks).
+// Brighter key/fill in the room (BACKROOM opts.lights) + a post exposure lift and a small cool shadow lift. Frame
+// means aim at ~55-75 while the back room keeps its moody falloff and the cosmos its contrast.
+export const ROOM_LIGHTS = { hemi: 1.75, screen: 1.35 };
+/** a scene look, brightened: `ev` stops of exposure, `lift` added to the grade's shadow lift */
+export function brighten(look, ev = 0.45, lift = [0.016, 0.015, 0.026]) {
+  const o = { ...look };
+  o.exposure = (o.exposure ?? 1) * Math.pow(2, ev);
+  const l = o.lift || [0, 0, 0];
+  o.lift = [l[0] + lift[0], l[1] + lift[1], l[2] + lift[2]];
+  return o;
+}
+
 // ------------------------------------------------------------------------------------------- marks (world)
 // Fear's facing at FOUT (stage-local yaw): toward the star, i.e. 3/4 toward the camera side (its face reads in the
 // KICK wide and in every close-up from the camera side); the Void stands at its front-left.
@@ -143,7 +157,7 @@ export function times() {
   c.creepy = W('s20b02', 'creepy');
   c.kickFire = W('s20b04', 'kicks') + 0.03;        // the leg fires on "kicks"
   c.contact = c.kickFire + 0.15;                     // the foot lands mid-chest
-  c.launch = c.contact + 0.05;                       // he folds round the foot for a couple of frames, then flies
+  c.launch = c.contact + 0.21;                       // he folds round the foot for 5 frames (squash, eyes bulge), then flies
   c.fat = W('s20b05', 'fat'); c.leg = W('s20b05', 'leg');
   c.flying = W('s20b06', 'flying');
   c.imp = W('s20b06', 'buckets') + 0.04;             // crash right under "buckets"
@@ -197,6 +211,15 @@ export function starAt(t) {
   loc[1] += 0.55 * fl; loc[0] -= 0.12 * fl; loc[2] += 0.08 * fl;
   const lit = smooth(clamp((t - c.making) / 0.22)) * (1 - smooth(clamp((t - (c.shrug + 0.3)) / 1.1)));
   return { pos: ROOM.W(loc), lit, held: 1 - fl };
+}
+/**
+ * The star hand's palm + hand params (s20/s21): the palm is turned ~115 deg from Fear so the curled fingers + thumb show beside
+ * the raised index (seen from the back, a lone upright finger over a fist read as a rude gesture). `toward`: unit
+ * horizontal direction from the star to Fear.
+ */
+export function starHand(toward) {
+  const r = -2.0, c = Math.cos(r), s = Math.sin(r);
+  return { palm: [toward[0] * c + toward[2] * s, 0.05, -toward[0] * s + toward[2] * c], hand: { point: 1, curl: 1, thumb: 0.6, cup: 0.2 } };
 }
 /** the world position of the Void's LEFT index fingertip (after vd.update), nudged a little past the tip */
 export function fingerTip(vd, side = 'L', past = 0.035) {
@@ -298,9 +321,13 @@ export function bookArms(vs, close, open, fromL = 'rest', fromR = 'belly', show 
   };
   return { armL: mk(1), armR: mk(-1), palms: add(bp, [0, 0.04 + 0.02 * open, 0]), up: R([0, 1, 0.25 * open]) };
 }
-/** FEAR_CU from the Void side: s20's crash cutaway = s21's opening (Fear's eyes y~690, the fingertip star near the top) */
+/**
+ * FEAR_CU from the Void side: s20's crash cutaway = s21's opening. Pulled back and raised to the star's height (no
+ * low-angle perspective throwing the near arm up into the UI band): Fear's eyes y~660, the Void's raised star hand +
+ * fingertip star y~170-380 with the sleeve reading as an arm coming in from the right, the Void's smile at the top-right.
+ */
 export function fearCU(fe, push = 0) {
-  return ROOM.shot(ROOM.L(fe), { dist: 2.55 - 0.1 * push, yaw: 32, pitch: -8, fov: 44, screenY: sy(700), drift: 0.05 });
+  return ROOM.shot(ROOM.L(fe), { dist: 3.6 - 0.12 * push, yaw: 32, pitch: 4, fov: 40, screenY: sy(660), drift: 0.05 });
 }
 
 /** BACKROOM opts for the janitor corner at t (shared by s20..s22). `mag` = the magician rig (already updated). */

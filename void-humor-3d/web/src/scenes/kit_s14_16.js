@@ -102,9 +102,16 @@ function notifCanvas() {
 export function makeJesusPhone() {
   const group = new THREE.Group(); group.name = 'jesusPhone';
   const PW = 0.064, PH = 0.132, PT = 0.009;
-  const body = new THREE.Mesh(new THREE.BoxGeometry(PW, PH, PT, 2, 2, 1), new THREE.MeshStandardMaterial({ color: 0x3e4452, roughness: 0.5, metalness: 0.1 }));
-  // round the box a little (pull the corner vertices in)
-  { const p = body.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i); if (Math.abs(x) > PW * 0.49 && Math.abs(y) > PH * 0.49) { p.setX(i, x * 0.93); p.setY(i, y * 0.985); } } }
+  // a smooth rounded-rect slab (9 mm corners, softly bevelled edges): it fills the frame in the insert, so no facets
+  const bodyGeo = (() => {
+    const R = 0.009, bv = 0.0022, w = PW / 2 - bv, h = PH / 2 - bv, r = R - bv, s = new THREE.Shape();
+    s.moveTo(-w + r, -h); s.lineTo(w - r, -h); s.absarc(w - r, -h + r, r, -Math.PI / 2, 0, false); s.lineTo(w, h - r); s.absarc(w - r, h - r, r, 0, Math.PI / 2, false);
+    s.lineTo(-w + r, h); s.absarc(-w + r, h - r, r, Math.PI / 2, Math.PI, false); s.lineTo(-w, -h + r); s.absarc(-w + r, -h + r, r, Math.PI, Math.PI * 1.5, false);
+    const g = new THREE.ExtrudeGeometry(s, { depth: PT - 2 * bv, bevelEnabled: true, bevelThickness: bv, bevelSize: bv, bevelSegments: 3, curveSegments: 10 });
+    g.translate(0, 0, -(PT - 2 * bv) / 2); g.computeVertexNormals();
+    return g;
+  })();
+  const body = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: 0x3e4452, roughness: 0.5, metalness: 0.1 }));
   const tex = notifCanvas();
   const scrMat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(1, 1, 1), toneMapped: true });
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(PW * 0.9, PH * 0.92), scrMat);

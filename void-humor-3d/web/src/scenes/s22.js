@@ -15,12 +15,13 @@ import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
 import { clamp, lerp, smooth, ease } from '../core/util.js';
 import { Particles, CELL } from '../core/particles.js';
+import { CTX } from '../core/context.js';
 import { VX } from '../chars/void.js';
 import { FX } from '../chars/fear.js';
 import { MX } from '../chars/magician.js';
 import { ROOM, sy, lookFor } from './marks.js';
 import { ensureBonusDecals } from './kit_bonus.js';
-import { loadLines, W, A, add, sub, mix3, LD, pulse, stamp, own, live, solve, aim, blendShot, pix, marks, times, voidSpot, wreckPose, cornerOpts, bookPoint, bookArms, FEAR_LYAW, FEAR_TURN } from './kit_s20_22.js';
+import { loadLines, W, V, A, add, sub, mix3, LD, pulse, stamp, own, live, solve, aim, blendShot, pix, marks, times, voidSpot, wreckPose, cornerOpts, bookPoint, bookArms, FEAR_LYAW, FEAR_TURN, brighten, ROOM_LIGHTS } from './kit_s20_22.js';
 
 const ID = 's22';
 // Fear's stage-local facing: s21's end (toward the Void's hands) -> 3/4 to the camera side -> a little more open at the end
@@ -40,13 +41,23 @@ export default {
     const fxS = new Particles({ max: 48, intensity: 1.0, blending: 'add' });      // soft nebula smoke
     const fxD = new Particles({ max: 8, intensity: 1.0, blending: 'normal' });     // dark veil over the title band (end wide)
     own(ID, fx.mesh); own(ID, fxS.mesh); own(ID, fxD.mesh);
+    // Fear's close-up (b03/b04): the galaxies reflected in its irises + one big starlit tear that wells and spills
+    const eyeGals = fear.face.eyes.map((eye) => {
+      const m = new THREE.Mesh(new THREE.CircleGeometry(eye.r * 0.24, 20), new THREE.MeshBasicMaterial({
+        map: galaxyTex(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, color: new THREE.Color(1.25, 1.1, 1.45), opacity: 0 }));
+      m.renderOrder = 4; m.visible = false;
+      eye.inner.add(m);
+      return own(ID, m);
+    });
+    const tearMat = new THREE.MeshStandardMaterial({ color: 0xe4f2ff, roughness: 0.03, metalness: 0, transparent: true, opacity: 0.82, emissive: 0x9cc0ff, emissiveIntensity: 0.75, depthWrite: false });
+    const tears = [0, 1].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), tearMat); m.renderOrder = 4; m.visible = false; set.scene.add(m); return own(ID, m); });
     // the cosmos group lives in the shared BACKROOM scene only while this scene draws it
     const prev = set.scene.onBeforeRender;
     set.scene.onBeforeRender = function (...a) {
       if (cos.group.parent === set.scene) cos.group.visible = live(ID);
       if (prev) prev.apply(this, a);
     };
-    return { scene: set.scene, set, cos, vd, fear, mag, fx, fxS, fxD, look: lookFor(ID, set.look) };
+    return { scene: set.scene, set, cos, vd, fear, mag, fx, fxS, fxD, eyeGals, tears, look: lookFor(ID, set.look) };
   },
 
   async update(t, app, st) {
@@ -170,7 +181,7 @@ export default {
 
     // ------------------------------------------------------------------ set + cosmos
     const cosV = smooth(clamp(reveal / 0.8));
-    set.update(t, { ...cornerOpts(t, mag, { lift: 0.06 * lift }), cosmos: cosV, voidLight: { pos: add(vs.pos, [-0.62, 1.95, 0.85]), intensity: shot === 1 ? 1.4 : 3.2 } });
+    set.update(t, { ...cornerOpts(t, mag, { lift: 0.06 * lift }), cosmos: cosV, lights: ROOM_LIGHTS, voidLight: { pos: add(vs.pos, [-0.62, 1.95, 0.85]), intensity: shot === 1 ? 1.4 : 3.2 } });
     if (set.props.bucketHat && lift > 0) set.props.bucketHat.rotateX(-0.22 * lift);
     const center = mix3(vs.pos, fp, 0.5); center[1] = 0;
     const closeUp = shot === 1 || shot === 3 || shot === 6 || shot === 8 || shot === 9;
@@ -193,6 +204,12 @@ export default {
     };
     fx.begin(); fxS.begin(); fxD.begin();
     drawGalaxies(fx, t, L, c, vs, lg, faceSafe, vd);
+    // FEAR_CU (b03-b04): nebula clouds + two drifting galaxies behind/above Fear, the galaxy in its eyes, the big tear
+    const cuK = shot === 1 ? 1 : 0;
+    if (cuK) drawFearCU(fx, fxS, t, L, c, M, vs, cam);
+    updateEyeGalaxies(st, t, L, c, M, vs, cuK);
+    const glints = updateTears(st, t, L, cuK);
+    for (const g of glints) { fx.add(g.pos, g.size, 0xffffff, g.a, t * 0.7 + g.i, CELL.star); fx.add(g.pos, g.size * 1.8, 0xcfe2ff, 0.2 * g.a, 0, CELL.dot); }
     // nebulae pour from its sleeves (b02): distinct luminous plumes leaving both cuffs, then a faint ongoing breath
     const hl = vd.anchor('handL'), hr = vd.anchor('handR');
     // (not in Fear's close-up: big additive plumes right by the lens cost a lot and are not the subject there)
@@ -218,14 +235,14 @@ export default {
       const dir = new THREE.Vector3(0, 0.38, -1).applyQuaternion(cam.quaternion).normalize();
       for (let i = 0; i < 3; i++) {   // three soft dark puffs side by side across the band (kept small: fill cost)
         const p = A(camP.clone().addScaledVector(dir, 9.4 + 0.3 * i).add(new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion).multiplyScalar((i - 1) * 2.5)));
-        fxD.add(p, 4.2, 0x0a0614, 0.8 * a, 0.3 * i, CELL.puff);
+        fxD.add(p, 4.2, 0x0a0614, 0.95 * a, 0.3 * i, CELL.puff);
       }
     }
     fx.end(); fxS.end(); fxD.end();
 
     if (globalThis.DBG22) {
       console.log('DBG22', t.toFixed(2), 'shot', shot, 'rev', reveal.toFixed(2), JSON.stringify({ v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), hand: pix(cam, vd.anchor('handL')), sh: pix(cam, fear.anchor('shoulderL')),
-        handToSh: +vd.anchor('handL').distanceTo(fear.anchor('shoulderL')).toFixed(3), shToSh: +vd.anchor('shoulderL').distanceTo(fear.anchor('shoulderL')).toFixed(3), scarf: pix(cam, fear.anchor('scarf')), chestF: pix(cam, fear.anchor('chest')), star: ls ? pix(cam, ls.pos) : null, m: pix(cam, mag.anchor('head')), crash: pix(cam, M.CRASH), lg: pix(cam, lg.pos) }));
+        handToSh: +vd.anchor('handL').distanceTo(fear.anchor('shoulderL')).toFixed(3), shToSh: +vd.anchor('shoulderL').distanceTo(fear.anchor('shoulderL')).toFixed(3), scarf: pix(cam, fear.anchor('scarf')), chestF: pix(cam, fear.anchor('chest')), g1: pix(cam, cuGalaxies(t, L, c, M, vs)[0].pos), g2: pix(cam, cuGalaxies(t, L, c, M, vs)[1].pos), handR: pix(cam, vd.anchor('handR')), star: ls ? pix(cam, ls.pos) : null, m: pix(cam, mag.anchor('head')), crash: pix(cam, M.CRASH), lg: pix(cam, lg.pos) }));
     }
     // look: s21's look -> the cosmos look as the room dissolves; the Void closes keep its eyes out of the bloom
     const a = lookFor('s21', set.look), b = cos.blendLook(lookFor(ID, set.look), 0.5);
@@ -235,12 +252,19 @@ export default {
       const x = a[key], y = b[key];
       look[key] = typeof x === 'number' && typeof y === 'number' ? lerp(x, y, w) : (w < 0.5 ? (x ?? y) : (y ?? x));
     }
+    // (the cosmos set look's wide bloom radius would bring back the square low-mip glow boxes round the sparkles)
+    look.bloomRadius = Math.min(look.bloomRadius ?? 0.3, 0.3);
+    look.bloomThreshold = Math.max(look.bloomThreshold ?? 0.85, 0.85);
     if (voidClose) {
       look.bloomThreshold = Math.max(look.bloomThreshold ?? 0.62, 0.86);
       look.bloom = (look.bloom ?? 0.9) * 0.75;
       look.exposure = (look.exposure ?? 1) * 0.9;
     }
-    st.look = look;
+    // brighter for phones / the ~300 kbps encode (frame means ~55-70); the close-ups are already lit, the pull-backs and the
+    // end wide in the dark cosmos need the most (shot 2 eases up with its pull-back, no step)
+    const ev2 = 0.1 + 0.45 * smooth(clamp((t - (L.B5 + 0.75)) / 1.6));
+    const EV = [0.15, -0.08, ev2, 0.3, 0.55, 0.3, 0.25, 0.3, 0.25, 0.35, 0.8];
+    st.look = brighten(look, EV[shot] ?? 0.3);
   },
 };
 
@@ -296,8 +320,10 @@ function fearPoseAt(st, t, L, c, M, vs, corner) {
   const up2 = ROOM.W(add(ROOM.L(pos), [1.4, 2.4, 0.9]));
   const galRise = add(palms, [0, 0.25 + 0.3 * smooth(clamp((t - c.galRise) / 1.4)), 0]);
   const ls = lastStar(t, L, fear);
+  // in the close-up it follows the drifting galaxy above it (G1), not the Void's hand, before it turns to the Void
+  const cg = cuGalaxies(t, L, c, M, vs);
   const g = k(t, [[L.S, palms], [c.galRise, palms], [c.galRise + 0.4, galRise, 'inOut'], [c.galaxies, galRise], [c.galaxies + 0.5, up2, 'inOut'], [L.B2 + 0.9, up1, 'inOut'],
-    [L.B3 + 1.1, up1], [L.B3 + 2.0, up2, 'inOut'], [L.B4 - 0.3, up2], [L.B4 + 0.0, vlook, 'inOut'], [L.B6 + 0.3, vlook], [L.B6 + 1.4, up1, 'inOut'], [L.B6 + 2.4, lg.pos, 'inOut'],
+    [L.B3 - 0.05, up1], [L.B3 + 0.35, cg[0].pos, 'inOut'], [L.B4 - 0.3, cg[0].pos], [L.B4 + 0.0, vlook, 'inOut'], [L.B6 + 0.3, vlook], [L.B6 + 1.4, up1, 'inOut'], [L.B6 + 2.4, lg.pos, 'inOut'],
     [L.B7 + 0.6, lg.pos], [L.B8 - 0.15, vlook, 'inOut'], [L.B8 + 1.0, vlook], [L.B8 + 1.35, ls ? ls.pos : vlook, 'inOut'], [L.B9 - 0.2, ls ? ls.pos : vlook], [L.B9 + 0.2, vlook, 'inOut'],
     [L.B12 - 0.2, vlook], [L.B12 + 0.6, lg.pos, 'inOut']]);
   // micro search between the Void's two eyes during the question
@@ -430,6 +456,113 @@ function drawGalaxies(ps, t, L, c, vs, lg, safe, vd) {
     ps.add(lg.pos, lg.size * 1.4, 0xf2e0ff, 0.95 * a, -t * 1.1, CELL.galaxy);
     ps.add(lg.pos, lg.size * 3.2, 0xc4a8ff, 0.22 * a, 0, CELL.dot);
   }
+}
+
+// ======================================================================================================== Fear's close-up
+let _galTex = null;
+function galaxyTex() {
+  if (_galTex) return _galTex;
+  const S = 128, cv = document.createElement('canvas'); cv.width = cv.height = S;
+  const g = cv.getContext('2d'); g.translate(S / 2, S / 2);
+  const gr = g.createRadialGradient(0, 0, 0, 0, 0, 60); gr.addColorStop(0, 'rgba(255,245,225,1)'); gr.addColorStop(0.2, 'rgba(230,200,255,0.7)'); gr.addColorStop(0.6, 'rgba(170,140,255,0.2)'); gr.addColorStop(1, 'rgba(150,120,255,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 60, 0, 7); g.fill();
+  g.lineCap = 'round';
+  for (let arm = 0; arm < 2; arm++) {
+    g.beginPath();
+    for (let q = 0; q < 50; q++) { const a = arm * Math.PI + q * 0.12, r = 4 + q * 1.05; const x = Math.cos(a) * r, y = Math.sin(a) * r; q ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.strokeStyle = 'rgba(255,240,255,0.9)'; g.lineWidth = 6; g.stroke();
+  }
+  _galTex = new THREE.CanvasTexture(cv); _galTex.colorSpace = THREE.SRGBColorSpace;
+  return _galTex;
+}
+/**
+ * The two galaxies of FEAR_CU (pure functions of t, stage-local offsets from Fear's spot): G1, big, drifts slowly across
+ * the upper left above Fear (Fear follows it), G2, smaller, hangs further back upper right, above the cage.
+ */
+function cuGalaxies(t, L, c, M, vs) {
+  const base = ROOM.L(fearPos(t, L, c, M, vs));
+  const u = clamp((t - L.B3) / (L.cutC - L.B3));
+  const g1 = add(base, [lerp(0.22, 0.13, u), 1.06 + 0.03 * Math.sin(t * 0.7), 0.4]);
+  const g2 = add(base, [lerp(-0.5, -0.42, u), 1.2 + 0.03 * Math.sin(t * 0.5 + 1), -1.4]);
+  return [{ pos: ROOM.W(g1), size: 0.2, spin: -t * 0.5 }, { pos: ROOM.W(g2), size: 0.34, spin: t * 0.35 + 1 }];
+}
+function drawFearCU(fx, fxS, t, L, c, M, vs, cam) {
+  const fp = ROOM.L(fearPos(t, L, c, M, vs));
+  // nebula clouds well behind Fear (violet, teal, rose), slow drift + turn: soft, big, low alpha (compression-friendly)
+  const NB = [[-1.6, 2.1, -3.6, 3.0, 0x7a4cf0, 0.26], [0.9, 2.5, -4.2, 3.4, 0x2fa8c4, 0.24], [-0.4, 1.25, -3.0, 2.2, 0xd06ab8, 0.2], [1.8, 1.4, -3.4, 2.4, 0x6a5cf0, 0.18]];
+  NB.forEach(([x, y, z, sz, col, a], i) => {
+    const p = ROOM.W(add(fp, [x + 0.12 * Math.sin(t * 0.13 + i), y + 0.08 * Math.sin(t * 0.17 + 2 * i), z]));
+    fxS.add(p, sz, col, a, 0.3 * i + 0.04 * t, CELL.nebula);
+  });
+  // a few soft star motes in the nebula
+  for (let i = 0; i < 7; i++) {
+    const p = ROOM.W(add(fp, [-1.5 + 0.5 * i + 0.1 * Math.sin(i * 7.3), 1.2 + 0.23 * ((i * 5) % 7), -2.2 - 0.3 * (i % 3)]));
+    fx.add(p, 0.05 + 0.015 * (i % 3), i % 2 ? 0xfff0d0 : 0xd8e6ff, 0.75 * (0.8 + 0.2 * Math.sin(t * 1.3 + i)), t * 0.3 + i, CELL.star);
+  }
+  const g = cuGalaxies(t, L, c, M, vs);
+  const cols = [0xf0dcff, 0xc8eaff];
+  g.forEach((q, i) => { fx.add(q.pos, q.size, cols[i], i ? 0.42 : 0.5, q.spin, CELL.galaxy); fx.add(q.pos, q.size * 2.4, i ? 0x6fc8ef : 0xa488ef, 0.12, 0, CELL.dot); });
+}
+/** the galaxy G1 reflected on each cornea (half-vector placement pulled onto the iris), only in FEAR_CU */
+function updateEyeGalaxies(st, t, L, c, M, vs, on) {
+  const cam = CTX.camera, gp = cuGalaxies(t, L, c, M, vs)[0].pos;
+  st.fear.face.eyes.forEach((eye, i) => {
+    const m = st.eyeGals[i];
+    m.visible = on > 0 && !!cam;
+    if (!m.visible) { m.material.opacity = 0; return; }
+    eye.inner.updateWorldMatrix(true, false);
+    const inv = new THREE.Matrix4().copy(eye.inner.matrixWorld).invert();
+    const Lg = V(gp).applyMatrix4(inv).normalize(), Vc = cam.position.clone().applyMatrix4(inv).normalize();
+    const ir = new THREE.Vector3(0, 0, 1).applyEuler(eye.ball.rotation);
+    const up = new THREE.Vector3(0, 1, 0).addScaledVector(ir, -ir.y).normalize();
+    const n = Lg.clone().add(Vc).normalize().lerp(ir, 0.6).normalize().addScaledVector(up, 0.22).normalize();
+    m.position.copy(n).multiplyScalar(eye.r * 1.02);
+    m.lookAt(eye.inner.localToWorld(n.clone().multiplyScalar(eye.r * 3)));
+    m.rotateZ(t * 0.9);
+    m.material.opacity = 0.9 * on;   // (inside the lid shells: a blink covers it)
+  });
+}
+/**
+ * Fear's big starlit tear (FEAR_CU): it wells on the lower lid of the screen-right eye from b03, swells, spills at ~0.7 s
+ * in and runs down the cheek; the other eye keeps a full, glistening well. Returns the star glints to draw.
+ */
+function updateTears(st, t, L, on) {
+  const { fear, tears } = st;
+  const out = [];
+  tears.forEach((m) => { m.visible = false; });
+  if (!on) return out;
+  const F = fear.face, hg = fear.headGroup;
+  hg.updateWorldMatrix(true, false);
+  const EU = 0.45, EV = 0.18;
+  const t0 = L.B3 + 0.1, tSpill = L.B3 + 0.7, tEnd = tSpill + 1.5;
+  const at = (u, v, R) => { const { p, n } = F.surface(u, v); return hg.localToWorld(p.clone().addScaledVector(n, R * 0.55)); };
+  [[1, true], [-1, false]].forEach(([sx, spills], i) => {
+    const m = tears[i];
+    const swell = smooth(clamp((t - t0) / 0.6));
+    let slide = 0;
+    if (spills) slide = smooth(clamp((t - tSpill) / (tEnd - tSpill)));
+    const R = (spills ? 0.0135 : 0.011) * (0.35 + 0.65 * swell) * (1 - 0.35 * slide);
+    if (R < 0.002) return;
+    const uu = sx * (EU + 0.04 + 0.12 * slide), vv = lerp(EV - 0.3, -0.62, slide);
+    const p = at(uu, vv, R);
+    m.position.copy(p);
+    const q = at(uu + sx * 0.02, vv + 0.04, R);
+    const tdir = q.clone().sub(p).normalize();
+    const nrm = p.clone().sub(hg.localToWorld(new THREE.Vector3(0, 0, 0))).normalize();
+    orient(m, tdir, nrm);
+    m.scale.set(R * 0.9, R * (1.15 + 0.6 * slide), R * 0.7);
+    m.visible = true;
+    out.push({ pos: A(p.clone().addScaledVector(nrm, R * 0.6)), size: 0.015 + 0.004 * Math.sin(t * 3 + i), a: 0.85 * swell, i });
+    if (spills && slide > 0.02 && slide < 1) {
+      // the wet trail it leaves: two tiny glints behind it
+      for (let j = 1; j <= 2; j++) { const s2 = Math.max(0, slide - 0.18 * j); const pt = at(sx * (EU + 0.04 + 0.12 * s2), lerp(EV - 0.3, -0.62, s2), 0.004); out.push({ pos: A(pt), size: 0.012, a: 0.5 * swell, i: i + j }); }
+    }
+  });
+  return out;
+}
+function orient(m, ydir, zdir) {
+  const y = ydir.clone().normalize(), x = new THREE.Vector3().crossVectors(y, zdir).normalize(), z = new THREE.Vector3().crossVectors(x, y);
+  m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
 }
 
 // ======================================================================================================== cameras

@@ -44,7 +44,14 @@ Inside: unlit **cosmic darkness** (nebula + tiny stars + a faint violet glow, vi
 
 **Hands**: big soft mitts — a wide pillowy palm, 3 fat fingers + thumb (anatomically correct side) as smooth swept
 tubes, all ONE mesh per hand (`VoidHand`) — coming out of a **flared open sleeve cuff** (velvet outside, dark lining
-inside, the hem hangs a little toward the ground). The sleeve tube tapers to 0.15 m at the wrist.
+inside, the hem hangs a little toward the ground). The sleeve tube tapers to 0.15 m at the wrist (× the cuff scale
+for a scaled-down hand). The cuff is a bell (it flares in its last ~12 cm), asymmetric (the upper side hugs the
+forearm, only the gravity side flares) and **view-aware**: when the forearm points at / away from the lens its flare
+shrinks and it slides back along the forearm, so it never reads as a ring around the hand (`Cuff.update(..., view)`).
+Cupped `whisper` / `pat` / `around` hands (and any open hand with `cup` ≳ 0.5) get `hand.flat` ≈ 0.9 automatically: a
+flatter palm, fingers a little apart and longer, less cup (pass `hand.flat` to override).
+**Nods**: a positive `head.pitch` pivots about the hood's chin rim, not the neck, so a bowed hood rides over the chest
+(no chest showing through the lower face from low cameras); level / tipped-back heads are unchanged.
 **Legs**: short fat round legs (r ≈ 0.29) with round feet; each sole has a soft glowing pad + three toe beans.
 
 Rest measurements (root at the feet, facing +Z): hood tip ≈ 3.1, eyes 2.16, mouth 1.86, head centre 2.15 (z 0.10),

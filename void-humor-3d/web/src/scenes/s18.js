@@ -26,7 +26,7 @@ import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { MX } from '../chars/magician.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, gazeSched, fitShot, mixShot, project, cast, ownedGroup, bonusMarks, voidBowed,
-  MAGPATH, magTiptoe, magSteps, ensureBonusDecals, clamp, smooth, lerp } from './kit_bonus.js';
+  MAGPATH, magTiptoe, magSteps, ensureBonusDecals, BONUS_LIGHTS, bonusLook, clamp, smooth, lerp } from './kit_bonus.js';
 
 let S = null;
 const tb = (r) => T(r);
@@ -56,7 +56,7 @@ export default {
     applyShot(app.camera, shot, t, 18);
     const close = t >= S.T.cut2 && t < S.T.cut6;
     // his close shots: the Void's violet key light tints his grey face/tongue purple: half of it (he drains colour)
-    set.update(t, { latch: 1, cageDoor: 1, voidLight: close ? 0.55 : 1 });
+    set.update(t, { latch: 1, cageDoor: 1, voidLight: close ? 0.55 : 1, lights: BONUS_LIGHTS });
     fear.update(t, fearPoseFn(t));
     vd.update(t, voidPose(t, st));
     const mp = magPose(t, st);
@@ -70,7 +70,7 @@ export default {
       st.glint.position.copy(tip.clone().lerp(h, 0.35));
       st.glint.material.opacity = g; st.glint.scale.setScalar(0.05 + 0.13 * g); st.glint.material.rotation = 0.7 * g;
     }
-    st.look = lookFor('s18', set.look);
+    st.look = bonusLook(lookFor('s18', set.look), t >= S.T.cut4 && t < S.T.cut6 ? 1.4 : 1.65);   // (his pale face CU: a little less)
   },
 };
 
@@ -103,7 +103,7 @@ function statics(st) {
   const out = { T: times() };
   S = out;
   const B = out.B = bonusMarks(set), TT = out.T;
-  out.HIDE = ROOM.W(MAGPATH.HIDE); out.PEEK = ROOM.W(MAGPATH.PEEK); out.FAR = ROOM.W(MAGPATH.FAR); out.B6 = ROOM.W(MAGPATH.B6);
+  out.HIDE = ROOM.W(MAGPATH.HIDE); out.PEEK = ROOM.W(MAGPATH.PEEK); out.FAR = ROOM.W(MAGPATH.FAR); out.B6 = ROOM.W(MAGPATH.B6); out.B7 = ROOM.W(MAGPATH.B7);
   vd.update(TT.b3, voidBowed(TT.b3, B, { gaze: toV(B.FDOOR).add(V3(0, 0.6, 0)) }));
   out.vEyes = vd.anchor('eyes'); out.vHead = vd.anchor('head'); out.vShL = vd.anchor('shoulderL');
   out.vC = toV(B.V).setY(1.45);
@@ -166,8 +166,10 @@ function shotAt(t) {
   // b07: track the tiptoe, then tilt down to the prints
   const m = magTiptoe(t);
   const sh = S.TRK(m.pos); sh.fov = 50;
+  // aim a little ahead of his feet (he leans far forward on the tiptoe: keep the head in frame)
+  sh.look = toV(sh.look).add(V3(Math.sin(m.yaw) * 0.32, 0.05, Math.cos(m.yaw) * 0.32)).toArray();
   const down = ramp(t, m.tOut + 0.15, TT.end + 0.05, 'inOut');
-  const trail = toV(S.B6).lerp(toV(S.FAR), 0.5).setY(0.0);
+  const trail = toV(S.B7).lerp(toV(S.FAR), 0.5).setY(0.0);
   const look = toV(sh.look).lerp(trail, 0.8 * down);
   return { ...sh, look: look.toArray(), fov: 50 - 4 * down };
 }
@@ -208,7 +210,7 @@ function voidPose(t, st) {
 function magPose(t, st) {
   const TT = S.T;
   const fearE = S.fEyes || V3(-1.3, 0.8, 0.2);
-  const inB7 = t >= TT.b7 - 0.05;
+  const inB7 = t >= TT.cut7;   // from the cut: the tiptoe starts at B7 (no one-frame pop at B6)
   const tip = inB7 ? magTiptoe(t) : null;
   // ---- where / which way: HIDE (b01-b05) -> B6 (b06, across the cut) -> the tiptoe (b07)
   const atPeek = t >= TT.cut6 - 0.02;
@@ -219,7 +221,7 @@ function magPose(t, st) {
   let walk = { amount: 0 };
   if (inB7) {
     pos = tip.pos;
-    yaw = lerp(yaw, tip.yaw, ramp(t, TT.b7 - 0.05, tip.tA + 0.25));
+    yaw = lerp(yaw, tip.yaw, ramp(t, TT.cut7, tip.tA + 0.25));
     walk = tip.walk;
   }
   // ---- body

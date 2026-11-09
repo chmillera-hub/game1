@@ -38,9 +38,33 @@ import { M, W, WDIR, speechSafe, defendTarget, plainDefendWrist, userPosAt, camK
 
 const DEBUG = false;
 const JY0 = -0.32, JY1 = -0.5;          // Jesus's local facing: s06's -> s08's (WY(M.JV))
-const DEPTH = 1.15;                      // whisperPose depth (STAGING: mouth just above his left ear)
-const HEADYAW = 0.6;                    // fraction of whisperPose's hood yaw kept (the face stays readable to camera)
+const DEPTH = 1.15;                      // whisperPose depth from b09 on (the hood eased up a little; s07b09's look)
+const HEADYAW = 0.6;                    // fraction of whisperPose's hood yaw kept from b09 on (the face stays readable)
+// b01-b08 the whisper proper: bent further from the middle and the hood leaned over onto his head (side bend + roll
+// toward him, a small nod), so the hood sits BESIDE his head, its mouth ~18 cm from his left ear (verified ~0.18 m
+// from 71.2 on), both eyes still readable from the WHISPER camera
+const DEEP = { depth: 1.2, headYaw: 0.8, tilt: -0.1, lean: -0.06, roll: -0.3, pitch: 0.12 };
 const SCOOT = 0.07;                     // the user's scoot back (m), exaggerated so it reads at phone size
+// the Void's whisper vocals (audio/vocals/<beat>.wav) as 24 fps RMS envelopes (0..1): small, quick whisper mouth
+// shapes in sync with what we hear (the vocal beats have no lipsync.json entry)
+const WHISPER_ENV = {
+  s07b02: [0.02, 0.09, 0.54, 0.89, 0.31, 0.89, 0.82, 0.20, 0.17, 0.65, 0.39, 0.30, 0.33, 0.63, 0.62, 0.07, 0.13, 0.12, 0.54, 0.86, 0.57, 0.32, 0.10, 0.39, 0.54, 0.41, 0.32, 0.56, 0.52, 0.41, 0.24, 0.11, 0.11, 0.05, 0.01, 0.00, 0.07, 0.30, 0.01, 0.16, 0.72, 0.36, 0.42, 0.37, 0.36, 0.20, 0.08, 0.02, 0.00, 0.14, 0.08, 0.26, 0.61, 0.88, 0.60, 0.12, 0.13, 0.14, 0.61, 1.00, 0.67, 0.11, 0.09, 0.06, 0.29, 0.40, 0.13, 0.01, 0.10, 0.15, 0.47, 0.46, 0.33, 0.21, 0.08, 0.09, 0.09, 0.17, 0.21, 0.08, 0.04],
+  s07b07: [0.03, 0.37, 0.12, 0.08, 0.11, 0.56, 0.81, 0.60, 1.00, 0.90, 0.31, 0.02, 0.09, 0.26, 0.42, 0.39, 0.33, 0.22, 0.31, 0.26, 0.09, 0.03, 0.20, 0.20, 0.20, 0.27, 0.26, 0.22, 0.14, 0.08, 0.03, 0.07, 0.12, 0.50, 0.94, 0.43, 0.17, 0.04, 0.09, 0.35, 0.36, 0.33, 0.23, 0.05, 0.01, 0.16, 0.05, 0.00, 0.05, 0.22, 0.18, 0.08, 0.06, 0.03, 0.01, 0.01, 0.01],
+  s07b08: [0.02, 0.11, 0.72, 0.77, 0.52, 1.00, 0.81, 0.22, 0.19, 0.65, 0.41, 0.35, 0.35, 0.64, 0.86, 0.06, 0.13, 0.14, 0.58, 0.89, 0.42, 0.45, 0.10, 0.37, 0.56, 0.44, 0.33, 0.57, 0.57, 0.44, 0.24, 0.13, 0.08, 0.03, 0.01, 0.00, 0.01, 0.04],
+};
+/** whisper lip-sync sample {open, wide, round, close} for the Void at t (null outside its whisper vocals) */
+function whisperSpeech(t) {
+  for (const [id, env] of Object.entries(WHISPER_ENV)) {
+    const a = T(id), f = (t - a) * 24;
+    if (f < -1 || f > env.length) continue;
+    const i = Math.max(0, Math.min(env.length - 1, Math.floor(f))), j = Math.min(env.length - 1, i + 1), u = clamp(f - i);
+    const e = clamp((env[i] + (env[j] - env[i]) * u) * (f < 0 ? 1 + f : 1));
+    const slow = id === 's07b08' ? 0.75 : 1;                           // the slower, sincere one: smaller shapes
+    // tiny, quick shapes: a little open on each syllable, the lips pursing/spreading from syllable to syllable
+    return { open: slow * (0.03 + 0.3 * e), round: 0.55 + 0.35 * noise1(t * 6.5, 71), wide: -0.15 + 0.25 * noise1(t * 5.3, 72), close: e < 0.06 ? 0.5 : 0 };
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------------------------------------- timing
 function times() {
@@ -60,7 +84,8 @@ function times() {
   S.flick = S.b02 + 2.2;                                             // Jesus's eyes flick to the user and back
   // open: VOID_CU, the decision blink, the hand comes down, the bend starts -> cut on the action to WHISPER
   S.decide = S.s + 0.3;
-  S.bendA = S.s + 0.52, S.bendB = S.whispersW + 0.4;
+  // the bend: starts as the hand leaves its mouth, the mouth is at his ear by ~b01+0.7 (71.2), before the side-eye
+  S.bendA = S.s + 0.45, S.bendB = Math.min(S.whispersW + 0.4, S.b01 + 0.68);
   S.c1 = Math.max(S.s + 0.75, S.whispersW - 0.08);
   S.unbend = S.b11 + 0.02;                                           // whisperPose -> 0 over 0.9 s
   // cuts
@@ -116,12 +141,15 @@ export default {
     R.vcuA = EDGE.shot(EDGE.L(a0.vE), { dist: 2.85, yaw: -32, pitch: -12, fov: 33, screenY: sy(340), drift: 0.12 });
     R.vcuB = EDGE.shot(EDGE.L(a0.vE), { dist: 2.72, yaw: -32, pitch: -12, fov: 33, screenY: sy(345), drift: 0.12 });
     const a1 = at(S.b02 + 2.0);
-    // WHISPER: front 3/4 on the two heads; slow push to ~80 %
-    R.whA = fitShot([[a1.jE, 300, 470], [a1.vE, 450, 300]], 33, V3(...EDGE.W(-1.09, 1.40, 3.30)), a1.jE, { posReg: 0.2, yMin: 1.2, yMax: 1.8, drift: 0.15 });
+    // WHISPER: medium two-shot, 3/4 front on the two heads from where the hood points (its face reads), the bent hood
+    // beside his head: his eyes y~460, its eyes y~330, the cupped hand + whispering mouth between them; slow push to ~80 %
     const mid = a1.jE.clone().lerp(a1.vE, 0.5);
+    R.whA = { ...EDGE.shot(EDGE.L(mid), { dist: 3.4, yaw: -22, pitch: 3, fov: 33, screenY: 0.32, drift: 0.15 }), err: 0 };
     R.whB = { ...R.whA, pos: toV(R.whA.pos).lerp(mid, 0.2).toArray() };
-    R.wh8 = fitShot([[a1.jE, 290, 420], [a1.vE, 450, 300]], 33, toV(R.whA.pos).lerp(mid, 0.22), a1.jE, { posReg: 0.5, yMin: 1.2, yMax: 1.8, drift: 0.12 });
-    R.wh8b = { ...R.wh8, pos: toV(R.wh8.pos).lerp(mid, 0.06).toArray() };
+    // b08 back to the two heads, a step closer and more in profile (faces y~360-430): the whisper turns sincere
+    const a8 = at(S.b08 + 0.6), mid8 = a8.jE.clone().lerp(a8.vE, 0.5);
+    R.wh8 = { ...EDGE.shot(EDGE.L(mid8), { dist: 2.75, yaw: -16, pitch: 3, fov: 33, screenY: 0.31, drift: 0.12 }), err: 0 };
+    R.wh8b = { ...R.wh8, pos: toV(R.wh8.pos).lerp(mid8, 0.06).toArray() };
     // b04 ECU of the side-eye (its LEFT eye: the right one is behind the cupped hand from every camera-side angle);
     // the eye sits high (y~330) so the mouth / hand fall below the subtitle band's top... and the band stays velvet
     const a4 = at(S.b04 + 0.5);
@@ -207,8 +235,9 @@ function handFrames(st) {
   const mo = mf.mo, ear = jesus.anchor('earL');
   const camSide = WDIR(-0.25, 1);
   const dirE = ear.clone().sub(mo).normalize();
-  // the cup: beside its own mouth toward his ear (~10 cm short of it), on the camera side: back of the hand to camera
-  const cupP = mo.clone().addScaledVector(dirE, 0.09).addScaledVector(camSide, 0.085).add(V3(0, -0.02, 0));
+  // the cup: beside its own mouth toward his ear, a little low and only just on the camera side (back of the hand to
+  // camera): the whispering mouth stays visible just behind the hand's edge
+  const cupP = mo.clone().addScaledVector(dirE, 0.1).addScaledVector(camSide, 0.02).add(V3(0, -0.06, 0));
   // the rest: its palm on the OUTER side of his LEFT upper arm (~20 cm below and well behind his jaw), the fingers
   // wrapping round to the front of the arm, the forearm going back to its body (the cuff faces away from camera)
   const q = jesus.root.getWorldQuaternion(new THREE.Quaternion());
@@ -235,7 +264,11 @@ const bendAt = (t, S) => k(t, [[S.bendA, 0], [S.bendB, 1, 'inOut'], [S.b09 - 0.0
 function voidPose(t, S, st, F = null) {
   const { jesus, user } = st;
   const amt = bendAt(t, S);
-  const Wp = whisperPose(-1, DEPTH, amt);
+  // the deep whisper bend (b01-b08) eases into the plain one as "No, I know" starts (b09 keeps its verified look)
+  const dk = 1 - ramp(t, S.b09 - 0.05, S.b09 + 0.7), deep = amt * dk;
+  const Wp = whisperPose(-1, lerp(DEPTH, DEEP.depth, dk), amt);
+  Wp.body.tilt += DEEP.tilt * deep; Wp.body.lean += DEEP.lean * deep;
+  Wp.head.roll += DEEP.roll * deep; Wp.head.pitch += DEEP.pitch * deep;
   // the whisper slows and turns sincere in b08: the cupped hand sags
   const hurt = ramp(t, S.b08 + 0.1, S.b08 + 0.8) * (1 - ramp(t, S.b11 - 0.2, S.b11 + 0.3));
   const sag = hurt * (1 - ramp(t, S.c9, S.b09 + 0.5));
@@ -248,9 +281,9 @@ function voidPose(t, S, st, F = null) {
   // s06's end: four fingers over its mouth -> the hand comes down as it decides to whisper
   const cover = 1 - ramp(t, S.decide + 0.12, S.decide + 0.5);
   if (cover > 0 && F) P.armL = coverMouth(F.mf, cover);
-  P.head.yaw *= HEADYAW;
+  P.head.yaw *= lerp(HEADYAW, DEEP.headYaw, dk);
   // whisper rhythm in the head (soft); a slow nod on "That hurts" (it agrees)
-  const sp = speechSafe('VOID', t);
+  const sp = speechSafe('VOID', t) || whisperSpeech(t);
   const wh = sp ? sp.open : 0;
   P.head.pitch += 0.03 * wh + 0.16 * pulse(t, S.thatW + 0.05, 0.45, 0.15, 0.6);
   P.body.breathe = 1 - 0.5 * amt;
@@ -273,7 +306,7 @@ function voidPose(t, S, st, F = null) {
     const fingCup = up.clone().addScaledVector(F.dirE, 0.18).addScaledVector(F.camSide, -0.1).normalize();
     const poleCup = V3(0, -1, 0).addScaledVector(F.camSide, 0.25).addScaledVector(F.dirE, -1.0).normalize();
     const L = (a, b) => a.clone().lerp(b, rest9).normalize().toArray();
-    P.armR = { preset: 'whisper', from: 'rest', mix: Math.max(m, rest9), target: tg, reach: Math.max(m, rest9), at: 'palm', handScale: lerp(0.68, 0.66, rest9),
+    P.armR = { preset: 'whisper', from: 'rest', mix: Math.max(m, rest9), target: tg, reach: Math.max(m, rest9), at: 'palm', handScale: lerp(0.62, 0.66, rest9),
       palm: L(palmCup, F.restPn), fingers: L(fingCup, F.restFd), pole: L(poleCup, F.restPole),
       hand: { curl: lerp(0.14 + 0.25 * sag, 0.2, rest9), cup: lerp(0.5, 0.42, rest9), spread: 0.07, thumb: lerp(0.3, 0.35, rest9) } };
   }

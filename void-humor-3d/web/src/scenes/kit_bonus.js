@@ -167,6 +167,17 @@ export function bonusMarks(set) {
   };
 }
 
+// ------------------------------------------------------------------------------------------------ exposure (s17-s19)
+// Review: the bonus read far too dark (frame means 28-43/255) for phones and a ~300 kbps encode (dark floorboards and
+// velvet block up). s17-s19 lift the room's fill and key (set.update `lights`), raise exposure and add a small cool
+// shadow lift on top of lookFor(): frame means ~50-75, the hood's face field stays deep cosmic black (it is unlit:
+// exposure barely moves it) so the eyes keep their contrast. Per-shot trims: `exp` multiplies the scene's exposure.
+export const BONUS_LIGHTS = { hemi: 1.9, screen: 1.35 };
+export const BONUS_LIFT = [0.022, 0.02, 0.032];
+export function bonusLook(base, exp = 1.4, lift = BONUS_LIFT) {
+  return { ...base, exposure: (base.exposure ?? 1) * exp, lift: (base.lift || [0, 0, 0]).map((v, i) => Math.max(v, lift[i])) };
+}
+
 /** The Void's base pose for the bonus: at its spot beside the cage, bowed toward Fear, soft. `gaze` = Fear. */
 export function voidBowed(t, B, over = {}) {
   return {
@@ -267,23 +278,27 @@ export function bonusDecals(set, items) {
 //   s18b02-b05  at HIDE, leaning out round the Void's left flank (camera side), body cheated 3/4 to the lens, the eyes
 //             sliding toward Fear
 //   s18b06    out at B6 (leaning round the flank toward Fear, still hidden from Fear by the big body)
-//   s18b07    stage tiptoe B6 -> FAR along the cloak toward its camera-side front (toward Fear, 3 steps, each leaves
+//   s18b07    stage tiptoe B7 (B6 pushed out) -> FAR along the cloak toward its camera-side front (toward Fear, 3 steps, each leaves
 //             a grey print), freezes on one foot listening
 //   s19b01    turns round and tiptoes back FAR -> PEEK; on his toes at PEEK (-> s20, which starts from MAGPATH.PEEK)
 export const MAGPATH = {
   HIDE: [3.08, 0, -0.42],     // 1.2 m behind the Void's back-left (bearing ~110 deg from its centre)
-  B6: [3.2, 0, 0.45],         // s18b06: out at the Void's left flank, leaning round it toward Fear (start of the tiptoe)
+  B6: [3.2, 0, 0.45],         // s18b06: out at the Void's left flank, leaning round it toward Fear
+  B7: [3.49, 0, 0.56],        // start of the s18b07 tiptoe: B6 pushed out radially to 1.62 m from the Void's axis (the
+                              // cut to the side track hides the 0.3 m step); the whole OUT leg stays >= 1.6 m from the
+                              // axis, clear of the cloak (r 1.1) AND of its hanging left sleeve + mitt (r <= 1.45): his
+                              // knees, coat-tails and pouch arm never sink into the velvet
   PEEK: [3.2, 0, 0.01],       // (s20 starts here)
-  FAR: [2.55, 0, 1.15],       // the end of the s18b07 tiptoe (0.96 m from B6, toward Fear along the left flank; still
-                              // hidden from Fear by the big body - just)
+  FAR: [2.96, 0, 1.41],       // the end of the s18b07 tiptoe (1.0 m from B7, toward Fear round the left flank at r 1.72,
+                              // outside the hanging mitt; still hidden from Fear by the big body)
   PATCH: [3.12, 0, 0.3],      // where the numbing dust lands in s18b03 (under his pouch on "dust", measured)
   STRIDE: 0.72,               // magician GAIT.sneak metres per cycle (phase = distance / STRIDE: no foot sliding)
 };
-// two legs: OUT (s18b07) B6 -> FAR facing forward, freeze on one foot; BACK (s19b01) turn round, FAR -> PEEK facing forward.
+// two legs: OUT (s18b07) B7 -> FAR facing forward, freeze on one foot; BACK (s19b01) turn round, FAR -> PEEK facing forward.
 // The gait phase is distance-driven (phase = distance / STRIDE: no foot sliding); the OUT leg ends at phase .75 (one foot
 // up, the listening freeze) and the BACK leg starts from there (continuous).
 const LEGS = () => {
-  const a = ROOM.W(MAGPATH.B6), b = ROOM.W(MAGPATH.FAR), c = ROOM.W(MAGPATH.PEEK);
+  const a = ROOM.W(MAGPATH.B7), b = ROOM.W(MAGPATH.FAR), c = ROOM.W(MAGPATH.PEEK);
   const L1 = Math.hypot(b[0] - a[0], b[2] - a[2]), L2 = Math.hypot(c[0] - b[0], c[2] - b[2]);
   return { a, b, c, L1, L2, y1: Math.atan2(b[0] - a[0], b[2] - a[2]), y2: Math.atan2(c[0] - b[0], c[2] - b[2]),
     ph1: 0.75 - L1 / MAGPATH.STRIDE, ph2: 0.75 };

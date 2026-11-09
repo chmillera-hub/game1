@@ -352,10 +352,16 @@ const lerpA = (a, b, u) => a.map((v, i) => lerp(v, b[i], u));
 /** ARRIVE: side two-shot for the burst-in, dips with the fall, then pushes/arcs in to a medium two-shot */
 function arriveShot(t, st) {
   const A = st.camARR_A, Bc = st.camARR_B;
+  const UT = userTimes();
   const dn = smooth(clamp((t - T('s02b04+0.1')) / 0.7));            // tilt down with the fall
   const w = smooth(clamp((t - T('s02b04+0.62')) / 1.22));           // push in from the THUD to the hand going up
-  const lookA = [A.look[0], A.look[1] - 0.2 * dn, A.look[2]];
-  return { pos: lerpA(A.pos, Bc.pos, w), look: lerpA(lookA, Bc.look, w), fov: lerp(A.fov, Bc.fov, w), drift: 0.2 };
+  // the burst-in + skid: the frame opens on the running kid (right of centre, a touch wider) and pans left with them
+  // as they trip and skid, settling on the two-shot just before the THUD, so the whole pratfall is on screen
+  const follow = 1 - smooth(clamp((t - (UT.tF - 0.05)) / (UT.tImpact - 0.08 - (UT.tF - 0.05))));
+  const ub = userBlock(t, st.hipL), uL = [ub.p[0], 0.95 - 0.25 * ub.sit, ub.p[1]];
+  const uW = EDGE.W(uL[0], uL[1], uL[2]);
+  const lookA = lerpA([A.look[0], A.look[1] - 0.2 * dn, A.look[2]], lerpA(uW, A.look, 0.3), 0.85 * follow);
+  return { pos: lerpA(A.pos, Bc.pos, w), look: lerpA(lookA, Bc.look, w), fov: lerp(A.fov + 5 * follow, Bc.fov, w), drift: 0.2 };
 }
 /** W7A: reverse from the Void's side, low: the user's 3/4 face at frame-right, Jesus walks past them toward us */
 function w7aShot(t, st) {

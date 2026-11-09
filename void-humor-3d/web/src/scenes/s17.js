@@ -25,7 +25,7 @@ import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { MX } from '../chars/magician.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, gazeSched, fitShot, mixShot, logDolly, project, cast, bonusMarks, voidBowed,
-  MAGPATH, clamp, smooth, lerp } from './kit_bonus.js';
+  MAGPATH, BONUS_LIGHTS, bonusLook, clamp, smooth, lerp } from './kit_bonus.js';
 
 let S = null;
 const tb = (r) => T(r);
@@ -50,11 +50,12 @@ export default {
     applyShot(app.camera, shot, t, 17);
     // b01: the bare bulb sits just left of the hood in the far wide: soften its glass/halo so its bloom doesn't touch the
     // rim (no 'third eye'); full strength from the insert on
-    set.update(t, { latch: latchAt(t), cageDoor: doorAt(t), tagSwing: 0.3 * pulse(t, S.T.click + 0.2, 0.3, 0.6, 0.9), lights: { bulb: t < S.T.cutIns ? 0.62 : 1 } });
+    set.update(t, { latch: latchAt(t), cageDoor: doorAt(t), tagSwing: 0.3 * pulse(t, S.T.click + 0.2, 0.3, 0.6, 0.9),
+      lights: { ...BONUS_LIGHTS, ...(t < S.T.cutIns ? { hemi: 2.3, screen: 1.5 } : {}), bulb: t < S.T.cutIns ? 0.62 : 1 } });
     fear.update(t, fearPoseFn(t));
     vd.update(t, voidPose(t, st));
     mag.update(t, magPose(t, st));
-    st.look = lookFor('s17', set.look);
+    st.look = bonusLook(lookFor('s17', set.look), expAt(t));
   },
 };
 
@@ -145,6 +146,23 @@ function statics(st) {
   // latch lower-right; room above-right for the mitt coming down from the door side
   out.INS = fitShot([[out.fEyesFIN, 320, 420], [out.latch0, 400, 700]], 30, ROOM.W(...DEF.insPos), out.latch0, { posReg: 10, free: [0, 0, 0] });
   out.INS.drift = 0.08;
+  // camera-aware bar grips for the insert (a prisoner's grip seen from outside the cell): the hand is behind its bar
+  // and just outboard of it, fingers pointing at the lens and curling inward ACROSS THE FRONT of the bar, palm facing
+  // Fear's midline; the forearm runs into the hand behind the bar. (The rig's generic grip faces the palm along
+  // shoulder->bar, which from this low front-right lens left three finger loops floating beside the bar.)
+  // Offsets fit core Hand at size 0.075 with grip 1: the finger loop closes round a point ~(0.035, 0.016) from the
+  // wrist; the bar (r 0.0125) sits a little behind it so the curled middle/tip segments lie on its front.
+  { const cam = toV(out.INS.pos);
+    const grip = (bar, sx) => {
+      const fd = cam.clone().sub(bar); fd.y = 0; fd.normalize();                      // fingers: toward the lens
+      const pn = V3(0, 1, 0).cross(fd).normalize();                                   // palm: across the view, away
+      const sh = fin.clone().addScaledVector(left, 0.17 * sx);                        // from its own shoulder (the
+      const out_ = bar.clone().sub(sh); out_.y = 0;                                   // wrist stays on the arm's side
+      if (pn.dot(out_) < 0) pn.negate();                                              // of the bar: no arm crossing)
+      const wrist = bar.clone().addScaledVector(fd, -0.028).addScaledVector(pn, -0.024);
+      return { wrist, palm: pn.toArray(), fingers: fd.toArray() };
+    };
+    out.gripL = grip(out.barL, 1); out.gripR = grip(out.barR, -1); }
   // MASTER: cage + Fear left, the Void towering, the janitor's corner back-right, the warm bulb clear of the hood
   // (camera position searched offline: the corner clears the Void's silhouette, the bulb clears the hood)
   out.MASTER = fitShot([[out.fEyesFIN, 120, 690], [out.vEyesM, 360, 330], [set.anchors.cornerCenter, 640, 640, 1.0]], 44, ROOM.W(-3.0, 2.2, 8.0), ROOM.cam('MASTER').look, { posReg: 10, free: [0, 0, 0] });
@@ -183,6 +201,16 @@ function shotAt(t) {
   // b04: hold tight on the face while the tear falls, then tilt up + widen
   const u = ramp(t, TT.b4 + 0.32, TT.b4 + 0.98, 'inOut');
   return mixShot(S.TILT_A, S.TILT_B, u);
+}
+
+// per-shot exposure (x lookFor): the far wide needs the most; Fear's bright lavender CUs the least; the pull-back and
+// the tilt ramp with their moves (no step inside a shot)
+function expAt(t) {
+  const TT = S.T;
+  if (t < TT.cutIns) return 1.6;
+  if (t < TT.cutCU) return lerp(1.25, 1.5, ramp(t, TT.doorA, TT.cutCU + 0.02, 'inOut'));
+  if (t < TT.cutTilt) return 1.12;
+  return lerp(1.2, 1.45, ramp(t, TT.b4 + 0.32, TT.b4 + 0.98, 'inOut'));
 }
 
 // ------------------------------------------------------------------------------------------------ Fear
@@ -251,8 +279,10 @@ function fearPose(t) {
   // ---- arms: grip two front bars -> let go during the turn -> hands together at the chest
   const let_ = ramp(t, TT.peekA + 0.1, TT.peekA + 0.55);          // lets go of the bars as it straightens up to listen
   // (the hands drop off the bars to its sides as it listens; they come together at the chest as it turns round)
-  const armL = let_ < 0.999 ? { preset: 'grip', target: S.barL, reach: 1 - let_ } : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA - 0.05, turnB - 0.1) };
-  const armR = let_ < 0.999 ? { preset: 'grip', target: S.barR, reach: 1 - let_ } : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA, turnB - 0.05) };
+  const gripArm = (G, bar) => (G ? { preset: 'hold', target: G.wrist, palm: G.palm, fingers: G.fingers, shoulder: [0.015, 0.015, 0.02],
+    hand: { grip: 1, curl: 0.62, thumb: 0.25, spread: 0.04 }, reach: 1 - let_ } : { preset: 'grip', target: bar, reach: 1 - let_ });
+  const armL = let_ < 0.999 ? gripArm(S.gripL, S.barL) : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA - 0.05, turnB - 0.1) };
+  const armR = let_ < 0.999 ? gripArm(S.gripR, S.barR) : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA, turnB - 0.05) };
   // ---- walk: two tiny shuffle steps while turning round
   const walk = turn > 0 && turn < 1 ? { amount: Math.sin(Math.PI * turn), phase: turn * 1.0, style: 'sneak' } : { amount: 0 };
   const extra = {

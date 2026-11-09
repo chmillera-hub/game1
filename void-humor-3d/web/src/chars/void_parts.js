@@ -236,8 +236,8 @@ export class Cuff {
     const gl = gp.length(); if (gl > 1e-6) gp.multiplyScalar(1 / gl);
     const al = view ? Math.abs(ax.dot(view)) : 0;
     const va = smoothstep01((al - 0.5) / 0.4);                    // 0 side-on .. 1 forearm along the view axis
-    const flareV = 1 - 0.75 * va;                                  // flare kept (fraction of its excess)
-    const slide = (0.03 + 0.07 * va) * k;                          // the cuff sits back along the forearm
+    const flareV = 0.82 - 0.6 * va;                                // flare kept (fraction of its excess)
+    const slide = (0.045 + 0.06 * va) * k;                         // the cuff sits back along the forearm (the hand shows)
     const R0 = this.prof[0][0];                                    // sleeve radius at the back of the cuff
     const NP = this.prof.length, NC = this.NC, pos = this.pos;
     for (let j = 0; j <= NC; j++) {

@@ -19,7 +19,7 @@
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
-import { clamp, lerp, smooth, ease } from '../core/util.js';
+import { clamp, lerp, smooth, ease, DEG } from '../core/util.js';
 import { Particles, CELL } from '../core/particles.js';
 import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
@@ -29,6 +29,7 @@ import { ensureBonusDecals, MAGPATH } from './kit_bonus.js';
 import {
   loadLines, V, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, pix, marks, times,
   voidSpot, starAt, heldStar, drawStar, fearCU, flightTau, flightPos, wreckPose, hatRestPos, daggerRestPos, cornerOpts, placeHatBucket,
+  brighten, ROOM_LIGHTS, starHand,
 } from './kit_s20_22.js';
 
 const ID = 's20';
@@ -86,6 +87,9 @@ export default {
     st.chest0 = A(mag.anchor('chest'));
     st.foot0 = F;
     st.hat0 = A(mag.anchor('hat'));
+    // the squash hold: slide his root so the folded chest stays exactly on the sole
+    st.sqOff = [0, 0, 0];
+    { const th = c.contact + 0.1; mag.update(th, magPose(st, th, 0)); st.sqOff = sub(st.chest0, A(mag.anchor('chest'))); }
     vd.update(c.contact, kickVoid(M, 0, st.aim0));
     st.hip0 = A(vd.anchor('hip'));
     console.log('s20 contact: magician root', st.magRoot.map((x) => x.toFixed(2)).join(','), 'chest', st.chest0.map((x) => x.toFixed(2)).join(','), 'foot', F.map((x) => x.toFixed(2)).join(','), 'aim', st.aim0.map((x) => x.toFixed(2)).join(','), 'err', st.contactErr.toFixed(3));
@@ -99,6 +103,7 @@ export default {
     const c = times(), M = marks();
     const shot = shotId(t, c);
     st.shot = shot;
+    st.cam = app.camera;
 
     // ------------------------------------------------------------------ VOID
     const vs = voidSpot(t);
@@ -142,7 +147,7 @@ export default {
         gaze: pass ? fe : null,
         face,
         blinkAt: [c.B1 + 0.42, c.B3 + 0.36, c.contact + 0.9],
-        armL: { preset: 'point', from: 'rest', mix: reach, target: s.pos, tip: true, reach, fingers: fing, palm: [fh[0], 0.05, fh[2]], pole: [0.2, -1, -0.3], hand: { point: 1, curl: 1, thumb: 0, cup: 0.2 } },
+        armL: { preset: 'point', from: 'rest', mix: reach, target: s.pos, tip: true, reach, fingers: fing, ...starHand(fh), pole: [0.2, -1, -0.3] },
         armR: { preset: 'belly', from: 'rest', mix: k(t, [[c.B2, 0], [c.B3 + 0.6, 1, 'inOut']]) },
         extra: { kick: kickV, kickSide: 'L', kickTarget: kTarget, kickLevel: 1, kickReach: kReach, stars: 1.4, hem: hemBounce, motes: 0.8 },
       };
@@ -154,12 +159,15 @@ export default {
     const mPose = (pass) => magPose(st, t, pass);
 
     // ------------------------------------------------------------------ solve (camera from pass-0 anchors)
-    const shotStart = [ID, c.cutA, c.B2, c.B3, c.B5, c.B6, c.imp - 0.2, c.fearCut0, c.fearCut1][shot] ?? ID;
+    const shotStart = [ID, c.cutA, c.B2, c.B3, c.B5, c.B6, c.imp - 0.2, c.fearCut0, c.fearCut1, c.kmed][shot] ?? ID;
     solve(t, [[vd, vPose], [mag, mPose], [fear, (pass) => (pass ? (tt) => fearPose(Math.max(tt, T(shotStart))) : fearPose(t))]], () => {
       applyShot(app.camera, frameShot(st, t, shot, c, M), t, 20);
     });
     // the corner (after the rigs: the bucket hat sits on his final head anchors)
-    set.update(t, { ...cornerOpts(t, t >= c.imp ? mag : null), broomSlide: 0, rollBucket: 0, ...(shot === 7 ? { voidLight: 0.5 } : {}) });
+    // the KICK wide / medium: a cool fill low over the floor in front of the action (the Void's starlight, moved down
+    // and toward the camera side) so the boards around the kick don't crush to black
+    const kickFill = shot === 3 || shot === 9 ? { voidLight: { pos: add(M.V, [1.0, 0.55, 1.5]), intensity: 6.5, distance: 6.5, color: 0x8c9cff } } : {};
+    set.update(t, { ...cornerOpts(t, t >= c.imp ? mag : null), broomSlide: 0, rollBucket: 0, lights: ROOM_LIGHTS, ...(shot === 7 ? { voidLight: 0.5 } : {}), ...kickFill });
     placeHatBucket(t, set, st.hatBase);
     // the tipped wringer is nudged back a hand's width so his flopped right arm doesn't sink into it
     if (t > c.imp && set.props.wringer) set.props.wringer.position.add(V(LD(0.12, 0, -0.12)).multiplyScalar(smooth(clamp((t - c.imp - 0.3) / 0.5))));
@@ -197,7 +205,9 @@ export default {
     fx.end(); fxN.end();
 
     if (globalThis.DBG20) dbg(st, t, app);
-    st.look = lookFor(ID, set.look);
+    // per-shot lift (cut points only): the dark velvet wides need the most, the bright corner + close-ups the least
+    const ev = [0.3, 0.38, 0.3, 0.55, 0.45, 0.5, 0.32, 0.35, 0.32, 0.55][shot] ?? 0.45;
+    st.look = brighten(lookFor(ID, set.look), ev);
   },
 };
 
@@ -225,8 +235,10 @@ function shotId(t, c) {
   if (c.cutA === undefined) { c.cutA = c.shouting + 0.12; }
   if (t < c.cutA) return 0;          // A VOID_LOW
   if (t < c.B2) return 1;            // B low two-shot
+  if (c.kmed === undefined) { c.kmed = c.B4; }
   if (t < c.B3) return 2;            // C MAG_MED
-  if (t < c.B5) return 3;            // D KICK wide
+  if (t < c.kmed) return 3;          // D KICK wide (the set-up + the wind-up)
+  if (t < c.B5) return 9;            // D2 KICK medium, side-on: the contact hold, the launch, the hanging hat
   if (t < c.B6) return 4;            // E floor insert
   if (t < c.imp - 0.2) return 5;     // F flight follow
   if (t < c.fearCut0) return 6;      // G corner (impact)
@@ -310,31 +322,39 @@ function magPose(st, t, pass) {
     if (uhoh > 0) face = mixFlat(face, MX('uhoh'), uhoh);
     face = { ...face, autoBlink: 0 };
     const hit = t >= c.contact;          // the foot lands: eyes bulge, cheeks puff, he folds round it
-    if (hit) face = MX('popped', { mOpen: 0.12, mPout: 0.8, mWide: -0.2, mTeethU: 0, mTeethL: 0, autoBlink: 0 });
+    // the 5-frame hold on the foot (contact -> launch): the body folds round the sole (back rounds, hips + head come
+    // forward over it, arms fly up), eyes bulge, cheeks puff, the hat lifts; the root slides so the chest stays ON the foot
+    const sq = hit ? k(t, [[c.contact, 0], [c.contact + 0.05, 1, 'out'], [c.launch - 0.02, 1], [c.launch + 0.04, 0.4, 'in']]) : 0;
+    if (hit) face = MX('popped', { mOpen: 0.1 + 0.06 * sq, mPout: 0.95, mWide: -0.3, mRound: 0.3, mTeethU: 0, mTeethL: 0, lidU: 1.5, pupil: 0.36, autoBlink: 0 });
     const head = A(mag.anchor('head') || add(M.PEEK2, [0, 1.7, 0]));
     const glee = smooth(clamp((t - (c.stab - 0.25)) / 0.3));
-    const lean = lerp(0.25, KP.lean, fold) + 0.06 * Math.sin((t - c.B3) * 3) * smooth(clamp(fold)) * (1 - uhoh);
+    const lean = lerp(0.25, KP.lean, fold) + 0.06 * Math.sin((t - c.B3) * 3) * smooth(clamp(fold)) * (1 - uhoh) - 0.42 * sq;
+    const hatP = hit ? hatPath(st, t, c, M, null) : null;
+    const camP = pass && sq > 0 && st.cam ? A(st.cam.position) : null;
+    const sqOff = st.sqOff || [0, 0, 0];
     return {
-      pos, yaw,
+      pos: add(pos, sqOff.map((x) => x * sq)), yaw,
       walk: { amount: walking, phase: 0.75 + (t - c.B2) * 1.1, style: 'sneak' },
-      body: { tiptoe: lerp(1, 0.35, fold) * (1 - walking), crouch: lerp(0.04, KP.crouch, fold), peek: lerp(1.0, KP.peek, fold), lean, hunch: lerp(0.15, KP.hunch, fold), recoil: 0.2 * uhoh },
-      // bent double he cranes his neck up so the face reads, turned toward Fear
-      head: { follow: pass ? lerp(0.3, 0.55, smooth(clamp(fold))) : 0, look: fe || undefined, pitch: -0.42 * smooth(clamp(fold)) - 0.1 * uhoh - 0.22 * glee * (1 - smooth(clamp(fold))) },
+      body: { tiptoe: lerp(1, 0.35, fold) * (1 - walking), crouch: lerp(0.04, KP.crouch, fold) + 0.1 * sq, peek: lerp(1.0, KP.peek, fold), lean, hunch: lerp(0.15, KP.hunch, fold) + 0.65 * sq, recoil: 0.2 * uhoh },
+      // bent double he cranes his neck up so the face reads, turned toward Fear; on the foot the face whips to the lens
+      head: { follow: pass ? lerp(lerp(0.3, 0.55, smooth(clamp(fold))), 0.75, sq) : 0, look: (camP && sq > 0.5 ? camP : fe) || undefined, pitch: -0.42 * smooth(clamp(fold)) - 0.1 * uhoh - 0.22 * glee * (1 - smooth(clamp(fold))) - 0.3 * sq },
       blinkAt: [c.creepy + 0.05, c.B3 + 0.45],
-      gaze: pass ? (uhoh > 0.5 ? add(st.hip0 || M.V, [0.3, 0.2, 0]) : fe) : null,
+      gaze: pass ? (sq > 0.5 ? 'camera' : uhoh > 0.5 ? add(st.hip0 || M.V, [0.3, 0.2, 0]) : fe) : null,
       face,
-      armR: daggerUp > 0.01
-        ? { preset: [['dagger_ready', 1 - daggerUp], ['up', daggerUp]], offset: [0, 0.36 * (1 - daggerUp) + 0.03 * Math.sin(t * 9) * daggerUp, 0] }
-        : { preset: 'dagger_ready', offset: [0, 0.22 + 0.14 * (1 - smooth(clamp((t - c.B3) / 0.5))), 0] },
-      armL: { preset: 'pouch' },
-      extra: { eyePop: hit ? 1 : glee * (1 - 0.4 * smooth(clamp(fold))) * (1 - uhoh) + 0.7 * uhoh, tongueOut: 0.45 * smooth(clamp(fold)) * (1 - uhoh), tap: 0.4 * (1 - glee),
-        hatOff: hit ? 0.25 : 0, stars: 0 },
+      // the arms fling up and out above his folded back (world targets: readable whatever his fold)
+      armR: sq > 0.01 ? { preset: [['dagger_ready', 1 - sq], ['up', sq]], target: add(st.chest0, [0.2, 0.72, 0.42]), reach: sq, hand: { spread: 0.6, curl: 0.1, splay: 0.4 } }
+        : daggerUp > 0.01
+          ? { preset: [['dagger_ready', 1 - daggerUp], ['up', daggerUp]], offset: [0, 0.36 * (1 - daggerUp) + 0.03 * Math.sin(t * 9) * daggerUp, 0] }
+          : { preset: 'dagger_ready', offset: [0, 0.22 + 0.14 * (1 - smooth(clamp((t - c.B3) / 0.5))), 0] },
+      armL: sq > 0.01 ? { preset: [['pouch', 1 - sq], ['up', sq]], target: add(st.chest0, [0.5, 0.66, -0.3]), reach: sq } : { preset: 'pouch' },
+      extra: { eyePop: hit ? 1 : glee * (1 - 0.4 * smooth(clamp(fold))) * (1 - uhoh) + 0.7 * uhoh, tongueOut: 0.45 * smooth(clamp(fold)) * (1 - uhoh) * (1 - sq), tap: 0.4 * (1 - glee),
+        hatOff: hit ? 1 : 0, ...(hatP ? { hatPos: hatP.pos, hatRot: hatP.rot } : {}), stars: 0 },
     };
   }
   // --- flight
   const start = st.magRoot, end = [M.CRASH[0], -0.62, M.CRASH[2]];   // the pelvis comes down to sitting height
   const fp = flightPos(tau, start, end);
-  const kicked = k(t, [[c.contact, 0], [c.launch, 0.35, 'out'], [c.launch + 0.06, 1, 'out']]);
+  const kicked = k(t, [[c.launch - 0.02, 0], [c.launch + 0.06, 1, 'out']]);
   const parked = t >= c.launch + c.flightA && t < c.resume;
   const hatP = hatPath(st, t, c, M, fp);
   const dir = sub(end, start); const dl = Math.hypot(dir[0], dir[2]);
@@ -392,10 +412,11 @@ function mixFlat(a, b, u) {
 // the top hat: lifts off on contact, hangs a beat in the air, zips off after him, follows his arc a beat behind, lands
 function hatPath(st, t, c, M, fp) {
   const h0 = st.hat0;
-  const tz = c.contact + 0.85;                 // the hang ends; the hat zips after him
+  const tz = c.launch + 0.66;                  // the hang ends; the hat zips after him
   if (t < tz) {
-    const u = smooth(clamp((t - c.contact) / 0.35));
-    return { pos: add(h0, [0, 0.32 * u + 0.015 * Math.sin((t - c.contact) * 9) * u, 0]), rot: [0.25 * u, 0.4 * u, -0.15 * u] };
+    // pops up off his head on the impact (most of the rise inside the 5-frame hold), then hangs in the air
+    const u = ease.out(clamp((t - c.contact) / 0.3));
+    return { pos: add(h0, [0, 0.36 * u + 0.015 * Math.sin((t - c.contact) * 9) * u, 0]), rot: [0.25 * u, 0.4 * u, -0.15 * u] };
   }
   const tau = flightTau(t) ?? 0;
   if (t < c.resume) {
@@ -475,6 +496,18 @@ function frameShot(st, t, shot, c, M) {
     }
     case 3: { // KICK wide, locked: Fear lower-left, the Void 3/4 (head cheat), the magician bent double at its right flank
       return aim(ROOM.W(2.55, 1.3, 7.6), ROOM.W(0.8, 0.62, 0.8), 98, 730, 50, { drift: 0 });
+    }
+    case 9: { // KICK medium, side-on, cut on "kicks": the sole lands mid-chest at y~640, the folded magician large at
+      // right (his face reads), the Void's serene hood + smile + the fingertip star upper-left; locked (a tiny bump on
+      // the impact)
+      // (3/4 front on the kicking side, low: the leg clears the hem curtain; the Void's eyes land at x~85, y~375)
+      const a = 12 * DEG, D = 8.0;
+      const P = st.chest0, T0 = [P[0] - 1.0, 1.2, P[2] + 0.35];
+      const pos = [T0[0] + D * Math.sin(a), 0.8, T0[2] + D * Math.cos(a)];
+      const sh = aim(pos, P, 615, 650, 36, { drift: 0 });
+      const sk = Math.exp(-Math.max(0, t - c.contact) * 10) * (t > c.contact ? 1 : 0);
+      if (sk > 0.02) sh.shake = { amp: 0.01 * sk, freq: 12 };
+      return sh;
     }
     case 4: { // the floor insert at the back hem: the retracting fat leg, the foot's wiggle, the hem bounce
       const vs = voidSpot(t);

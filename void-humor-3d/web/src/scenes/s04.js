@@ -14,7 +14,7 @@ import { VX } from '../chars/void.js';
 import { JX } from '../chars/jesus.js';
 import { UX } from '../chars/user.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, scopeVisible, voidSurface, voidNormal, ensureLittleGalaxy, littleGalaxyAt, drawSkyGalaxy, LITTLE_GALAXY, fitShot, faceSeq, fmix,
-  fadeSeedsNear, fadeMotesNear, hideDuring, JV_OUT, aroundContact, aroundArm } from './edgeprops.js';
+  fadeSeedsNear, fadeMotesNear, hideDuring, JV_OUT, JV_HUG, AROUND_H, aroundContact, contactAt, aroundArm } from './edgeprops.js';
 
 const DEBUG = false;
 const M = EDGE.M;
@@ -29,6 +29,8 @@ const V_LEFT = WDIR(Math.cos(M.V.yaw), -Math.sin(M.V.yaw));
 const V_FWD = WDIR(Math.sin(M.V.yaw), Math.cos(M.V.yaw));
 /** its RIGHT hand on the belly, forearm out of the velvet (the sleeve reads as a sleeve; the paw stays off Jesus) */
 const RIGHT_OUT = () => N_RF.clone().multiplyScalar(0.1).addScaledVector(V_LEFT, 0.3).add(V3(0, -0.1, 0));
+/** b11 pats: Jesus's palm on the near side of its right flank (angle about its axis, 0 = its front) at this height */
+const PAT_A = -0.48, PAT_H = 1.17;
 
 // ---------------------------------------------------------------------------------------------------------- timing
 function times() {
@@ -48,6 +50,9 @@ function times() {
   S.gig1 = S.b03 + 0.3; S.gig2 = S.b03 + 0.75;
   S.burst = S.b04;                                                 // the burst lands exactly on the cut
   S.cough1 = T('s04b08') + 0.04; S.cough2 = T('s04b08') + 0.38;
+  // the visible coughs (mouth snaps to an 'O', hood dips, eyes pop, a puff of big warm stars flies out at the lens):
+  // the two coughs of the s04b08 vocal, one on "COUGHING up stars", and the small first cough of s04b10
+  S.coughs = [S.cough1 - 0.02, S.cough2 - 0.02, S.coughingW + 0.02, T('s04b10') + 0.02];
   S.hic1 = S.b10 + 0.04; S.pop = S.b10 + 0.38;                     // the big hiccup: the little galaxy (= edgeprops tPop)
   S.launch = S.b11 + 0.32;                                         // the beach-ball galaxy leaves the mouth
   S.slap1 = S.b05 + 1.04; S.slap2 = S.b05 + 1.58;                  // two slaps land on HA peaks ("laughing," / the next peal)
@@ -84,19 +89,23 @@ function cams(S, R) {
   // b04-b06: from Jesus's head height (low for the 3 m Void, high enough that the crescent clears the brim and the
   // hood/capelet junction stays tidy), 28 mm, a slow 5 deg orbit
   const low = (yaw, dist = 4.2) => { const y = yaw * Math.PI / 180, L = [0.4, 1.0, -0.82]; return EDGE.at([L[0] + dist * Math.sin(y), 1.78, L[2] + dist * Math.cos(y)], L, 54, { drift: 0.18 }); };
-  const mouthCU = EDGE.shot(EDGE.L(R.voidMouth), { dist: 3.45, yaw: -18, pitch: -4, fov: 33, screenY: sy(545), drift: 0.15 });
-  const mouthCU2 = EDGE.shot(EDGE.L(R.voidMouth), { dist: 3.15, yaw: -18, pitch: -4, fov: 33, screenY: sy(545), drift: 0.15 });
+  // b07-b08: close on the Void, but with the whole hood and pink sky round it, so the coughed stars visibly leave the
+  // dark hood and sit against the sky (a slow push)
+  const mouthCU = EDGE.shot(EDGE.L(R.voidMouth), { dist: 4.7, yaw: -18, pitch: -8, fov: 38, screenY: sy(630), drift: 0.15 });
+  const mouthCU2 = EDGE.shot(EDGE.L(R.voidMouth), { dist: 4.35, yaw: -18, pitch: -8, fov: 38, screenY: sy(620), drift: 0.15 });
   const med = R.med;
   // follow-pan down with the little galaxy: aim at its bounce point
   const bp = LITTLE_GALAXY.bounce;
-  const medDown = EDGE.shot([bp[0] - 0.12, 0.72, bp[2] + 0.1], { dist: 3.2, yaw: -16, pitch: 7, fov: 54, screenY: sy(560), drift: 0.15 });
+  // the camera holds on the galaxy's arc (mouth -> up and out -> down), then tilts down with its fall so the bounce
+  // lands at y ~700 (well above the subtitle band)
+  const medDown = EDGE.shot([bp[0] - 0.1, 0.5, bp[2] + 0.1], { dist: 3.6, yaw: -16, pitch: 9, fov: 54, screenY: sy(700), drift: 0.15 });
   const ots = { ...EDGE.cam('OTS'), fov: 54, drift: 0.2 }; ots.look = EDGE.W(0.2, 0.5, -1.33);
   const otsUp = { ...ots, look: EDGE.W(-0.1, 1.15, -1.1) };       // tilts up a little with the galaxy sailing over
   return [
     [S.s, R.heads], [S.b03, R.heads], [S.b04 - e, R.headsIn, 'inOut'],
     [S.b04, low(-19, 4.2)], [S.b07 - e, low(-14, 4.1), 'inOut'],
     [S.b07, mouthCU], [S.b09 - e, mouthCU2, 'linear'],
-    [S.b09, med], [S.pop + 0.08, med], [S.pop + 0.7, medDown, 'inOut'], [S.b11 - e, medDown],
+    [S.b09, med], [S.pop + 0.3, med], [S.pop + 0.75, medDown, 'inOut'], [S.b11 - e, medDown],
     [S.b11, ots], [S.launch + 0.25, ots], [S.launch + 1.0, otsUp, 'inOut'], [S.cut13 - e, otsUp],
     [S.cut13, R.lowA], [S.end, R.lowB, 'inOut'],
   ];
@@ -137,6 +146,8 @@ export default {
     // b09 medium on both (low, from Jesus's side): Jesus's face ~y 520, the Void's eyes ~y 250
     st.R.med = fitShot([[a9.jEyes, 250, 540], [a9.eyes, 450, 240]], 50, V3(...EDGE.W(-0.6, 1.25, 2.6)), a9.eyes, { posReg: 0.5, yMin: 1.0, yMax: 1.5, drift: 0.15 });
     st.R.launchFrom = at(S.launch).mouth;
+    // where each cough's star puff starts (the mouth at that cough, a little out in front of it), and the lens then
+    st.R.coughFrom = S.coughs.map((c) => { poseAll(c, S, st); return vd.anchor('mouth').addScaledVector(vd.anchor('mouthDir'), 0.18); });
     lg.from = st.R.popFrom;
     const a1 = at(S.b13 + 0.5);
     st.R.uEyes = a1.uEyes; st.R.feet = a1.feet;
@@ -157,7 +168,7 @@ export default {
     st.scene.add(jesus.root, vd.root, user.root);
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const S = times();
-    applyShot(app.camera, globalThis.__dbgCam || shotAt(t, cams(S, st.R)), t, 4);   // DBGCAM
+    applyShot(app.camera, shotAt(t, cams(S, st.R)), t, 4);
     poseAll(t, S, st);
 
     // ---- the little galaxy (shared prop) and the sky galaxy
@@ -211,19 +222,24 @@ function starFx(t, S, st) {
   // b04-b06: a few stars escape the laughing crescent on the big "HA"s (sparse, slow)
   const base = { t, life: 2.4, gravity: [0, -0.12, 0], drag: 0.5, size: [0.05, 0.1], grow: 0.6, color: COLS, fade: [0.08, 0.5], twinkle: true, spin: 1.5, wobble: 0.04 };
   fx.stream({ ...base, seed: 420, t0: S.burst, t1: S.b06e, rate: 3.2, origin: mo, vel: [md.x * 0.7, 0.75, md.z * 0.7], spread: [0.35, 0.2, 0.35] });
-  // b07/b08: each cough pops out a puff of stars (+ a small nebula wisp, low and off the eye line)
-  for (const [i, at, n] of [[0, S.cough1, 8], [1, S.cough2, 11]]) {
-    fx.burst({ ...base, t, at, count: n, seed: 430 + i, life: 2.6, jitter: 0.06, origin: mo,
-      vel: [md.x * 1.6, 0.9, md.z * 1.6], spread: [0.45, 0.35, 0.45], drag: 0.9, size: [0.04, 0.085], alpha: 0.9 });
+  // the coughs (b07/b08, "COUGHING up stars", the first b10 cough): a puff of BIG warm gold/white stars (2-3x the laugh
+  // sparkles, HDR so they bloom) shot out of the mouth toward the lens and up: they clear the dark hood within ~6
+  // frames and sit against the pink sky, each with a soft gold halo (same seed + motion params = same positions)
+  const STARC = [new THREE.Color(1.55, 1.36, 0.95), new THREE.Color(1.6, 1.52, 1.3), new THREE.Color(1.5, 1.15, 0.62), new THREE.Color(1.55, 1.42, 1.1)];
+  S.coughs.forEach((at, i) => {
+    if (t < at || t > at + 2.4 || !st.R.coughFrom) return;
+    const from = st.R.coughFrom[i];
+    const toCam = V3(...shotAt(at, cams(S, st.R)).pos).sub(from).normalize();         // the lens at the cough (pure)
+    const o = { t, at, count: [7, 8, 9, 6][i], seed: 490 + i * 3, jitter: 0.05, life: 1.9, origin: from.toArray(),
+      vel: toCam.multiplyScalar(1.4).add(V3(0, 3.7, 0)).toArray(), spread: [1.5, 0.9, 1.5], gravity: [0, -1.2, 0], drag: 1.7, wobble: 0.03 };
+    fx.burst({ ...o, size: [0.1, 0.17], grow: 0.7, color: STARC, alpha: 1, fade: [0.05, 0.45], cell: CELL.star, twinkle: true, spin: 2.2 });
+    fx.burst({ ...o, size: [0.26, 0.34], grow: 0.7, color: [0xffd890], alpha: 0.13, fade: [0.3, 0.45], cell: CELL.dot });   // halo once clear of the mouth
+    // + a small nebula wisp, low and off the eye line
     fx.burst({ t, at, count: 1, seed: 440 + i, life: 1.4, origin: mouth.clone().addScaledVector(md, 0.25).add(V3(0, -0.08, 0)).toArray(), vel: [md.x * 1.0, -0.05, md.z * 1.0],
       spread: [0.03, 0.02, 0.03], drag: 1.4, size: [0.15, 0.15], grow: 0.9, color: [0xb89cff], alpha: 0.16, fade: [0.08, 0.7], cell: CELL.nebula, spin: 0.4 });
-  }
-  // "coughing up stars": a visible spray on the words (sparse overall, densest on "stars")
-  fx.stream({ ...base, seed: 450, t0: S.coughingW - 0.05, t1: S.starsW + 0.5, rate: 9, origin: mo, vel: [md.x * 1.15, 0.95, md.z * 1.15], spread: [0.4, 0.3, 0.4],
-    size: [0.05, 0.1], cell: (r) => (r() < 0.12 ? CELL.galaxy : CELL.star) });
-  fx.burst({ ...base, t, at: S.starsW + 0.02, count: 9, seed: 455, origin: mo, vel: [md.x * 1.4, 1.0, md.z * 1.4], spread: [0.5, 0.35, 0.5], size: [0.05, 0.1] });
-  // b09/b10: the first small cough (a few stars) and the big hiccup (stars around the galaxy)
-  fx.burst({ ...base, t, at: S.hic1, count: 5, seed: 460, origin: mo, vel: [md.x * 1.2, 0.8, md.z * 1.2], spread: [0.35, 0.3, 0.35] });
+  });
+  // between the coughs a light sprinkle keeps leaking out with the laugh (small, sparse)
+  fx.stream({ ...base, seed: 450, t0: S.cough1 + 0.2, t1: S.b09, rate: 3, origin: mo, vel: [md.x * 1.0, 0.9, md.z * 1.0], spread: [0.4, 0.3, 0.4], size: [0.05, 0.09] });
   fx.burst({ ...base, t, at: S.pop, count: 6, seed: 461, origin: mo, vel: [md.x * 1.4, 0.7, md.z * 1.4], spread: [0.5, 0.35, 0.5] });
   // b11: the peak laugh — the air above them fills with slowly drifting stars (sparse; fading out by the end of s04)
   fx.stream({ ...base, seed: 470, t0: S.b11, t1: S.double + 0.5, rate: 9, life: 3.0, origin: mo,
@@ -246,7 +262,9 @@ function voidPose(t, S, st) {
   const snortJolt = pulse(t, S.snort, 0.05, 0.02, 0.3);
   const gig = t > S.b03 && t < S.b03 + 1.3 ? (voidSpeech(t)?.open || 0) : 0;
   const rock = ramp(t, S.b05 - 0.3, S.b05 + 0.3) * (1 - ramp(t, S.b06e, S.b06e + 0.5));
-  const coughJ = pulse(t, S.cough1 - 0.03, 0.06, 0.02, 0.3) + pulse(t, S.cough2 - 0.03, 0.06, 0.02, 0.32) + 0.6 * pulse(t, S.hic1 - 0.03, 0.06, 0, 0.25) + 1.2 * pulse(t, S.pop - 0.04, 0.06, 0.03, 0.35);
+  // each cough jolts the body forward and dips the hood (~7 deg, snappy: 1-2 frames in, ~7 out)
+  const coughJ = pulse(t, S.coughs[0] - 0.02, 0.05, 0.03, 0.3) + pulse(t, S.coughs[1] - 0.02, 0.05, 0.03, 0.32) + pulse(t, S.coughs[2] - 0.02, 0.05, 0.03, 0.3)
+    + 0.8 * pulse(t, S.coughs[3] - 0.02, 0.05, 0.02, 0.25) + 1.2 * pulse(t, S.pop - 0.04, 0.06, 0.03, 0.35);
   const rear = ramp(t, S.b11 + 0.02, S.b11 + 0.3, 'out') * (1 - ramp(t, S.double - 0.15, S.double + 0.35));
   const dbl = ramp(t, S.double - 0.1, S.double + 0.4, 'inOut') * (1 - 0.35 * ramp(t, S.b13 + 0.3, S.end));
   const launchJ = pulse(t, S.launch - 0.05, 0.05, 0.02, 0.35);
@@ -254,7 +272,7 @@ function voidPose(t, S, st) {
   const slapJ = wobble(t, S.slap1, 4.2, 9) + wobble(t, S.slap2, 4.2, 9);
   P.body = {
     shrug: 0.55 * snortJolt + 0.18 * gig + 0.12 * (1 - hold) * (t < S.burst ? 1 : 0),
-    bounce: 0.022 * snortJolt + 0.018 * gig - 0.01 * coughJ + 0.006 * slapJ,
+    bounce: 0.022 * snortJolt + 0.018 * gig - 0.025 * coughJ + 0.006 * slapJ,
     lean: 0.07 * rock * Math.sin((t - S.b05) * 2 * Math.PI * 0.62) + 0.13 * coughJ - 0.12 * rear + 0.3 * dbl + 0.1 * launchJ,
     stretch: 0.06 * rear,
     breathe: t < S.snort ? 0.15 : 1,
@@ -265,7 +283,7 @@ function voidPose(t, S, st) {
   // the rig throws the head back by ~0.34 * laugh: counter most of it FROM THE FIRST FRAME OF THE BURST (the low camera
   // must see the whole starry crescent under the brim), a little less while it rears up
   const face2cam = 0.27 * laugh * (1 - 0.4 * rear);
-  P.head = { pitch: -0.05 * pulse(t, S.burst - 0.02, 0.06, 0.1, 0.4) + face2cam + 0.12 * coughJ - 0.1 * rear + 0.12 * dbl + 0.1 * launchJ, roll: sway, yaw: 0.6 * sway };
+  P.head = { pitch: -0.05 * pulse(t, S.burst - 0.02, 0.06, 0.1, 0.4) + face2cam + 0.13 * coughJ - 0.1 * rear + 0.12 * dbl + 0.1 * launchJ, roll: sway, yaw: 0.6 * sway };
   // ---- the fat-leg stamp on "Maniacally" (one step in place: right foot lifts and slams)
   const stampU = clamp((t - (S.stamp - 0.34)) / 0.42);
   if (stampU > 0 && stampU < 1) { P.walk = { amount: Math.sin(Math.PI * stampU), phase: 0.5 * stampU, style: 'stomp' }; P.extra.hem = 0.7 * Math.sin(Math.PI * stampU); }
@@ -299,11 +317,16 @@ function voidPose(t, S, st) {
     const tgt = sideP.addScaledVector(nrm, sl.o).add(V3(0, 0.08 * sl.o / 0.22, 0));
     P.armL = { preset: 'pat', from: 'belly', mix: sl.mix, target: tgt, reach: sl.mix, palm: nrm.clone().negate().toArray(), hand: { curl: 0.12, spread: 0.35, cup: 0.2 } };
   }
-  // b09/b10: the hand (LEFT) reaches after the little galaxy and misses (behind it, too late)
-  const grab = pulse(t, S.pop + 0.08, 0.16, 0.12, 0.3);
+  // b09/b10: the hand (LEFT) reaches after the little galaxy as it falls and misses (behind it, too late; kept below
+  // the mouth so the face and the arc stay clear)
+  const grab = pulse(t, S.pop + 0.3, 0.15, 0.1, 0.3);
   if (grab > 0) {
-    const lgs = littleGalaxyAt(t - 0.12, { from: st.R?.popFrom });
-    if (lgs) P.armL = { preset: 'reach', from: 'belly', mix: grab, target: lgs.pos.clone().add(V3(0, 0.18, 0)), reach: grab, hand: { curl: 0.2 + 0.6 * ramp(t, S.pop + 0.3, S.pop + 0.45), spread: 0.4 } };
+    const lgs = littleGalaxyAt(t - 0.15, { from: st.R?.popFrom });
+    if (lgs) {
+      const tg = lgs.pos.clone().add(V3(0, 0.15, 0)).lerp(voidSurface(vd, 1.05, -0.2, 0.25), 0.3);   // trails behind it, on its side
+      tg.y = Math.min(tg.y, (st.R?.popFrom?.y ?? 1.9) - 0.75);
+      P.armL = { preset: 'reach', from: 'belly', mix: grab, target: tg, reach: grab, hand: { curl: 0.2 + 0.6 * ramp(t, S.pop + 0.46, S.pop + 0.6), spread: 0.4 } };
+    }
   }
   // b11: arms flung wide as it rears up; then doubles over — RIGHT hand onto the top of Jesus's (near, left) shoulder,
   // toward the camera side (support), left hand back on the belly
@@ -340,11 +363,15 @@ function voidPose(t, S, st) {
     face = VX('laugh', { tearL: 0.22, tearR: 0.22, wet: 1, mOpen: 0.82, mWide: 1.0 });       // lip-sync of the laugh vocal pumps the mouth wider on each HA
     face.lidU = 0.22 - 0.08 * Math.max(0, Math.sin(t * 2 * Math.PI * 1.6)); face.lidL = 1;
     face.browIn += 0.2 * pulse(t, S.burst, 0.05, 0.25, 0.6); face.browOut += 0.3 * pulse(t, S.burst, 0.05, 0.25, 0.6);
-    // b07: eyes pop open in surprise at the first puff, it looks at its stars; then laughs harder
-    const popOpen = pulse(t, S.cough1 + 0.02, 0.06, 0.65, 0.25);
+    // b07-b10 coughs: the grin snaps to a round 'O' for ~6 frames and the eyes pop open (the first time they stay
+    // open: it looks at its stars; then it laughs harder)
+    let oW = 0, popOpen = 0;
+    S.coughs.forEach((c, i) => { oW = Math.max(oW, pulse(t, c - 0.03, 0.03, 0.13, 0.09)); popOpen = Math.max(popOpen, pulse(t, c - 0.02, 0.04, i === 0 ? 0.62 : 0.2, 0.22)); });
     face.lidU = lerp(face.lidU, 1.38, popOpen); face.lidL = lerp(face.lidL, 0.05, popOpen);
     face.mRound = lerp(face.mRound, 0.8, popOpen); face.mWide = lerp(face.mWide, 0.1, popOpen);
     face.browIn += 0.35 * popOpen; face.browOut += 0.3 * popOpen;
+    face.mOpen = lerp(face.mOpen, 0.9, oW); face.mRound = lerp(face.mRound, 1, oW); face.mWide = lerp(face.mWide, -0.6, oW);
+    face.mSmile = lerp(face.mSmile ?? 0, -0.05, oW); face.talk = lerp(face.talk ?? 1, 0.1, oW);
     // b09: the hiccup: eyes go wide and cross for 4 frames as the galaxy shoots out
     const cross = pulse(t, S.pop - 0.01, 0.03, 0.17, 0.12);
     face.lidU = lerp(face.lidU, 1.42, cross); face.lidL = lerp(face.lidL, 0.0, cross); face.mRound = lerp(face.mRound, 0.9, cross);
@@ -378,18 +405,34 @@ function voidPose(t, S, st) {
 // ---------------------------------------------------------------------------------------------------------- Jesus
 function jesusPose(t, S, st, vd) {
   const { jesus } = st;
-  // JV_OUT through b11; during b13 (he is off-frame) he settles back onto JV, where s05 picks him up
+  // the HUG mark (edgeprops JV_HUG: pressed against its right flank, as s03 ends) through b11; during b13 (he is
+  // off-frame) he settles back onto JV, where s05 picks him up
   const back = ramp(t, S.b13 + 0.2, S.b13 + 1.1);
-  const pos = V3(...W(JV_OUT)).lerp(V3(...W(M.JV.p)), back);
+  const pos = V3(...W(JV_HUG)).lerp(V3(...W(M.JV.p)), back);
   const P = { pos: pos.toArray(), yaw: EDGE.Y(JYAW), body: {}, head: {}, armR: { preset: 'clasp' } };
   const vEyes = vd ? vd.anchor('eyes') : V3(...EDGE.W(0.62, 2.15, -0.72));
-  // ---- arm around (palm on the velvet of its right flank, round its curve); pats its back in rhythm at the peak
+  // ---- arm around (as s03 ends: pressed against its right flank, the arm round its curve and behind it). At the peak
+  // (b11) the hand slides out round its flank onto the near side and pats it in rhythm (the scripted "there, there"
+  // pats: palm flat, 9 cm lifts at 2.1 Hz, readable in the wide), then goes back round it during b13 (offscreen)
   if (vd) {
-    const c = aroundContact(vd, jesus);
-    const patOn = ramp(t, S.b11 + 0.3, S.b11 + 0.5) * (1 - ramp(t, S.b13 + 0.2, S.b13 + 0.5));
-    const pat = patOn * Math.pow(Math.max(0, Math.sin((t - S.b11) * 2 * Math.PI * 2.1)), 2);
-    P.armL = aroundArm(c, 1, 0.055 * pat);
+    const c0 = aroundContact(vd, jesus);
+    const patW = ramp(t, S.b11 + 0.2, S.b11 + 0.55) * (1 - ramp(t, S.b13 + 0.15, S.b13 + 0.6));
+    let c = c0, lift = 0;
+    if (patW > 0) {
+      c = contactAt(vd, lerp(AROUND_H, PAT_H, patW), lerp(c0.a, PAT_A, patW));
+      lift = patW * 0.09 * Math.pow(Math.max(0, Math.sin((t - S.b11 - 0.3) * 2 * Math.PI * 2.1)), 2);
+    }
+    P.armL = aroundArm(c, 1, lift);
+    if (patW > 0) {                                  // the patting hand: fingers up and toward its front, elbow down and out
+      const fp = c.tb.clone().multiplyScalar(-0.75).add(V3(0, 0.3, 0)).addScaledVector(c.n, -0.1).normalize();
+      P.armL.fingers = V3(...P.armL.fingers).lerp(fp, patW).normalize().toArray();
+      P.armL.pole = V3(...P.armL.pole).lerp(c.n.clone().multiplyScalar(0.7).add(V3(0, -0.7, 0)), patW).normalize().toArray();
+      P.armL.hand = { curl: 0.1, spread: 0.25, cup: 0.2, thumb: 0.45 };
+    }
   }
+  // pressed against it: leans into it, head tilted toward it (s03's arm-around pose)
+  const lean = 1 - ramp(t, S.b13 + 0.2, S.b13 + 1.1);
+  P.body.tilt = 0.1 * lean;
   // ---- body
   const giggle = k(t, [[S.b03 + 0.1, 0], [S.b03 + 0.3, 0.8], [S.burst, 0.8], [S.burst + 0.1, 1], [S.b07, 0.9], [S.pop, 0.4], [S.pop + 0.5, 0.2], [S.pop + 0.7, 0.9], [S.b11e, 0.9], [S.b13 + 0.4, 0.6]]);
   P.body.giggle = giggle;
@@ -412,7 +455,7 @@ function jesusPose(t, S, st, vd) {
   const nod = 0.12 * pulse(t, S.snort + 0.25, 0.12, 0.05, 0.2) + 0.1 * pulse(t, S.snort + 0.55, 0.1, 0.05, 0.2);
   const tossBack = -0.1 * ramp(t, S.b13 + 0.2, S.end - 0.1);       // (offscreen) chin settles down as s05 has it
   const follow = 0.7 - 0.1 * dodge - 0.32 * cheat;
-  P.head = { look: P.gaze, follow, pitch: nod - tossBack, yaw: -0.15 * cheat };
+  P.head = { look: P.gaze, follow, pitch: nod - tossBack, yaw: -0.15 * cheat, roll: 0.1 * lean * (1 - cheat) };
   // ---- arms (right): belt -> hand on chest for the giggle -> knuckle wipes an eye -> belt
   const heart = ramp(t, S.b03 + 0.15, S.b03 + 0.5) * (1 - ramp(t, S.burst + 0.6, S.burst + 1.0));
   const wipe = ramp(t, S.laughingW - 0.3, S.laughingW + 0.15) * (1 - ramp(t, S.maniW + 0.1, S.maniW + 0.5));

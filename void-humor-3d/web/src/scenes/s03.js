@@ -11,7 +11,7 @@ import { EDGE, todAt, voidSkyAt, lookFor, sy, px } from './marks.js';
 import { VX } from '../chars/void.js';
 import { JX } from '../chars/jesus.js';
 import { UX, headShake } from '../chars/user.js';
-import { V3, loadWords, wordT, pulse, ramp, wobble, gazeSched, scopeVisible, faceSeq, fitShot, fadeSeedsNear, fadeMotesNear, hideDuring, voidSurface, JOUT, JV_OUT, JV_HUG, hugMark, AROUND_H, aroundContact, aroundArm } from './edgeprops.js';
+import { V3, loadWords, wordT, pulse, ramp, wobble, gazeSched, scopeVisible, faceSeq, fitShot, fadeSeedsNear, fadeMotesNear, hideDuring, JOUT, JV_OUT, JV_HUG, AROUND_H, aroundContact, aroundArm } from './edgeprops.js';
 
 const DEBUG = false;
 const M = EDGE.M;
@@ -96,23 +96,24 @@ export default {
     user.update(S.s, { pos: W(M.U.p), yaw: EDGE.Y(M.U.yaw), body: { sit: 1, shrug: 0.55, hunch: 0.25 } });
     const R = st.R = { userEyes: user.anchor('eyes'), userShoulderR: user.anchor('shoulderR'), userChest: user.anchor('chest') };
     R.toPair = V3(...W(M.V.p)).setY(1.8).sub(R.userShoulderR).normalize();
-    const at = (tt) => { poseAll(tt, S, st); return { jE: jesus.anchor('eyes'), jM: jesus.anchor('mouth'), jH: jesus.anchor('head'), vE: vd.anchor('eyes'), vH: vd.anchor('head'), hand: jesus.anchor('handL'), elbow: jesus.anchor('elbowL'), sh: jesus.anchor('shoulderL') }; };
-    const a3 = at(S.pat + 0.2);
-    // b03: Jesus pressed against its right flank (the HUG mark), from a little high and right of front so his upper arm
-    // reads going up over its curve and round behind it; face ~y 500, its eyes ~y 215, his shoulder ~y 650
-    const p3 = V3(...EDGE.W(1.35, 1.85, 2.65));
-    R.tight = fitShot([[a3.jE, 250, 500], [a3.vE, 480, 215, 0.6], [a3.sh, 330, 650, 0.3]], 44, p3, a3.jE, { posReg: 1.5, yMin: 1.6, yMax: 2.1, drift: 0.25 });
-    R.tight2 = fitShot([[a3.jE, 255, 490], [a3.vE, 482, 205, 0.6], [a3.sh, 333, 640, 0.3]], 42, R.tight.pos, a3.jE, { posReg: 3, yMin: 1.6, yMax: 2.1, drift: 0.25 });
+    const at = (tt) => { poseAll(tt, S, st); return { jE: jesus.anchor('eyes'), jM: jesus.anchor('mouth'), jH: jesus.anchor('head'), vE: vd.anchor('eyes'), vH: vd.anchor('head'), hand: jesus.anchor('handL'), handR: jesus.anchor('handR'), elbow: jesus.anchor('elbowL'), sh: jesus.anchor('shoulderL') }; };
+    // b03: Jesus pressed against its right flank (the HUG mark), seen from ~24 deg right of front, a little high: his
+    // upper arm reads going over its curve and round behind it (from the left his own body hides the arm), and the
+    // portrait frame stacks his face (lower left, ~y 560) under the Void's eyes (upper right, ~y 230). Slow push.
+    const orb = (look, yaw, d, h) => { const y = yaw * Math.PI / 180; return EDGE.at([look[0] + d * Math.sin(y), h, look[2] + d * Math.cos(y)], look, 44, { drift: 0.22 }); };
+    R.tight = orb([0.3, 1.72, -0.8], 24, 3.7, 1.78);
+    R.tight2 = orb([0.3, 1.7, -0.8], 25, 3.4, 1.76);
     const a5 = at(S.b05 + 1.0);
     R.jM5 = a5.jM; R.vE5 = a5.vE;
     // b04 end: both heads, Jesus (profile, whispering) ~y 470 at left, the Void's eyes ~y 330
     const p4 = V3(...EDGE.W(1.0, 1.7, 2.7));
     R.heads = fitShot([[a5.jE, 185, 470], [a5.jH, 150, 450, 0.5], [a5.vE, 470, 320]], 40, p4, a5.vE, { posReg: 0.4, yMin: 1.4, yMax: 2.0, drift: 0.2 });
-    // b05: close on the Void (eyes ~y 380), his profile + cupped hand soft at the left edge
-    const p5 = V3(...EDGE.W(1.1, 1.75, 1.7));
-    R.cu = fitShot([[a5.vE, 440, 380], [a5.jE, 105, 500, 0.6], [a5.jM, 150, 560, 0.3]], 36, p5, a5.vE, { posReg: 0.6, yMin: 1.4, yMax: 2.0, drift: 0.15 });
-    R.cu2 = fitShot([[a5.vE, 440, 380], [a5.jE, 90, 505, 0.6], [a5.jM, 135, 565, 0.3]], 34, R.cu.pos, a5.vE, { posReg: 3, yMin: 1.4, yMax: 2.0, drift: 0.15 });
-    console.log('s03 fits', [R.tight, R.tight2, R.heads, R.cu, R.cu2].map((f) => f.err.toFixed(0) + '@' + EDGE.L(f.pos).map((x) => x.toFixed(2))).join(' '));
+    // b05: close on the Void's face (eyes ~y 340), ~15 % wider than a plain CU so Jesus's whole head and his cupped
+    // hand sit in the left third (y ~450-600): the whisper itself (lips at the hood, the held-in laugh) reads
+    const p5 = V3(...EDGE.W(1.2, 1.75, 2.0));
+    R.cu = fitShot([[a5.vE, 455, 340], [a5.jH, 135, 485, 0.8], [a5.jE, 170, 470, 0.5], [a5.handR, 205, 585, 0.5]], 41, p5, a5.vE, { posReg: 0.5, yMin: 1.4, yMax: 2.0, drift: 0.15 });
+    R.cu2 = fitShot([[a5.vE, 455, 335], [a5.jH, 128, 488, 0.8], [a5.jE, 164, 472, 0.5], [a5.handR, 198, 588, 0.5]], 39, R.cu.pos, a5.vE, { posReg: 3, yMin: 1.4, yMax: 2.0, drift: 0.15 });
+    console.log('s03 fits', [R.heads, R.cu, R.cu2].map((f) => f.err.toFixed(0) + '@' + EDGE.L(f.pos).map((x) => x.toFixed(2))).join(' '));
     return st;
   },
 
@@ -122,7 +123,7 @@ export default {
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const S = times();
     // camera first (eye catchlights read CTX.camera during the rig updates)
-    applyShot(app.camera, globalThis.__dbgCam || shotAt(t, cams(S, st.R)), t, 3);   // DBGCAM
+    applyShot(app.camera, shotAt(t, cams(S, st.R)), t, 3);
     poseAll(t, S, st);
 
     // ---------------------------------------------------------------- particles: the star mote that pops off its shoulder
@@ -235,11 +236,12 @@ function userPose(t, S, st) {
 }
 
 // ---------------------------------------------------------------------------------------------------------- the Void
-// The listening crouch: it sinks straight down (knees out, hood lowered to Jesus's height), turns its face to the
-// camera side and tips its hood a little toward him, so the SIDE of its hood (not the face opening) comes down beside
-// his mouth. Kept upright (no sideways lean) so the hood never cuts into his head.
+// The listening crouch: it sinks down (knees out), turns its face to the camera side and tips its whole hood down
+// toward him (~9 deg nod + ~11 deg roll toward its right: a tall friend bending to hear), so the SIDE of its hood (not
+// the face opening) comes down beside his mouth. Less sink than a straight squat so the tipped hood clears his head
+// (>= 3.8 cm, measured with Jesus back on JV_OUT for the whisper).
 function listenCrouch(a) {
-  const L = { crouch: 0.95, lean: 0.05, tilt: -0.18, twist: 0.06, hy: 0.5, hp: 0.06, hr: 0.1 };
+  const L = { crouch: 0.65, lean: 0.05, tilt: -0.08, twist: 0.06, hy: 0.5, hp: 0.22, hr: 0.3 };
   return {
     body: { crouch: L.crouch * a, lean: L.lean * a, tilt: L.tilt * a, twist: L.twist * a },
     head: { yaw: L.hy * a, pitch: L.hp * a, roll: L.hr * a },
@@ -285,13 +287,6 @@ function voidPose(t, S, st) {
     P.armR = { preset: 'rest', from: 'belly', mix: stiff, offset: [o[0] * (1 - stiff), o[1], o[2] * (1 - stiff)],
       hand: { curl: lerp(kR.hand.curl, 0.12, stiff), spread: lerp(0.02, 0.42, stiff), cup: lerp(0.6, 0.2, stiff), thumb: lerp(0.5, 0.6, stiff) } };
   }
-  if (globalThis.__paws) {
-    const PW = globalThis.__paws, vf = WDIR(Math.sin(M.V.yaw), Math.cos(M.V.yaw)), vl = WDIR(Math.cos(M.V.yaw), -Math.sin(M.V.yaw));
-    const tg = voidSurface(vd, PW.h, PW.a, PW.out);
-    P.armR = { preset: 'belly', target: tg, reach: 1, pole: vf.clone().multiplyScalar(PW.pf).add(V3(0, -1, 0)).addScaledVector(vl, -PW.po).normalize().toArray(),
-      palm: vf.clone().multiplyScalar(-0.3).add(V3(0, -1, 0)).normalize().toArray(), fingers: vf.clone().add(V3(0, 0.7, 0)).addScaledVector(vl, 0.3).normalize().toArray(), hand: { curl: 0.45, spread: 0.15, cup: 0.5, thumb: 0.5 } };
-  }
-  if (globalThis.__vpole) P.armR.pole = V3(Math.sin(M.V.yaw), 0, Math.cos(M.V.yaw)).applyAxisAngle(V3(0, 1, 0), EDGE.Y(0) ).add(V3(...globalThis.__vpole)).normalize().toArray();
   const clamp1 = ramp(t, S.b06 - 0.02, S.b06 + 0.22, 'out');
   P.armL = clamp1 > 0 ? { preset: 'cover_mouth', from: 'belly', mix: clamp1, hand: { curl: 0.18, cup: 0.45, spread: 0.1 } } : knot('L');
   // ---- feet: a small involuntary shuffle-dance under the hem while it fights the laugh
@@ -325,11 +320,11 @@ function voidPose(t, S, st) {
     face.browOutR = (face.browOut ?? 0) - 0.08 * skept;
     face.browInL = face.browIn; face.browInR = face.browIn - 0.15 * skept;
     face.lidU = lerp(face.lidU, 0.74, really); face.lidL = lerp(face.lidL, 0.32, really); face.pupil = lerp(face.pupil, 0.95, really);
-    face.lidL = lerp(face.lidL, 0.64, lowerUp);
+    face.lidL = lerp(face.lidL, 0.84, lowerUp);                     // the smile starts behind the eyes (lower lids well up)
     face.mPress = lerp(0.3, 0.78, ramp(t, b5 + 1.9, b5 + 2.1)); face.mSmile = 0.02;
     const tw = pulse(t, b5 + 2.6, 0.06, 0.04, 0.1) + pulse(t, b5 + 2.86, 0.06, 0.05, 0.12);
-    face.mSmile += 0.34 * tw + 0.22 * ramp(t, b5 + 3.05, b5 + 3.25);
-    face.mAsym = 0.15 * tw;
+    face.mSmile += 0.52 * tw + 0.22 * ramp(t, b5 + 3.05, b5 + 3.25);   // the crescent corners twitch twice (big enough to read)
+    face.mAsym = 0.26 * tw;
     face.lidU = lerp(face.lidU, 0.3, arcs); face.lidL = lerp(face.lidL, 1, arcs);
     face.browIn = lerp(face.browIn, 0.5, arcs); face.browInL = lerp(face.browInL, 0.5, arcs); face.browInR = lerp(face.browInR, 0.5, arcs);
     face.browOutL = lerp(face.browOutL, 0.35, arcs); face.browOutR = lerp(face.browOutR, 0.3, arcs);
@@ -377,13 +372,15 @@ function jesusPose(t, S, st, vd) {
   }
   // he finishes the walk 28 cm further out than JV (edgeprops JV_OUT), blended in over his last strides
   const off = V3(...W(JV_OUT)).sub(V3(...W(M.JV.p))).multiplyScalar(ramp(t, S.arrive - 0.75, S.arrive - 0.1));
-  // during the user's close-up (b02, the pair offscreen) he sidles in round its right flank to the HUG mark (edgeprops
-  // JV_HUG: 14 cm closer, swung round toward its side) so hip and sleeve touch the velvet for the arm around it
-  const hug = V3(...W(globalThis.__hug ? hugMark(...globalThis.__hug) : JV_HUG)).sub(V3(...W(JV_OUT))).multiplyScalar(ramp(t, S.b02 + 0.2, S.b02e - 0.15));
+  // during the user's close-up (b02, the pair offscreen) he sidles in against its right flank to the HUG mark
+  // (edgeprops JV_HUG: 14 cm closer than JV_OUT) so hip and sleeve touch the velvet for the arm around it;
+  // he steps back out to JV_OUT as he pivots to whisper (b04-b05: the hood needs that room) and settles back in onto the
+  // HUG mark as he drops onto his heels (b06; s04 holds the HUG mark)
+  const hugW = ramp(t, S.b02 + 0.2, S.b02e - 0.15) - ramp(t, S.whispW - 0.15, S.whispW + 0.55) + ramp(t, S.b06 + 0.2, S.b06 + 0.9);
+  const hug = V3(...W(JV_HUG)).sub(V3(...W(JV_OUT))).multiplyScalar(hugW);
   P.pos = w.pos.add(off).add(hug).toArray();
   // b04: he pivots toward the Void as he rises onto his toes (whispers into the side of its hood); b06 back to 0.2
-  const JYH = globalThis.__jy ?? JYAW;
-  const yawMark = EDGE.Y(k(t, [[S.b02 + 0.2, JYAW], [S.b02e - 0.1, JYH, 'inOut'], [S.whispW - 0.1, JYH], [S.whispW + 0.6, JYAW_W, 'inOut'], [S.b06 - 0.05, JYAW_W], [S.b06 + 0.6, JYAW_6, 'inOut']]));
+  const yawMark = EDGE.Y(k(t, [[S.whispW - 0.1, JYAW], [S.whispW + 0.6, JYAW_W, 'inOut'], [S.b06 - 0.05, JYAW_W], [S.b06 + 0.6, JYAW_6, 'inOut']]));
   // turn toward the camera side during the hop (he swings round to his left)
   let dy = yawMark - yawWalk; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
   const turn = ramp(t, S.arrive - 0.5, S.arrive + 0.15, 'inOut');
@@ -398,18 +395,16 @@ function jesusPose(t, S, st, vd) {
   P.gaze = vEyes;
   // on the landing his head is cheated a little toward the lens (the eyes still beam up at the Void)
   P.head = { look: vEyes, follow: 0.3 + 0.12 * lookUp, yaw: -0.18 * lookUp * (1 - ramp(t, S.b02, S.b03)) };
-  // ---- arm around (b03): LEFT palm onto the velvet of its right flank, below his shoulder, round toward its back;
-  // elbow down and back, forearm along the velvet
+  // ---- arm around (b03): LEFT arm draped round the bulge of its right flank as far toward its back as it reaches
+  // (edgeprops aroundContact/aroundArm): elbow bent out and down, forearm along the curve, hand behind its silhouette
   const reach = k(t, [[S.armW - 0.22, 0], [S.contact - 0.12, 0.8, 'inOut'], [S.contact, 1, 'out']]);
   if (vd && reach > 0) {
-    const c = globalThis.__ac ? aroundContact(vd, jesus, ...globalThis.__ac) : aroundContact(vd, jesus);
+    const c = aroundContact(vd, jesus);
     // the pat that settles it on "it" (the forearm lifts 4.5 cm and taps down)
     const pat = pulse(t, S.pat - 0.1, 0.09, 0.0, 0.11);
     // swing: before contact the hand comes round from his side, a little higher and out from the velvet
     const pre = 1 - smooth((reach - 0.5) / 0.5);
     P.armL = aroundArm(c, reach, 0.045 * pat + 0.1 * pre * reach);
-    const RY = globalThis.__ray;
-    if (RY) { P.armL = { preset: 'around', surface: vd, height: RY.h, span: RY.span, reach, hand: { curl: 0.18, spread: 0.32, cup: 0.25, thumb: 0.45 } }; if (RY.pole) P.armL.pole = RY.pole; }
     P.body.tilt = 0.1 * reach;                          // leans into the Void (+ = toward his left)
     P.head.roll = 0.1 * reach;                          // head leans toward it too
   }
@@ -431,7 +426,7 @@ function jesusPose(t, S, st, vd) {
   const heels = ramp(t, S.b06 + 0.2, S.b06 + 0.8);
   if (heels > 0) {
     P.armR = cup > 0.02 ? { preset: [['whisper', cup], ['clasp', 1 - cup]] } : { preset: 'clasp' };
-    P.head = { look: vEyes, follow: lerp(0.85, 0.5, heels) };
+    P.head = { look: vEyes, follow: lerp(0.85, 0.5, heels), roll: 0.1 * heels };   // leaning on it again (s04 holds this)
     P.gaze = vEyes;
     P.body.recoil = 0.05 * heels;
   }

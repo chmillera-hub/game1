@@ -538,7 +538,7 @@ class UHand {
       const L = size * 0.5 * lens[i];
       return { i, u, base: V(-ts * u * pw2 * 0.37, pl * 0.9, -pt * 0.02), segs: [0.44, 0.31, 0.25].map((f) => f * L), r: size * 0.074 * (i === 3 ? 0.86 : i === 0 ? 1.0 : 0.97), tube, pts: [V(), V(), V(), V(), V()] };
     });
-    this.thumb = { base: V(ts * pw2 * 0.34, pl * 0.2, -pt * 0.2), segs: [0.2, 0.19, 0.15].map((f) => f * size), r: size * 0.084, tube: new SweepTube({ material, segments: 14, radial: 16, capRings: 3 }), pts: [V(), V(), V(), V()] };
+    this.thumb = { base: V(ts * pw2 * 0.34, pl * 0.2, -pt * 0.2), segs: [0.2, 0.19, 0.15].map((f) => f * size), r: size * 0.084, tube: new SweepTube({ material, segments: 18, radial: 24, capRings: 3 }), pts: [V(), V(), V(), V()] };
     this.root.add(this.thumb.tube.mesh);
     this.pose({});
   }

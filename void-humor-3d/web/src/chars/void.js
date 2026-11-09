@@ -29,10 +29,12 @@ const NECK_Y = 1.66, HEAD_UP = 0.5, HEAD_FWD = 0.1;     // hood centre at rest â
 const CHIN_PIV = new THREE.Vector3(0, HEAD_UP - 0.75, 0.48);   // nod-down pivot (head-pivot frame) = the hood's chin rim
 const CHEST_Y = 1.05, SHOULDER_Y = 1.42, HIP_Y = 0.4;
 const FR = [0.62, 0.58, 0.33], FC = [0, -0.05, 0.05];     // face-field ellipsoid (head-local)
-const HOOD = { rx: 0.82, ry: 0.79, rz: 0.8, phi0: 1.0, roll: 0.09, tilt: 0.08, peak: 0.3 };
+// (peak 0.3 -> 0.16 with a broader, less pinched, less drooping bulge: from behind / the side the hood reads as a soft
+// round cowl matching the plump front, not a pointed cone or a flat-topped box)
+const HOOD = { rx: 0.82, ry: 0.79, rz: 0.8, phi0: 1.0, roll: 0.09, tilt: 0.08, peak: 0.16, peakPow: 1.8, pinch: 0.04, droop: 0.6 };
 // shoulder capelet profile [radius, height]: from inside the hood, over the shoulders, scalloped hem, lip tucked in
 const CAPE = [[0.3, 1.9], [0.58, 1.8], [0.75, 1.64], [0.9, 1.5], [0.985, 1.37], [1.035, 1.265], [1.06, 1.19], [1.04, 1.155], [0.995, 1.165], [0.955, 1.21]];
-const NCR = 22, CAPE_LIP = [[-0.025, -0.035], [-0.07, -0.03], [-0.11, 0.015]];   // lip offsets [dr, dy] from the hem
+const NCR = 22, CAPE_LIP = [[-0.014, -0.02], [-0.04, -0.017], [-0.065, 0.008]];   // lip offsets [dr, dy] from the hem (a thin lip: the capelet blends into the body)
 const ARM_L1 = 0.64, ARM_L2 = 0.6, HAND = 0.44;
 const ARM_R = [0.235, 0.215, 0.19, 0.165, 0.15];          // sleeve tube shoulder -> wrist (the cuff flares over the end)
 const LEG_LEN = 0.42, FOOT = [0.215, 0.165, 0.25], LEG_R = [0.29, 0.275, 0.25];
@@ -343,8 +345,8 @@ function hoodGeometry(H) {
       if (outer) {
         // teardrop: a soft rounded peak at the top-back that droops backward (reads as a hood from behind / side)
         d.set(x / H.rx, y / H.ry, zz / H.rz).normalize();
-        const w = Math.pow(Math.max(0, d.dot(peak)), 3);
-        x *= 1 - 0.3 * w; y += w * H.peak; zz -= w * w * H.peak * 1.3;
+        const w = Math.pow(Math.max(0, d.dot(peak)), H.peakPow ?? 3);
+        x *= 1 - (H.pinch ?? 0.3) * w; y += w * H.peak; zz -= w * w * H.peak * (H.droop ?? 1.3);
         x *= 1 + 0.03 * Math.abs(d.x);
         // the bottom-back of the hood drapes down onto the shoulders (tucks under the collar roll)
         if (d.y < 0) { const b = Math.pow(-d.y, 2) * Math.max(0, -d.z + 0.3); y *= 1 + 0.06 * b; x *= 1 + 0.06 * b; zz *= 1 + 0.05 * b; }
@@ -1168,7 +1170,8 @@ export class Void extends Character {
         const th = lerp(1.05, TAU - 1.05, i / 8), e = Math.pow(Math.abs(i / 4 - 1), 3), R = 0.69 + 0.025 * Math.cos(3 * th) - 0.03 * e;
         pts.push(V3(R * Math.sin(th), 0.06 + 0.02 * Math.sin(2.5 * th + 0.4) + shrug * 0.09 + 0.004 * br - 0.07 * e, R * Math.cos(th) * 0.92 - 0.02).applyMatrix4(M));
       }
-      this.collar.update(pts, (u) => 0.04 + 0.07 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.25, up: this._xd(NECK_Y, [0, 1, 0]) }); }
+      // (a soft low roll, not a tyre: max radius 0.075 m, flattened against the capelet)
+      this.collar.update(pts, (u) => 0.03 + 0.045 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.42, up: this._xd(NECK_Y, [0, 1, 0]) }); }
 
     // ---- face
     const fp = { ...FACE_DEFAULTS, ...fIn };

@@ -30,8 +30,11 @@ const tVoidWord = () => T('s01b03+1.33');       // "void" (frantic look back)
 const tScream = () => T('s01b03+1.37');         // the scream-grimace peak (on "void"); the Void's hand freezes here
 
 const add2 = (a, b, s = 1) => [a[0] + b[0] * s, a[1] + b[1] * s];
-const U0 = [2.35, -6.4], V0 = [4.35, -13.4];     // frame-0 marks (stage local): user on the path, the Void on the crest
+const U0 = [2.35, -6.4], V0 = [4.57, -14.27];    // frame-0 marks (stage local): user on the path, the Void just over the crest (feet hidden)
 const UC0 = [2.24, -5.35], VC_OFF = [1.3, -1.75];// shot C: user at tC, the Void relative to the user (screen-right, close)
+// frame-0 camera: `back` m down the path from the kid, `camUp` m over the ground there; the kid's hip / the foreground
+// lip's crest land at these rows (px)
+const F0 = { back: 2.5, side: 0.45, camUp: 0.8, hipY: 850, crestY: 1130, fov: 44 };
 
 /** footfall times of the user's run / the Void's waddle (both shots share the phase functions) — for the cue file */
 export function footfallsS01() {
@@ -180,6 +183,50 @@ function buildRise(set, Hc, uc, vPath) {
   m.add(gm, fl);
   return m;
 }
+/**
+ * Frame-0 dressing on the real terrain between the kid and the crest: soft grass tufts and tiny pastel flowers on the
+ * verges of the path (never on it), denser along the crest line, so the slope reads as a hillside with a path running
+ * up it (not a flat peach wall) and the Void stands in grass on the hilltop. Low contrast, world-fixed (parallax with
+ * the dolly). area: [u0, u1] metres behind the kid along -D, lateral +-w.
+ */
+function buildSlopeDressing(set, u0 = 0.4, u1 = 8.6, w = 2.1) {
+  const N = 360, NF = 60;
+  const blade = new THREE.BufferGeometry();
+  blade.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, 0, 0, 0.5, 0, 0, 0.05, 1, 0.0, -0.5, 0, 0, 0.05, 1, 0, 0.5, 0, 0], 3));
+  blade.computeVertexNormals();
+  const gm = new THREE.InstancedMesh(blade, new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide }), N);
+  const fl = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x2a2018 }), NF);
+  // the path centreline near the chase (world), to keep the ribbon bare
+  const pc = []; for (let s = -30; s <= 2; s += 0.25) { const p = set.pathAt(s); pc.push([p.pos[0], p.pos[2]]); }
+  const pathD = (x, z) => { let b = 1e9; for (const [px, pz] of pc) b = Math.min(b, Math.hypot(px - x, pz - z)); return b; };
+  const M4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), cc = new THREE.Color();
+  const sage = new THREE.Color(0x9fcf9f), mint = new THREE.Color(0x8fd6b4), straw = new THREE.Color(0xe2cf96);
+  let n = 0, nf = 0;
+  for (let i = 0; n < N && i < N * 4; i++) {
+    const crest = i % 3 === 0;                                         // a third crowd the crest line
+    const u = crest ? lerp(u1 - 1.8, u1, hash1(i * 7 + 1)) : lerp(u0, u1, Math.pow(hash1(i * 7 + 1), 0.8));
+    const v = (hash1(i * 13 + 5) * 2 - 1) * w;
+    const L = add2(add2(U0, D, -u), [-D[1], D[0]], v), Wp = EDGE.W(L[0], 0, L[1]);
+    const dp = pathD(Wp[0], Wp[2]);
+    if (dp < 0.82) continue;                                           // the path stays bare
+    const edge = smooth(clamp((1.5 - dp) / 0.6));                      // thicker along the path's verge
+    if (!crest && hash1(i * 31 + 9) > 0.3 + 0.7 * edge) continue;
+    const y = set.groundAt(Wp[0], Wp[2]);
+    const h = (0.08 + 0.14 * hash1(i * 11 + 3)) * (crest ? 1.2 : 1) * (0.7 + 0.3 * u / u1 + 0.2 * edge), bw = 0.016 + 0.012 * hash1(i * 17 + 2);
+    e.set(-0.25 + 0.5 * hash1(i * 19 + 7), 6.28 * hash1(i * 23 + 11), -0.3 + 0.6 * hash1(i * 29 + 13)); q.setFromEuler(e);
+    M4.compose(V3(Wp[0], y - 0.01, Wp[2]), q, V3(bw, h, bw)); gm.setMatrixAt(n, M4);
+    gm.setColorAt(n, cc.copy(sage).lerp(mint, hash1(i * 37 + 17)).lerp(straw, 0.25 * hash1(i * 41 + 19)));
+    n++;
+    if (nf < NF && hash1(i * 43 + 23) < 0.2) {
+      M4.compose(V3(Wp[0] + 0.02, y + h * 0.8, Wp[2]), q.identity(), V3(0.03, 0.03, 0.03)); fl.setMatrixAt(nf, M4);
+      fl.setColorAt(nf, cc.set([0xffd9b8, 0xe6d2ff, 0xfff4d6, 0xffc7dc][nf % 4])); nf++;
+    }
+  }
+  gm.count = n; fl.count = nf;
+  for (const m of [gm, fl]) { m.frustumCulled = false; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  const g = new THREE.Group(); g.name = 's01.slope'; g.add(gm, fl);
+  return g;
+}
 /** a soft warm wash over the upper sky (peach-gold), drawn behind everything within 150 m */
 function buildSkyWash() {
   const c = document.createElement('canvas'); c.width = 4; c.height = 256;
@@ -219,15 +266,15 @@ export default {
       user.update(0, { pos: uW0, yaw: EDGE.Y(YAW_RUN + 0.16), walk: { amount: 1, style: 'run', phase: U_PH0 } });
       vd.update(0, { pos: vW0, yaw: EDGE.Y(YAW_RUN + 0.02), walk: { amount: 1, style: 'waddle', phase: V_PH0 } });
       const ue = user.anchor('eyes'), uh = user.anchor('hip'), ve = vd.anchor('eyes'), vt = vd.anchor('hoodTop');
-      const guessL = add2(U0, D, 2.5), cg = G(set, ...guessL); cg[1] += 0.8;
+      const guessL = add2(add2(U0, D, F0.back), [-D[1], D[0]], -F0.side), cg = G(set, ...guessL); cg[1] += F0.camUp;
       const lk = [ue.x * 0.5 + ve.x * 0.5, ue.y + 0.2, ue.z * 0.5 + ve.z * 0.5];
-      const f = fitCam([[ue, 222, 458, 1], [uh, 232, 850, 0.6], [ve, 530, 440, 1], [vt, 534, 330, 0.7]], 44, cg, lk, { reg: 0.1, yMin: cg[1] - 0.15, yMax: cg[1] + 0.2 });
+      const f = fitCam([[ue, 225, 445, 1], [uh, 235, F0.hipY, 0.6], [ve, 528, 440, 1], [vt, 532, 330, 0.7]], F0.fov, cg, lk, { reg: 0.1, yMin: cg[1] - 0.15, yMax: cg[1] + 0.2 });
       st.camA = f;
       console.log(`s01 frame0 fit err ${f.err.toFixed(1)}px pos ${EDGE.L(f.pos).map((v) => v.toFixed(2))} look ${EDGE.L(f.look).map((v) => v.toFixed(2))}`);
       // the rise: its crest line lands at y ~842 (the hips) 1.05 m in front of the lens
-      const cam = new THREE.PerspectiveCamera(44, 720 / 1280, 0.05, 400); cam.position.set(...f.pos); cam.lookAt(...f.look); cam.updateMatrixWorld();
+      const cam = new THREE.PerspectiveCamera(F0.fov, 720 / 1280, 0.05, 400); cam.position.set(...f.pos); cam.lookAt(...f.look); cam.updateMatrixWorld();
       const dir = V3(...f.look).sub(V3(...f.pos)).setY(0).normalize(), uc = 1.05;
-      const ray = new THREE.Vector3(0, 1 - 2 * 856 / 1280, 0.5).unproject(cam).sub(cam.position).normalize();
+      const ray = new THREE.Vector3(0, 1 - 2 * F0.crestY / 1280, 0.5).unproject(cam).sub(cam.position).normalize();
       const s = uc / Math.max(1e-3, ray.clone().setY(0).dot(dir));
       const g0 = set.groundAt(f.pos[0], f.pos[2]);
       st.riseH = f.pos[1] + ray.y * s - g0; st.riseU = uc;
@@ -239,8 +286,9 @@ export default {
     }
     // thought-seeds drifting in the light (the set's seed sprite), and the warm wash on the upper sky
     const smap = set.props.seeds && set.props.seeds.mat ? set.props.seeds.mat.uniforms.uMap.value : null;
-    st.seeds = [0, 1, 2].map(() => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: smap, color: 0xfff0d8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); st.own.add(s); return s; });
+    st.seeds = [0, 1, 2, 3, 4].map(() => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: smap, color: 0xfff0d8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); st.own.add(s); return s; });
     st.wash = buildSkyWash(); st.own.add(st.wash);
+    st.slope = buildSlopeDressing(set); st.own.add(st.slope);
     // ---- shot C (CHASELOW, 24 mm): fitted at the "void" moment — the kid small lower-left (head ~y 600), the Void
     // towering at right, hood up to ~y 170; the camera a little to the kid's left-front so the look back over the LEFT
     // shoulder turns the face TOWARD the lens (3/4), not away
@@ -374,7 +422,10 @@ export default {
           armR: { preset: 'wave', from: 'rest', mix: 0.74 + 0.06 * bright * (1 - hurt), offset: WD(-0.25, 0.35).multiplyScalar(0.3).toArray(), hand: { spread: 0.5 + 0.25 * wig, curl: 0.12 + 0.3 * Math.max(0, wig), thumb: 0.6 } },
           armL: { preset: 'rest', offset: WD(-0.2, 0.25).multiplyScalar(0.25).toArray(), hand: { curl: 0.75, thumb: 0.85, cup: 0.5, spread: 0.05 } },
         } : {
-          armL: { preset: 'wave', from: 'rest', mix: 0.58 + 0.07 * bright, hand: { spread: 0.55, curl: 0.12, thumb: 0.6 } },
+          // (frame 0: the whole hand in frame, palm to the lens, fingers spread -- a small hopeful "wait", never a
+          // cuff-ring end-on at the frame edge)
+          armL: { preset: 'wave', from: 'rest', mix: 0.58 + 0.07 * bright, offset: V3().setFromMatrixColumn(cam.matrixWorld, 0).multiplyScalar(-0.22).add(V3(0, -0.06, 0)).toArray(),
+            palm: cam.position.clone().sub(V3(...vW)).setY(0).normalize().add(V3(0, 0.12, 0)).toArray(), fingers: [0, 1, 0], hand: { spread: 0.75, curl: 0.06, thumb: 0.75, cup: 0.05 } },
           armR: { preset: 'rest', offset: WD(0.2, 0.25).multiplyScalar(0.25).toArray(), hand: { curl: 0.75, thumb: 0.85, cup: 0.5, spread: 0.05 } },
         }),
         extra: { hem: 0.5, eyeGlow: 1 + 0.45 * bright, motes: 1.2, rim: 1.1 },
@@ -456,7 +507,7 @@ export default {
 
     // ---------------------------------------------------------------------------- frame-A dressing: rise, wash, seeds
     const shotA = !insert && !shotC;
-    st.rise.visible = shotA; st.wash.visible = shotA;
+    st.rise.visible = shotA; st.wash.visible = shotA; st.slope.visible = shotA;
     for (const s of st.seeds) s.visible = shotA;
     if (shotA) {
       const dir = camLook.clone().sub(camPos).setY(0).normalize();
@@ -465,14 +516,15 @@ export default {
       // the wash: a 150 m-away card filling the frame (its gradient tops out over the title and fades by mid-frame)
       const cf = camLook.clone().sub(camPos).normalize(), Dd = 150, hgt = 2 * Dd * Math.tan(22 * Math.PI / 180) * 1.08;
       st.wash.position.copy(camPos).addScaledVector(cf, Dd); st.wash.quaternion.copy(cam.quaternion); st.wash.scale.set(hgt * 0.62, hgt, 1);
-      // three thought-seeds drifting across in the light (screen-anchored: they ride the same breeze as the chase)
-      const seedDef = [[95, 560, 3.6, 0.2, 0.15], [655, 690, 4.4, 0.24, -0.1], [330, 352, 11, 0.5, 0.08]];
+      // thought-seeds drifting across in the light (screen-anchored: they ride the same breeze as the chase); the last two
+      // are soft, dimmer ones low in frame (over the slope / the grassy lip), kept out of the caption rows 880-1060
+      const seedDef = [[95, 560, 3.6, 0.2, 0.15], [655, 690, 4.4, 0.24, -0.1], [330, 352, 11, 0.5, 0.08], [600, 862, 3.0, 0.15, -0.12], [150, 1150, 1.7, 0.12, 0.1]];
       seedDef.forEach(([x, y, d, sz, dx], i) => {
         const xs = x + 60 * dx * t + 10 * Math.sin(t * 0.9 + i * 2), ys = y + 14 * Math.sin(t * 1.1 + i * 1.7) - 8 * t;
         const p = new THREE.Vector3(xs / 360 - 1, 1 - ys / 640, 0.5).unproject(cam).sub(cam.position).normalize();
         st.seeds[i].position.copy(cam.position).addScaledVector(p, d);
         st.seeds[i].scale.setScalar(sz * (1 + 0.06 * Math.sin(t * 2.3 + i)));
-        st.seeds[i].material.opacity = 0.85;
+        st.seeds[i].material.opacity = i < 3 ? 0.85 : 0.55;
         st.seeds[i].material.rotation = 0.3 * Math.sin(t * 0.8 + i);
       });
     }

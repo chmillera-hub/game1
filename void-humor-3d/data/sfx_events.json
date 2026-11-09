@@ -1289,14 +1289,14 @@
   "src": "data/cues/s04.json"
  },
  {
-  "t": 46.501,
+  "t": 46.521,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop_3.wav",
+  "file": "audio/sfx/star_pop.wav",
   "sync": 0.0,
-  "gain_db": 0.0,
-  "pan": -0.1,
+  "gain_db": -4.0,
+  "pan": 0.0,
   "beat": "s04b07",
-  "src": "beat"
+  "src": "data/cues/s04.json"
  },
  {
   "t": 46.981,
@@ -1311,7 +1311,7 @@
  {
   "t": 47.691,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop.wav",
+  "file": "audio/sfx/star_pop_2.wav",
   "sync": 0.0,
   "gain_db": -8.0,
   "pan": 0.25,
@@ -1339,22 +1339,22 @@
   "src": "data/cues/s04.json"
  },
  {
-  "t": 48.371,
+  "t": 48.631,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop_2.wav",
+  "file": "audio/sfx/star_pop_3.wav",
   "sync": 0.0,
   "gain_db": -9.0,
-  "pan": 0.0,
+  "pan": -0.15,
   "beat": "s04b10",
   "src": "data/cues/s04.json"
  },
  {
-  "t": 48.671,
+  "t": 48.931,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop_3.wav",
+  "file": "audio/sfx/star_pop_4.wav",
   "sync": 0.0,
   "gain_db": -13.0,
-  "pan": -0.1,
+  "pan": -0.2,
   "beat": "s04b10",
   "src": "data/cues/s04.json"
  },
@@ -1389,22 +1389,22 @@
   "src": "data/cues/s04.json"
  },
  {
-  "t": 49.427,
+  "t": 49.491,
   "name": "pat_pat",
   "file": "audio/sfx/pat_pat.wav",
   "sync": 0.01,
   "gain_db": -6.0,
-  "pan": 0.1,
+  "pan": -0.1,
   "beat": "s04b11",
   "src": "data/cues/s04.json"
  },
  {
-  "t": 50.38,
+  "t": 50.441,
   "name": "pat_pat",
   "file": "audio/sfx/pat_pat_2.wav",
   "sync": 0.01,
   "gain_db": -7.0,
-  "pan": 0.1,
+  "pan": -0.1,
   "beat": "s04b11",
   "src": "data/cues/s04.json"
  },
@@ -1441,7 +1441,7 @@
  {
   "t": 53.301,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop_4.wav",
+  "file": "audio/sfx/star_pop.wav",
   "sync": 0.0,
   "gain_db": -12.0,
   "pan": 0.35,
@@ -1531,7 +1531,7 @@
  {
   "t": 67.693,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop.wav",
+  "file": "audio/sfx/star_pop_2.wav",
   "sync": 0.0,
   "gain_db": -4.0,
   "pan": 0.15,
@@ -1814,7 +1814,7 @@
  {
   "t": 102.051,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop_2.wav",
+  "file": "audio/sfx/star_pop_3.wav",
   "sync": 0.0,
   "gain_db": -10.0,
   "pan": 0.35,
@@ -2111,7 +2111,7 @@
   "src": "data/cues/s14.json"
  },
  {
-  "t": 166.008,
+  "t": 165.958,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
@@ -2122,7 +2122,7 @@
   "rate": 1.25
  },
  {
-  "t": 166.328,
+  "t": 166.278,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
@@ -2133,7 +2133,7 @@
   "rate": 1.3
  },
  {
-  "t": 166.768,
+  "t": 166.538,
   "name": "footsteps_stomp",
   "file": "audio/sfx/footsteps_stomp_2.wav",
   "sync": 0.02,
@@ -2141,7 +2141,7 @@
   "pan": -0.15,
   "beat": "s14b01",
   "src": "data/cues/s14.json",
-  "until": 169.28,
+  "until": 169.43,
   "fade": 0.15,
   "loop": true,
   "rate": 1.25
@@ -2187,15 +2187,15 @@
   "src": "data/cues/s14.json"
  },
  {
-  "t": 170.78,
+  "t": 171.2,
   "name": "footsteps_stomp",
   "file": "audio/sfx/footsteps_stomp.wav",
   "sync": 0.02,
-  "gain_db": -15.0,
+  "gain_db": -16.0,
   "pan": 0.1,
   "beat": "s14b03",
   "src": "data/cues/s14.json",
-  "until": 172.86,
+  "until": 174.8,
   "fade": 0.15,
   "loop": true,
   "rate": 1.25
@@ -2243,7 +2243,20 @@
   "src": "data/cues/s14.json"
  },
  {
-  "t": 175.58,
+  "t": 175.01,
+  "name": "wind_soft",
+  "file": "audio/sfx/wind_soft.wav",
+  "sync": 0.0,
+  "gain_db": -7.0,
+  "pan": 0.0,
+  "beat": "s14b06",
+  "src": "data/cues/s14.json",
+  "until": 175.86,
+  "fade": 0.15,
+  "loop": true
+ },
+ {
+  "t": 176.11,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
@@ -2253,7 +2266,7 @@
   "src": "data/cues/s14.json"
  },
  {
-  "t": 175.86,
+  "t": 176.38,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
@@ -2264,22 +2277,20 @@
   "rate": 0.85
  },
  {
-  "t": 176.38,
-  "name": "wind_soft",
-  "file": "audio/sfx/wind_soft.wav",
+  "t": 176.66,
+  "name": "cloth_rustle",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
-  "gain_db": -6.0,
+  "gain_db": -13.0,
   "pan": 0.0,
   "beat": "s14b06",
   "src": "data/cues/s14.json",
-  "until": 177.38,
-  "fade": 0.15,
-  "loop": true
+  "rate": 0.85
  },
  {
   "t": 177.53,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -6.0,
   "pan": -0.1,
@@ -2287,9 +2298,9 @@
   "src": "data/cues/s15.json"
  },
  {
-  "t": 178.26,
+  "t": 178.09,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -9.0,
   "pan": -0.1,
@@ -2298,7 +2309,18 @@
   "rate": 1.3
  },
  {
-  "t": 178.53,
+  "t": 178.36,
+  "name": "cloth_rustle",
+  "file": "audio/sfx/cloth_rustle_2.wav",
+  "sync": 0.0,
+  "gain_db": -10.0,
+  "pan": -0.1,
+  "beat": "s15b01",
+  "src": "data/cues/s15.json",
+  "rate": 1.3
+ },
+ {
+  "t": 178.67,
   "name": "footsteps_soft",
   "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
@@ -2306,19 +2328,33 @@
   "pan": -0.1,
   "beat": "s15b01",
   "src": "data/cues/s15.json",
-  "until": 179.18,
+  "until": 179.23,
   "fade": 0.15,
   "loop": true
  },
  {
   "t": 179.77,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -6.0,
   "pan": -0.1,
   "beat": "s15b02",
   "src": "data/cues/s15.json"
+ },
+ {
+  "t": 180.49,
+  "name": "footsteps_soft",
+  "file": "audio/sfx/footsteps_soft_3.wav",
+  "sync": 0.03,
+  "gain_db": -10.0,
+  "pan": 0.1,
+  "beat": "s15b03",
+  "src": "data/cues/s15.json",
+  "until": 181.16,
+  "fade": 0.15,
+  "loop": true,
+  "rate": 0.8
  },
  {
   "t": 181.38,
@@ -2345,9 +2381,9 @@
   "loop": true
  },
  {
-  "t": 185.26,
+  "t": 185.28,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -11.0,
   "pan": -0.05,
@@ -2357,7 +2393,7 @@
  {
   "t": 188.975,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop_3.wav",
+  "file": "audio/sfx/star_pop_4.wav",
   "sync": 0.0,
   "gain_db": -3.0,
   "pan": 0.1,
@@ -2392,20 +2428,30 @@
   "loop": true
  },
  {
-  "t": 190.235,
+  "t": 190.035,
+  "name": "cloth_rustle",
+  "file": "audio/sfx/cloth_rustle_2.wav",
+  "sync": 0.0,
+  "gain_db": -9.0,
+  "pan": 0.05,
+  "beat": null,
+  "src": "data/cues/s16.json"
+ },
+ {
+  "t": 190.035,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -11.0,
-  "pan": -0.1,
+  "pan": -0.05,
   "beat": null,
   "src": "data/cues/s16.json",
-  "until": 191.135,
+  "until": 191.235,
   "fade": 0.15,
   "loop": true
  },
  {
-  "t": 191.185,
+  "t": 191.165,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
@@ -2415,7 +2461,7 @@
   "src": "data/cues/s16.json"
  },
  {
-  "t": 191.975,
+  "t": 191.955,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
@@ -2426,7 +2472,7 @@
   "rate": 1.2
  },
  {
-  "t": 192.335,
+  "t": 192.135,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
@@ -2437,22 +2483,22 @@
   "rate": 0.8
  },
  {
-  "t": 193.085,
+  "t": 192.925,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
-  "gain_db": -9.0,
+  "gain_db": -10.0,
   "pan": 0.0,
   "beat": "s16b01",
   "src": "data/cues/s16.json",
-  "until": 208.175,
+  "until": 199.673,
   "fade": 0.15,
   "loop": true
  },
  {
   "t": 202.445,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop_4.wav",
+  "file": "audio/sfx/star_pop.wav",
   "sync": 0.0,
   "gain_db": -3.0,
   "pan": 0.05,
@@ -2470,7 +2516,7 @@
   "src": "data/cues/s16.json"
  },
  {
-  "t": 203.605,
+  "t": 203.655,
   "name": "pat_pat",
   "file": "audio/sfx/pat_pat.wav",
   "sync": 0.01,
@@ -2481,9 +2527,22 @@
   "rate": 0.9
  },
  {
+  "t": 204.625,
+  "name": "footsteps_soft",
+  "file": "audio/sfx/footsteps_soft_3.wav",
+  "sync": 0.03,
+  "gain_db": -11.0,
+  "pan": 0.0,
+  "beat": "s16b06",
+  "src": "data/cues/s16.json",
+  "until": 208.155,
+  "fade": 0.15,
+  "loop": true
+ },
+ {
   "t": 208.275,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -24.0,
   "pan": 0.0,
@@ -2518,7 +2577,7 @@
   "loop": true
  },
  {
-  "t": 214.385,
+  "t": 214.345,
   "name": "phone_tap",
   "file": "audio/sfx/phone_tap_2.wav",
   "sync": 0.01,
@@ -2640,9 +2699,9 @@
   "src": "data/cues/s18.json"
  },
  {
-  "t": 243.969,
+  "t": 244.039,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -11.0,
   "pan": 0.3,
@@ -2650,7 +2709,7 @@
   "src": "data/cues/s18.json"
  },
  {
-  "t": 244.419,
+  "t": 244.439,
   "name": "dust_sparkle",
   "file": "audio/sfx/dust_sparkle.wav",
   "sync": 0.0,
@@ -2660,9 +2719,9 @@
   "src": "data/cues/s18.json"
  },
  {
-  "t": 244.419,
+  "t": 244.439,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.2,
@@ -2670,9 +2729,9 @@
   "src": "data/cues/s18.json"
  },
  {
-  "t": 244.799,
+  "t": 244.809,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.1,
@@ -2680,7 +2739,17 @@
   "src": "data/cues/s18.json"
  },
  {
-  "t": 247.009,
+  "t": 246.999,
+  "name": "footsteps_soft",
+  "file": "audio/sfx/footsteps_soft_2.wav",
+  "sync": 0.03,
+  "gain_db": -14.0,
+  "pan": 0.55,
+  "beat": "s19b01",
+  "src": "data/cues/s19.json"
+ },
+ {
+  "t": 247.239,
   "name": "footsteps_soft",
   "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
@@ -2690,19 +2759,9 @@
   "src": "data/cues/s19.json"
  },
  {
-  "t": 247.259,
+  "t": 247.449,
   "name": "footsteps_soft",
   "file": "audio/sfx/footsteps_soft.wav",
-  "sync": 0.03,
-  "gain_db": -14.0,
-  "pan": 0.55,
-  "beat": "s19b01",
-  "src": "data/cues/s19.json"
- },
- {
-  "t": 247.489,
-  "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -14.0,
   "pan": 0.5,
@@ -2710,9 +2769,9 @@
   "src": "data/cues/s19.json"
  },
  {
-  "t": 247.799,
+  "t": 247.699,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -13.0,
   "pan": 0.5,
@@ -2752,7 +2811,7 @@
  {
   "t": 256.169,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -14.0,
   "pan": -0.3,
@@ -2765,7 +2824,7 @@
  {
   "t": 257.499,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.35,
@@ -2950,7 +3009,7 @@
  {
   "t": 278.209,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -9.0,
   "pan": 0.15,
@@ -3015,7 +3074,7 @@
  {
   "t": 286.649,
   "name": "star_pop",
-  "file": "audio/sfx/star_pop.wav",
+  "file": "audio/sfx/star_pop_2.wav",
   "sync": 0.0,
   "gain_db": -7.0,
   "pan": 0.2,
@@ -3025,7 +3084,7 @@
  {
   "t": 287.189,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -17.0,
   "pan": -0.2,

@@ -52,7 +52,10 @@ small grey heel tab, no logos). Soft hands (one-piece tapered fingers, anatomica
 speech-bubble icon, grey cards), kept just under the bloom threshold so the UI keeps its contrast, plus a soft cool
 **halo** around the screen edge (fades edge-on / from behind). The default `flat` grip **cradles** it diagonally
 from below: the hand runs across the back, fingertips curl round the far long edge, the thumb rests on the near
-edge of the screen — the coral case, one long edge and a sliver of screen read in wide shots. Its cool glow lights
+edge of the screen — the coral case, one long edge and a sliver of screen read in wide shots. The fingers follow an
+explicit path round the side edge (`UHand.pose({ wrap })`): each one that can reach wraps the edge (its proximal part
+shows beyond it) and rests its tip on the bezel, at most 8 mm onto the glass; the index (too short for the diagonal)
+lies along the back. Fingers/thumb are 16-24-sided tubes and the sleeves 26-sided, smooth in full-screen inserts. Its cool glow lights
 whatever the screen faces via a custom shading term (no extra scene light → no recompiles in any set); on skin it
 adds a cool under-light weighted to chin / nose / cheek normals; it glints in the corneas and lenses.
 

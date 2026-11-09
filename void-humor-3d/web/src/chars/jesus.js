@@ -424,7 +424,7 @@ class SoftHand {
     const ts = this.ts = side === 'L' ? 1 : -1;
     this.root = new THREE.Group();
     const pl = this.pl = size * 0.47, pw = this.pw = size * 0.45, pt = this.pt = size * 0.19;
-    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), material);
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), material);
     palm.scale.set(pw * 0.53, pl * 0.58, pt * 0.52); palm.position.set(0, pl * 0.52, -pt * 0.05);
     const heel = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), material);
     heel.scale.set(pw * 0.4, pl * 0.32, pt * 0.5); heel.position.set(ts * pw * 0.06, pl * 0.18, -pt * 0.04);
@@ -433,12 +433,12 @@ class SoftHand {
     const lens = [0.93, 1.0, 0.95, 0.77];
     this.fingers = [0, 1, 2, 3].map((i) => {
       const u = (i - 1.5) / 1.5;                                    // index = -1 (thumb side)
-      const tube = new SweepTube({ material, segments: 10, radial: 8, capRings: 2 });
+      const tube = new SweepTube({ material, segments: 14, radial: 16, capRings: 3 });   // (16 x 14: smooth in the phone insert)
       this.root.add(tube.mesh);
       const L = size * 0.53 * lens[i];
       return { i, u, base: V(-ts * u * pw * 0.37, pl * 0.9, -pt * 0.02), segs: [0.44, 0.31, 0.25].map((f) => f * L), r: size * 0.07 * (i === 3 ? 0.86 : i === 0 ? 1.0 : 0.97), tube, pts: [V(), V(), V(), V(), V()] };
     });
-    this.thumb = { base: V(ts * pw * 0.34, pl * 0.2, -pt * 0.2), segs: [0.2, 0.19, 0.15].map((f) => f * size), r: size * 0.08, tube: new SweepTube({ material, segments: 8, radial: 8, capRings: 2 }), pts: [V(), V(), V(), V()] };
+    this.thumb = { base: V(ts * pw * 0.34, pl * 0.2, -pt * 0.2), segs: [0.2, 0.19, 0.15].map((f) => f * size), r: size * 0.08, tube: new SweepTube({ material, segments: 24, radial: 32, capRings: 4 }), pts: [V(), V(), V(), V()] };
     this.root.add(this.thumb.tube.mesh);
     this.pose({});
   }

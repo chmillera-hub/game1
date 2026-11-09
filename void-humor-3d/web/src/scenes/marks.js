@@ -174,15 +174,19 @@ export const sy = (px) => px / 1280;
 // Per-scene look = the SET's look (it already ramps exposure/warm with tod) + these deltas:
 //   st.look = lookFor('s05', st.set.look);
 // Keep a scene's look constant across its own cuts unless a beat calls for it (then ease over >= 0.5 s).
+// Sparkle-heavy dark scenes (s04, s08, s18-s22) keep bloomRadius <= 0.3: UnrealBloomPass runs at half resolution and its
+// lowest mips, upsampled bilinearly, turn every small bright sprite into a 20-30 px square glow box on a dark sky (the
+// particle atlas already draws the sprites' own soft glow); the bonus looks also raise bloomThreshold so small sprites
+// barely cross it.
 export const LOOK = {
   s01: { bloom: 0.55, vignette: 0.14, sat: 1.1, exposureMul: 1.06, warmAdd: 0.08 },   // frame 0: bright, inviting
   s02: { bloom: 0.55, vignette: 0.16, sat: 1.08, exposureMul: 1.04, warmAdd: 0.06 },
   s03: { bloom: 0.55, vignette: 0.18, sat: 1.08, exposureMul: 1.02, warmAdd: 0.04 },
-  s04: { bloom: 0.68, vignette: 0.18, sat: 1.1, exposureMul: 1.02, warmAdd: 0.04, bloomThreshold: 0.85 }, // stars + galaxies bloom
+  s04: { bloom: 0.68, vignette: 0.18, sat: 1.1, exposureMul: 1.02, warmAdd: 0.04, bloomThreshold: 0.85, bloomRadius: 0.3 }, // stars + galaxies bloom
   s05: { bloom: 0.58, vignette: 0.2, sat: 1.08, exposureMul: 1.0, warmAdd: 0.03 },
   s06: { bloom: 0.58, vignette: 0.2, sat: 1.08, exposureMul: 1.0, warmAdd: 0.02 },
   s07: { bloom: 0.55, vignette: 0.22, sat: 1.06, exposureMul: 1.0, warmAdd: 0.0 },
-  s08: { bloom: 0.55, vignette: 0.25, sat: 1.04, exposureMul: 0.98, warmAdd: -0.02 },  // armour on: a touch cooler
+  s08: { bloom: 0.55, vignette: 0.25, sat: 1.04, exposureMul: 0.98, warmAdd: -0.02, bloomRadius: 0.3 },  // armour on: a touch cooler
   s09: { bloom: 0.52, vignette: 0.26, sat: 1.04, exposureMul: 0.98, warmAdd: -0.02 },
   s10: { bloom: 0.58, vignette: 0.26, sat: 1.04, exposureMul: 0.98, warmAdd: -0.01 },
   s11: { bloom: 0.52, vignette: 0.27, sat: 1.04, exposureMul: 0.98, warmAdd: 0.0 },
@@ -192,11 +196,11 @@ export const LOOK = {
   s15: { bloom: 0.6, vignette: 0.24, sat: 1.08, exposureMul: 0.99, warmAdd: 0.06 },
   s16: { bloom: 0.72, vignette: 0.22, sat: 1.12, exposureMul: 1.0, warmAdd: 0.08 },    // sunset: richest
   s17: { bloom: 0.72, vignette: 0.36, sat: 1.04, exposureMul: 1.0, warmAdd: -0.06 },   // cool backroom
-  s18: { bloom: 0.68, vignette: 0.38, sat: 0.98, exposureMul: 0.97, warmAdd: -0.1 },   // the magician: desaturate
-  s19: { bloom: 0.7, vignette: 0.36, sat: 1.0, exposureMul: 0.98, warmAdd: -0.08 },
-  s20: { bloom: 0.7, vignette: 0.32, sat: 1.04, exposureMul: 1.0, warmAdd: -0.05 },
-  s21: { bloom: 0.72, vignette: 0.32, sat: 1.04, exposureMul: 1.0, warmAdd: -0.04 },
-  s22: { bloom: 0.9, vignette: 0.24, sat: 1.15, exposureMul: 1.04, warmAdd: 0.04, bloomThreshold: 0.62, bloomRadius: 0.7 }, // cosmos
+  s18: { bloom: 0.68, vignette: 0.38, sat: 0.98, exposureMul: 0.97, warmAdd: -0.1, bloomRadius: 0.28, bloomThreshold: 0.95 },   // the magician: desaturate
+  s19: { bloom: 0.7, vignette: 0.36, sat: 1.0, exposureMul: 0.98, warmAdd: -0.08, bloomRadius: 0.28, bloomThreshold: 0.95 },
+  s20: { bloom: 0.7, vignette: 0.32, sat: 1.04, exposureMul: 1.0, warmAdd: -0.05, bloomRadius: 0.28, bloomThreshold: 0.95 },
+  s21: { bloom: 0.72, vignette: 0.32, sat: 1.04, exposureMul: 1.0, warmAdd: -0.04, bloomRadius: 0.28, bloomThreshold: 0.95 },
+  s22: { bloom: 0.9, vignette: 0.24, sat: 1.15, exposureMul: 1.04, warmAdd: 0.04, bloomThreshold: 0.85, bloomRadius: 0.25 }, // cosmos
 };
 export function lookFor(id, setLook = {}) {
   const d = LOOK[id] || {};

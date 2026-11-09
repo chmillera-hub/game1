@@ -20,7 +20,7 @@ import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { ROOM, sy, lookFor } from './marks.js';
 import { ensureBonusDecals } from './kit_bonus.js';
-import { loadLines, W, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, pix, marks, times, voidSpot, starAt, heldStar, drawStar, wreckPose, cornerOpts, bookPoint, bookArms, fearCU, FEAR_TURN } from './kit_s20_22.js';
+import { loadLines, W, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, pix, marks, times, voidSpot, starAt, heldStar, drawStar, wreckPose, cornerOpts, bookPoint, bookArms, fearCU, FEAR_TURN, starHand, brighten, ROOM_LIGHTS } from './kit_s20_22.js';
 
 const ID = 's21';
 // in b05 Fear turns from the star (camera side) toward the Void and keeps that facing into s22 (kit FEAR_TURN)
@@ -83,10 +83,10 @@ export default {
         const bk = bookArms(vs, bookU, openU, 'rest', 'belly', st.camDir);
         armL = bk.armL; armR = bk.armR;
       } else if (reach >= 1) {
-        armL = { preset: 'point', target: s.pos, tip: true, reach: 1, fingers: fing, palm: [towardF[0] / hz, 0.05, towardF[2] / hz], pole: [0.2, -1, -0.3], hand: { point: 1, curl: 1, thumb: 0, cup: 0.2 } };
+        armL = { preset: 'point', target: s.pos, tip: true, reach: 1, fingers: fing, ...starHand([towardF[0] / hz, 0, towardF[2] / hz]), pole: [0.2, -1, -0.3] };
         armR = { preset: 'belly', from: 'rest', mix: 1 };
       } else {
-        armL = { preset: 'shrug', from: 'rest', mix: sh * (1 - reach), target: s.pos, reach: reach * reach, hand: { point: reach, curl: 0.2 + 0.8 * reach, thumb: 0.6 * (1 - reach) } };
+        armL = { preset: 'shrug', from: 'rest', mix: sh * (1 - reach), target: s.pos, reach: reach * reach, hand: { point: reach, curl: 0.2 + 0.8 * reach, thumb: 0.6 } };
         armR = { preset: 'shrug', from: 'belly', mix: sh };
       }
       // the shuffle: three little waddle steps under the hem
@@ -162,7 +162,7 @@ export default {
       applyShot(app.camera, frameShot(st, t, shot, L, c, M), t, 21);
     });
     // FEAR_CU: the Void's violet face light dimmed so its near hem reads as soft dark velvet, not a lavender glare
-    set.update(t, { ...cornerOpts(t, mag), voidLight: { pos: add(vs.pos, [-0.71, 2.0, 0.21 + 0.5]), intensity: shot === 0 || shot === 3 ? 1.3 : 3.2 } });
+    set.update(t, { ...cornerOpts(t, mag), lights: ROOM_LIGHTS, voidLight: { pos: add(vs.pos, [-0.71, 2.0, 0.21 + 0.5]), intensity: shot === 0 || shot === 3 ? 1.3 : 3.2 } });
 
     fx.begin();
     drawStar(fx, t, heldStar(vd, starAt(t)), CELL, shot === 0 || shot === 3 ? 1.2 : 1);
@@ -187,9 +187,9 @@ export default {
     if (globalThis.DBG21) {
       const cam = app.camera;
       const bb = new THREE.Vector3(); set.props.bucketB.getWorldPosition(bb);
-      console.log('DBG21', t.toFixed(2), 'shot', shot, JSON.stringify({ bucket: pix(cam, bb), bw: [bb.x.toFixed(2), bb.z.toFixed(2)], v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), star: pix(cam, starAt(t).pos), m: pix(cam, mag.anchor('head')) }));
+      console.log('DBG21', t.toFixed(2), 'shot', shot, JSON.stringify({ bucket: pix(cam, bb), bw: [bb.x.toFixed(2), bb.z.toFixed(2)], v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), star: pix(cam, heldStar(vd, starAt(t)).pos), hand: pix(cam, vd.anchor('handL')), shL: pix(cam, vd.anchor('shoulderL')), m: pix(cam, mag.anchor('head')) }));
     }
-    st.look = lookFor(ID, set.look);
+    st.look = brighten(lookFor(ID, set.look), [0.3, 0.42, 0.5, -0.15, 0.42][shot] ?? 0.4);
   },
 };
 

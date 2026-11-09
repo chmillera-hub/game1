@@ -319,10 +319,12 @@ function knitMaterial() {
         float kRidge = pow(sin(3.14159 * kRow), 0.7);
         float kCol = smoothstep(0.0, 0.2, abs(kc.y)) * (1.0 - 0.35 * smoothstep(0.38, 0.5, abs(kc.y)));
         float kH = kRidge * kCol;
-        float kAA = clamp((0.6 - max(fwidth(kq.x), fwidth(kq.y))) / 0.3, 0.0, 1.0);   // fade below ~3 px per stitch
+        // fade the stitches out early (gone below ~4-5 px per stitch): SwiftShader takes derivatives per 2x2 quad, so
+        // small stitches broke into blocky 2x2 noise in medium/wide shots
+        float kAA = clamp((0.22 - max(fwidth(kq.x), fwidth(kq.y))) / 0.12, 0.0, 1.0);
         diffuseColor.rgb *= mix(0.9, 0.79 + 0.25 * kH, kAA);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-        normal = knitPerturb(-vViewPosition, normal, vec2(dFdx(kH), dFdy(kH)) * 0.0025 * kAA, faceDirection);`);
+        normal = knitPerturb(-vViewPosition, normal, vec2(dFdx(kH), dFdy(kH)) * 0.0025 * kAA * kAA, faceDirection);`);
   };
   const key = m.customProgramCacheKey.bind(m);
   m.customProgramCacheKey = () => key() + 'fearKnit';

@@ -20,7 +20,7 @@ import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { MX } from '../chars/magician.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, fitShot, mixShot, logDolly, project, cast, ownedGroup, bonusMarks, voidBowed,
-  MAGPATH, magTiptoe, magSteps, ensureBonusDecals, clamp, smooth, lerp } from './kit_bonus.js';
+  MAGPATH, magTiptoe, magSteps, ensureBonusDecals, BONUS_LIGHTS, bonusLook, clamp, smooth, lerp } from './kit_bonus.js';
 
 let S = null;
 const tb = (r) => T(r);
@@ -48,7 +48,7 @@ export default {
     if (st.own.parent !== st.scene) st.scene.add(st.own);
     const shot = DBG().cam || shotAt(t);
     applyShot(app.camera, shot, t, 19);
-    set.update(t, { latch: 1, cageDoor: 1 });
+    set.update(t, { latch: 1, cageDoor: 1, lights: BONUS_LIGHTS });
     fear.update(t, fearPoseFn(t));
     vd.update(t, voidPose(t, st));
     mag.update(t, magPose(t, st));
@@ -56,7 +56,8 @@ export default {
     const g = t >= S.T.cut3 && t < S.T.cut5 ? pulse(t, S.T.corner - 0.05, 0.12, 0.15, 0.45) : 0;
     st.glint.visible = g > 0.01;
     if (st.glint.visible) { st.glint.position.copy(S.glintEcu); st.glint.material.opacity = 0.7 * g; st.glint.scale.setScalar(0.1 + 0.16 * g); st.glint.material.rotation = 0.5 * g; }
-    st.look = lookFor('s19', set.look);
+    // exposure: the eye ECU keeps its cosmic black (smaller boost); Fear's lavender CU the least
+    st.look = bonusLook(lookFor('s19', set.look), t < S.T.cut3 ? 1.65 : t < S.T.cut5 ? 1.38 : t >= S.T.cutF && t < S.T.cutW ? 1.15 : 1.65);
   },
 };
 

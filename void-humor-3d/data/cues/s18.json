@@ -6,10 +6,10 @@
     {"t": "s18b03+1.60", "name": "dust_sparkle", "gain_db": -2, "pan": 0.3},
     {"t": "s18b06+0.62", "name": "dust_sparkle", "gain_db": -9, "pan": 0.4},
     {"t": "s18b06+0.92", "name": "dagger_shing", "gain_db": -9, "pan": 0.3},
-    {"t": "s18b07+0.27", "name": "footsteps_soft", "gain_db": -11, "pan": 0.3},
-    {"t": "s18b07+0.72", "name": "footsteps_soft", "gain_db": -10, "pan": 0.2},
-    {"t": "s18b07+1.10", "name": "footsteps_soft", "gain_db": -10, "pan": 0.1},
-    {"t": "s18b07+0.72", "name": "dust_sparkle", "gain_db": -13, "pan": 0.2}
+    {"t": "s18b07+0.34", "name": "footsteps_soft", "gain_db": -11, "pan": 0.3},
+    {"t": "s18b07+0.74", "name": "footsteps_soft", "gain_db": -10, "pan": 0.2},
+    {"t": "s18b07+1.11", "name": "footsteps_soft", "gain_db": -10, "pan": 0.1},
+    {"t": "s18b07+0.74", "name": "dust_sparkle", "gain_db": -13, "pan": 0.2}
   ],
   "hits": [
     {"t": "s18b01+1.00", "kind": "creep"},

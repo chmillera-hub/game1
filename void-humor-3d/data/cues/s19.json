@@ -1,9 +1,9 @@
 {
   "sfx": [
-    {"t": "s19b01+0.46", "name": "footsteps_soft", "gain_db": -14, "pan": 0.55},
-    {"t": "s19b01+0.71", "name": "footsteps_soft", "gain_db": -14, "pan": 0.55},
-    {"t": "s19b01+0.94", "name": "footsteps_soft", "gain_db": -14, "pan": 0.5},
-    {"t": "s19b01+1.25", "name": "footsteps_soft", "gain_db": -13, "pan": 0.5},
+    {"t": "s19b01+0.45", "name": "footsteps_soft", "gain_db": -14, "pan": 0.55},
+    {"t": "s19b01+0.69", "name": "footsteps_soft", "gain_db": -14, "pan": 0.55},
+    {"t": "s19b01+0.90", "name": "footsteps_soft", "gain_db": -14, "pan": 0.5},
+    {"t": "s19b01+1.15", "name": "footsteps_soft", "gain_db": -13, "pan": 0.5},
     {"t": "s19b03+0.81", "name": "dagger_shing", "gain_db": -15, "pan": 0.6},
     {"t": "s19b05+0.10", "name": "shimmer", "gain_db": -6, "pan": -0.1}
   ],
