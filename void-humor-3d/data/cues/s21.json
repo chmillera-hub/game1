@@ -4,7 +4,8 @@
   {"t": "s21b03+0.6", "name": "cloth_rustle", "gain_db": -7, "pan": 0.1},
   {"t": "s21b03+0.5", "name": "footsteps_soft", "until": "s21b03+1.3", "gain_db": -9, "pan": 0.15},
   {"t": "s21b03+1.0", "name": "twinkle", "gain_db": -10, "pan": -0.1},
-  {"t": "s21b06+0.45", "name": "shimmer", "gain_db": -3, "pan": 0.0}
+  {"t": "s21b04+0.3", "name": "rumble_low", "until": "s21b05+0.4", "gain_db": -15, "pan": 0.55},
+  {"t": "s21b06+0.3", "name": "shimmer", "gain_db": -3, "pan": 0.0}
 ],
  "hits": [
   {"t": "s21b03+0.7", "kind": "pluck"}

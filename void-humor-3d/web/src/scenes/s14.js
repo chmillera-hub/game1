@@ -39,7 +39,6 @@ export default {
     // the phone insert's camera sits at the user's chest: cheat the hoodie drawstrings out of the lens for that shot
     const insW = [T('s14b03') - 0.1, T('s14b03.end') - 1.25];
     if (user.strings) for (const sg of user.strings) { hideDuring(sg.tb.mesh, [insW]); hideDuring(sg.ag, [insW]); }
-    console.log('s14 path', JSON.stringify({ sU: sU.toFixed(2), sRise: sRise.toFixed(2), rise: set.pathAt(sRise).pos.map((v) => +v.toFixed(2)) }));
     return { scene: set.scene, set, jesus, vd, user, fx, gal, phone, ding, sU, sRise, look: lookFor('s14', set.look) };
   },
 

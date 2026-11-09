@@ -18,7 +18,7 @@ const JM = EDGE.M.JM;
 const EYE_JM_L = [JM.p[0] + 0.14 * Math.sin(JM.yaw), 1.545, JM.p[2] + 0.14 * Math.cos(JM.yaw)];
 const EYE_JM = SW(...EYE_JM_L);
 // the b04 wide (stage-local; MASTER's direction: yaw -9.4, pitch 14.3)
-const MW = { look: [-0.55, 1.2, -0.05], yaw: -9.4, pitch: 13, fov: 33, sy: 520, d0: 6.4, d1: 5.2, d2: 4.7 };
+const MW = { look: [-0.85, 1.0, 0.25], yaw: -12, pitch: 13, fov: 33, sy: 560, d0: 6.5, d1: 5.5, d2: 5.0 };
 
 export default {
   id: 's11',
@@ -92,10 +92,10 @@ export default {
       const F0 = JX('listening', { browIn: 0.22, mSmile: 0.08 });
       const F1 = JX('listening', { browIn: 1.0, browOut: 0.12, browMid: 0.1, browSq: 0.12, lidU: 1.14, mSmile: -0.05, mPress: 0.3, lidSad: 0.3 });
       const F1b = JX('awkward', { mClench: 0.0, mOpen: 0.06, mWide: 0.7, mSmile: -0.3, mAsym: 0.06, mPress: 0.55, browIn: 1.1, browOut: 0.0, lidSad: 0.36 });   // corners stretch out + down first
-      const AWK = { mSmile: -0.36, mWide: 1.2, mOpen: 0.3, mAsym: 0.1, browIn: 1.22, browOut: -0.12, browMid: 0.06, browSq: 0.22, browAsym: 0.1, lidSad: 0.46, lidU: 1.16, lidL: 0.24 };
-      const F2o = JX('awkward', { ...AWK, mWide: 1.3, mSmile: -0.42, browIn: 1.32, lidU: 1.24 });
+      const AWK = { mSmile: -0.5, mWide: 1.25, mOpen: 0.26, mAsym: 0.1, browIn: 1.22, browOut: -0.12, browMid: 0.06, browSq: 0.22, browAsym: 0.1, lidSad: 0.46, lidU: 1.16, lidL: 0.24 };
+      const F2o = JX('awkward', { ...AWK, mWide: 1.35, mSmile: -0.56, browIn: 1.32, lidU: 1.24 });
       const F2 = JX('awkward', AWK);
-      const F3 = JX('awkward', { ...AWK, mWide: 1.32, mSmile: -0.4, mOpen: 0.33, browIn: 1.28 });   // "a notch wider" (still down-turned)
+      const F3 = JX('awkward', { ...AWK, mWide: 1.38, mSmile: -0.55, mOpen: 0.29, browIn: 1.28 });   // "a notch wider" (still down-turned)
       const face = k(t, [
         ['s11', F0], [tGets, F0], [tGets + 0.5, F1, 'inOut'],
         [tLook - 0.1, F1], [tLook + 0.05, F1b, 'inOut'], [tLook + 0.24, F2o, 'out'], [tLook + 0.5, F2, 'inOut'],

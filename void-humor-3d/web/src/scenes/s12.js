@@ -134,12 +134,13 @@ export default {
         // BEHINDJ follow: it opens wider and further back with the seated Void's back already at frame-right (the walk
         // has a visible destination), dollies in behind Jesus as he rounds it, and lands on BEHINDJ well before the touch
         const C = EDGE.CAM.BEHINDJ;
-        const land = smooth(clamp((wk.u - 0.25) / 0.6));
+        const land = smooth(clamp((wk.u - 0.66) / 0.3)), dolly = smooth(clamp(wk.u / 0.95));
         const back = [C.pos[0] + (C.pos[0] - C.look[0]) * CAMA.back, C.pos[1] + CAMA.up, C.pos[2] + (C.pos[2] - C.look[2]) * CAMA.back];
         const jl = wk.local;
-        const aim = [lerp(jl[0], CAMA.v[0], CAMA.vw), 1.3, lerp(jl[2], CAMA.v[2], CAMA.vw)];
+        const vw = CAMA.vw * (1 - 0.85 * dolly);                                // the nearer the camera, the more it holds on him
+        const aim = [lerp(jl[0], CAMA.v[0], vw), 1.3, lerp(jl[2], CAMA.v[2], vw)];   // Jesus + his destination
         const lk = [lerp(aim[0], C.look[0], land), lerp(aim[1], C.look[1], land), lerp(aim[2], C.look[2], land)];
-        shot = EDGE.at([lerp(back[0], C.pos[0], land), lerp(back[1], C.pos[1], land), lerp(back[2], C.pos[2], land)], lk, lerp(CAMA.fov, 33, land), { drift: 0.2 });
+        shot = EDGE.at([lerp(back[0], C.pos[0], dolly), lerp(back[1], C.pos[1], dolly), lerp(back[2], C.pos[2], dolly)], lk, lerp(CAMA.fov, 33, dolly), { drift: 0.2 });
       } else if (shotB) {
         // 3/4 close as the hood comes round: aimed between both eyes (a touch toward the far eye), the mouth clear of the
         // shoulder ridge, his hand in the lower-left foreground
@@ -182,8 +183,8 @@ export default {
 // The Void's eyes (stage-local) when its hood has turned over its right shoulder (measured from the rig; used to
 // steady the b02 framing), and the camera yaw for the 3/4 close (inside +-50 deg of where the hood points).
 const VEYE_END = [1.33, 1.78, -1.12];
-const CAMA = { back: 0.45, up: 0.15, fov: 42, v: [1.15, 0, -1.35], vw: 0.5 };
-const CAMB = { look: [VEYE_END[0] + 0.02, VEYE_END[1] - 0.06, VEYE_END[2] - 0.15], yaw: 54, pitch: 0, d0: 3.0, d1: 2.45 };
+const CAMA = { back: 0.45, up: 0.15, fov: 42, v: [1.15, 0, -1.35], vw: 0.26 };
+const CAMB = { look: [VEYE_END[0] + 0.055, VEYE_END[1] - 0.06, VEYE_END[2] - 0.2], yaw: 54, pitch: 6, d0: 3.0, d1: 2.45 };
 const CAMC_YAW = 128;
 // Jesus's eyes at JS with his hand on its shoulder (stage-local, measured) — the steady look point of b03
 const JEYE_JS = [1.72, 1.55, -0.53];

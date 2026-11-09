@@ -4,7 +4,7 @@
 //   node tools/render.js sheet --lab cosmos --from 0.5 --to 11 --n 12 --cols 6 --out out/sheets/cosmos_revealA.jpg
 //   node tools/render.js sheet --lab cosmos --from 12 --to 27 --n 8 --cols 4 --out out/sheets/cosmos_lookup.jpg
 //   node tools/render.js sheet --lab cosmos --from 28 --to 39.5 --n 8 --cols 4 --out out/sheets/cosmos_standalone.jpg
-//   node tools/render.js sheet --lab cosmos --from 40 --to 58 --n 8 --cols 4 --out out/sheets/cosmos_backroom.jpg
+//   node tools/render.js sheet --lab cosmos --from 41 --to 57 --n 8 --cols 4 --out out/sheets/cosmos_backroom.jpg
 //   node tools/render.js sheet --lab cosmos --from 58 --to 69 --n 4 --cols 4 --out out/sheets/cosmos_rigs.jpg
 //   node tools/render.js sheet --lab cosmos --from 100 --to 109 --n 10 --cols 5 --out out/sheets/cosmos_survey.jpg
 //   node tools/render.js bench --lab cosmos --t 24
@@ -15,7 +15,7 @@
 //   200–209 same, shell only; 300–309 survey inside the placeholder room (floor veil); 400–404 aimed views;
 //   9000+ empty-scene perf baseline (same camera); k*1000 + t = lab time t with debug variant k
 //   (1 no puffs, 2 no fringe, 3 shell+floor only, 4 no capsules, 5 room without cosmos, 6 no floor veil,
-//    7 no shell, 8 neither, 10 no stars, 11 no galaxies/glyphs, 12 no cosmos lights,
+//    7 no shell, 8 neither, 10 no stars, 11 no galaxies/glyphs, 12 no cosmos lights, 20 no island underlay,
 //    13 BACKROOM segments with BACKROOM alone (its own cosmos fade = hostFade(reveal), no COSMOS group) — perf A/B,
 //    14 BACKROOM segments with the OLD recipe (cosmos: smooth(reveal/.8), no dissolve) — regression check).
 import * as THREE from 'three';
@@ -40,9 +40,9 @@ const VOID_POS = [0.95, 0, -0.25], FEAR_POS = [-0.7, 0, 0.35];
 const SRC = [0.95, 2.05, 0.55];   // the Void's chest (front)
 
 // ---- camera recipes (documented in docs/sets/cosmos.md; checked with COSMOSPIX screen positions)
-// front two-shot from inside (capsules / rigs at the positions above): Fear's eyes ~y 760, the Void's eyes ~y 400
+// front two-shot from inside (capsules / rigs at the positions above): Fear's eyes ~y 790, the Void's eyes ~y 415–470
 export const TWO_SHOT = { pos: [0.3, 0.95, 7.0], look: [0.25, 1.38, 0], fov: 46 };
-// hero "looking up past Fear + the Void": Fear's upturned face ~y 720–780, both Void eyes in frame, hero galaxy top half
+// hero "looking up past Fear + the Void": Fear's upturned face ~y 750, both Void eyes in frame (~y 420), galaxy top half
 export const HERO_SHOT = { pos: [-1.3, 0.3, 4.0], look: [-0.03, 1.34, -0.72], fov: 60 };
 
 function room() {
@@ -111,6 +111,10 @@ export async function setup(app) {
   const caps = capsules();
   let br = null, rigs = null;
   try { br = await app.set('BACKROOM'); } catch (e) { console.log('cosmos lab: BACKROOM unavailable: ' + e.message); }
+  if (br) {   // the recipe's one-time patch: room fade twins (alpha) + the two hanging bulbs (cut clones). Inert unless
+    cos.dissolve(br.props.room);                                                    // the cosmos draws in BACKROOM.
+    cos.dissolve([br.props.bulb.parent, br.props.bulb2.parent], { opaque: true });
+  }
   try {
     const [vd, fr, vm, fm] = await Promise.all([app.char('VOID'), app.char('FEAR'), import('../chars/void.js'), import('../chars/fear.js')]);
     rigs = { vd, fr, VX: vm.VX, FX: fm.FX, mixFace: fm.mixFace };
@@ -152,7 +156,7 @@ function inBackroom(t, app, s) {
   const L = br.layout, vs = L.voidSpot, fo = L.fearOutside;
   const reveal = t < 52 ? sm(41, 50, t) : 1;
   const mid = [(vs.x + fo.x) / 2, 0, (vs.z + fo.z) / 2];
-  // F: front two-shot of the pair (Fear's eyes ~y 760, the Void's ~y 420); G: looking up past them
+  // F: front two-shot of the pair (Fear's eyes ~y 800, the Void's ~y 475); G: looking up past them (Fear ~y 720)
   const shot = t < 52 ? { pos: [mid[0] - 0.05, 0.95, mid[2] + 6.6], look: [mid[0] - 0.05, 1.4, mid[2] - 0.2], fov: 46, drift: 0.3 }
     : { pos: [fo.x - 0.67, 0.3, fo.z + 2.77], look: [fo.x + 0.51, 1.34, fo.z - 1.98], fov: 56, drift: 0.3 };
   applyShot(app.camera, shot, t);
@@ -164,11 +168,6 @@ function inBackroom(t, app, s) {
     cosmos: cos.hostFade(reveal), shafts: 1 - sm(0, 0.6, reveal), dust: 1 - sm(0, 0.6, reveal),
     lights: { bulb: 1 - sm(0.12, 0.4, reveal), bulb2: 1 - sm(0.12, 0.4, reveal) },
   });
-  if (!old && !alone && !s.dissolved) {   // one-time patch (idempotent): room fade twins + the two bulb pendants
-    cos.dissolve(br.props.room);
-    cos.dissolve([br.props.bulb.parent, br.props.bulb2.parent], { opaque: true });
-    s.dissolved = true;
-  }
   if (rigs) {
     const { vd, fr, VX, FX, mixFace } = rigs;
     br.scene.add(vd.root); br.scene.add(fr.root);
@@ -181,7 +180,7 @@ function inBackroom(t, app, s) {
   }
   if (!alone) {
     cos.attach(br.scene);
-    cos.update(t, { reveal, center: mid, source: (rigs && rigs.vd.anchor('chest')) || [vs.x, 2.05, vs.z + 0.8], radius: 9 });
+    cos.update(t, { reveal, center: mid, source: (rigs && rigs.vd.anchor('chest')) || [vs.x, 2.05, vs.z + 0.8], radius: 9, dissolve: old ? 0 : 1 });
   } else cos.group.removeFromParent();
   s.look = alone ? { ...br.look } : cos.blendLook(br.look, smooth(reveal));
 }
@@ -251,6 +250,7 @@ export async function update(t, app, s) {
   if (s.dbg === 6) cos.props.floor.visible = false;
   if (s.dbg === 7) cos.props.dome.visible = false;
   if (s.dbg === 8) { cos.props.dome.visible = false; cos.props.floor.visible = false; }
+  if (s.dbg === 20) cos.props.island.visible = false;
   cos.props.key.visible = s.dbg !== 12;   // (reset every frame: frames stay pure)
   if (s.dbg === 12) cos.props.hemi.visible = false;
   // what the BACKROOM would do itself: its lamp (inside the sky shell) dims out as the cosmos arrives

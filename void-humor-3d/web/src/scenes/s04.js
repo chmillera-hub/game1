@@ -81,9 +81,11 @@ function bigGalaxyFlight(t, S, from) {
 // ---------------------------------------------------------------------------------------------------------- cameras
 function cams(S, R) {
   const e = 1e-3;
-  const low = (yaw, dist = 4.2, pitch = -6) => EDGE.shot([0.4, 1.9, -0.82], { dist, yaw, pitch, fov: 54, screenY: sy(330), drift: 0.18 });
-  const mouthCU = EDGE.shot(EDGE.L(R.voidMouth), { dist: 3.3, yaw: -18, pitch: -4, fov: 33, screenY: sy(510), drift: 0.15 });
-  const mouthCU2 = EDGE.shot(EDGE.L(R.voidMouth), { dist: 3.0, yaw: -18, pitch: -4, fov: 33, screenY: sy(510), drift: 0.15 });
+  // b04-b06: from Jesus's head height (low for the 3 m Void, high enough that the crescent clears the brim and the
+  // hood/capelet junction stays tidy), 28 mm, a slow 5 deg orbit
+  const low = (yaw, dist = 4.2) => { const y = yaw * Math.PI / 180, L = [0.4, 1.0, -0.82]; return EDGE.at([L[0] + dist * Math.sin(y), 1.78, L[2] + dist * Math.cos(y)], L, 54, { drift: 0.18 }); };
+  const mouthCU = EDGE.shot(EDGE.L(R.voidMouth), { dist: 3.45, yaw: -18, pitch: -4, fov: 33, screenY: sy(545), drift: 0.15 });
+  const mouthCU2 = EDGE.shot(EDGE.L(R.voidMouth), { dist: 3.15, yaw: -18, pitch: -4, fov: 33, screenY: sy(545), drift: 0.15 });
   const med = R.med;
   // follow-pan down with the little galaxy: aim at its bounce point
   const bp = LITTLE_GALAXY.bounce;
@@ -92,7 +94,7 @@ function cams(S, R) {
   const otsUp = { ...ots, look: EDGE.W(-0.1, 1.15, -1.1) };       // tilts up a little with the galaxy sailing over
   return [
     [S.s, R.heads], [S.b03, R.heads], [S.b04 - e, R.headsIn, 'inOut'],
-    [S.b04, low(-21, 4.2, -5)], [S.b07 - e, low(-17, 4.1, -5), 'inOut'],
+    [S.b04, low(-19, 4.2)], [S.b07 - e, low(-14, 4.1), 'inOut'],
     [S.b07, mouthCU], [S.b09 - e, mouthCU2, 'linear'],
     [S.b09, med], [S.pop + 0.08, med], [S.pop + 0.7, medDown, 'inOut'], [S.b11 - e, medDown],
     [S.b11, ots], [S.launch + 0.25, ots], [S.launch + 1.0, otsUp, 'inOut'], [S.cut13 - e, otsUp],
@@ -125,8 +127,9 @@ export default {
     // reference anchors at fixed times (pure)
     const at = (tt) => { poseAll(tt, S, st); return { mouth: vd.anchor('mouth'), eyes: vd.anchor('eyes'), jEyes: jesus.anchor('eyes'), uEyes: user.anchor('eyes'), feet: [user.anchor('footL'), user.anchor('footR')] }; };
     // close two-shot of the heads (stacked: the Void's eyes ~y 285 upper right, Jesus's face ~y 535 at the left)
-    st.R.heads = EDGE.shot([0.2, 1.85, -0.56], { dist: 5.2, yaw: -4, pitch: 2, fov: 33, screenY: sy(410), drift: 0.12 });
-    st.R.headsIn = EDGE.shot([0.2, 1.85, -0.56], { dist: 4.75, yaw: -4, pitch: 2, fov: 33, screenY: sy(410), drift: 0.12 });
+    // (from a little left of front: the Void's face near-frontal, a clean pastel sky behind Jesus's head)
+    st.R.heads = EDGE.at([-0.6, 1.75, 4.5], [0.3, 1.43, -0.56], 33, { drift: 0.12 });
+    st.R.headsIn = EDGE.at([-0.62, 1.74, 4.1], [0.24, 1.46, -0.56], 33, { drift: 0.12 });
     const a0 = at(S.b07 + 0.5);
     st.R.voidMouth = a0.mouth;
     st.R.popFrom = at(S.pop).mouth;
@@ -154,8 +157,7 @@ export default {
     st.scene.add(jesus.root, vd.root, user.root);
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const S = times();
-    const D = (typeof window !== 'undefined' && window.DBG) || null;
-    applyShot(app.camera, D && D.cam ? EDGE.at(D.cam.slice(0, 3), D.cam.slice(3, 6), D.cam[6] || 40, { drift: 0 }) : shotAt(t, cams(S, st.R)), t, 4);
+    applyShot(app.camera, shotAt(t, cams(S, st.R)), t, 4);
     poseAll(t, S, st);
 
     // ---- the little galaxy (shared prop) and the sky galaxy
@@ -171,10 +173,10 @@ export default {
     const faces = [[vd.anchor('eyes'), 260], [vd.anchor('mouth'), 160], [jesus.anchor('eyes'), 110], [user.anchor('eyes'), 160]];
     fadeSeedsNear(set, app.camera, faces); fadeMotesNear(set, app.camera, faces);
     st.look = lookFor('s04', set.look);
-    if (DEBUG || (D && D.print)) {
+    if (DEBUG) {
       const f = (v) => '[' + EDGE.L(v).map((x) => x.toFixed(2)).join(',') + ']';
       const pxs = (v) => px(app.camera, v).join(',');
-      if (D && D.trees) console.log('DBG trees ' + set.props.trees.map((tr, i) => [i, px(app.camera, tr.position), tr.position.toArray().map((x) => x.toFixed(1))]).filter(([i, p]) => p[0] > -400 && p[0] < 1100).map((x) => JSON.stringify(x)).join(' '));
+      if (DEBUG === 'trees') console.log('DBG trees ' + set.props.trees.map((tr, i) => [i, px(app.camera, tr.position), tr.position.toArray().map((x) => x.toFixed(1))]).filter(([i, p]) => p[0] > -400 && p[0] < 1100).map((x) => JSON.stringify(x)).join(' '));
       console.log(`DBG t=${t.toFixed(2)} V.eyes@${pxs(vd.anchor('eyes'))} V.mouth@${pxs(vd.anchor('mouth'))} J.eyes@${pxs(jesus.anchor('eyes'))} U.eyes@${pxs(user.anchor('eyes'))} V.handR ${f(vd.anchor('handR'))}@${pxs(vd.anchor('handR'))} V.handL@${pxs(vd.anchor('handL'))} J.hip ${f(jesus.anchor('hip'))} LG ${lgs ? f(lgs.pos) + '@' + pxs(lgs.pos) + ' ' + lgs.phase : '-'} big ${big ? pxs(big.pos) : '-'} J.shL@${pxs(jesus.anchor('shoulderL'))}`);
     }
   },
@@ -285,8 +287,8 @@ function voidPose(t, S, st) {
     const d = t - tc;
     if (d < -0.3 || d > 0.32) return null;
     let o;
-    if (d < -0.07) o = 0.17 * smooth((d + 0.3) / 0.23);                // wind-up (6 frames)
-    else if (d < 0) o = 0.17 * (1 - Math.pow((d + 0.07) / 0.07, 2));  // snap in (accelerating)
+    if (d < -0.07) o = 0.22 * smooth((d + 0.3) / 0.23);                // wind-up (6 frames)
+    else if (d < 0) o = 0.22 * (1 - Math.pow((d + 0.07) / 0.07, 2));  // snap in (accelerating)
     else o = 0.04 * Math.sin(Math.PI * Math.min(1, d / 0.14)) * Math.exp(-d * 6) + 0.0;   // contact, tiny rebound, settle
     const mix = d < 0 ? smooth((d + 0.3) / 0.08) : 1 - smooth((d - 0.16) / 0.16);
     return { o, mix };
@@ -294,7 +296,7 @@ function voidPose(t, S, st) {
   const sl = slapArm(S.slap1) || slapArm(S.slap2);
   if (sl && t >= S.burst) {
     const sideP = voidSurface(vd, 0.95, 0.62, 0.01), nrm = voidNormal(vd, 0.95, 0.62);
-    const tgt = sideP.addScaledVector(nrm, sl.o).add(V3(0, 0.05 * sl.o / 0.17, 0));
+    const tgt = sideP.addScaledVector(nrm, sl.o).add(V3(0, 0.08 * sl.o / 0.22, 0));
     P.armL = { preset: 'pat', from: 'belly', mix: sl.mix, target: tgt, reach: sl.mix, palm: nrm.clone().negate().toArray(), hand: { curl: 0.12, spread: 0.35, cup: 0.2 } };
   }
   // b09/b10: the hand (LEFT) reaches after the little galaxy and misses (behind it, too late)
@@ -395,7 +397,7 @@ function jesusPose(t, S, st, vd) {
   P.body.recoil = 0.28 * dodge + 0.06 * ramp(t, S.burst, S.burst + 0.3);
   P.body.breathe = t < S.snort ? 0.2 : 1;
   // b04-b06: his laugh is cheated toward the lens (chest turns to camera: the crinkled eyes + the knuckle wipe read)
-  const cheat = ramp(t, S.burst, S.burst + 0.35) * (1 - ramp(t, S.b07, S.b07 + 0.3));
+  const cheat = ramp(t, S.burst - 0.2, S.burst + 0.25) * (1 - ramp(t, S.b07, S.b07 + 0.3));
   P.body.twist = -0.22 * cheat;
   // ---- head / gaze: eyes on the Void's eyes (cheated 18 cm low so the irises sit in the eye), the head follows well
   const lgs = littleGalaxyAt(t, { from: st.R?.popFrom });
@@ -408,7 +410,7 @@ function jesusPose(t, S, st, vd) {
     [S.launch + 1.05, vLook, 0.15],
   ]);
   const nod = 0.12 * pulse(t, S.snort + 0.25, 0.12, 0.05, 0.2) + 0.1 * pulse(t, S.snort + 0.55, 0.1, 0.05, 0.2);
-  const tossBack = 0.12 * ramp(t, S.b13, S.b13 + 0.4);
+  const tossBack = -0.1 * ramp(t, S.b13 + 0.2, S.end - 0.1);       // (offscreen) chin settles down as s05 has it
   const follow = 0.7 - 0.1 * dodge - 0.32 * cheat;
   P.head = { look: P.gaze, follow, pitch: nod - tossBack, yaw: -0.15 * cheat };
   // ---- arms (right): belt -> hand on chest for the giggle -> knuckle wipes an eye -> belt

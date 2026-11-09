@@ -187,7 +187,7 @@ export default {
         + 0.08 * pulse(t, tSound - 0.25, tSound + 0.05, 0.12, 0.14) + 0.08 * pulse(t, tSound + 0.1, tSound + 0.42, 0.12, 0.16)
         + 0.07 * pulse(t, B16 + 0.2, B16 + 0.8, 0.22, 0.3)
         + 0.06 * pulse(t, B19 + 0.62, B19 + 1.12, 0.2, 0.26);
-      const tilt = k(t, [['s13', 0], [tKneel1, 0.06], [B06 + 0.3, 0.06], [B06 + 0.7, 0.1, 'inOut'], [B13, 0.08], [B13 + 0.5, 0.02, 'inOut'], [B15, 0.02], [B15 + 0.4, 0.08, 'inOut']]);
+      const tilt = k(t, [['s13', 0], [tKneel1, 0.06], [B06 + 0.3, 0.06], [B06 + 0.7, 0.1, 'inOut'], [B13, 0.08], [B13 + 0.5, 0.02, 'inOut'], [B15, 0.02], [B15 + 0.4, 0.08, 'inOut'], [B19, 0.08], [B19 + 0.8, 0.03, 'inOut']]);
       // ---- arms. Gestures with the LEFT hand (the camera side of the stacked two-shot); the right rests on the thigh.
       const open = smooth(clamp((t - (tKneel0 + 0.4)) / 0.6));
       const heart1 = pulse(t, tMe - 0.28, B07 + 0.12, 0.26, 0.4);             // fingertips to his chest on "me"
@@ -197,8 +197,9 @@ export default {
       const heart2 = pulse(t, tMean - 0.22, B15 + 0.1, 0.2, 0.35);             // hand on his heart on "meaningful"
       // over-the-shoulder shots onto the user: the near (left) hand rests low on the knee, out of the frame
       const lowL = shotName === 'OTSJ' || shotName === 'OTSJL' ? 1 : 0;
+      const kneeL = shotName === 'WIDE' ? 0.35 : 0;                          // the wide: forearm on the raised knee
       const g = Math.max(0, 1 - heart1 - offer - clasp - heart2);
-      const prL = [['knee_rest', Math.max(0.001, 0.65 * g * (1 - lowL))], ['rest', g * lowL], ['open', 0.35 * g * (1 - lowL)], ['heart', heart1 + heart2], ['offer', offer * 0.85], ['clasp_chest', clasp]];
+      const prL = [['knee_rest', Math.max(0.001, (0.65 + kneeL) * g * (1 - lowL))], ['rest', g * lowL], ['open', (0.35 - kneeL) * g * (1 - lowL)], ['heart', heart1 + heart2], ['offer', offer * 0.85], ['clasp_chest', clasp]];
       const armL = { preset: flick > 0.001 ? [...prL.map(([n, w]) => [n, w * (1 - 0.7 * flick)]), ['explain', 0.7 * flick + 1e-3]] : prL, reach: open, hand: { splay: 0.05, cup: 0.4 } };
       const shL = jesus.anchor('shoulderL'), hl = jesus.anchor('handL');
       if (pass && flick > 0.001 && shL && hl) {
@@ -298,11 +299,11 @@ export default {
       const Fsusp = UX('suspicious', { wet: 0.5 });
       const Fsmirk = UX('smirk', { wet: 0.5 });
       const Fcaught = UX('idle', { lidU: 1.12, browIn: 0.45, mPress: 0.3, wet: 0.5 });
-      const Ftrem = UX('tremble', { wet: 0.6 });
+      const Ftrem = UX('tremble', { wet: 0.6, lidU: 1.06, lidSad: 0.3, lidL: 0.18 });
       const Fdawn = UX('dawning', { wet: 0.55 });
       const Fsoft = UX('soften', { wet: 0.6 });
       const Fsoft2 = UX([['soften', 0.6], ['tremble', 0.4]], { wet: 0.6 });
-      const Fstall = UX([['tremble', 0.55], ['soften', 0.45]], { wet: 0.6 });
+      const Fstall = UX([['tremble', 0.55], ['soften', 0.45]], { wet: 0.65, lidU: 1.12, lidSad: 0.22, lidL: 0.14, browIn: 0.7 });
       const Fwall = UX([['idle', 0.5], ['deadpan', 0.5]], { wet: 0.5, mPress: 0.5 });
       const Fnope = UX([['hellno', 0.45], ['deadpan', 0.55]], { wet: 0.5 });
       const face = k(t, [
@@ -396,12 +397,11 @@ export default {
       // its long axis, face-down (the cold glow leaves the face) -> (b16) face-up again -> lifted to reading
       let armL = { preset: holdUp > 0 ? [['lap', 1 - holdUp], ['hold', Math.max(1e-3, holdUp)]] : loosen < 1 ? [['crossed', 1 - loosen], ['lap', Math.max(1e-3, loosen)]] : 'lap' };
       if (pass && lapW > 0.001 && LP) {
-        const [pp0, , Y0, Z0] = frameOf(user.phone);
+        const [, , Y0, Z0] = frameOf(user.phone);
         const [wr0] = frameOf(user.arms.L.hand.root);
         const X1 = cross(LP.top, LP.n);
         const wr1 = sum(LP.pos, sc(X1, PH_OFF[0]), sc(LP.top, PH_OFF[1]), sc(LP.n, PH_OFF[2]));
         armL = { ...armL, grip: 'flat', target: mix(wr0, wr1, lapW), palm: nrm(mix(Z0, LP.n, lapW)), fingers: nrm(mix(Y0, LP.top, lapW)) };
-        void pp0;
       }
       const hs = headShake(t, B17 + 0.0, { count: 2, dur: 0.4, amp: 0.13 });
       const pull = pulse(t, B17 + 0.36, B17 + 0.75, 0.06, 0.3);
@@ -499,10 +499,11 @@ export default {
         case 'JST': {
           // on the K -> user-eye axis, at the user's eye height, just behind the user's head (their hair + glasses rim
           // a soft edge lower-left): his eyeline lands next to the lens
-          const ue = uEyeL(uBase - uBackOf(shotT0 + 0.7));
+          const ue = uEyeL(uLeanAt(shotT0 + 0.7));
+          const sideOff = shotT0 >= B19 ? JSTC.side + 0.12 : JSTC.side;    // the cinched hood is bigger: give it room
           const ax = nrm([ue[0] - JEYE[0], 0, ue[2] - JEYE[2]]);
           const sideV = [ax[2], 0, -ax[0]];                                    // screen-right of the axis (seen from the camera)
-          const p = sum(ue, sc(ax, JSTC.back), sc(sideV, JSTC.side), [0, JSTC.up, 0]);
+          const p = sum(ue, sc(ax, JSTC.back), sc(sideV, sideOff), [0, JSTC.up, 0]);
           const dl = Math.hypot(JEYE[0] - p[0], JEYE[1] - p[1], JEYE[2] - p[2]);
           const lk = sum(JEYE, [0, -dl * 0.111 + JSTC.dy, 0], sc(sideV, JSTC.lookSide));
           shot = EDGE.at(p, lk, 33, { drift: 0.1 });
@@ -530,11 +531,11 @@ export default {
 
 // ------------------------------------------------------------------------------------------------ camera numbers
 // (stage-local degrees / metres; tuned against the real rigs with stills)
-const WIDE = { look: [-1.12, 0.72, 1.2], yaw: 28, pitch: 3, dist: 5.0, fov: 33, sy: 700 };
-const OTSKW = { yaw: -36, pitch: 6, dist: 3.4, sy: 640 };
+const WIDE = { look: [-1.05, 0.72, 1.13], yaw: 22, pitch: 3, dist: 5.4, fov: 35, sy: 700 };
+const OTSKW = { yaw: -36, pitch: 6, dist: 3.3, sy: 515 };
 const OTSJL = { yaw: 97, pitch: 12, dist: 2.3, drop: 0.2, sy: 560 };
 const OTSJ = { back: 0.45, side: 0.24, up: 0.3 };
-const PROF = { rot: -62, pitch: 4, dist: 3.4, fov: 32, sy: 430, dy: 0.05, shift: -0.08 };
+const PROF = { rot: -66, pitch: 4, dist: 3.4, fov: 32, sy: 430, dy: 0.05, shift: -0.03 };
 const PUSH = { y0: 100, y1: 106, d0: 2.4, d1: 1.35, pitch: 7 };
 const JSTC = { back: 0.6, side: 0.36, up: 0.05, dy: 0, lookSide: 0 };
 const PEEK_YAW = 1.38, PEEK_TWIST = 0.18;

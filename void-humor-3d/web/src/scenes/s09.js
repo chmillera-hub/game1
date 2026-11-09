@@ -1,13 +1,16 @@
 // s09 hell_no — refusal as armour. The user's fear comes out as sarcasm, their body ends up mirroring the Void's
 // exactly, and on "scary" the Void's mask slips for 8 frames (the frozen mote finally falls).
-//   b01 USER_CU (phone glow on the chin): slow blink; eyes Jesus -> up to the Void's scowl -> Jesus; mouth opens,
-//       closes; jaw sets.
+//   b01 USER_CU (phone glow on the chin; the raised RIGHT hand still up beside the face, trembling): slow blink; eyes
+//       Jesus -> up to the Void's scowl -> Jesus; mouth opens, closes; jaw sets.
 //   b02 hold: "Hell no." sharp head shake on "no" (hair swings), brows crushed, lips pressed after.
-//   b03 MASTER: "I'm not talking to that scary thing." jab the phone screen-first on "that" (trembling), the Void's
-//       mask slip on "scary" (+ the mote drops), arms snap crossed on "thing", chin up, 5 cm scoot back. Jesus's eyes
-//       close slowly on "scary", open; his head turns to the Void.
-//   b04 MASTER (push to the symmetrical read): two crossed-arm scowls; Jesus between, eyes user -> Void -> user ->
-//       Void, eyes first, head follows, brows climbing each time.
+//   b03 split: USER_CU through "I'm not talking to that" — on "that" the phone jabs out at the Void screen-first,
+//       trembling (frame-right), the raised hand drops; the wobble lands on the face at the start of "scary".
+//       CUT to the three-shot on "scary": the Void's two fast blinks, its 8-frame hurt, the mote drops and winks out,
+//       the scowl clamps back harder; on "thing" the user's arms snap crossed, chin up, a huffy turn-away (head and
+//       chest cheated toward camera so the pout and the folded arms read in profile), a 2.5 cm scoot. Jesus's eyes
+//       close slowly, open; his head turns to the Void; his body squares up to camera.
+//   b04 the three-shot pushes to the symmetrical read: two crossed-arm scowls; Jesus between, eyes user -> Void ->
+//       user -> Void, eyes first, head follows, lips pressed, brows climbing each time.
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
@@ -17,8 +20,8 @@ import { EDGE, todAt, voidSkyAt, galaxyAt, galaxySpin, sy } from './marks.js';
 import { JX } from '../chars/jesus.js';
 import { UX, headShake } from '../chars/user.js';
 import { scopeVisible, ensureLittleGalaxy } from './edgeprops.js';
-import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, fitShot, mixShot, W, WY, faceYaw, MARKS as M, starSprite } from './armour_shared.js';
-import { voidArmour, moteState, userSeated, sceneLook, computeMote, scaryT } from './armour_common.js';
+import { V3, toV, loadWords, wordT, pulse, ramp, gazeSched, fitShot, mixShot, W, WY, faceYaw, MARKS as M, starSprite, headAim } from './armour_shared.js';
+import { voidArmour, moteState, userSeated, sceneLook, computeMote, scaryT, scaryCutT, slipT, updateVoid, defendRef, userTurnAway, assertLipsync } from './armour_common.js';
 
 let S = null;
 
@@ -26,13 +29,14 @@ export default {
   id: 's09',
   async setup(app) {
     await loadWords();
+    assertLipsync('s09');
     const set = await app.set('EDGE');
     const jesus = await app.char('JESUS'), vd = await app.char('VOID'), user = await app.char('USER');
     const st = { scene: set.scene, set, jesus, vd, user };
     st.fx = new Particles({ max: 24 }); set.scene.add(st.fx.mesh);
     st.mote = starSprite(0xfff2d0, 0.2); set.scene.add(st.mote);
     ensureLittleGalaxy(set);                                       // the shared little galaxy by the sneaker (edgeprops)
-    for (const o of [st.fx.mesh, st.mote, st.puffs && st.puffs.mesh, st.seed, st.tear]) if (o) scopeVisible(o, 's09', 's10');
+    for (const o of [st.fx.mesh, st.mote]) scopeVisible(o, 's09', 's10');
     S = st.S = statics(st);
     return st;
   },
@@ -45,7 +49,7 @@ export default {
     set.update(t, { tod: todAt(t), voidSky: voidSkyAt(t) * (shot.vsk ?? 1), voidPos: W(M.V), sunShift: shot.sunShift ?? 0, sunGlow: shot.sunGlow ?? 1 });
 
     user.update(t, userPose(t));
-    vd.update(t, voidArmour(t, { gaze: voidGaze(t, user) }));
+    updateVoid(vd, t, voidArmour(t, { gaze: user.anchor('eyes') }));
     jesus.update(t, jesusPose(t, user, vd));
 
     st.fx.begin();
@@ -67,27 +71,41 @@ function statics(st) {
   const out = {};
   const jm = W(M.JM);
   out.jEyes = V3(jm[0] + Math.sin(jYawTalk()) * 0.14, 1.55, jm[2] + Math.cos(jYawTalk()) * 0.14);
+  out.R = defendRef(user, T('s08b05'));
   const t0 = T('s09b01');
-  user.update(t0, userSeated(t0, { gaze: out.jEyes }));
-  out.uEyes = user.anchor('eyes'); out.uHandR = user.anchor('handR');
+  user.update(t0, userSeated(t0, { gaze: out.jEyes, R: out.R }));
+  out.uEyes = user.anchor('eyes'); out.uShL = user.anchor('shoulderL');
   vd.update(t0, voidArmour(t0, { gaze: out.uEyes }));
   out.vEyes = vd.anchor('eyes');
   out.MOTE = computeMote(vd, out.uEyes);                         // same point as s08
-  // cameras
-  out.UCU_A = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.6, yaw: 124, pitch: 3, fov: 33, screenY: sy(430), drift: 0.25 });
-  out.UCU_B = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.42, yaw: 122, pitch: 3, fov: 33, screenY: sy(425), drift: 0.25 });
-  out.MASTER = EDGE.cam('MASTER', { drift: 0.25 });
-  // b04: push in to the symmetrical three-shot (Jesus dead centre, the two scowls at the diagonal corners)
+  // the jab: out at the Void, screen first, a little up (a flashlight at a monster)
+  out.jab = out.uShL.clone().lerp(out.vEyes, 0.0).add(out.vEyes.clone().sub(out.uShL).setY(0).normalize().multiplyScalar(0.42)).add(V3(0, 0.2, 0));
+  // world wrists for the arm transitions (snapshots of the rig's own presets at the moments the blends meet them)
+  S = out;
+  const that = wordT('s09b03', 'that', { fallback: 0.45 }), thing = wordT('s09b03', 'thing', { fallback: 0.7 });
+  const wr = (side) => user.root.localToWorld(user.arms[side].wrist.clone());
+  user.update(that - 0.15, userPose(that - 0.15)); const holdL = wr('L');
+  user.update(thing + 0.17, userPose(thing + 0.17)); const crossL = wr('L'), crossR = wr('R');
+  const uy = WY(M.U);
+  out.W = { holdL, crossL, crossR, inward: V3(-Math.sin(uy), -0.3, -Math.cos(uy)).normalize() };
+  // cameras: USER_CU (room for the raised hand at frame-left and the phone jabbing in at frame-right)
+  out.UCU_A = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.95, yaw: 122, pitch: 3, fov: 33, screenY: sy(400), drift: 0.2 });
+  out.UCU_B = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.72, yaw: 120, pitch: 3, fov: 33, screenY: sy(405), drift: 0.2 });
+  // the three-shot from the master side (user lower-left, Jesus centre, the Void upper-right), pushing in through b04
   const jEnd = V3(jm[0] + Math.sin(jYawEnd()) * 0.14, 1.55, jm[2] + Math.cos(jYawEnd()) * 0.14);
-  out.MASTER2 = fitShot([[jEnd, 360, 455], [out.vEyes, 575, 250, 0.7], [out.uEyes, 160, 740, 0.8]], 38, out.MASTER.pos, out.MASTER.look, { posReg: 0.02, drift: 0.15 });
+  // (from the OTS side: over the user's right shoulder, so the huffy look-away over that shoulder turns the user's
+  // face toward us; stacked in depth: user lower-left, Jesus centre, the Void upper-right)
+  const OT = EDGE.cam('OTS', { drift: 0.2 });
+  out.THREE_A = fitShot([[jEnd, 340, 445], [out.vEyes, 560, 235, 0.7], [out.uEyes, 150, 700, 0.8]], 42, OT.pos, OT.look, { posReg: 0.03, yMin: 1.4, yMax: 2.3, drift: 0.2 });
+  out.THREE_B = fitShot([[jEnd, 350, 455], [out.vEyes, 585, 225, 0.7], [out.uEyes, 140, 730, 0.8]], 38, OT.pos, OT.look, { posReg: 0.03, yMin: 1.4, yMax: 2.3, drift: 0.12 });
   return out;
 }
 
 // ------------------------------------------------------------------------------------------------ camera
 function shotAt(t) {
-  const cut = T('s09b03') - 0.08;
+  const cut = scaryCutT();
   if (t < cut) return { ...mixShot(S.UCU_A, S.UCU_B, ramp(t, T('s09'), cut, 'inOut')), sunShift: -0.12, sunGlow: 0.6 };
-  return mixShot(S.MASTER, S.MASTER2, ramp(t, T('s09b03') + 1.0, T('s09.end'), 'inOut'));
+  return mixShot(S.THREE_A, S.THREE_B, ramp(t, T('s09b03.end') - 0.2, T('s09.end'), 'inOut'));
 }
 
 // ------------------------------------------------------------------------------------------------ the user
@@ -105,29 +123,41 @@ function userPose(t) {
     [b3 + 0.15, vE, 0.1],                  // "I'm not talking to THAT..." — at the Void
   ];
   const gaze = gazeSched(t, gk);
-  const P = userSeated(t, { gaze });
-  // ---- head: shake on "no", chin up on "thing"; head turns a little toward the Void for the jab
+  const P = userSeated(t, { gaze, R: S.R });
+  // ---- head: shake on "no", chin up + the huffy turn-away on "thing"
   const hs = headShake(t, no - 0.06, { count: 2.5, dur: 0.62, amp: 0.3 });
-  const chinUp = ramp(t, thing, thing + 0.22, 'out');
-  P.head = { look: gazeSched(t - 0.1, gk.map(([a, b]) => [a, b, 0.3])), follow: 0.35, yaw: hs.yaw, pitch: -0.13 * chinUp + 0.05 * pulse(t, b2 - 0.05, 0.1, 0.1, 0.25) };
+  const ta = userTurnAway(t);
+  const look = gazeSched(t - 0.1, gk.map(([a, b]) => [a, b, 0.3]));
+  P.head = { look, follow: 0.35 * (1 - ta.chin), yaw: hs.yaw, pitch: -0.16 * ta.chin + 0.05 * pulse(t, b2 - 0.05, 0.1, 0.1, 0.25) };
   P.extra.hairSwing = hs.hairSwing;
-  // ---- arms: right hand still up (defend) -> sinks as the phone jabs on "that" -> both arms snap crossed on "thing"
-  const jab = ramp(t, that - 0.14, that + 0.06, 'out') * (1 - ramp(t, thing - 0.06, thing + 0.16));
+  // after the turn the eyes slide back to the Void (side-eye from the turned head)
+  if (ta.chin > 0) P.gaze = vE;
+  // ---- arms: right hand still up (defend, trembling) -> it drops as the phone jabs on "that" -> both arms snap
+  // crossed on "thing" (every in-between is in motion, nothing half-blended is held on screen)
+  const jabU = ramp(t, that - 0.14, that + 0.06, 'out');
   const cross = ramp(t, thing - 0.06, thing + 0.16, 'out');
-  const rDown = 0.55 * ramp(t, b1 + 0.15, b1 + 1.0) + 0.45 * ramp(t, that - 0.1, that + 0.25);
-  // the jab goes out and UP (a flashlight at a monster) so it reads past the user's head from the high master
-  const uy = WY(M.U), uL = [Math.cos(uy), 0, -Math.sin(uy)];
-  P.armL = { preset: [['hold', (1 - jab) * (1 - cross) + 1e-4], ['jab', jab], ['crossed', cross]], tremble: 0.7 * jab + 0.15 * cross,
-    offset: [uL[0] * 0.1 * jab, 0.2 * jab, uL[2] * 0.1 * jab] };
-  P.armR = { preset: [['defend', (1 - rDown) * (1 - cross) + 1e-4], ['knee', rDown * (1 - cross)], ['crossed', cross]], tremble: 0.35 * (1 - rDown) + 0.15 * cross };
+  const jab = jabU * (1 - cross);
+  const rX = ramp(t, that - 0.05, thing + 0.16, 'inOut');
+  const snap = !S.W;                                              // setup snapshots: presets only
+  if (snap) P.armL = { preset: cross >= 1 ? 'crossed' : 'hold' };
+  else if (t < that - 0.14) P.armL = { preset: 'hold' };
+  else if (cross >= 1) P.armL = { preset: 'crossed', tremble: 0.15 };
+  else P.armL = { preset: [['hold', (1 - jabU) * (1 - cross) + 1e-4], ['jab', jab], ['crossed', cross]], tremble: 0.7 * jab + 0.15 * cross,
+    target: S.W.holdL.clone().lerp(S.jab, jabU).lerp(S.W.crossL, cross), reach: 1 };
+  const dA = P.armR;
+  if (snap) P.armR = rX >= 1 ? { preset: 'crossed' } : dA;
+  else if (rX >= 1) P.armR = { preset: 'crossed', tremble: 0.15 };
+  else if (rX > 0) P.armR = { preset: [['defend', 1 - rX + 1e-4], ['crossed', rX]], tremble: 0.3 * (1 - rX) + 0.15 * rX,
+    target: S.R.clear.clone().lerp(S.W.crossR, rX), reach: 1, palm: S.R.toVoid.clone().lerp(S.W.inward, rX).normalize() };
   // ---- body
   const jabLean = pulse(t, that - 0.14, 0.18, 0.12, 0.3);
   P.body = { ...P.body,
     lean: 0.14 * jabLean - 0.06 * cross + 0.06 * pulse(t, b2 + 0.0, 0.08, 0.15, 0.3),
     recoil: 0.1 * pulse(t, thing + 0.02, 0.1, 0.05, 0.4),
     scoot: pulse(t, thing + 0.02, 0.08, 0.12, 0.12), scootPhase: (t - thing) * 1.6,
-    tremble: 0.12 + 0.25 * jab + 0.18 * ramp(t, b4, b4 + 0.4),
-    hunch: 0.3 - 0.12 * chinUp,
+    tremble: 0.12 + 0.25 * jab + 0.15 * ramp(t, b4, b4 + 0.4),
+    hunch: 0.3 - 0.14 * ta.chin,
+    lookBack: ta.lookBack,
     flinch: 0.4 * pulse(t, b1 + 0.62, 0.1, 0.05, 0.3),
   };
   // ---- face
@@ -141,12 +171,12 @@ function userPose(t) {
     [b1 + 1.2, UX('disbelief', { mOpen: 0.22, lidU: 0.9 })],                  // mouth opens...
     [b1 + 1.38, UX('suspicious', { mOpen: 0.0, mPress: 0.6 })],               // ...closes
     [b2 - 0.08, UX('hellno', { mPress: 0.6, lidU: 0.7 })],                     // jaw sets
-    [b2 + 0.04, UX('hellno', { mPress: 0.15 })],                               // (lips free for the words)
-    [b2 + 0.4, UX('hellno', { mPress: 0.2 })],
+    [b2 + 0.02, UX('hellno', { mPress: 0.0 })],                                // (lips free for the words)
+    [b2 + 0.4, UX('hellno', { mPress: 0.05 })],
     [b2 + 0.62, UX('hellno', { mPress: 1, mPout: 0.3 })],                      // lips pressed tight after
-    [b3 - 0.05, UX('glare', { mPress: 0.3, lidU: 0.72 })],
-    [that, UX('glare', { mPress: 0.2, lidU: 0.85, browIn: -0.6 })],
-    [scary - 0.02, UX('scared', { lidU: 1.18, browIn: 0.7, mTremble: 0.5, mOpen: 0.1 })],   // the wobble gives it away
+    [b3 - 0.05, UX('glare', { mPress: 0.0, lidU: 0.72 })],
+    [that, UX('glare', { mPress: 0.0, lidU: 0.85, browIn: -0.6 })],
+    [scary - 0.04, UX('scared', { lidU: 1.2, browIn: 0.75, mTremble: 0.6, mOpen: 0.1, wet: 0.5 })],   // the wobble gives it away
     [scary + 0.2, UX('scared', { lidU: 1.1, browIn: 0.55, mTremble: 0.4 })],
     [thing + 0.08, UX('pout', { lidU: 0.72, browIn: -0.5 })],
     [b4 + 0.2, UX('pout', { lidU: 0.66, mPout: 1.1 })],
@@ -156,36 +186,33 @@ function userPose(t) {
   return P;
 }
 
-// ------------------------------------------------------------------------------------------------ the Void
-function voidGaze(t, user) {
-  return user.anchor('eyes');                                    // locked on the user (their scowl back at it)
-}
-
 // ------------------------------------------------------------------------------------------------ Jesus
 function jesusPose(t, user, vd) {
   const b3 = T('s09b03'), b4 = T('s09b04');
-  const scary = scaryT();
-  const uE = user.anchor('eyes'), vE = vd.anchor('eyes');
+  const slip = slipT();
+  const uE = user.anchor('eyes'), vE = vd.anchor('eyes').add(V3(0, -0.3, 0));
   // eyes lead, head follows: user -> (scary) Void -> b04: user -> Void -> user -> Void
   const gk = [
     ['s09', uE],
-    [scary + 0.55, vE, 0.12],
+    [slip + 0.55, vE, 0.12],
     [b4 + 0.1, uE, 0.09],
     [b4 + 0.55, vE, 0.09],
     [b4 + 1.0, uE, 0.09],
     [b4 + 1.42, vE, 0.09],
   ];
   const gaze = gazeSched(t, gk);
-  const look = gazeSched(t - 0.1, gk.map(([a, b]) => [a, b, 0.28]));
-  const turn = ramp(t, scary + 0.5, b4 + 0.2);                   // body squares up to camera, between them
+  const look = gazeSched(t - 0.12, gk.map(([a, b]) => [a, b, 0.26]));
+  const turn = ramp(t, slip + 0.5, b4 + 0.2);                   // body squares up to camera, between them
   const yaw = lerp(jYawTalk(), jYawEnd(), turn);
-  const shut = pulse(t, scary + 0.04, 0.22, 0.12, 0.3);          // eyes close slowly... open: ah.
+  const pos = W(M.JM);
+  const aim = headAim(pos, yaw, look, { fy: 0.62, fp: 0.4, up: 0.18, down: 0.25 });
+  const shut = pulse(t, slip + 0.04, 0.22, 0.12, 0.3);          // eyes close slowly... open: ah.
   const face = k(t, [
     ['s09', JX('hopeful', { mOpen: 0, mTeethU: 0, browIn: 0.6, browOut: 0.5, lidU: 1.06 })],
     [T('s09b02') + 0.2, JX('oh', { mOpen: 0.05, browIn: 0.55, browOut: 0.5 })],            // (off) "Hell no."
     [b3 - 0.1, JX('concerned', { mPress: 0.3, browIn: 0.5 })],
-    [scary, JX('compassion', { mPress: 0.45, browIn: 0.7 })],
-    [scary + 0.6, JX('concerned', { mPress: 0.6, browIn: 0.6 })],
+    [slip, JX('compassion', { mPress: 0.45, browIn: 0.7 })],
+    [slip + 0.6, JX('concerned', { mPress: 0.6, browIn: 0.6 })],
     [b4 + 0.1, JX('pressed', { mSmile: 0.05, mPress: 0.85, browIn: 0.45, browOut: 0.35, lidU: 1.0 })],
     [b4 + 0.55, JX('pressed', { mSmile: 0.05, mPress: 0.9, browIn: 0.62, browOut: 0.5, lidU: 1.06 })],
     [b4 + 1.0, JX('pressed', { mSmile: 0.05, mPress: 0.95, browIn: 0.8, browOut: 0.68, lidU: 1.12 })],
@@ -193,8 +220,8 @@ function jesusPose(t, user, vd) {
   ]);
   face.blink = shut; face.autoBlink = shut > 0 ? 0 : 1;
   return {
-    pos: W(M.JM), yaw, face, gaze,
-    head: { look, follow: 0.6, pitch: 0.04 * shut, roll: 0.1 * (1 - turn) },
+    pos, yaw, face, gaze,
+    head: { yaw: aim.yaw, pitch: aim.pitch + 0.04 * shut, roll: 0.1 * (1 - turn), follow: 0 },
     body: { lean: 0.02 * (1 - turn), shrug: 0.12 * ramp(t, b4, b4 + 1.4) },
     armL: { preset: [['clasp', 0.4 + 0.3 * turn], ['clasp_chest', 0.6 - 0.3 * turn]] },
     armR: { preset: [['clasp', 0.4 + 0.3 * turn], ['clasp_chest', 0.6 - 0.3 * turn]] },

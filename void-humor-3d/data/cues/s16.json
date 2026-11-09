@@ -5,7 +5,7 @@
     {"t": "s16b01+0.9", "name": "cloth_rustle", "gain_db": -6, "pan": -0.05},
     {"t": "s16b01+1.69", "name": "cloth_rustle", "gain_db": -8, "pan": 0.0, "rate": 1.2},
     {"t": "s16b01+2.05", "name": "cloth_rustle", "gain_db": -9, "pan": 0.05, "rate": 0.8},
-    {"t": "s16b01+3.05", "name": "footsteps_soft", "until": "s16b11-0.1", "gain_db": -9, "pan": 0.0},
+    {"t": "s16b01+2.8", "name": "footsteps_soft", "until": "s16b11-0.1", "gain_db": -9, "pan": 0.0},
     {"t": "s16b05+0.07", "name": "star_pop", "gain_db": -3, "pan": 0.05},
     {"t": "s16b06+0.1", "name": "twinkle", "gain_db": -7, "pan": 0.05},
     {"t": "s16b06+0.53", "name": "pat_pat", "gain_db": -8, "pan": -0.05, "rate": 0.9},

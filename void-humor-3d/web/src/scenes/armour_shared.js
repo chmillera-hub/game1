@@ -65,6 +65,18 @@ export function gazeSched(t, keys) {
   return res(keys[i - 1][1]).lerp(res(keys[i][1]), u);
 }
 
+/**
+ * Head yaw/pitch (rig convention: yaw + = toward the character's left, pitch + = chin down) that turn a character at
+ * feet `pos` / facing `yaw` part of the way toward a world point: `fy`/`fp` = share of the eye-line angle the head
+ * takes (the eyes do the rest), pitch clamped to [-up, down] so a look up at the Void never snaps the neck back.
+ */
+export function headAim(pos, yaw, target, { fy = 0.4, fp = 0.35, up = 0.2, down = 0.25, eyeH = 1.55 } = {}) {
+  const d = toV(target).sub(new THREE.Vector3(pos[0], eyeH, pos[2]));
+  const lx = d.x * Math.cos(yaw) - d.z * Math.sin(yaw), lz = d.x * Math.sin(yaw) + d.z * Math.cos(yaw);
+  const hy = Math.atan2(lx, lz), hp = -Math.atan2(d.y, Math.hypot(lx, lz));
+  return { yaw: fy * hy, pitch: clamp(fp * hp, -up, down) };
+}
+
 // ------------------------------------------------------------------------------------------------ camera fitter
 /**
  * Find a camera (pos, look) for vertical fov so world points land on target pixels.

@@ -1,12 +1,15 @@
 // Lab: SET 'EDGE' — "The Edge of the Mind". Placeholder capsule figures at the origin for scale.
-//   node tools/render.js sheet --lab edge --from 0 --to 31 --n 32 --cols 8 --out out/sheets/edge_all.jpg
+//   node tools/render.js sheet --lab edge --from 1 --to 51 --n 26 --cols 9 --out out/sheets/edge_all.jpg
 //   (each segment is 2 s; the sheet samples every segment. `segments` lists [start, end, name].)
 import * as THREE from 'three';
 import { applyShot, framed as framedCore } from '../core/camera.js';
-import { skin, cloth, hair, contactShadow } from '../core/materials.js';
+import { contactShadow } from '../core/materials.js';
 import { clamp, lerp, smooth } from '../core/util.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+// placeholder materials: plain Standard (the core skin/cloth/hair are Physical + sheen: costly, and these are only for scale)
+const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: o.r ?? 0.8, emissive: o.e ?? 0x000000 });
+const skin = (c) => std(c, { r: 0.55 }), cloth = (c) => std(c), hair = (c) => std(c, { r: 0.5 });
 // core framed() lands the subject at 1 - screenY (see scenes/marks.js); compensate here so screenY means "from the top"
 const framed = (look, o) => framedCore(look, { ...o, screenY: 1 - (o.screenY ?? 0.38) });
 const SEG = 2;
@@ -58,9 +61,9 @@ function seated(body, skinC, hairC) {
 function voidish() {
   const g = new THREE.Group();
   const m = new THREE.MeshStandardMaterial({ color: 0x1e1a46, roughness: 0.6 });
-  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), cloth(0x1c1844, { rim: 1.4, rimColor: 0x8a6cff }));
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), std(0x1c1844, { e: 0x0c0820 }));
   body.scale.set(1.05, 1.25, 0.95); body.position.y = 1.2; g.add(body);
-  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.62, 32, 24), cloth(0x1c1844, { rim: 1.6, rimColor: 0x6ad8ff }));
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.62, 32, 24), std(0x1c1844, { e: 0x081420 }));
   hood.position.set(0, 2.45, 0.12); hood.scale.set(1, 1.05, 0.95); g.add(hood);
   const face = new THREE.Mesh(new THREE.SphereGeometry(0.46, 28, 20), new THREE.MeshBasicMaterial({ color: 0x05040e }));
   face.position.set(0, 2.38, 0.36); face.scale.set(1, 0.95, 0.6); g.add(face);
@@ -134,7 +137,7 @@ export async function update(t, app, s) {
   if (cast === 'walk') opts.shadowAt = s.set.pathAt(9).pos;
   const F = s.set.shots.finale;
   if (cast === 'finale') Object.assign(opts, F.opts, { tod: opts.tod });
-  if (cast === 'finaleRaw') opts.shadowAt = F.opts.shadowAt;
+  if (cast === 'finaleRaw') Object.assign(opts, { shadowAt: F.opts.shadowAt, sunShift: F.opts.sunShift });   // aligned, no recipe
   s.set.update(t, opts);
   // cast placement
   const { jes, usr, usrSit, vd } = s;
@@ -162,9 +165,6 @@ export async function update(t, app, s) {
     vd.visible = true; vd.position.set(b.pos[0] + side[0] * 0.9, b.pos[1], b.pos[2] + side[2] * 0.9); vd.rotation.y = b.yaw; vd.scale.setScalar(1);
   }
   applyShot(app.camera, shotFn(u, s.set), t);
-  if (cast === 'finale') { const { worldToScreen } = await import('../core/camera.js'); const { U_DBG } = await import('../sets/edge.js');
-    const c = app.camera.position; console.log('DBG cam', c.toArray().map((v) => v.toFixed(2)).join(','), 'fin', JSON.stringify(s.set.shots.finale.pos), 'jes', worldToScreen(app.camera, s.jes.position.clone().add(V(0, 1, 0))).map((v) => v.toFixed(0)).join(','), 'void', worldToScreen(app.camera, s.vd.position.clone().add(V(0, 1.5, 0))).map((v) => v.toFixed(0)).join(','),
-      'sun', worldToScreen(app.camera, c.clone().addScaledVector(U_DBG.uESunDir.value, 200)).map((v) => v.toFixed(0)).join(','), 'sunDir', U_DBG.uESunDir.value.toArray().map((v) => v.toFixed(3)).join(',')); }
   { const th = Math.tan(app.camera.fov * Math.PI / 360); s.label.position.set(0, -th * 0.9, -1); s.label.scale.setScalar(2 * th * app.camera.aspect); }
   s.look = { ...s.set.look, ...(cast === 'finale' ? F.post : {}) };
   const txt = `${name}   t=${t.toFixed(2)}`;

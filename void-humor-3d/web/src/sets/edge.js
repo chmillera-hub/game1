@@ -2,6 +2,8 @@
 //
 //   const set = await app.set('EDGE');      // { scene, update(t, opts), anchors, props, look, groundAt, pathAt, shots }
 //   set.update(t, { tod: 0..1, voidSky: 0..1, voidPos: [x,y,z], seeds: 1 });
+//   finale: applyShot(cam, set.shots.finale); set.update(t, { ...set.shots.finale.opts }); look += shots.finale.post
+//   (full option list: EdgeSet.update() below and docs/sets/edge.md)
 //
 // Layout (metres, Y up; the low sun is ~8° left of world -Z). Compatible with scenes/marks.js (EDGE.*_WORLD):
 //   - a flat soft-grass stage (y = 0 exactly for r < 5.2 m) where the characters act,
@@ -10,9 +12,10 @@
 //     (≈ (-0.8, 0.49, -11)) beside the lilac hillock (top ≈ (-3.6, 2.6, -10)), climbs the long crest (~41 m:
 //     anchors.pathFar) and converges into the gap in the far ridge right under the sun,
 //   - a sky dome (gold -> peach -> lilac -> indigo zenith, belt-of-Venus pink on the anti-sun side), a huge soft
-//     sun glow, backlit billboard clouds, a few early stars, and an optional Void "cosmic bleed",
-//   - glowing puff-trees, a few glassy "soft crystal" trees (the rose-gold one beside the bend at (2, 0, -5.2)),
-//     round luminous bushes, tiny glowing flowers, drifting dandelion-like thought seeds, faint golden motes.
+//     sun glow, sculpted sun-lit billboard cumulus (hero pairs on the sunward and north-east camera axes), a few early
+//     stars, and an optional Void "cosmic bleed",
+//   - glowing puff-trees with smooth soft-union crowns, the rose-gold "soft crystal" hero tree beside the bend at
+//     (2, 0, -5.2), round luminous bushes, tiny glowing flowers, drifting dandelion-like thought seeds, golden motes.
 // Everything is a pure function of (t, opts). No Math.random / Date.
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -180,13 +183,13 @@ const U = {
   uEGlow: { value: 1 },
   uEHazeDen: { value: 0.0042 }, uEHazeMax: { value: 0.96 },
   uEVoid: { value: 0 }, uEVoidCos: { value: Math.cos(34 * DEG) }, uEVoidUp: { value: 0.1 },
-  uEVoidPos: { value: V3(0, 2.0, 0) },
+  uEVoidPos: { value: V3(0, 2.0, 0) }, uEVoidDir: { value: V3(0, 0, -1) },   // dir: set per render (sky.onBeforeRender)
   uEKeyDir: { value: V3(0, 1, 0) },
   uEGTint: { value: V3(1, 1, 1) }, uEGSat: { value: 1.12 },          // ground grade (keeps the grass clear pastel at every tod)
   uEGDusk: { value: 0 },                                             // backlit ground -> dusky rose-lilac (never olive)
 };
 const SKY_PARS = /* glsl */`
-uniform vec3 uEKeyDir, uESunDir, uESunCol, uEHorS, uEHorA, uELowS, uELowA, uEMid, uEHigh, uEZen, uEBelt, uEShadow, uEVoidPos;
+uniform vec3 uEKeyDir, uESunDir, uESunCol, uEHorS, uEHorA, uELowS, uELowA, uEMid, uEHigh, uEZen, uEBelt, uEShadow, uEVoidPos, uEVoidDir;
 uniform float uEGlow, uEHazeDen, uEHazeMax, uEVoid, uEVoidCos, uEVoidUp, uETime;
 float eHash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
 float eNoise(vec3 x){ vec3 i = floor(x); vec3 f = fract(x); f = f * f * (3.0 - 2.0 * f);
@@ -217,13 +220,7 @@ vec3 eHaze(vec3 d){ return eSkyGrad(normalize(vec3(d.x, 0.022, d.z))); }
 // the Void's cosmic bleed: a soft region of sky around (and above) the Void, as seen from the camera
 float eVoidMask(vec3 d){
   if (uEVoid <= 0.001) return 0.0;
-  vec3 vd = normalize(normalize(uEVoidPos - cameraPosition) + vec3(0.0, uEVoidUp, 0.0));
-  // keep the patch centre inside the frame: when the Void is in front of the camera, its centre may sit at most ~9°
-  // above the view axis (eye-level mediums otherwise only show the patch's lower rim)
-  vec3 cf = -vec3(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2]);
-  float front = smoothstep(0.2, 0.6, dot(normalize(vd.xz + 1e-5), normalize(cf.xz + 1e-5)));
-  float yMax = sin(clamp(asin(clamp(cf.y, -1.0, 1.0)) + 0.16, -0.2, 1.2));
-  if (vd.y > yMax && front > 0.0) { vec3 vc = vd; vc.y = mix(vd.y, yMax, front); vc.xz = normalize(vd.xz + 1e-5) * sqrt(max(1.0 - vc.y * vc.y, 0.0)); vd = vc; }
+  vec3 vd = uEVoidDir;                     // patch centre as seen from this camera (voidDirFor(), once per render)
   float n = eNoise(d * 3.5 + vec3(0.0, uETime * 0.03, uETime * 0.02));
   float e = dot(d, vd) + (n - 0.5) * 0.14;
   float m = smoothstep(uEVoidCos - 0.13, min(uEVoidCos + 0.12, 0.995), e);
@@ -244,7 +241,8 @@ function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze
     if (enhanced) prev.call(mat, sh, r);
     Object.assign(sh.uniforms, U, L);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nvarying vec4 vEHz;\nuniform float uEHazeMul;\n' + SKY_PARS)
+      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nvarying vec4 vEHz;\nuniform float uEHazeMul;\n' + SKY_PARS
+        + (grass ? 'varying vec4 vEGr;\nuniform float uEScatter, uESheen, uESelf, uEForm;\n' : ''))
       .replace('#include <begin_vertex>', sway ? `#include <begin_vertex>
         {
           float eph = 0.0;
@@ -267,15 +265,19 @@ function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze
           float eden = uEHazeDen * (0.55 + 0.45 * exp(-max(vEW.y, 0.0) * 0.04));
           float ehz = 1.0 - exp(-pow(edist * eden, 1.3));
           vEHz = vec4(eHaze(ed), clamp(ehz * uEHazeMax * uEHazeMul, 0.0, 1.0));
+          ${grass ? `// grass light terms, per vertex (smooth ground; saves 3 normalizes + 2 pows per pixel):
+          // forward scatter toward the sun + soft sheen at grazing angles + a little self-light; hill form (rgb add, a mul)
+          vec3 enW = normalize(mat3(modelMatrix) * objectNormal);
+          float efs = pow(max(dot(ed, uESunDir), 0.0), 5.0);
+          float efr = 1.0 - clamp(abs(dot(enW, ed)), 0.0, 1.0);
+          vec3 eAdd = uESunCol * (uEScatter * efs * (0.35 + 0.65 * efr)) + mix(vec3(1.0), uESunCol, 0.5) * uESheen * efr * efr * efr + vec3(uESelf);
+          float ef = clamp(1.0 + 0.75 * (dot(enW, uEKeyDir) - uEKeyDir.y), 0.86, 1.15);   // backlit slopes never go muddy
+          vEGr = vec4(eAdd, mix(1.0, ef, uEForm));` : ''}
         }`);
     let fs = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nvarying vec4 vEHz;\nuniform float uEScatter, uESheen, uESelf, uEForm, uEGSat, uEGDusk;\nuniform vec3 uEKeyDir, uESunDir, uESunCol, uEGTint;\n')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nvarying vec4 vEHz;\nuniform float uEGSat, uEGDusk;\nuniform vec3 uEGTint;\n' + (grass ? 'varying vec4 vEGr;\n' : ''))
       .replace('#include <fog_fragment>', `{
-          ${grass ? `{ // hill form: slopes turned toward the (back) sun key brighten, slopes facing away darken (beyond the clearing)
-            vec3 enW = normalize((vec4(normal, 0.0) * viewMatrix).xyz);
-            float ef = clamp(1.0 + 0.75 * (dot(enW, uEKeyDir) - uEKeyDir.y), 0.86, 1.15);   // backlit slopes never go muddy
-            gl_FragColor.rgb *= mix(1.0, ef, uEForm);       // neutral (1.0) on flat ground, so it can apply everywhere
-          }` : ''}
+          ${grass ? 'gl_FragColor.rgb *= vEGr.a;           // hill form (neutral on flat ground)' : ''}
           ${grade ? `{ // ground grade: tod tint (no olive under the red sunset key) + saturation back toward clear pastel
             vec3 eg = gl_FragColor.rgb * uEGTint; float egl = dot(eg, vec3(0.2126, 0.7152, 0.0722));
             eg = mix(eg, egl * vec3(1.42, 0.68, 1.6), uEGDusk);     // dusky rose-lilac, not grey
@@ -283,18 +285,10 @@ function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze
           }` : ''}
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vEHz.rgb, vEHz.a);
         }`);
-    if (grass) fs = fs.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-        {
-          vec3 ev = normalize(vEW - cameraPosition);
-          float efs = pow(max(dot(ev, uESunDir), 0.0), 5.0);
-          float efr = 1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0);
-          totalEmissiveRadiance += uESunCol * diffuseColor.rgb * (uEScatter * efs * (0.35 + 0.65 * efr));
-          totalEmissiveRadiance += diffuseColor.rgb * mix(vec3(1.0), uESunCol, 0.5) * uESheen * pow(efr, 3.0);
-          totalEmissiveRadiance += diffuseColor.rgb * uESelf;
-        }`);
+    if (grass) fs = fs.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * vEGr.rgb;');
     sh.fragmentShader = fs;
   };
-  mat.customProgramCacheKey = () => 'edge|' + (enhanced ? 'E' : '') + (grass ? 'G' : '') + (sway ? 'S' : '') + (grade ? 'R' : '') + mat.type;
+  mat.customProgramCacheKey = () => 'edge2|' + (enhanced ? 'E' : '') + (grass ? 'G' : '') + (sway ? 'S' : '') + (grade ? 'R' : '') + mat.type;
   return mat;
 }
 
@@ -387,7 +381,10 @@ function buildTerrain() {
   if (g.attributes.normal.array[1] < 0) { g.index.array.reverse(); g.computeVertexNormals(); }
   const mat = edgify(new THREE.MeshLambertMaterial({ vertexColors: true }), { grass: true, scatter: 0.22, sheen: 0.06, self: 0.17, form: 1, grade: true });
   const grp = splitByRadius(g, mat, 'edge.terrain');
-  grp.userData.inner.renderOrder = grp.userData.outer.renderOrder = -20;   // first: the path ribbon draws right after it
+  // inner part (r < 18 m) drawn FIRST, the path ribbon right after it, then everything else: anything lying on the ground
+  // (a seated / kneeling / fallen character, robes, feet) lands on top of the ribbon. The outer part (r > 18 m) is drawn
+  // LATE (after characters / props, before the sky): early-z skips the distant ground hidden behind them.
+  grp.userData.inner.renderOrder = -20; grp.userData.outer.renderOrder = 900;
   return grp;
 }
 // Split a ground mesh into an inner part (r < SHADOW_R: always receives the key's shadows) and an outer part (receives
@@ -449,20 +446,20 @@ function buildPath() {
   g.setIndex(idx);
   g.computeVertexNormals();
   if (g.attributes.normal.array[1] < 0) { g.index.array.reverse(); g.computeVertexNormals(); }
-  // Blended, but drawn in the OPAQUE pass right after the terrain (renderOrder -10, no depth write): everything drawn
-  // later — characters' feet included — lands ON TOP of the ribbon instead of sinking into a late transparent decal.
+  // Blended, but drawn in the OPAQUE pass right after its terrain part (no depth write), ~1.2 cm (stage) / 2-3 cm (hills)
+  // above the rendered mesh: near the stage everything drawn later (feet, a seated user) lands ON TOP of it.
   const mat = edgify(new THREE.MeshLambertMaterial({ vertexColors: true, transparent: false, depthWrite: false,
     blending: THREE.CustomBlending, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
     blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), { grass: true, scatter: 0.26, sheen: 0.04, self: 0.07 });
   const grp = splitByRadius(g, mat, 'edge.path');
-  grp.userData.inner.renderOrder = grp.userData.outer.renderOrder = -10;
+  grp.userData.inner.renderOrder = -10; grp.userData.outer.renderOrder = 910;
   return grp;
 }
 
 // ------------------------------------------------------------------------------------------- sky
 const SKY_FS = /* glsl */`
-varying vec3 vW; varying vec3 vGrad;
+varying vec3 vW; varying vec3 vGrad; varying float vHzAz;
 uniform float uEStars, uESunR;
 uniform vec3 uEDisc;
 ${SKY_PARS}
@@ -481,10 +478,8 @@ void main(){
   float ang2 = 2.0 * (1.0 - dot(d, uESunDir));            // ≈ angle² to the sun (small-angle exact)
   c += uESunCol * uEGlow * 0.55 * exp(-ang2 / 0.0032);
   // a warm glowing line hugging the horizon under the sun
-  vec2 dh = normalize(d.xz + vec2(1e-6, 0.0));
-  float dAz2 = 2.0 * (1.0 - dot(dh, normalize(uESunDir.xz)));
   float hy = max(d.y, 0.0) / 0.018;
-  c += uESunCol * uEGlow * 0.3 * exp(-hy * hy - dAz2 / 0.12);
+  c += uESunCol * uEGlow * 0.3 * exp(-hy * hy) * vHzAz;     // (azimuth falloff per vertex: 20° wide, smooth)
   float ang = sqrt(max(ang2, 0.0));
   float disc = smoothstep(uESunR + 0.011, uESunR - 0.004, ang);
   c = mix(c, uEDisc, disc);
@@ -510,16 +505,31 @@ void main(){
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
+// The Void bleed's centre direction seen from a camera: toward voidPos (+ voidLift), biased up; when the Void is in front
+// of the camera the centre may sit at most ~9° above the view axis, so eye-level mediums show the patch, not its rim.
+const _vd = { p: V3(), f: V3() };
+function voidDirFor(cam, out) {
+  cam.getWorldPosition(_vd.p); cam.getWorldDirection(_vd.f);
+  out.copy(U.uEVoidPos.value).sub(_vd.p).normalize(); out.y += U.uEVoidUp.value; out.normalize();
+  const cf = _vd.f, hl = Math.hypot(out.x, out.z) || 1e-5, cl = Math.hypot(cf.x, cf.z) || 1e-5;
+  const front = smoothstep(0.2, 0.6, (out.x * cf.x + out.z * cf.z) / (hl * cl));
+  const yMax = Math.sin(clamp(Math.asin(clamp(cf.y, -1, 1)) + 0.16, -0.2, 1.2));
+  if (out.y > yMax && front > 0) { const y = lerp(out.y, yMax, front), k = Math.sqrt(Math.max(1 - y * y, 0)) / hl; out.set(out.x * k, y, out.z * k); }
+  return out;
+}
 function buildSky() {
   const L = { uEStars: { value: 0.4 }, uESunR: { value: 0.040 }, uEDisc: { value: V3(7, 5, 2.9) } };
   const mat = new THREE.ShaderMaterial({
     uniforms: { ...U, ...L }, side: THREE.DoubleSide, depthWrite: false, fog: false,
-    vertexShader: `varying vec3 vW; varying vec3 vGrad;\n${SKY_PARS}\nvoid main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
-      vGrad = eSkyGrad(normalize(w.xyz - cameraPosition)); gl_Position = projectionMatrix * viewMatrix * w; }`,
+    vertexShader: `varying vec3 vW; varying vec3 vGrad; varying float vHzAz;\n${SKY_PARS}\nvoid main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
+      vec3 d = normalize(w.xyz - cameraPosition); vGrad = eSkyGrad(d);
+      vHzAz = exp(-2.0 * (1.0 - dot(normalize(d.xz + vec2(1e-6, 0.0)), normalize(uESunDir.xz))) / 0.12);
+      gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: SKY_FS,
   });
   // lat-long dome with rings every ~1° near the horizon (where the gradient changes fastest), coarser above
-  const els = [-90, -45, -20, -10, -6, -4, -3, -2, -1.2, -0.5, 0, 0.6, 1.3, 2];
+  // (nothing below -6°: the terrain always covers it — skipping it saves rasterising the lower half of every frame twice)
+  const els = [-6, -4, -3, -2, -1.2, -0.5, 0, 0.6, 1.3, 2];
   for (let e = 3; e <= 20; e += 1) els.push(e);
   for (let e = 22.5; e <= 45; e += 2.5) els.push(e);
   for (let e = 50; e <= 90; e += 5) els.push(e);
@@ -535,6 +545,8 @@ function buildSky() {
   // drawn LAST among opaques (depth-tested, no depth write): early-z skips every sky pixel hidden by terrain/props/characters
   m.renderOrder = 1000; m.frustumCulled = false; m.name = 'edge.sky';
   m.userData.L = L;
+  // the sky (opaque) renders before the clouds (transparent): set the Void bleed direction for this camera here
+  m.onBeforeRender = (r, sc, cam) => { if (U.uEVoid.value > 0.001) voidDirFor(cam, U.uEVoidDir.value); };
   return m;
 }
 
@@ -669,8 +681,8 @@ function buildClouds() {
   // [az (rad, relative to the sun), el (deg), width (m at dist), variant, opacity, rimBoost, dist]
   // low warm banks hugging the horizon on both sides of the sun gap
   list.push([-0.42, 2.6, 120, 2, 0.8, 1.0, 300], [0.36, 3.2, 105, 2, 0.75, 1.0, 305], [-0.95, 4.0, 90, 2, 0.7, 0.8, 300], [0.9, 3.0, 110, 2, 0.7, 0.8, 300]);
-  // a thin streak crossing above the sun
-  list.push([0.08, 17.5, 95, 3, 0.5, 1.2, 290]);
+  // a thin streak crossing above the sun, and a faint low one just over it (glows gold in the finale's long lens)
+  list.push([0.08, 17.5, 95, 3, 0.5, 1.2, 290], [-0.07, 7.6, 62, 3, 0.4, 1.3, 292]);
   // HERO cumulus on the two main camera axes: sunward (world -Z; the sun is 8° left of it) and the north-east staging
   // master (world azimuth ~2.38 rad), low enough to sit in portrait frames, above head height in eye-level mediums
   list.push([0.30, 10.5, 58, 0, 0.97, 1.0, 285], [-0.33, 13.5, 50, 1, 0.95, 1.0, 286]);           // sunward pair (±10° of -Z)
@@ -791,11 +803,11 @@ function clusterBlobs(R, n, spread, rMin, rMax, flatY = 0.85) {
   }
   return blobs;
 }
-const lodFor = (x, z, near, mid, far) => { const d = Math.hypot(x, z); return d < 10 ? near : d < 24 ? mid : far; };
+const lodFor = (x, z, near, mid, far) => { const d = Math.hypot(x, z); return d < 10 ? near : d < 24 ? mid : far; };   // icosphere detail by distance
 function buildBush(x, z, s, hue, seed) {
   const R = rng(seed);
   const blobs = clusterBlobs(R, 4 + Math.floor(R() * 3), 0.55 * s, 0.32 * s, 0.62 * s);
-  const m = new THREE.Mesh(blobSurface(blobs, 0.1 * s, lodFor(x, z, 12, 9, 6)), glowMat(hue, { glow: 0.26, rim: 0.8 }));
+  const m = new THREE.Mesh(blobSurface(blobs, 0.1 * s, lodFor(x, z, 11, 8, 5)), glowMat(hue, { glow: 0.26, rim: 0.8 }));
   m.position.set(x, groundAt(x, z) - 0.06, z);
   m.rotation.y = R() * TAU;
   m.castShadow = true;
@@ -837,7 +849,7 @@ function buildTree(x, z, H, hue, seed, crystal = false) {
   const trunk = new THREE.Mesh(tg, trunkMat); trunk.castShadow = true; grp.add(trunk);
   // canopy: ONE smooth soft-union mass of glowing puffs (wider than tall), with a faint light halo
   const blobs = clusterBlobs(R, crystal ? 8 : 9, 0.78 * k, 0.6 * k, 0.98 * k, crystal ? 0.95 : 0.86);
-  const canopy = new THREE.Mesh(blobSurface(blobs, 0.16 * k, lodFor(x, z, 20, 14, 9)),
+  const canopy = new THREE.Mesh(blobSurface(blobs, 0.16 * k, lodFor(x, z, 16, 12, 8)),
     glowMat(hue, crystal ? { glow: 0.36, rim: 0.7, wrap: 0.55, rough: 0.45, rimColor: 0xc8a8ff, rimPower: 2.2 } : { glow: 0.34, rim: 1.0, wrap: 0.45 }));
   canopy.position.copy(top).add(V3(0, -0.6 * k, 0)); canopy.castShadow = true;
   const sway = new THREE.Group(); sway.add(canopy); grp.add(sway);
@@ -865,7 +877,7 @@ function buildHeroTree(x, z) {
   const k = 0.82;
   const { tg, top } = trunkGeo(R, 3.05, k, 0.2, 0.1);
   const trunkMat = new THREE.MeshStandardMaterial({ color: col(0xf8e8ee), roughness: 0.62 });
-  enhance(trunkMat, { rim: 0.4, rimColor: 0xff9a78, rimPower: 2.6, glow: 0.12, wrap: 0.45, wrapColor: 0xff9a78 });
+  enhance(trunkMat, { rim: 0.4, rimColor: 0xf4a0a8, rimPower: 2.6, glow: 0.12, wrap: 0.45, wrapColor: 0xf4a0a8 });
   edgify(trunkMat);
   const trunk = new THREE.Mesh(tg, trunkMat); trunk.castShadow = true; grp.add(trunk);
   // crown: a lobed soft cloud of puffs (core + a drooping lower ring + an upper ring + a top), ~2.3 m wide, ~1.6 m tall,
@@ -875,9 +887,10 @@ function buildHeroTree(x, z) {
   for (let i = 0; i < 4; i++) { const a = i / 4 * TAU + 0.9, rr = 0.38 + 0.04 * Math.cos(i * 1.9); blobs.push([Math.cos(a) * 0.36, 0.9, Math.sin(a) * 0.36, rr, 0.9]); }
   blobs.push([0.05, 1.16, -0.02, 0.32, 0.95]);
   const canopyMat = glowMat('roseGold', { glow: 0.24, rim: 0.42, rimColor: 0xd0b0ff, rimPower: 2.4, wrap: 0.5, rough: 0.48 });
-  const canopy = new THREE.Mesh(blobSurface(blobs, 0.14, 24, 0.76, 0.14), canopyMat);
+  const canopy = new THREE.Mesh(blobSurface(blobs, 0.14, 20, 0.76, 0.14), canopyMat);
   canopy.position.copy(top).add(V3(0, -0.3, 0)); canopy.castShadow = true;
   // three slender branches fork from the trunk up into the crown's underside
+  let br;
   {
     const geos = [], from = V3(top.x * 0.7, 2.25, 0);
     for (let i = 0; i < 3; i++) {
@@ -886,13 +899,13 @@ function buildHeroTree(x, z) {
       bg.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), to.clone().sub(from).normalize())));
       bg.translate(from.x, from.y, from.z); geos.push(bg);
     }
-    const br = new THREE.Mesh(mergeGeometries(geos), trunkMat); br.castShadow = true; grp.add(br);
+    br = new THREE.Mesh(mergeGeometries(geos), trunkMat); br.castShadow = true; grp.add(br);
   }
   const sway = new THREE.Group(); sway.add(canopy); grp.add(sway);
   const fruitMat = edgify(new THREE.MeshBasicMaterial({ color: col(0xffb0a0).multiplyScalar(1.15) }));
   const fruits = new THREE.Mesh(fruitGeo(R, top, 0.7, 4, 0.66, 0.2), fruitMat);   // glowing buds tucked under the crown
   sway.add(fruits);
-  grp.userData = { sway, phase: 1.3, amp: 0.004, casters: [trunk, canopy], reach: 3, hero: true, canopyMat, fruitMat, fruits,
+  grp.userData = { sway, phase: 1.3, amp: 0.004, casters: [trunk, canopy, br], reach: 3, hero: true, canopyMat, fruitMat, fruits,
     base: { glow: 0.24, rim: 0.42, fruit: fruitMat.color.clone() } };
   grp.name = 'edge.heroTree';
   return grp;
@@ -1190,7 +1203,8 @@ class EdgeSet {
    *                   disc never sits right behind Jesus's head (it would read as a halo)
    *   sunGlow         sun disc/glow multiplier (default 1; ~0.5 calms close-ups with the sun behind a face)
    *   clear           [[x, z, r], ...] hide the little flowers inside these circles (under a seated / fallen character)
-   *   silhouette 0..1 shots INTO the sun with dark figures (finale): key x0.5, fill x0.1, hemi x0.4, fog off; pair it
+   *   silhouette 0..1 shots INTO the sun with dark figures (finale): key x0.5, fill x0.06, hemi x0.28, fog off, backlit
+   *                   ground dusky rose-lilac; pair it
    *                   with shots.finale.post (low, tight bloom) — see shots.finale
    *   heroTreeGlow    0..1 glow / rim / lantern multiplier of the rose-gold tree (default 1; ~0.3 for close-ups)
    *   hideHeroTree    true: remove the rose-gold tree for this shot
@@ -1239,10 +1253,10 @@ class EdgeSet {
     this.fill.position.copy(fillDir).multiplyScalar(30); this.fill.target.position.set(0, 0, 0);
     C('fill', this.fill.color);
     this.fill.color.lerp(this._c.a.setRGB(0.78, 0.7, 1.0), 0.25 * vs);
-    this.fill.intensity = L('fillI') * (o.fillMul ?? 1) * lerp(1, 0.1, sil);
+    this.fill.intensity = L('fillI') * (o.fillMul ?? 1) * lerp(1, 0.06, sil);
     C('hemiS', this.hemi.color); C('hemiG', this.hemi.groundColor);
     this.hemi.color.lerp(this._c.a.setRGB(0.42, 0.4, 0.85), 0.3 * vs);
-    this.hemi.intensity = L('hemiI') * (o.hemiMul ?? 1) * lerp(1, 0.4, sil);
+    this.hemi.intensity = L('hemiI') * (o.hemiMul ?? 1) * lerp(1, 0.28, sil);
     this.scene.fog.color.copy(U.uEHorA.value).lerp(U.uEHorS.value, 0.5);
     this.scene.fog.density = 0.0055 * (1 - sil);          // (fog would lift the silhouettes toward the bright horizon)
     // --- eyes: key light for all eyeball shaders
@@ -1306,4 +1320,3 @@ class EdgeSet {
 }
 
 export async function create() { return new EdgeSet(); }
-export const U_DBG = U;   // TEMP debug (edge lab)

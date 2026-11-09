@@ -20,7 +20,7 @@ import { JX } from '../chars/jesus.js';
 import { VX } from '../chars/void.js';
 import { UX } from '../chars/user.js';
 import { EDGE, todAt, voidSkyAt, sy, lookFor, frame, galaxyAt } from './marks.js';
-import { loadLines, W, POS, SW, SV, add, arr, own, stamp, drawSkyGalaxy, solve, pulse, V3, toV, ramp, bump, aim, aimXY, pathPose, pathS, rollFor } from './kit_s14_16.js';
+import { loadLines, W, POS, SW, SV, add, arr, own, stamp, drawSkyGalaxy, solve, pulse, V3, toV, ramp, bump, aim, aimXY, pathPose, pathS, rollFor, hideDuring } from './kit_s14_16.js';
 import { S15 } from './s15.js';
 
 const M = EDGE.M;
@@ -41,9 +41,10 @@ export default {
     own(fx.mesh, 's16');
     const sV15 = pathS(set, POS.V15);
     const hill = [EDGE.HILL_WORLD[0], set.groundAt(EDGE.HILL_WORLD[0], EDGE.HILL_WORLD[2]), EDGE.HILL_WORLD[2]];
-    { const hs = []; for (let ss = 3; ss <= 17; ss += 2) { const sm = pathPose(set, ss, -0.18); const P = [sm.pos[0] - sm.left[0] * 2.75 + sm.dir[0] * 4.75, 0, sm.pos[2] - sm.left[2] * 2.75 + sm.dir[2] * 4.75]; hs.push([ss, +sm.pos[1].toFixed(2), +set.groundAt(P[0], P[2]).toFixed(2)]); } console.log('s16 track heights', JSON.stringify(hs)); }
-    console.log('s16 static', JSON.stringify({ sV15: +sV15.toFixed(2), hill, p20: set.pathAt(20).pos.map((v) => +v.toFixed(2)), p30: set.pathAt(30).pos.map((v) => +v.toFixed(2)), p40: set.pathAt(40).pos.map((v) => +v.toFixed(2)) }));
     const sCrest = set.anchors.pathFarS ?? set.crestS ?? 41;
+    // the phone insert's camera sits at the user's chest: cheat the hoodie drawstrings out of the lens for that shot
+    const insW = [T('s16b08'), T('s16b09')];
+    if (user.strings) for (const sg of user.strings) { hideDuring(sg.tb.mesh, [insW]); hideDuring(sg.ag, [insW]); }
     return { scene: set.scene, set, jesus, vd, user, fx, sV15, hill, sCrest, look: lookFor('s16', set.look) };
   },
 
@@ -78,7 +79,10 @@ export default {
     const tLaugh = B6 + 0.05, tPat1 = B6 + 0.55, tPat2 = tPat1 + 0.3;
 
     // ================================================================ shot list
-    const SHOTS = [[S, 'TWO'], [tWalk - 0.06, 'BACK'], [B2 - 0.12, 'TRACK'], [B11 - 0.1, 'FAR'], [B7, 'XWIDE'], [B8, 'PHONE'], [B9, 'UCU'], [tMaybe - 0.12, 'OVER']];
+    // the walk-and-talk: the tracking medium for the setup, a closer tracking single on Jesus for the deadpan punchline,
+    // one on the Void for its reaction (wide eyes, the snort, the giggle), back to the medium for "more dumb jokes"
+    const SHOTS = [[S, 'TWO'], [tWalk - 0.06, 'BACK'], [B2 - 0.12, 'TRACK'], [B4 - 0.1, 'JTRK'], [tChargeE + 0.16, 'VTRK'], [B6e + 0.3, 'TRACK'],
+      [B11 - 0.1, 'FAR'], [B7, 'XWIDE'], [B8, 'PHONE'], [B9, 'UCU'], [tMaybe - 0.12, 'OVER']];
     let si = 0; for (let i = 0; i < SHOTS.length; i++) if (t >= SHOTS[i][0]) si = i;
     const shot = SHOTS[si][1], shotT0 = SHOTS[si][0], shotT1 = SHOTS[si + 1] ? SHOTS[si + 1][0] : E + 0.5;
     const userOn = shot === 'XWIDE' || shot === 'PHONE' || shot === 'UCU' || shot === 'OVER';
@@ -166,6 +170,10 @@ export default {
       const busy = clamp(order + tada + point + chest + sketch);
       let armR = { preset: [['rest', Math.max(1e-3, 1 - busy)], ['explain', Math.max(1e-3, order + sketch)], ['open', Math.max(1e-3, tada)], ['point', Math.max(1e-3, point)], ['heart', Math.max(1e-3, chest)]],
         gesture: 1 + 0.5 * order, hand: tada > 0.5 ? { curl: 0.05, spread: 0.45, thumb: 0.7, splay: 0.1 } : undefined };
+      if (pass && tada > 0.01) {      // the little open-palm ta-da: the palm opens up and out toward the Void's face
+        const sh = jesus.anchor('shoulderR');
+        if (sh) { const o = toV(vE).sub(sh).setY(0).normalize(); armR.target = add(arr(sh), [o.x * 0.32 + fwd[0] * 0.18, -0.12 + 0.06 * tada, o.z * 0.32 + fwd[2] * 0.18]); armR.reach = tada; armR.palm = [0, 1, 0]; }
+      }
       if (pass && sketch > 0.01) {   // the free hand draws a little shape in the air mid-joke
         const a = (t - tTelling) * 4.2;
         armR.offset = SV(0.05 * Math.sin(a) * sketch, 0.04 * Math.sin(2 * a) * sketch, 0);
@@ -303,6 +311,18 @@ export default {
           s = aimXY(add(c0.pos, [0, 2.15 + 0.1 * u, 0]), add(lerpA(vPos, jPos, 0.5), [0, 1.7, 0]), 280, 590, 50, { drift: 0.2 });
           break;
         }
+        case 'JTRK': {  // tracking single on Jesus (front-right), the big hand on his shoulder, the Void soft above-left
+          const sj = pathPose(set, sNow, SIDE_J);
+          const P = add(sj.pos, [-sj.left[0] * 1.0 + sj.dir[0] * 2.3, 1.5, -sj.left[2] * 1.0 + sj.dir[2] * 2.3]);
+          s = aim(P, add(sj.pos, [sj.left[0] * 0.12, 1.5, sj.left[2] * 0.12]), 470, 33, { drift: 0.1 });
+          break;
+        }
+        case 'VTRK': {  // tracking close on the Void's face (Jesus's head at the lower edge)
+          const sv = pathPose(set, sNow, SIDE_V);
+          const P = add(sv.pos, [-sv.left[0] * 2.3 + sv.dir[0] * 4.4, 1.55, -sv.left[2] * 2.3 + sv.dir[2] * 4.4]);
+          s = aimXY(P, add(vE, [0, -0.1, 0]), 455, 360, 38, { drift: 0.1 });
+          break;
+        }
         case 'TRACK': { // front-3/4 tracking medium from their left (camera side), the low sun lighting their faces
           const sm = pathPose(set, sNow, -0.18);
           const P = add(sm.pos, [-sm.left[0] * 2.75 + sm.dir[0] * 4.75, 1.45, -sm.left[2] * 2.75 + sm.dir[2] * 4.75]);
@@ -330,7 +350,7 @@ export default {
             user.phone.updateWorldMatrix(true, false);
             const n = V3(0, 0, 1).transformDirection(user.phone.matrixWorld), up = V3(0, 1, 0).transformDirection(user.phone.matrixWorld);
             const xr = V3(1, 0, 0).transformDirection(user.phone.matrixWorld);
-            const cp = ph.clone().addScaledVector(n, 0.25).addScaledVector(up, -0.035).addScaledVector(xr, 0.05);
+            const cp = ph.clone().addScaledVector(n, 0.21).addScaledVector(up, -0.1).addScaledVector(xr, 0.06);
             const look = ph.clone().addScaledVector(up, -0.012);
             s = { pos: cp.toArray(), look: look.toArray(), fov: 38, drift: 0, roll: rollFor(cp, look, up) };
           } else s = { pos: add(hill, [0, 1.2, -0.8]), look: add(hill, [0, 0.6, 0]), fov: 40 };

@@ -187,12 +187,12 @@ vec3 cplx(vec3 d, vec3 dir, float rad, float n, float m, vec3 c1, vec3 c2, vec3 
   return (c * (0.035 + dens) + hot * core * 0.9) * e * amp;
 }
 // warm complex: a saturated amber-gold heart (survives ACES as gold, not salmon) inside rose/peach edges
-vec3 warm(vec3 d, vec3 dir, float rad, float n, float lo, float hi, vec3 core, vec3 edge, float amp){
+vec3 warm(vec3 d, vec3 dir, float rad, float n, float lo, float hi, vec3 core, vec3 edge, float amp, float heat){
   float e = env(d, dir, rad);
   float dens = smoothstep(lo, hi, n);
-  vec3 c = mix(edge, core, env(d, dir, rad * 0.55));
+  vec3 c = mix(edge, core, env(d, dir, rad * 0.55) * smoothstep(0.12, 0.6, dens));   // thin/dim parts stay rose (dim gold = mud)
   float hot = env(d, dir, rad * 0.34) * (0.35 + 0.65 * dens);
-  return (c * (0.04 + dens) + core * hot * 0.55) * e * amp;
+  return (c * (0.04 + dens) + core * hot * heat) * e * amp;
 }
 void main(){
   vec3 d = normalize(vDir);
@@ -213,10 +213,10 @@ void main(){
   c += cplx(dq, vec3(-0.95, 0.45, -0.30), 0.55, n2, m1, TEAL, BLUE, vec3(0.6, 1.0, 0.95), 0.40, 0.80, 0.85);
   // C: warm gold glow beside the hero galaxy (slightly offset so the galaxy sits on darker sky), magenta-rose edges
   vec3 AMBER = vec3(1.0, 0.56, 0.12), CREAM = vec3(1.0, 0.78, 0.42);
-  c += warm(dq, vec3(-0.05, 0.94, -0.30), 0.30, n3, 0.42, 0.80, mix(AMBER, CREAM, 0.15), mix(MAG, ROSE, 0.6), 0.5);
+  c += warm(dq, vec3(-0.05, 0.94, -0.30), 0.30, n3, 0.42, 0.80, mix(AMBER, CREAM, 0.15), mix(MAG, ROSE, 0.6), 0.5, 0.45);
   // W: small warm luminous cloud (amber-gold heart, rose/peach edges) right of / above the Void in the front view,
   // under the hero galaxy in the looking-up view: the warm counterpoint to the cool sky
-  c += warm(dq, vec3(0.0, 0.27, -0.96), 0.22, n3, 0.32, 0.74, AMBER, mix(ROSE, PEACH, 0.35), 0.62);
+  c += warm(dq, vec3(0.0, 0.27, -0.96), 0.22, n3, 0.32, 0.74, AMBER, mix(ROSE, PEACH, 0.35), 0.62, 0.95);
   // D: rose complex, right / low
   c += cplx(dq, vec3(0.98, 0.12, -0.05), 0.50, n1, n2, ROSE, MAG, vec3(1.0, 0.68, 0.40), 0.42, 0.80, 0.7);
   // E: blue-teal behind the camera
@@ -235,7 +235,7 @@ void main(){
   // gold rim light along the dust-lane edges near the warm clouds
   float rim = smoothstep(0.40, 0.50, dl) * (1.0 - smoothstep(0.50, 0.62, dl));
   float wz = env(dq, vec3(0.0, 0.27, -0.96), 0.42) + 0.7 * env(dq, vec3(-0.05, 0.94, -0.30), 0.45);
-  c += mix(AMBER, CREAM, 0.4) * rim * wz * (0.25 + 0.75 * smoothstep(0.35, 0.7, n3)) * 0.16;
+  c += mix(AMBER, CREAM, 0.7) * rim * wz * smoothstep(0.4, 0.75, n3) * 0.14;
   // faint galactic band (tilted great circle)
   vec3 nb = normalize(vec3(-0.55, 0.35, 0.75));
   float bd = dot(d, nb) + (n2 - 0.5) * 0.12;
@@ -333,10 +333,27 @@ void main(){
 // --- island underlay: a disc of dark "glass over the universe" just BELOW the floor plane. Depth-tested, so it is
 // invisible wherever a host floor exists and only shows when there is none (standalone, or a host that hides its
 // floor): the characters always stand on something. Faint mirror of the sky above (fresnel) + a lilac sheen.
+// light pool + contact core under the pair (shared by the floor veil and, standalone, the island pass)
+const POOL = /* glsl */`
+uniform float uGlow, uContact, uRc, uPR0; uniform vec3 uGlowA, uGlowB;
+// premultiplied pool light (rgb) + contact-core coverage (a) at floor radius r, reveal mask m
+vec4 cosmosPool(float r, float m){
+  float q = r * r / (uPR0 * uPR0);
+  float pool = exp(-q / 0.16) * 0.3 + exp(-q / 0.6) * 0.14 + exp(-q / 2.0) * 0.05;   // bright soft core + faint skirt
+  vec3 g = mix(uGlowA, uGlowB, smoothstep(0.0, 1.2, r / uPR0)) * pool * uGlow * m;
+  return vec4(g, uContact * exp(-r * r / (uRc * uRc)) * m);
+}
+`;
+
+// --- island underlay: a disc of dark "glass over the universe" just BELOW the floor plane. Depth-tested, so it is
+// invisible wherever a host floor exists and only shows when there is none (standalone, or a host that hides its
+// floor): the characters always stand on something. Faint mirror of the sky above (fresnel) + a lilac sheen.
+// Standalone (no veil needed) it also draws the light pool + contact core: one pass instead of two.
 const ISLAND_FS = /* glsl */`
 ${COMMON}
+${POOL}
 uniform samplerCube uSky; uniform mat3 uSkyRot;
-uniform float uIntensity, uNebula, uR0, uR1, uIslA, uIslRefl;
+uniform float uIntensity, uNebula, uR0, uR1, uIslA, uIslRefl, uPoolOn;
 uniform vec3 uCenter, uIslC, uIslSheen;
 varying vec3 vWorld; varying float vHD;
 void main(){
@@ -352,7 +369,9 @@ void main(){
   float k = exp(-r * r / (uR0 * uR0 * 0.6));
   vec3 c = uIslC + refl + uIslSheen * k;
   float a = uIslA * m * (1.0 - smoothstep(uR0 * 0.8, uR1, r));
-  gl_FragColor = vec4(c * a * uIntensity, a);
+  vec3 col = c * a * uIntensity;
+  if (uPoolOn > 0.5) { vec4 p = cosmosPool(r, m); col += p.rgb; a += p.a * (1.0 - a); }
+  gl_FragColor = vec4(col, a);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
@@ -361,8 +380,9 @@ void main(){
 const FLOOR_FS = /* glsl */`
 ${COMMON}
 ${REVEAL}
+${POOL}
 uniform samplerCube uSky; uniform mat3 uSkyRot;
-uniform float uIntensity, uNebula, uR0, uR1, uInner, uCover, uGlow, uStars, uContact, uRc;
+uniform float uIntensity, uNebula, uR0, uR1, uInner, uCover, uStars;
 // procedural star field by direction (continues the far star layer over the host floor, which hides the points)
 float hs13(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 cosmosStars(vec3 d, float pa){
@@ -375,23 +395,24 @@ vec3 cosmosStars(vec3 d, float pa){
   float b = (0.25 + 3.0 * L) * exp(-dpx * dpx * 0.9);
   return mix(vec3(1.0, 0.95, 0.9), vec3(0.75, 0.85, 1.0), hs13(gi + 7.7)) * b;
 }
-uniform vec3 uCenter, uGlowA, uGlowB;
+uniform vec3 uCenter;
 varying vec3 vWorld; varying float vHD;
 void main(){
   vec3 rd = normalize(vWorld - cameraPosition);
-  vec3 d = rd * uSkyRot;
-  vec4 sk = cosmosReveal(rd, vHD, d, cosmosSky(uSky, d), uNebula);   // identical to the shell along this ray
-  float m = sk.a;
+  float pa = length(fwidth(rd));                                    // (outside any branch: derivatives)
   float r = length(vWorld.xz - uCenter.xz);
-  float rad = mix(uInner, 1.0, smoothstep(uR0, uR1, r)) * uCover;
-  vec3 sky = (sk.rgb + cosmosStars(d, length(fwidth(rd))) * uStars * m) * uIntensity;
-  // light pool: a bright soft core where the characters stand + a wide faint skirt
-  float pool = exp(-r * r / (uR0 * uR0 * 0.16)) * 0.3 + exp(-r * r / (uR0 * uR0 * 0.6)) * 0.14 + exp(-r * r / (uR0 * uR0 * 2.0)) * 0.05;
-  vec3 g = mix(uGlowA, uGlowB, smoothstep(0.0, 1.2, r / uR0)) * pool * uGlow * m;
-  // contact core: a soft darkening of whatever is under it (premultiplied: coverage with no colour)
-  float ct = uContact * exp(-r * r / (uRc * uRc)) * m;
+  float rad = mix(uInner, 1.0, smoothstep(uR0, uR1, r)) * uCover;    // sky coverage of the floor here
+  vec3 sky = vec3(0.0); float m = 1.0;
+  if (rad > 0.0005) {
+    vec3 d = rd * uSkyRot;
+    vec4 sk = cosmosReveal(rd, vHD, d, cosmosSky(uSky, d), uNebula);   // identical to the shell along this ray
+    m = sk.a;
+    sky = sk.rgb * uIntensity;
+    if (rad > 0.3) sky += cosmosStars(d, pa) * (uStars * m * uIntensity);   // (not under the lightly tinted island)
+  } else if (uFront < 500.0) m = uRevA * cosmosMaskA(cosmosAng(rd, vHD), 0.0, uFront);   // pool/contact only: no sky work
+  vec4 p = cosmosPool(r, m);                                        // light pool + contact core (darkens what is under)
   float a = m * rad;
-  gl_FragColor = vec4(sky * rad + g, a + ct * (1.0 - a));
+  gl_FragColor = vec4(sky * rad + p.rgb, a + p.a * (1.0 - a));
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
@@ -660,10 +681,13 @@ class CosmosSet {
     this.dome.frustumCulled = false; this.dome.renderOrder = -40;
     this.group.add(this.dome);
 
+    // light pool + contact core (shared by the veil and, standalone, the island pass)
+    this.poolU = { uGlow: { value: 0.5 }, uContact: { value: 0 }, uRc: { value: 1.2 }, uPR0: { value: 2.2 },
+      uGlowA: { value: col(0x8f7cff).multiplyScalar(0.55) }, uGlowB: { value: col(0x35c8d8).multiplyScalar(0.35) } };
     // island underlay (below the floor plane; only visible where there is no host floor)
     const fg = new THREE.CircleGeometry(1, 96); fg.rotateX(-Math.PI / 2);
-    this.islandU = { ...U, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uR0: { value: 2.2 },
-      uR1: { value: 5.5 }, uIslA: { value: 1 }, uIslRefl: { value: 1 }, uCenter: { value: V3() },
+    this.islandU = { ...U, ...this.poolU, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uR0: { value: 2.2 },
+      uR1: { value: 5.5 }, uIslA: { value: 1 }, uIslRefl: { value: 1 }, uPoolOn: { value: 0 }, uCenter: { value: V3() },
       uIslC: { value: col(0x2a2048) }, uIslSheen: { value: col(0xb49cff).multiplyScalar(0.05) } };
     this.island = new THREE.Mesh(fg, new THREE.ShaderMaterial({
       uniforms: this.islandU, vertexShader: DOME_VS, fragmentShader: ISLAND_FS, transparent: true, depthWrite: false, ...premul,
@@ -672,10 +696,8 @@ class CosmosSet {
     this.group.add(this.island);
 
     // floor veil
-    this.floorU = { ...U, ...RU, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uR0: { value: 2.2 },
-      uR1: { value: 5.5 }, uInner: { value: 0 }, uCover: { value: 1 }, uGlow: { value: 0.5 }, uCenter: this.islandU.uCenter,
-      uGlowA: { value: col(0x8f7cff).multiplyScalar(0.55) }, uGlowB: { value: col(0x35c8d8).multiplyScalar(0.35) }, uStars: { value: 1 },
-      uContact: { value: 0 }, uRc: { value: 1.2 } };
+    this.floorU = { ...U, ...RU, ...this.poolU, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 },
+      uR0: { value: 2.2 }, uR1: { value: 5.5 }, uInner: { value: 0 }, uCover: { value: 1 }, uCenter: this.islandU.uCenter, uStars: { value: 1 } };
     this.floor = new THREE.Mesh(fg, new THREE.ShaderMaterial({
       uniforms: this.floorU, vertexShader: DOME_VS, fragmentShader: FLOOR_FS, transparent: true, depthWrite: false, ...premul,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
@@ -936,8 +958,8 @@ class CosmosSet {
    *  bloom, fringe      mid-reveal unfurling light / dissolve-front glow (default 1).
    *  light              cosmic key (+ hemi standalone) multiplier (default 1). hemi: also add the hemi in a host.
    *  floor { cover, inner, r0, r1, glow, contact, rc, island, islandR, reflect }
-   *                     cover: sky over the host floor beyond r0..r1 (default 1 host / 0 standalone; r0 1.8 / 2.2, r1 4.4 / 5.5);
-   *                     inner: sky tint inside r0; glow: light pool (default .6 host / 1 standalone); contact: soft dark
+   *                     cover: sky over the host floor beyond r0..r1 (default 1 host / 0 standalone; r0 1.5 / 2.2, r1 3.8 / 5.5);
+   *                     inner: sky tint inside r0 (.22 host / 0); glow: light pool (default .6 host / 1 standalone); contact: soft dark
    *                     core of radius rc (1.25 m) under `center` (default .28 / .3); island: alpha of the glass island
    *                     under the floor plane (1 host — only seen if the host floor is gone — / .6 standalone), radius
    *                     islandR (default r1 host / 3.6 standalone), reflect: its sky-mirror strength (1).
@@ -1003,24 +1025,27 @@ class CosmosSet {
     const rInt = radius * Math.sqrt(Math.max(0, 1 - (h / height) ** 2));
     F.uR0.value = Math.min(r0, rInt * 0.6); F.uR1.value = Math.min(fo.r1 ?? (standalone ? 5.5 : 3.8), rInt * 0.97);
     F.uInner.value = fo.inner ?? (standalone ? 0 : 0.22); F.uCover.value = fo.cover ?? (standalone ? 0 : 1);
-    const fIn = smooth(reveal * 2);
-    F.uGlow.value = (fo.glow ?? (standalone ? 1 : 0.6)) * I * fIn;
-    F.uContact.value = clamp(fo.contact ?? (standalone ? 0.3 : 0.28)) * fIn;
-    F.uRc.value = fo.rc ?? 1.25;
-    this.floor.position.set(c[0], c[1] + 0.004, c[2]);
-    this.floor.scale.setScalar(F.uCover.value > 0 || F.uInner.value > 0 ? rInt * 1.02 : Math.min(rInt, F.uR0.value * 1.9));
-    // skip the veil draw entirely when it has nothing to do
-    this.floor.visible = reveal > 0.11 && (F.uCover.value > 0 || F.uInner.value > 0 || F.uGlow.value > 0 || F.uContact.value > 0);
-    // island underlay: just below the floor plane (hidden by any host floor; the ground when there is none)
+    const fIn = smooth(reveal * 2), P = this.poolU;
+    P.uGlow.value = (fo.glow ?? (standalone ? 1 : 0.6)) * I * fIn;
+    P.uContact.value = clamp(fo.contact ?? (standalone ? 0.3 : 0.28)) * fIn;
+    P.uRc.value = fo.rc ?? 1.25; P.uPR0.value = F.uR0.value;
+    const skyOnFloor = F.uCover.value > 0 && (F.uInner.value > 0 || F.uR1.value > F.uR0.value), poolOn = P.uGlow.value > 0 || P.uContact.value > 0;
+    // island underlay: just below the floor plane (hidden by any host floor; the ground when there is none). When the
+    // veil has no sky to draw (standalone), the island pass also draws the pool + contact and the veil is skipped.
     const IS = this.islandU;
     const islR = Math.min(fo.islandR ?? (standalone ? 3.6 : F.uR1.value), rInt * 0.97);
+    const poolInIsland = !skyOnFloor && this.group.parent === this.scene;   // (no host floor can hide it)
     IS.uIntensity.value = I; IS.uNebula.value = opts.nebula ?? 1;
     IS.uR0.value = Math.min(F.uR0.value, islR * 0.7); IS.uR1.value = islR;
     IS.uIslA.value = clamp(fo.island ?? (standalone ? 0.6 : 1)) * fIn;
-    IS.uIslRefl.value = fo.reflect ?? 1;
+    IS.uIslRefl.value = fo.reflect ?? 1; IS.uPoolOn.value = poolInIsland ? 1 : 0;
     this.island.position.set(c[0], c[1] - 0.012, c[2]);
-    this.island.scale.setScalar(islR * 1.02);
-    this.island.visible = reveal > 0.11 && IS.uIslA.value > 0;
+    this.island.scale.setScalar(Math.min(rInt, Math.max(islR * 1.02, poolInIsland && poolOn ? F.uR0.value * 1.9 : 0)));
+    this.island.visible = reveal > 0.11 && (IS.uIslA.value > 0 || (poolInIsland && poolOn));
+    // floor veil: skipped entirely when it has nothing to do
+    this.floor.position.set(c[0], c[1] + 0.004, c[2]);
+    this.floor.scale.setScalar(skyOnFloor ? rInt * 1.02 : Math.min(rInt, F.uR0.value * 1.9));
+    this.floor.visible = reveal > 0.11 && (skyOnFloor || (poolOn && !this.island.visible));
 
     // stars
     const S = opts.stars ?? 1;

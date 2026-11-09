@@ -53,7 +53,7 @@ surveys, 9000+ empty baseline, k·1000+t variants incl. 13 = BACKROOM alone and 
 - **Floor veil** (drawn over the floor plane): beyond `r0` the host floor fades into **exactly the shell's reveal look**
   (same deep space / nebula fronts / unfurling light / fringe along the same view ray — no seam where floor meets
   wall mid-reveal) + a procedural star field → the characters stand on an **island of floor** in space (host default
-  r0 1.8 m → r1 4.4 m). Under the pair: a lilac/teal **light pool** (bright soft core + faint skirt) and a soft dark
+  r0 1.5 m → r1 3.8 m, with a 22 % sky tint over the island itself so it reads as "glass"). Under the pair: a lilac/teal **light pool** (bright soft core + faint skirt) and a soft dark
   **contact core** (darkens whatever floor is there).
 - **Island underlay**: a disc of dark **"glass over the universe"** just *below* the floor plane, with a faint fresnel
   mirror of the sky above and a lilac sheen. It is depth-tested, so it is **invisible wherever a host floor exists** and
@@ -138,8 +138,8 @@ const cos = await app.set('COSMOS');
 | key | host default | standalone | meaning |
 |---|---|---|---|
 | `cover` | 1 | 0 | sky over the host floor, ramping in from `r0` to `r1` |
-| `r0`, `r1` | 1.8, 4.4 | 2.2, 5.5 | island radius / where the floor is fully sky (m, from `center`) |
-| `inner` | 0 | 0 | sky tint inside `r0` |
+| `r0`, `r1` | 1.5, 3.8 | 2.2, 5.5 | island radius / where the floor is fully sky (m, from `center`) |
+| `inner` | .22 | 0 | sky tint inside `r0` (the island floor reads as glass over the sky) |
 | `glow` | .6 | 1 | the light pool under the pair |
 | `contact`, `rc` | .28, 1.25 | .3, 1.25 | soft dark contact core under `center` (strength, radius m) |
 | `island` | 1 | .6 | alpha of the glass island **under** the floor plane (host: only visible if the host floor is gone) |
@@ -223,7 +223,37 @@ y ≈ 110–850, subtitles below):
 - All ShaderMaterials ignore scene fog by design (BACKROOM fog does not grey out the cosmos).
 
 ## Performance (SwiftShader, 720×1280, MSAA + bloom post)
-PERF_PLACEHOLDER
+The box was at load 15–23 during all measurements, so wall-clock benches were meaningless (facetest ran at 1.1–1.6 s
+instead of its unloaded 0.48 s). Method instead: **CPU time of the whole browser process tree per frame** (render +
+post + JPEG readback), interleaved round-robin in one browser, min of 5–8 (min ≈ median within ±5 %), then scaled to
+wall time with the core `facetest` lab measured in the same run (1.17 CPU-s ↔ 0.48 s unloaded ⇒ × 0.41). Estimates:
+
+| frame (lab t) | CPU-s | ≈ unloaded s/frame |
+|---|---|---|
+| empty scene + post (9011.5) | 0.69 | 0.28 |
+| **standalone cosmos + capsules** (39.5 wide / 30 orbit) | 1.36 / 1.32 | **0.56 / 0.54** (original set: 0.52) |
+| placeholder room + capsules, no cosmos (5011.5) | 1.00 | 0.41 |
+| room + capsules + full cosmos, two-shot (11.5) / mid-reveal (6) | 1.53 / 1.57 | 0.63 / 0.64 |
+| hero looking-up, capsules (24) / real rigs (66) | 1.53 / 1.56 | 0.63 / 0.64 |
+| **BACKROOM + VOID + FEAR rigs alone** (13050 / 13046 / 13055) | 1.96 / 1.97 / 2.06 | 0.80 / 0.81 / 0.84 |
+| **BACKROOM + rigs + COSMOS, recipe** — full (50) / mid-reveal peak (46) / looking up (55) | 2.05 / 2.37 / 2.14 | 0.84 / **0.97** / 0.88 |
+
+So inside BACKROOM the cosmos costs **≈ +0.04 s at full reveal** (the dissolved room emits no fragments, the shell is
+an opaque pass, far host transparents are depth-rejected) and **≈ +0.16 s at the mid-reveal peak** (blended shell with
+masks + unfurling light, the veil's reveal, the dissolving walls' mask lookups). With two more characters a BACKROOM +
+COSMOS frame stays under the 1.2 s film budget at full reveal; keep a mid-reveal shot to ≤ 3 characters or use
+`puffs: 0` there if it gets tight.
+
+Breakdown (standalone wide, CPU-s): shell .23 · puffs .16 · floor veil + island ≈ .10 (one pass standalone: the island
+draws the pool and the veil is skipped) · galaxies + glyphs .08 · stars .06. Puffs cost only ≈ .03 CPU-s (≈ .01 s) in
+the BACKROOM two-shot, so they stay on by default in a host; `puffs: 0` is the cheapest knob for wide standalone views.
+The veil skips all sky/star work where it does not cover the floor and the stars under the lightly tinted island.
+- One-time setup (GPU bakes: sky cube 6×640², 4 galaxies 512², puff atlas 256² + compiles) ≈ 1.5–2 s; `dissolve` adds
+  one program per patched material type (compiled on first use).
+- ~13 draw calls; no per-frame geometry allocation (glyph/puff instance attributes rewritten in place).
+- Temporal stability at reveal 1: frame-to-frame MAE ≈ 0.002 (stars/glyphs only; no global flicker).
+- Purity: frames rendered in different orders are bit-identical (checked: standalone t 60, BACKROOM mid-reveal 41.5,
+  and BACKROOM rendered *without* the cosmos after the dissolve patch was applied — identical to never patched).
 
 ## Known limitations
 - The reveal front is computed **per camera** (screen-space-like opening from the source); a cut mid-reveal

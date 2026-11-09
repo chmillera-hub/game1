@@ -12,8 +12,11 @@
 //   b04 (silent)   long lens from the camera side, tight on Fear's 3/4 face: the tear falls; the eyes start up the cloak,
 //        the head a beat behind; tilt up + widen to the two-shot: the Void's soft 3/4 face above (lids at half, tiny
 //        smile, utterly still, hood stars kindling), Fear below looking up in wonder.
-// The Void stands 0.5 m nearer the cage for b01-b02 (its arm cannot reach the latch from voidSpot) and is back on
-// voidSpot from b03 (off screen in the doorway CU), which is where s18 has it.
+// The Void is on voidSpot in b01; for b02 it stands 0.62 m nearer the latch, on the camera side (VC = stage (1.6, 0.5):
+// probed, its left fingertip cannot reach the latch from voidSpot), hidden by the cut to the locked insert; it is back
+// on voidSpot from b03 (off screen in the doorway CU), which is where s18 has it. Fear's FIN is cheated 0.2 m toward
+// the latch side of the cage (stage (0.06, 0.06), more frontal) so its face sits above-left of the latch, clear of
+// the TIME-OUT tag, in the insert.
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
@@ -85,11 +88,14 @@ function statics(st) {
   S = out;
   out.B = bonusMarks(set);
   const B = out.B, TT = out.T;
+  // s17's FIN: a little nearer the latch side of the cage and more frontal, so in the insert Fear's sobbing face sits
+  // just above-left of the latch, clear of the TIME-OUT tag (b01 / MASTER can't tell the difference)
+  { const w = ROOM.W(0.06, 0, 0.06); B.FIN = [w[0], B.plate, w[2]]; B.finYaw = ROOM.Y(-0.2); }
   // the Void's reach spot for the latch (b01-b02): nearer the cage, on the camera side (probed: the left fingertip lands
   // on the lever with the forearm coming in from the door side, outside the dome)
   set.update(TT.b2, { latch: 0, cageDoor: 0 });
   out.latch0 = set.anchors.cageLatch.clone();
-  out.VC = ROOM.W(1.72, 0, 0.42);
+  out.VC = ROOM.W(1.6, 0, 0.5);
   out.latchYaw = Math.atan2(out.latch0.x - out.VC[0], out.latch0.z - out.VC[2]);
   // Fear's bar grips at FIN: the two fixed bars nearest its hands, in front of it
   const fy = B.finYaw, fwd = V3(Math.sin(fy), 0, Math.cos(fy)), left = V3(Math.cos(fy), 0, -Math.sin(fy));
@@ -113,6 +119,8 @@ function statics(st) {
   out.vHem = toV(B.V).add(V3(0, 0.55, 0)).addScaledVector(V3(Math.sin(B.vYaw), 0, Math.cos(B.vYaw)), 0.85);
   vd.update(TT.b1, voidPose0(TT.b1, toV(B.FIN).add(V3(0, 0.6, 0))));
   out.vEyesC = vd.anchor('eyes');
+  vd.update(TT.cutCU - 0.05, voidPose0(TT.cutCU - 0.05, toV(B.FIN).add(V3(0, 0.6, 0))));
+  out.vEyesM = vd.anchor('eyes');
   out.doorPt = set.anchors.cageDoor.clone().setY(0.6 + B.plate);
   fear.update(TT.b2 + 0.8, fearPose(TT.b2 + 0.8));
   out.fEyesFIN = fear.anchor('eyes');
@@ -133,28 +141,28 @@ function statics(st) {
   out.OPEN_B = { ...out.OPEN_A, pos: toV(out.OPEN_A.pos).addScaledVector(dirO, 2.0).toArray(), look: toV(out.OPEN_A.look).addScaledVector(dirO, 2.0).toArray() };
   // INSERT (locked): low through the bars from the front-right: Fear's sobbing face upper-left, clear of the tag; the
   // latch lower-right; room above-right for the mitt coming down from the door side
-  out.INS = fitShot([[out.fEyesFIN, 260, 480], [out.latch0, 470, 650]], 32, ROOM.W(...DEF.insPos), out.latch0, { posReg: 10, free: [0, 0, 0] });
+  out.INS = fitShot([[out.fEyesFIN, 320, 420], [out.latch0, 400, 700]], 30, ROOM.W(...DEF.insPos), out.latch0, { posReg: 10, free: [0, 0, 0] });
   out.INS.drift = 0.08;
   // MASTER: cage + Fear left, the Void towering, the janitor's corner back-right, the warm bulb clear of the hood
   // (camera position searched offline: the corner clears the Void's silhouette, the bulb clears the hood)
-  out.MASTER = fitShot([[out.fEyesFIN, 120, 690], [out.vEyesC, 360, 330], [set.anchors.cornerCenter, 640, 640, 1.0]], 44, ROOM.W(-3.0, 2.2, 8.0), ROOM.cam('MASTER').look, { posReg: 10, free: [0, 0, 0] });
+  out.MASTER = fitShot([[out.fEyesFIN, 120, 690], [out.vEyesM, 360, 330], [set.anchors.cornerCenter, 640, 640, 1.0]], 44, ROOM.W(-3.0, 2.2, 8.0), ROOM.cam('MASTER').look, { posReg: 10, free: [0, 0, 0] });
   // b03 CU through the open doorway (Fear turns its head over its shoulder toward it, then shuffles round to face it)
   const cuEye = out.fEyesTurn.clone();
   out.CU_A = ROOM.shot(ROOM.L(cuEye), { ...DEF.cu, drift: 0.12 });
-  out.CU_B = ROOM.shot(ROOM.L(out.fEyesUp.clone().lerp(cuEye, 0.35)), { ...DEF.cu, dist: DEF.cu.dist + 0.05, drift: 0.12 });
+  out.CU_B = ROOM.shot(ROOM.L(out.fEyesUp.clone().lerp(cuEye, 0.5)), { ...DEF.cu, dist: DEF.cu.dist + 0.2, drift: 0.12 });
   // b04: long lens from the camera side: tight on Fear's 3/4 face -> tilt up + widen to the stacked two-shot
   out.TILT_B = fitShot([[out.fEyesUp, 190, 680], [out.vEyes, 520, 250]], 50, ROOM.W(...DEF.tiltPos), out.vEyes, { posReg: 10, free: [0, 0, 0] });
   out.TILT_A = fitShot([[out.fEyesUp, 340, 540]], 13, out.TILT_B.pos, out.fEyesUp, { posReg: 10, free: [0, 0, 0] });
   out.TILT_A.drift = out.TILT_B.drift = 0.08;
   const L3 = (p) => ROOM.L(p).map((v) => +v.toFixed(2));
   console.log('s17 statics', JSON.stringify({ open: project(out.OPEN_A, out.fEyesFIN), ins: [project(out.INS, out.fEyesFIN), project(out.INS, out.latch0), project(out.INS, set.anchors.cageTag), out.INS.err.toFixed(1), L3(out.INS.pos)],
-    master: [project(out.MASTER, out.fEyesFIN), project(out.MASTER, out.vEyesC), project(out.MASTER, set.anchors.cornerCenter), project(out.MASTER, out.bulb), out.MASTER.err.toFixed(1)],
+    master: [project(out.MASTER, out.fEyesFIN), project(out.MASTER, out.vEyesM), project(out.MASTER, set.anchors.cornerCenter), project(out.MASTER, out.bulb), out.MASTER.err.toFixed(1)],
     tilt: [out.TILT_B.err.toFixed(1), L3(out.TILT_B.pos)], fEyes: [L3(out.fEyesFIN), L3(out.fEyesTurn), L3(out.fEyesUp)], vEyes: L3(out.vEyes) }));
   return out;
 }
 // stage-local camera seeds (tuned against renders)
 const DEF = {
-  insPos: [0.55, 0.25, 1.75],
+  insPos: [0.2, 0.3, 1.95],
   cu: { dist: 1.3, yaw: 54, pitch: 2, fov: 33, screenY: 470 / 1280 },
   tiltPos: [1.2, 1.1, 4.8],
 };
@@ -171,7 +179,7 @@ function shotAt(t) {
   }
   if (t < TT.cutTilt) return mixShot(S.CU_A, S.CU_B, ramp(t, TT.turnA, TT.turnB + 0.05, 'inOut'));
   // b04: hold tight on the face while the tear falls, then tilt up + widen
-  const u = ramp(t, TT.b4 + 0.3, TT.b4 + 1.15, 'inOut');
+  const u = ramp(t, TT.b4 + 0.32, TT.b4 + 0.98, 'inOut');
   return mixShot(S.TILT_A, S.TILT_B, u);
 }
 
@@ -239,9 +247,10 @@ function fearPose(t) {
     recoil: 0.06 * pulse(t, click, 0.05, 0.05, 0.3),
   };
   // ---- arms: grip two front bars -> let go during the turn -> hands together at the chest
-  const let_ = ramp(t, turnA - 0.1, turnA + 0.3);
-  const armL = let_ < 0.999 ? { preset: 'grip', target: S.barL, reach: 1 - let_ } : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA + 0.15, turnB + 0.25) };
-  const armR = let_ < 0.999 ? { preset: 'grip', target: S.barR, reach: 1 - let_ } : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA + 0.2, turnB + 0.3) };
+  const let_ = ramp(t, TT.peekA + 0.1, TT.peekA + 0.55);          // lets go of the bars as it straightens up to listen
+  // (the hands drop off the bars to its sides as it listens; they come together at the chest as it turns round)
+  const armL = let_ < 0.999 ? { preset: 'grip', target: S.barL, reach: 1 - let_ } : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA - 0.05, turnB - 0.1) };
+  const armR = let_ < 0.999 ? { preset: 'grip', target: S.barR, reach: 1 - let_ } : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA, turnB - 0.05) };
   // ---- walk: two tiny shuffle steps while turning round
   const walk = turn > 0 && turn < 1 ? { amount: Math.sin(Math.PI * turn), phase: turn * 1.0, style: 'sneak' } : { amount: 0 };
   const extra = {
@@ -256,20 +265,22 @@ function fearPose(t) {
 // ------------------------------------------------------------------------------------------------ the Void
 function voidPose0(t, gaze) {
   const TT = S.T, B = S.B;
-  const atV = t >= TT.cutCU;
+  const atV = t >= TT.cutCU || t < TT.cutIns;
   const P = voidBowed(t, B, atV ? { gaze, head: { pitch: 0.25, yaw: 0.3 } } : { gaze });
   if (!atV) P.pos = S.VC;
   return P;
 }
 function voidPose(t, st) {
   const TT = S.T, B = S.B;
-  const atV = t >= TT.cutCU;            // back on its mark from the doorway CU on (it's off screen there)
-  const reach = atV ? 0 : k(t, [[TT.handA, 0], [TT.handB, 1, 'inOut'], [TT.click + 0.3, 1], [TT.cutCU - 0.05, 0.35, 'inOut']]);
+  const atV = t >= TT.cutCU || t < TT.cutIns;   // on its mark in b01; nearer the latch for b02 (the cut to the insert
+                                                // and the doorway CU hide both moves); back on its mark from b03
+  const reach = atV ? 0 : k(t, [[TT.handA, 0], [TT.handB, 1, 'inOut'], [TT.click + 0.14, 1], [TT.cutCU - 0.05, 0.3, 'inOut']]);
   const turnIn = atV ? 0 : k(t, [[TT.handA - 0.3, 0], [TT.handB - 0.2, 1, 'inOut'], [TT.click + 0.35, 1], [TT.cutCU, 0.4, 'inOut']]);
   const latch = st.set.anchors.cageLatch.clone();
   // the fingertip rides the lever tip as it flicks up (it is live: follows the turning lever)
-  const tgt = latch.clone().add(V3(0, 0.006, 0));
-  const fingers = V3(-0.1, -0.55, -0.83);
+  const tgt = latch.clone().add(V3(0, 0.004, 0));
+  // the finger comes in from the door side along the cage (never in front of the latch, never over the dome)
+  const fingers = ROOM.V(-1, -0.35, -0.2).sub(ROOM.V(0, 0, 0)).normalize();
   const face = k(t, [
     [TT.s0 - 1, VX('tender', { lidU: 0.78, browIn: 0.55 })],
     [TT.bonus, VX('tender', { lidU: 0.8, browIn: 0.6, mSmile: 0.4 })],
@@ -285,7 +296,7 @@ function voidPose(t, st) {
     gaze: st.fear,
     face,
     body: { lean: 0.12 + 0.5 * reach, crouch: 0.65 * reach, tilt: -0.04 * reach, breathe: 0.8 * (1 - 0.6 * ramp(t, TT.b3, TT.b3 + 0.4)) },
-    head: { pitch: 0.25 - 0.15 * reach, yaw: atV ? 0.3 : 0.1 * reach },
+    head: { pitch: 0.25 - 0.15 * reach, yaw: t >= TT.cutCU ? 0.3 : 0.1 * reach },
     armL: reach > 0.001 ? { preset: 'tip', target: tgt, reach, tip: true, fingers: fingers.toArray(), hand: { point: reach, curl: 0.3 + 0.6 * reach, thumb: 0.3 } } : { preset: 'rest' },
     extra: { stars: lerp(1.0, 1.4, ramp(t, TT.b4 + 0.3, TT.b4 + 1.1)), cosmos: 0.18 * ramp(t, TT.b4 + 0.3, TT.b4 + 1.1), rim: lerp(1.4, 1.15, ramp(t, TT.cutIns - 0.01, TT.cutIns)) },
     blinkAt: [TT.b2 + 0.12, TT.click + 0.35],

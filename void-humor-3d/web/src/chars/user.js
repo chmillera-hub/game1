@@ -1218,7 +1218,7 @@ class User extends Character {
     const P = this.hoodUpShell.geometry.attributes.position;
     const Rx = 0.198, Ry = 0.215, Rz = 0.205, C = V(0, -0.025, -0.012), tilt = 0.17;
     const ca = Math.cos(tilt), sa = Math.sin(tilt);
-    const A = lerp(1.15, 0.6, cinch), Bv = lerp(1.08, 0.55, cinch);            // opening half-angles (rad)
+    const A = lerp(1.15, 0.74, cinch), Bv = lerp(1.08, 0.66, cinch);           // opening half-angles (rad; cinched wide enough that the glasses stay inside the rim)
     const rim = [], d = V(), p = V();
     for (let j = 0; j < NA; j++) {
       const ph = (j / NA) * Math.PI * 2;

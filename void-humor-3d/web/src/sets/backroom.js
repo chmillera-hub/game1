@@ -105,13 +105,13 @@ function plasterTexture() {         // 3 m tile, soft water stains (low contrast
 
 function rustTextures() {           // brass bars: x = along the bar (0 = bottom), y = around. Rust gathers low.
   const W = 512, H = 64, c = cv(W, H), g = c.getContext('2d'), cr = cv(W, H), gr2 = cr.getContext('2d'), r = rng(31);
-  g.fillStyle = '#eec377'; g.fillRect(0, 0, W, H);
-  gr2.fillStyle = '#6a6a6a'; gr2.fillRect(0, 0, W, H);
+  g.fillStyle = '#e4c870'; g.fillRect(0, 0, W, H);          // aged yellow brass (not pink copper)
+  gr2.fillStyle = '#7a7a7a'; gr2.fillRect(0, 0, W, H);
   const lg = g.createLinearGradient(0, 0, W, 0);
-  lg.addColorStop(0, 'rgba(84,50,24,0.7)'); lg.addColorStop(0.18, 'rgba(84,50,24,0.3)'); lg.addColorStop(0.6, 'rgba(80,50,26,0.04)'); lg.addColorStop(1, 'rgba(255,230,180,0.08)');
+  lg.addColorStop(0, 'rgba(84,50,24,0.75)'); lg.addColorStop(0.22, 'rgba(88,54,26,0.42)'); lg.addColorStop(0.5, 'rgba(90,58,30,0.2)'); lg.addColorStop(0.78, 'rgba(90,60,32,0.1)'); lg.addColorStop(1, 'rgba(255,236,190,0.06)');
   g.fillStyle = lg; g.fillRect(0, 0, W, H);
-  for (let i = 0; i < 110; i++) {
-    const x = Math.pow(r(), 1.7) * W, y = r() * H, rr = 3 + r() * 14, a = 0.4 + r() * 0.4;
+  for (let i = 0; i < 130; i++) {
+    const x = Math.pow(r(), 1.25) * W, y = r() * H, rr = 3 + r() * 14, a = 0.4 + r() * 0.4;
     const col = [128 + r() * 40, 58 + r() * 24, 22 + r() * 12];
     for (const oy of [-H, 0, H]) {
       const rg = g.createRadialGradient(x, y + oy, 0, x, y + oy, rr);
@@ -128,7 +128,7 @@ function rustTextures() {           // brass bars: x = along the bar (0 = bottom
 
 function galvTexture() {            // galvanized spangle: soft crystalline patches
   const S = 256, c = cv(S, S), g = c.getContext('2d'), r = rng(57);
-  g.fillStyle = '#c4cacd'; g.fillRect(0, 0, S, S);
+  g.fillStyle = '#ccc8c0'; g.fillRect(0, 0, S, S);   // warm-neutral zinc (reads as metal under the warm pool, not blue plastic)
   for (let i = 0; i < 90; i++) {
     const x = r() * S, y = r() * S, rr = 6 + r() * 22, l = r() < 0.5 ? 255 : 60, a = 0.05 + r() * 0.07;
     g.fillStyle = `rgba(${l},${l},${l + (l > 100 ? 0 : 10)},${a})`;
@@ -224,12 +224,13 @@ function signTexture() {           // generic yellow wet-floor sign: CAUTION ban
   return ctex(c);
 }
 
-function softRectTexture() {        // the far screen-of-consciousness glow: soft rounded rectangle + wide falloff (alpha 0 at the edges)
+function softRectTexture() {        // the far screen-of-consciousness: a readable soft-edged rounded rectangle (a light SOURCE), faint skirt
   const W = 256, H = 160, c = cv(W, H), g = c.getContext('2d');
-  g.filter = 'blur(22px)'; g.globalAlpha = 0.45; g.fillStyle = '#fff';
-  g.beginPath(); g.roundRect(56, 46, W - 112, H - 92, 20); g.fill();
-  g.filter = 'blur(10px)'; g.globalAlpha = 1;
-  g.beginPath(); g.roundRect(78, 60, W - 156, H - 120, 12); g.fill();
+  g.fillStyle = '#fff';
+  g.filter = 'blur(16px)'; g.globalAlpha = 0.22;
+  g.beginPath(); g.roundRect(30, 26, W - 60, H - 52, 22); g.fill();
+  g.filter = 'blur(5px)'; g.globalAlpha = 1;
+  g.beginPath(); g.roundRect(50, 40, W - 100, H - 80, 12); g.fill();
   return ctex(c);
 }
 
@@ -259,7 +260,9 @@ function makeMaterials(env) {
   const lam = (o) => new THREE.MeshLambertMaterial(o);
   const pho = (o) => new THREE.MeshPhongMaterial(o);
   const M = {
-    floor: std({ color: 0xffffff, map: floorTexture(), roughness: 0.56, metalness: 0.0 }),
+    // the floor is the biggest per-pixel surface in every shot: Phong (much cheaper than PBR on SwiftShader) with a
+    // modest, fairly tight sheen (no grey haze toward the far key); fake bulb pool, puddle and cosmos dissolve in-shader
+    floor: pho({ color: 0xffffff, map: floorTexture(), specular: 0x1c1a18, shininess: 30 }),
     // big matte surfaces use Lambert (much cheaper per pixel on SwiftShader with several lights)
     wall: lam({ color: 0x8e95ad, map: plasterTexture(), vertexColors: true }),
     wains: lam({ color: 0x4e3a2e, vertexColors: true }),
@@ -269,11 +272,13 @@ function makeMaterials(env) {
     sheet: lam({ color: 0xa8a3b8 }),
     doorway: new THREE.MeshBasicMaterial({ color: 0x030307 }),
     // hero brass keeps PBR; every other prop uses Phong / Lambert (cheaper per pixel on SwiftShader, same read at phone size)
-    brass: std({ color: 0xfff2d8, map: rust.map, roughnessMap: rust.rough, roughness: 0.62, metalness: 0.85, envMap: env, envMapIntensity: 1.0 }),
-    brassBright: std({ color: 0xf2c878, roughness: 0.25, metalness: 0.95, envMap: env, envMapIntensity: 1.6, emissive: 0x2a1604 }),
+    // brass: yellow (not pink copper), softer highlights + less env so the dome bars don't flare/bloom over Fear's eyes
+    brass: std({ color: 0xfff6d6, map: rust.map, roughnessMap: rust.rough, roughness: 0.98, metalness: 0.78, envMap: env, envMapIntensity: 0.55 }),   // x map: clean ~0.46, rust ~0.9
+    brassBright: std({ color: 0xead07e, roughness: 0.34, metalness: 0.9, envMap: env, envMapIntensity: 0.85, emissive: 0x1e1404 }),
     iron: pho({ color: 0x3a353c, specular: 0x5a5560, shininess: 30, envMap: env, reflectivity: 0.25, combine: THREE.AddOperation }),
-    galv: pho({ color: 0xc2c9ce, map: galv, specular: 0x8a949a, shininess: 42, vertexColors: true, envMap: env, reflectivity: 0.5, combine: THREE.AddOperation }),
-    galvDark: pho({ color: 0x969ea4, specular: 0x7a8288, shininess: 40, envMap: env, reflectivity: 0.4, combine: THREE.AddOperation }),
+    // galvanized zinc: warm-neutral grey, stronger spec + env so it reads as METAL (and separates from the cool magician)
+    galv: pho({ color: 0xd4d0c8, map: galv, specular: 0xaaa69e, shininess: 64, vertexColors: true, envMap: env, reflectivity: 0.62, combine: THREE.AddOperation }),
+    galvDark: pho({ color: 0x9c988f, specular: 0x8a867e, shininess: 56, envMap: env, reflectivity: 0.5, combine: THREE.AddOperation }),
     wood: lam({ color: 0xa06d42 }),
     woodPale: lam({ color: 0xb08a62 }),
     red: pho({ color: 0xa8382e, specular: 0x402020, shininess: 30 }),
@@ -288,12 +293,21 @@ function makeMaterials(env) {
     signEdge: pho({ color: 0xe0ac10, specular: 0x3a3a30, shininess: 36 }),
     cord: lam({ color: 0x1a1618 }),
     socket: pho({ color: 0x4a3828, specular: 0x8a7050, shininess: 50 }),
-    puddle: pho({ color: 0x1e3044, specular: 0x8aa0c0, shininess: 90, envMap: env, reflectivity: 0.55, combine: THREE.MixOperation, transparent: true, opacity: 0.62, depthWrite: false }),
-    mop: lam({ color: 0xe6dfcc }),
+    // the two hanging bulbs own their cord/socket materials: transparent, so the cosmos fade can take them out smoothly
+    bulbCord: lam({ color: 0x1a1618, transparent: true }),
+    bulbSocket: pho({ color: 0x4a3828, specular: 0x8a7050, shininess: 50, transparent: true }),
+    // water drops of the splash (normal blending, warm glints from the corner bulb)
+    water: pho({ color: 0x9cbcd8, specular: 0xffffff, shininess: 90, transparent: true, opacity: 0.6, depthWrite: false, envMap: env, reflectivity: 0.6, combine: THREE.AddOperation }),
+    mop: lam({ color: 0xffffff, vertexColors: true }),
     mopCotton: lam({ color: 0xc8bfa8 }),
   };
   M.rag = [0x6e9896, 0xd8ccae, 0xb88680, 0x7a88a2, 0x9b8b6f].map((c) => lam({ color: c }));
-  fakeGlow(M.floor); fakeGlow(M.wall); fakeGlow(M.wains);
+  floorShader(M.floor); fakeGlow(M.wall); fakeGlow(M.wains);
+  // corner props catch the corner bulb's (faked) warm pool too: wrap-lit diffuse + a cheap Blinn glint on the metals
+  fakeGlow(M.galv, { wrap: 0.62, spec: 0.7, shin: 40 }); fakeGlow(M.galvDark, { wrap: 0.75, spec: 0.35, shin: 30 });
+  for (const m of [M.wood, M.woodPale, M.mopCotton, M.straw, M.bristle, M.red, M.rubber, M.label, M.signEdge, ...M.rag]) fakeGlow(m, { wrap: 1.0 });
+  for (const m of [M.sign, M.plasticW, M.sprayA, M.sprayB]) fakeGlow(m, { wrap: 1.0, spec: 0.35, shin: 30 });
+  fakeGlow(M.water, { wrap: 0.8, spec: 2.2, shin: 60 });
   // room materials are OPAQUE (cheap, early-z); a transparent twin is swapped in only while opts.cosmos fades the room
   M.fadeable = [M.wall, M.wains, M.pipe, M.cardboard, M.tape, M.sheet, M.doorway];
   for (const m of M.fadeable) { const t = m.clone(); t.transparent = true; t.depthWrite = true; m.userData.twin = t; if (m === M.wall || m === M.wains) fakeGlow(t); }
@@ -308,19 +322,24 @@ function droopMaterial(base) {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
-        attribute float aS; attribute vec3 aRoot; attribute vec3 aC; attribute vec3 aW;
-        uniform vec3 uGravL, uColA, uColB; uniform float uDroop, uFloorY, uColR, uWig;`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-        vec3 mopO = transformed - aC;
-        vec3 mopC;
-        {
-          vec3 d = aC - aRoot; float L = length(d);
-          vec3 dn = d / max(L, 1e-4);
-          float w = uDroop * smoothstep(0.0, 0.75, aS) * 0.94;
-          vec3 nd = normalize(mix(dn, uGravL, w) + vec3(1e-4));
-          mopC = mix(aRoot + nd * L, aW, uWig);
-          transformed = mopC + mopO;
+        attribute float aS; attribute vec3 aRoot; attribute vec3 aC; attribute vec3 aW; attribute vec3 aT; attribute vec3 aWT;
+        uniform vec3 uGravL, uColA, uColB; uniform float uDroop, uFloorY, uColR, uWig;
+        // rotate v by the rotation that takes unit a onto unit b (keeps the strand's round cross-section when it bends)
+        vec3 brRotTo(vec3 v, vec3 a, vec3 b) {
+          vec3 k = cross(a, b); float s = length(k), c = dot(a, b);
+          if (s < 1e-5) return c > 0.0 ? v : -v;
+          k /= s; return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
         }`)
+      .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+        vec3 mopD = aC - aRoot; float mopL = length(mopD); vec3 mopDn = mopD / max(mopL, 1e-4);
+        float mopWt = uDroop * smoothstep(0.0, 0.75, aS) * 0.94;
+        vec3 mopNd = normalize(mix(mopDn, uGravL, mopWt) + vec3(1e-4));
+        vec3 mopT1 = normalize(mix(brRotTo(aT, mopDn, mopNd), aWT, uWig) + vec3(1e-5));
+        objectNormal = brRotTo(objectNormal, aT, mopT1);`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        vec3 mopO = brRotTo(transformed - aC, aT, mopT1) * (1.0 - 0.4 * aS * aS);   // tapered tips
+        vec3 mopC = mix(aRoot + mopNd * mopL, aW, uWig);
+        transformed = mopC + mopO;`)
       .replace('#include <project_vertex>', `
         // collisions are resolved on the strand CENTRE so cross-sections stay round
         vec4 cw = modelMatrix * vec4(mopC, 1.0);
@@ -344,19 +363,106 @@ function droopMaterial(base) {
 
 // "fake light": a warm radial glow added as emissive * albedo inside the floor / wall shaders (one distance + a
 // division per pixel, far cheaper than a real PointLight on SwiftShader and no additive overdraw). Shared uniforms.
+// Props (opts.wrap) also get a wrap term (N.L*0.5+0.5 toward the bulb) and optionally a Blinn glint (opts.spec, shin):
+// the galvanized buckets read as warm metal in the pool instead of flat blue plastic, for a few ALU ops per pixel.
 const FAKE = { uFGPos: { value: V() }, uFGCol: { value: new THREE.Color(0, 0, 0) }, uFGR: { value: 1.6 } };
-function fakeGlow(mat) {
-  const prev = mat.onBeforeCompile;
-  mat.onBeforeCompile = (sh, r) => {
-    if (prev) prev(sh, r);
+const FG_FRAG = `{
+  vec3 fgD = vFGW - uFGPos; float fgR2 = uFGR * uFGR; float fgF = fgR2 / (fgR2 + dot(fgD, fgD)); fgF *= fgF;
+#ifdef FG_WRAP
+  vec3 fgL = normalize((viewMatrix * vec4(uFGPos, 1.0)).xyz + vViewPosition);
+  totalEmissiveRadiance += uFGCol * diffuseColor.rgb * (fgF * FG_WRAP * max(0.0, dot(normal, fgL) * 0.5 + 0.5));
+#ifdef FG_SPEC
+  vec3 fgH = normalize(fgL + normalize(vViewPosition));
+  totalEmissiveRadiance += uFGCol * (fgF * FG_SPEC * pow(max(dot(normal, fgH), 0.0), FG_SHIN));
+#endif
+#else
+  totalEmissiveRadiance += uFGCol * diffuseColor.rgb * fgF;
+#endif
+}`;
+const _P = THREE.Material.prototype;
+function fakeGlow(mat, o = {}) {
+  const prev = mat.onBeforeCompile !== _P.onBeforeCompile ? mat.onBeforeCompile : null;
+  const prevKey = mat.customProgramCacheKey !== _P.customProgramCacheKey ? mat.customProgramCacheKey : null;
+  const defs = (o.wrap ? `#define FG_WRAP ${o.wrap.toFixed(3)}\n` : '') + (o.wrap && o.spec ? `#define FG_SPEC ${o.spec.toFixed(3)}\n#define FG_SHIN ${(o.shin ?? 30).toFixed(1)}\n` : '');
+  mat.onBeforeCompile = function (sh, r) {
+    if (prev) prev.call(this, sh, r);
     Object.assign(sh.uniforms, FAKE);
+    // world position AFTER any custom vertex deformation (e.g. the mop's droop), right before fog
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vFGW;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFGW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vFGW; uniform vec3 uFGPos, uFGCol; uniform float uFGR;')
-      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-        { vec3 dv = vFGW - uFGPos; float r2 = uFGR * uFGR; float f = r2 / (r2 + dot(dv, dv)); totalEmissiveRadiance += uFGCol * diffuseColor.rgb * (f * f); }`);
+      .replace('#include <fog_vertex>', `#ifdef USE_INSTANCING
+        vFGW = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+        #else
+        vFGW = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        #endif
+        #include <fog_vertex>`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + defs + 'varying vec3 vFGW; uniform vec3 uFGPos, uFGCol; uniform float uFGR;')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + FG_FRAG);
   };
-  mat.customProgramCacheKey = () => 'brFakeGlow' + mat.type;
+  mat.customProgramCacheKey = function () { return (prevKey ? prevKey.call(this) : '') + '|brFG' + this.type + defs; };
+  return mat;
+}
+
+// The dark sky dome's colour as a function of direction (shared by the dome and the floor's cosmos dissolve).
+const DOME_GLSL = `vec3 brDome(vec3 d, float cosm) {
+  float h = d.y; vec3 c = mix(vec3(0.0085, 0.0075, 0.017), vec3(0.002, 0.002, 0.005), smoothstep(-0.05, 0.6, h));
+  float lobe = pow(max(dot(d, normalize(vec3(-0.05, 0.1, 1.0))), 0.0), 6.0);
+  c += vec3(0.012, 0.018, 0.04) * lobe * (1.0 - cosm);          // the far screen's glow in the haze (linear!)
+  return mix(c, vec3(0.012, 0.007, 0.03) + vec3(0.03, 0.014, 0.05) * smoothstep(0.3, -0.2, h), cosm);
+}`;
+// FLOOR: fake bulb pool + the in-floor PUDDLE (props.puddle's transform: darker wet boards, a mirrored warm wall and
+// sharp glints of the corner bulb / far key, a cool fresnel sheen) + the COSMOS dissolve (beyond ~5.5 m from the action
+// the boards melt into the dome colour, continuously; the floor itself never disappears).
+const FLOOR_U = { uPudInv: { value: new THREE.Matrix4() }, uPudA: { value: 0 }, uCos: { value: 0 }, uFloorC: { value: V(1.0, 0, -1.8) },
+  uKeyDir: { value: V(0, 0, 1) } };
+function floorShader(mat) {
+  fakeGlow(mat);
+  const prev = mat.onBeforeCompile, prevKey = mat.customProgramCacheKey;
+  mat.onBeforeCompile = function (sh, r) {
+    prev.call(this, sh, r);
+    Object.assign(sh.uniforms, FLOOR_U);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        uniform mat4 uPudInv; uniform float uPudA, uCos; uniform vec3 uFloorC, uKeyDir;
+        ${DOME_GLSL}
+        float brPudR(vec3 w) {                   // radius / blob edge (1 = the edge) in puddle space (unit-radius blob)
+          vec3 q = (uPudInv * vec4(w, 1.0)).xyz; float a = atan(-q.z, q.x);
+          float k = 1.0 + 0.16 * sin(3.0 * a + 0.5) + 0.09 * sin(5.0 * a + 2.0) + 0.05 * sin(9.0 * a);
+          return length(q.xz) / k;
+        }`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        float pudR = uPudA > 0.0 ? brPudR(vFGW) : 9.0;
+        float pudM = uPudA * (1.0 - smoothstep(0.95, 1.0, pudR));                       // crisp water edge
+        float pudRing = uPudA * smoothstep(0.89, 0.95, pudR) * (1.0 - smoothstep(0.96, 1.0, pudR));   // meniscus line
+        diffuseColor.rgb *= 1.0 - 0.72 * pudM;   // wet boards: much darker`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        if (pudM + pudRing > 0.002) {
+          vec3 Vw = normalize(cameraPosition - vFGW), Rw = reflect(-Vw, vec3(0.0, 1.0, 0.0));
+          float fres = 0.3 + 0.7 * pow(1.0 - max(Vw.y, 0.0), 3.0);
+          // mirrored back / right wall: plaster above the rail, dark wainscot below, warmed by the corner bulb's pool
+          float tb = Rw.z < -1e-3 ? (${BACK_Z.toFixed(2)} - vFGW.z) / Rw.z : 1e3, tr = Rw.x > 1e-3 ? (${RIGHT_X.toFixed(2)} - vFGW.x) / Rw.x : 1e3;
+          vec3 hw = vFGW + Rw * min(min(tb, tr), 60.0);
+          vec3 dw = hw - uFGPos; float fw = uFGR * uFGR / (uFGR * uFGR + dot(dw, dw)); fw *= fw;
+          vec3 alb = mix(vec3(0.3, 0.29, 0.33), vec3(0.12, 0.08, 0.06), step(hw.y, 1.02)) * (1.0 - smoothstep(0.7, 5.6, hw.y));
+          totalEmissiveRadiance += alb * (uFGCol * fw * 0.8 + vec3(0.015, 0.017, 0.03)) * fres * pudM;
+          // cool gloom sheen (water reads cool + dark against the warm boards) + a thin bright meniscus line
+          totalEmissiveRadiance += vec3(0.005, 0.007, 0.014) * fres * pudM;
+          vec3 Lb = normalize(uFGPos - vFGW); float sb = max(dot(Rw, Lb), 0.0);
+          totalEmissiveRadiance += uFGCol * (pow(sb, 700.0) * 2.4 + pow(sb, 40.0) * 0.08) * pudM;     // the bulb's glint
+          // broad warm wet sheen under the bulb (reads as gloss from any angle), with a slow ripple in it
+          float hb = max(normalize(Lb + Vw).y, 0.0), fbF = uFGR * uFGR / (uFGR * uFGR + dot(vFGW - uFGPos, vFGW - uFGPos));
+          float rip = 0.75 + 0.25 * sin(dot(vFGW.xz, vec2(19.0, 13.0)) + 2.0 * sin(vFGW.x * 7.0 - vFGW.z * 5.0));
+          totalEmissiveRadiance += uFGCol * (pow(hb, 6.0) * 0.3 * fbF * fbF * rip) * pudM;
+          totalEmissiveRadiance += (uFGCol * 0.05 * fbF + vec3(0.01, 0.012, 0.02)) * pudRing;
+          float sk = max(dot(Rw, uKeyDir), 0.0);
+          totalEmissiveRadiance += vec3(0.42, 0.5, 0.78) * (pow(sk, 260.0) * 1.1 + pow(sk, 16.0) * 0.04) * pudM;
+        }`)
+      .replace('#include <fog_fragment>', `#include <fog_fragment>
+        if (uCos > 0.0) {
+          float fd = smoothstep(5.5, 12.0, length(vFGW.xz - uFloorC.xz));
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, brDome(normalize(vFGW - cameraPosition), uCos), uCos * fd);
+        }`);
+  };
+  mat.customProgramCacheKey = function () { return prevKey.call(this) + '|brFloor'; };
   return mat;
 }
 
@@ -406,7 +512,11 @@ function buildRoom(M) {
   // floor
   const fg = new THREE.PlaneGeometry(46, 46); fg.rotateX(-Math.PI / 2);
   planarUV(fg, 0, 2, -4); // 4 m tile, boards along Z
-  const floor = new THREE.Mesh(fg, M.floor); floor.position.set(-2, 0, 7); floor.receiveShadow = true; g.add(floor);
+  // NOT in the room group: the floor stays through the cosmos fade (it turns deep violet and melts into the dome far out)
+  const floor = new THREE.Mesh(fg, M.floor); floor.position.set(-2, 0, 7); floor.receiveShadow = true; floor.name = 'backroom.floor';
+  // cutaway groups: wall dressing that would block a camera standing beyond the (single-sided) right / back wall
+  const cutR = new THREE.Group(), cutB = new THREE.Group(), cutC = new THREE.Group();
+  cutR.name = 'backroom.cutRight'; cutB.name = 'backroom.cutBack'; cutC.name = 'backroom.cutCorner'; g.add(cutR, cutB, cutC);
   // walls (vertex-colour fade to darkness upward)
   const H = WALL_H;
   const mkWall = (w, cx, cz, rotY) => {
@@ -419,7 +529,7 @@ function buildRoom(M) {
   mkWall(FRONT_Z - BACK_Z, LEFT_X, (FRONT_Z + BACK_Z) / 2, Math.PI / 2);
   // wainscot: panel band, stiles, chair rail, baseboard (back wall + right wall), with a gap for the doorway
   const DOOR_X = -5.6, DOOR_W = 1.25, DOOR_H = 2.35;
-  const wg = [];
+  const wg = [], wgR = [];
   const runs = [[LEFT_X, DOOR_X - DOOR_W / 2 - 0.08, 'b'], [DOOR_X + DOOR_W / 2 + 0.08, RIGHT_X, 'b'], [BACK_Z, 9, 'r']];
   for (const [a, b, side] of runs) {
     const len = b - a, mid = (a + b) / 2;
@@ -429,24 +539,27 @@ function buildRoom(M) {
       const bx = new THREE.BoxGeometry(side === 'b' ? w : d, h, side === 'b' ? d : w);
       const c = at ?? mid;
       if (side === 'b') bx.translate(c, y, BACK_Z + off); else bx.translate(RIGHT_X - off, y, c);
-      wg.push(dropFaces(bx, side === 'b' ? V(0, 0, -1) : V(1, 0, 0)));
+      (side === 'b' ? wg : wgR).push(dropFaces(bx, side === 'b' ? V(0, 0, -1) : V(1, 0, 0)));
     }
   }
-  const wgeo = vcolFade(merge(wg), (x, y) => 0.9 + 0.1 * (y > 0.98 ? 1 : 0));
-  const wains = new THREE.Mesh(wgeo, M.wains); g.add(wains);
+  const wainF = (x, y) => 0.9 + 0.1 * (y > 0.98 ? 1 : 0);
+  cutB.add(new THREE.Mesh(vcolFade(merge(wg), wainF), M.wains));
+  cutR.add(new THREE.Mesh(vcolFade(merge(wgR), wainF), M.wains));
   // pipes along the back wall + up the corner (industrial, cozy-creepy)
-  const pg = [];
+  const pg = [], pgC = [];
   const p1 = new THREE.CylinderGeometry(0.055, 0.055, RIGHT_X - LEFT_X, 14); p1.rotateZ(Math.PI / 2); p1.translate((RIGHT_X + LEFT_X) / 2 - 0.12, 2.62, BACK_Z + 0.16); pg.push(p1);
   const p2 = new THREE.CylinderGeometry(0.034, 0.034, RIGHT_X - LEFT_X, 10); p2.rotateZ(Math.PI / 2); p2.translate((RIGHT_X + LEFT_X) / 2, 2.86, BACK_Z + 0.12); pg.push(p2);
-  const p3 = new THREE.CylinderGeometry(0.06, 0.06, H, 14); p3.translate(RIGHT_X - 0.16, H / 2, BACK_Z + 0.42); pg.push(p3);
-  const el = new THREE.SphereGeometry(0.075, 14, 10); el.translate(RIGHT_X - 0.16, 2.62, BACK_Z + 0.16); pg.push(el);
-  const jn = new THREE.CylinderGeometry(0.04, 0.04, 0.3, 10); jn.rotateX(Math.PI / 2); jn.translate(RIGHT_X - 0.16, 2.62, BACK_Z + 0.3); pg.push(jn);
+  const p3 = new THREE.CylinderGeometry(0.06, 0.06, H, 14); p3.translate(RIGHT_X - 0.16, H / 2, BACK_Z + 0.42); pgC.push(p3);
+  const el = new THREE.SphereGeometry(0.075, 14, 10); el.translate(RIGHT_X - 0.16, 2.62, BACK_Z + 0.16); pgC.push(el);
+  const jn = new THREE.CylinderGeometry(0.04, 0.04, 0.3, 10); jn.rotateX(Math.PI / 2); jn.translate(RIGHT_X - 0.16, 2.62, BACK_Z + 0.3); pgC.push(jn);
   for (let x = LEFT_X + 0.8; x < RIGHT_X - 0.4; x += 1.6) {
     const b1 = new THREE.BoxGeometry(0.05, 0.36, 0.2); b1.translate(x, 2.74, BACK_Z + 0.1); pg.push(b1);
     const cl = new THREE.TorusGeometry(0.062, 0.012, 6, 16); cl.rotateY(Math.PI / 2); cl.translate(x, 2.62, BACK_Z + 0.16); pg.push(cl);
   }
-  for (const y of [1.3, 3.4]) { const b = new THREE.BoxGeometry(0.2, 0.05, 0.05); b.translate(RIGHT_X - 0.08, y, BACK_Z + 0.42); pg.push(b); }
-  const pipes = new THREE.Mesh(vcolFade(merge(pg), (x, y) => 1 - smooth((y - 2.5) / 4) * 0.9), M.pipe); g.add(pipes);
+  for (const y of [1.3, 3.4]) { const b = new THREE.BoxGeometry(0.2, 0.05, 0.05); b.translate(RIGHT_X - 0.08, y, BACK_Z + 0.42); pgC.push(b); }
+  const pipeF = (x, y) => 1 - smooth((y - 2.5) / 4) * 0.9;
+  cutB.add(new THREE.Mesh(vcolFade(merge(pg), pipeF), M.pipe));
+  cutC.add(new THREE.Mesh(vcolFade(merge(pgC.map((q) => ni(q))), pipeF), M.pipe));
   // doorway into deeper darkness (back-left) with a rounded-top trim
   const sh = new THREE.Shape(); const dw = DOOR_W / 2;
   sh.moveTo(-dw, 0); sh.lineTo(-dw, DOOR_H - dw); sh.absarc(0, DOOR_H - dw, dw, Math.PI, 0, true); sh.lineTo(dw, 0); sh.closePath();
@@ -454,7 +567,7 @@ function buildRoom(M) {
   const trimPts = [[-dw - 0.05, 0, 0]]; for (let i = 0; i <= 14; i++) { const a = Math.PI - i / 14 * Math.PI; trimPts.push([Math.cos(a) * (dw + 0.05), DOOR_H - dw + Math.sin(a) * (dw + 0.05), 0]); }
   trimPts.push([dw + 0.05, 0, 0]);
   const trimG = tubeGeo([[-dw - 0.05, 0, 0], ...trimPts.slice(1, -1), [dw + 0.05, 0, 0]], 0.045, 60, 6); trimG.translate(DOOR_X, 0, BACK_Z + 0.04);
-  const trim = new THREE.Mesh(vcolFade(trimG, () => 1), M.wains); g.add(trim);
+  const trim = new THREE.Mesh(vcolFade(trimG, () => 1), M.wains); cutB.add(trim);
   // pillars on the open left side + pilasters on the right wall (rise into darkness)
   const colG = [];
   for (const [x, z] of [[-6.3, -2.7], [-6.3, 3.4], [-6.3, 9.5], [-6.3, 15.6]]) {
@@ -462,8 +575,10 @@ function buildRoom(M) {
     const b = new THREE.CylinderGeometry(0.5, 0.54, 0.32, 28); b.translate(x, 0.16, z); colG.push(b);
     const b2 = new THREE.CylinderGeometry(0.44, 0.48, 0.1, 28); b2.translate(x, 0.37, z); colG.push(b2);
   }
-  for (const z of [1.8, 8.4, 15.0]) { const p = new THREE.BoxGeometry(0.34, H, 0.8, 1, 6, 1); p.translate(RIGHT_X - 0.17, H / 2, z); colG.push(dropFaces(p, V(1, 0, 0))); }
   const cols = new THREE.Mesh(vcolFade(merge(colG.map((q) => ni(q))), wallFade), M.wall); g.add(cols);
+  const pilG = [];
+  for (const z of [1.8, 8.4, 15.0]) { const p = new THREE.BoxGeometry(0.34, H, 0.8, 1, 6, 1); p.translate(RIGHT_X - 0.17, H / 2, z); pilG.push(dropFaces(p, V(1, 0, 0))); }
+  cutR.add(new THREE.Mesh(vcolFade(merge(pilG), wallFade), M.wall));
   // storage: stacked cardboard boxes + a dust-sheet-draped armchair (pale ghostly lump) back-left
   const boxG = [], tapeG = [], r = rng(23);
   const boxes = [[-2.75, 0, -4.55, 0.62, 0.46, 0.5, 0.05], [-2.72, 0.46, -4.58, 0.52, 0.4, 0.44, -0.12], [-2.1, 0, -4.62, 0.46, 0.36, 0.4, 0.18], [-2.12, 0.36, -4.6, 0.34, 0.26, 0.3, 0.42], [-3.35, 0, -4.66, 0.4, 0.3, 0.36, -0.2]];
@@ -487,7 +602,7 @@ function buildRoom(M) {
       p.setXYZ(i, x, y, z);
     } cg.computeVertexNormals(); }
   const chair = new THREE.Mesh(cg, M.sheet); chair.position.set(-4.2, 0, -4.3); chair.rotation.y = 0.35; chair.castShadow = true; g.add(chair);
-  return { group: g, floor, doorX: DOOR_X };
+  return { group: g, floor, doorX: DOOR_X, cutR, cutB, cutC };
 }
 
 // ------------------------------------------------------------------------------------------------ CAGE
@@ -578,8 +693,9 @@ function buildCage(M, tagTex) {
 function bucketProfile(rB, rT, h, ribs) {
   const rAt = (y) => lerp(rB, rT, y / h), P = [];
   P.push([0.001, 0.0], [rB - 0.012, 0.0], [rB - 0.002, 0.006], [rB + 0.0005, 0.016]);
-  const ys = [0.03, ...ribs.flatMap((f) => [f * h - 0.012, f * h - 0.004, f * h + 0.004, f * h + 0.012]), h - 0.02];
-  const bump = (y) => ribs.reduce((s, f) => s + 0.0055 * Math.max(0, 1 - Math.abs(y - f * h) / 0.011), 0);
+  // rolled stiffening ribs: soft cosine bumps (wide + low, so they read as pressed ribs, not crumpled dents up close)
+  const RW = 0.02, ys = [0.03, ...ribs.flatMap((f) => [-1, -0.66, -0.33, 0, 0.33, 0.66, 1].map((k) => f * h + k * RW)), h - 0.02];
+  const bump = (y) => ribs.reduce((s, f) => s + 0.0042 * 0.5 * (1 + Math.cos(Math.PI * Math.min(1, Math.abs(y - f * h) / RW))), 0);
   for (const y of ys) P.push([rAt(y) + bump(y), y]);
   P.push([rT + 0.006, h - 0.008], [rT + 0.009, h - 0.001], [rT + 0.004, h + 0.006], [rT - 0.003, h + 0.002], [rT - 0.006, h - 0.008]);
   P.push([rT - 0.008, h - 0.03], [rB - 0.006, 0.026], [rB - 0.016, 0.018], [0.001, 0.018]);
@@ -668,7 +784,7 @@ function makeMop(M) {             // origin at the clamp, +Y along the handle; s
   const cl = new THREE.CylinderGeometry(0.03, 0.037, 0.08, 14); cl.translate(0, 0.03, 0);
   const clamp_ = new THREE.Mesh(cl, M.galvDark); clamp_.castShadow = true; g.add(clamp_);
   const r = rng(5), geos = [];
-  const N = 48, TS = 8, RS = 5;
+  const N = 64, TS = 8, RS = 7;          // 7-sided strands (smooth tube normals): soft cotton cords, not faceted noodles
   for (let i = 0; i < N; i++) {
     const a = i / N * TAU * 2.0 + r() * 0.3, rr = 0.006 + r() * 0.03;
     const root = V(Math.cos(a) * rr, -0.012, Math.sin(a) * rr);
@@ -677,20 +793,30 @@ function makeMop(M) {             // origin at the clamp, +Y along the handle; s
     const pts = [];
     for (let k = 0; k <= 4; k++) { const s = k / 4; pts.push(root.clone().addScaledVector(dir, L * s).addScaledVector(side, 0.014 * Math.sin(s * 5 + i) * s)); }
     const curve = new THREE.CatmullRomCurve3(pts);
-    const tg = new THREE.TubeGeometry(curve, TS, 0.0135, RS, false);
+    const tg = new THREE.TubeGeometry(curve, TS, 0.0105, RS, false);
     const n = tg.attributes.position.count, aS = new Float32Array(n), aR = new Float32Array(n * 3), aC = new Float32Array(n * 3);
+    // per-strand value/warmth variation (some strands greyer / dirtier toward the tips)
+    const val = 0.8 + 0.2 * r(), dirt = 0.12 + 0.18 * r(), col = new Float32Array(n * 3);
+    for (let v = 0; v < n; v++) { const s = Math.floor(v / (RS + 1)) / TS, k = val * (1 - dirt * s * s); col.set([0.93 * k, 0.88 * k, 0.78 * k], v * 3); }
+    tg.setAttribute('color', new THREE.BufferAttribute(col, 3));
     for (let v = 0; v < n; v++) {
       const ring = Math.floor(v / (RS + 1)), s = ring / TS, c = curve.getPointAt(s);
       aS[v] = s; aR.set([root.x, root.y, root.z], v * 3); aC.set([c.x, c.y, c.z], v * 3);
     }
     // art-directed WIG target: strand i drapes over the hat's top at azimuth az and hangs down its side
-    const aW = new Float32Array(n * 3), az = (i + 0.5) / N * TAU + (r() - 0.5) * 0.12, Lw = 0.2 + r() * 0.17;
-    for (let v = 0; v < n; v++) { const ring = Math.floor(v / (RS + 1)); const c = wigPoint(az, (ring / TS) * Lw, root, i); aW.set([c.x, c.y, c.z], v * 3); }
-    tg.setAttribute('aW', new THREE.BufferAttribute(aW, 3));
+    const aW = new Float32Array(n * 3), aWT = new Float32Array(n * 3), aT = new Float32Array(n * 3);
+    const az = (i + 0.5) / N * TAU + (r() - 0.5) * 0.12, Lw = 0.2 + r() * 0.17;
+    for (let v = 0; v < n; v++) {
+      const ring = Math.floor(v / (RS + 1)), sw = (ring / TS) * Lw, c = wigPoint(az, sw, root, i);
+      const tw = wigPoint(az, Math.min(Lw, sw + 0.012), root, i).sub(wigPoint(az, Math.max(0, sw - 0.012), root, i)).normalize();
+      const t0 = curve.getTangentAt(ring / TS);
+      aW.set([c.x, c.y, c.z], v * 3); aWT.set([tw.x, tw.y, tw.z], v * 3); aT.set([t0.x, t0.y, t0.z], v * 3);
+    }
+    tg.setAttribute('aW', new THREE.BufferAttribute(aW, 3)); tg.setAttribute('aWT', new THREE.BufferAttribute(aWT, 3)); tg.setAttribute('aT', new THREE.BufferAttribute(aT, 3));
     tg.setAttribute('aS', new THREE.BufferAttribute(aS, 1)); tg.setAttribute('aRoot', new THREE.BufferAttribute(aR, 3)); tg.setAttribute('aC', new THREE.BufferAttribute(aC, 3));
     geos.push(tg);
   }
-  const mat = droopMaterial(M.mop);
+  const mat = fakeGlow(droopMaterial(M.mop), { wrap: 1.0 });
   const head = new THREE.Mesh(merge(geos), mat); head.frustumCulled = false; g.add(head);
   const bunch = new THREE.SphereGeometry(0.058, 14, 10); bunch.scale(1, 0.7, 1); bunch.translate(0, -0.02, 0);
   g.add(new THREE.Mesh(bunch, M.mopCotton));
@@ -763,7 +889,13 @@ function makeSign(M) {           // A-frame; origin on the floor under the hinge
   sh.lineTo(-W / 2 + 0.02 + rr, Hh); sh.quadraticCurveTo(-W / 2 + 0.02, Hh, -W / 2 + 0.02, Hh - rr); sh.closePath();
   const hole = new THREE.Path(); hole.absellipse(0, Hh - 0.055, 0.055, 0.017, 0, TAU, true); sh.holes.push(hole);
   const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 1, curveSegments: 6 });
-  { const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / W + 0.5, uv.getY(i) / Hh); }
+  // group 0 = the two caps (printed), group 1 = the edges (plain). Only the OUTWARD cap (+Z) carries the print: the inner
+  // cap samples the plain-yellow left margin of the texture (no mirrored text inside the A-frame)
+  { const uv = geo.attributes.uv, nr = geo.attributes.normal, g0 = geo.groups[0];
+    for (let i = 0; i < uv.count; i++) {
+      const inCap = i >= g0.start && i < g0.start + g0.count;
+      uv.setXY(i, inCap && nr.getZ(i) < 0 ? 0.035 : uv.getX(i) / W + 0.5, uv.getY(i) / Hh);
+    } }
   geo.translate(0, -Hh, 0);     // hinge at the top edge
   const feet = []; for (const x of [-W / 2 + 0.03, W / 2 - 0.03]) { const f = new RoundedBoxGeometry(0.05, 0.02, 0.025, 1, 0.006); f.translate(x, -Hh + 0.008, 0.006); feet.push(f); }
   const feetG = merge(feet);
@@ -771,7 +903,7 @@ function makeSign(M) {           // A-frame; origin on the floor under the hinge
   const panels = [];
   for (const s of [1, -1]) {
     const pv = new THREE.Group(); hinge.add(pv);
-    const m = new THREE.Mesh(geo, M.sign); m.castShadow = true; pv.add(m);
+    const m = new THREE.Mesh(geo, [M.sign, M.signEdge]); m.castShadow = true; pv.add(m);
     pv.add(new THREE.Mesh(feetG, M.rubber));
     panels.push({ pv, s });
   }
@@ -820,11 +952,8 @@ export async function create() {
     uniforms: domeU, side: THREE.BackSide, depthWrite: false, fog: false,
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
     fragmentShader: `varying vec3 vD; uniform float uCos;
-      void main(){ float h = vD.y; vec3 c = mix(vec3(0.0085,0.0075,0.017), vec3(0.002,0.002,0.005), smoothstep(-0.05, 0.6, h));
-        float lobe = pow(max(dot(vD, normalize(vec3(-0.05, 0.1, 1.0))), 0.0), 6.0);
-        c += vec3(0.012, 0.018, 0.04) * lobe * (1.0 - uCos);          // the far screen's glow in the haze (linear!)
-        c = mix(c, vec3(0.012, 0.007, 0.03) + vec3(0.03, 0.014, 0.05) * smoothstep(0.3, -0.2, h), uCos);
-        gl_FragColor = vec4(c, 1.0);
+      ${DOME_GLSL}
+      void main(){ gl_FragColor = vec4(brDome(normalize(vD), uCos), 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -832,18 +961,24 @@ export async function create() {
   dome.renderOrder = 1; dome.position.set(0, 0, 4); scene.add(dome);   // drawn after the opaque room: early-z skips hidden sky
 
   // --- room
-  const room = buildRoom(M); scene.add(room.group);
+  const room = buildRoom(M); scene.add(room.group, room.floor);
 
   // --- far screen-of-consciousness glow (only seen in reverse angles)
   const scrTex = softRectTexture();
   const SCR_X = (LEFT_X + RIGHT_X) / 2 + 0.8;
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.5), new THREE.MeshBasicMaterial({ map: scrTex, color: new THREE.Color(0.3, 0.4, 0.66), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  screen.position.set(SCR_X, 3.0, FRONT_Z - 0.3); screen.rotation.y = Math.PI; scene.add(screen);
-  const screenHalo = new THREE.Mesh(new THREE.PlaneGeometry(20, 11), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.02, 0.028, 0.055), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  screenHalo.position.set(SCR_X, 3.0, FRONT_Z - 1.0); screenHalo.rotation.y = Math.PI; scene.add(screenHalo);
-  // a long soft streak on the polished floor "reflecting" the far glow (seen in reverse angles)
-  const streak = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.1, 0.13, 0.22), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  streak.rotation.x = -Math.PI / 2; streak.position.set(SCR_X, 0.008, FRONT_Z - 8); streak.scale.set(5, 18, 1); scene.add(streak);
+  // a readable soft-edged glowing rectangle (HDR core, blooms gently) inside a wide faint haze: it reads as THE light source
+  // NB the bloom high-pass is a hard luminance step: the rectangle itself stays just under the threshold (no haze over
+  // the frame), only a soft hot centre crosses it -> a gentle bloom that says "light source"
+  const SCR_COL = new THREE.Color(0.46, 0.6, 0.98);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 5.25), new THREE.MeshBasicMaterial({ map: scrTex, color: SCR_COL.clone(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  screen.position.set(SCR_X, 3.1, FRONT_Z - 0.3); screen.rotation.y = Math.PI; screen.name = 'backroom.screen'; scene.add(screen);
+  const screenHot = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 2.5), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.34, 0.42, 0.62), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  screenHot.position.set(SCR_X, 3.1, FRONT_Z - 0.4); screenHot.rotation.y = Math.PI; scene.add(screenHot);
+  const screenHalo = new THREE.Mesh(new THREE.PlaneGeometry(22, 12), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.035, 0.05, 0.1), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  screenHalo.position.set(SCR_X, 3.1, FRONT_Z - 1.0); screenHalo.rotation.y = Math.PI; screenHalo.name = 'backroom.screenHalo'; scene.add(screenHalo);
+  // a narrow soft streak on the polished floor "reflecting" the far glow (reverse angles); it fades out toward the camera
+  const streak = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.075, 0.095, 0.17), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  streak.rotation.x = -Math.PI / 2; streak.position.set(SCR_X, 0.008, FRONT_Z - 7.5); streak.scale.set(3.0, 15, 1); streak.name = 'backroom.streak'; scene.add(streak);
 
   // --- lights
   const hemi = new THREE.HemisphereLight(0x3a4270, 0x1e1418, 0.85); scene.add(hemi);
@@ -856,14 +991,17 @@ export async function create() {
   scene.add(key, key.target);
   const makeBulb = (pos, cordLen, color, intensity, dist) => {
     const pivot = new THREE.Group(); pivot.position.set(pos.x, pos.y + cordLen, pos.z); scene.add(pivot);
-    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, cordLen, 5), M.cord); cord.position.y = -cordLen / 2; pivot.add(cord);
-    const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.026, 0.075, 12), M.socket); sock.position.y = -cordLen - 0.03; pivot.add(sock);
+    // cord / socket / glass are transparent (opacity 1 normally) so the cosmos can fade them out; the pivot and its
+    // PointLight are NEVER hidden (dropping a light changes the light count = every lit program recompiles)
+    const cordM = M.bulbCord.clone(), sockM = M.bulbSocket.clone();
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, cordLen, 5), cordM); cord.position.y = -cordLen / 2; pivot.add(cord);
+    const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.026, 0.075, 12), sockM); sock.position.y = -cordLen - 0.03; pivot.add(sock);
     const bg = new THREE.SphereGeometry(0.042, 18, 12); bg.scale(1, 1.22, 1);
-    const glass = new THREE.Mesh(bg, new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(5.0) })); glass.position.y = -cordLen - 0.11; pivot.add(glass);
+    const glass = new THREE.Mesh(bg, new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(5.0), transparent: true })); glass.position.y = -cordLen - 0.11; pivot.add(glass);
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color(color).multiplyScalar(0.55), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     halo.scale.setScalar(0.42); halo.position.copy(glass.position); pivot.add(halo);
     const light = new THREE.PointLight(color, intensity, dist, 2); light.position.copy(glass.position); pivot.add(light);
-    return { pivot, light, glass, halo, base: intensity, cordLen };
+    return { pivot, light, glass, halo, cord, sock, base: intensity, cordLen, col: new THREE.Color(color) };
   };
   const bulb = makeBulb(V(-1.15, 2.3, 0.5), 5.4, 0xffb468, 7.0, 11);
   const bulb2 = makeBulb(V(3.45, 2.15, -3.75), 5.6, 0xffa95e, 4.2, 8);
@@ -902,9 +1040,9 @@ export async function create() {
   ];
   const SH_LEN = 6.0;
   SHAFTS.forEach((s, i) => {
-    const geo = new THREE.CylinderGeometry(s.rt, s.rb, SH_LEN, 28, 1, true); geo.translate(0, SH_LEN / 2, 0);
+    const geo = new THREE.CylinderGeometry(s.rt, s.rb, SH_LEN, 16, 1, true); geo.translate(0, SH_LEN / 2, 0);   // bounding sphere is exact: frustum-culled
     const mat = shaftMat(s.col); mat.uniforms.uSeed.value = i * 2.3;
-    const m = new THREE.Mesh(geo, mat); m.position.copy(s.at); m.quaternion.copy(qBasis(s.from, V(0, 0, 1))); m.renderOrder = 4; m.frustumCulled = false;
+    const m = new THREE.Mesh(geo, mat); m.position.copy(s.at); m.quaternion.copy(qBasis(s.from, V(0, 0, 1))); m.renderOrder = 4;
     scene.add(m);
     const pool = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(s.col), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
     pool.rotation.x = -Math.PI / 2; pool.position.set(s.at.x, 0.006, s.at.z); pool.scale.set(s.rb * 3.0, s.rb * 2.6, 1); pool.renderOrder = 2; scene.add(pool);
@@ -917,26 +1055,42 @@ export async function create() {
   // --- janitor corner
   const corner = new THREE.Group(); corner.name = 'backroom.corner'; scene.add(corner);
   const W = makeWringerBucket(M); corner.add(W.group);
-  const bA = makeBucket(M), bB = makeBucket(M, { rB: 0.11, rT: 0.15, h: 0.27, ribs: [0.3, 0.66] });
+  const bA = makeBucket(M, { seg: 48 }), bB = makeBucket(M, { rB: 0.11, rT: 0.15, h: 0.27, ribs: [0.3, 0.66] });
   corner.add(bA.group, bB.group);
   const mop = makeMop(M); corner.add(mop.group);
   const broom1 = makeCornBroom(M), broom2 = makePushBroom(M); corner.add(broom1.group, broom2.group);
   const spray1 = makeSpray(M, M.sprayA, 0x6fc9b8), spray2 = makeSpray(M, M.sprayB, 0xe892ad); corner.add(spray1.group, spray2.group);
   const rags = [0, 1, 2, 3, 4].map((i) => makeRag(M, i)); rags.forEach((rg) => corner.add(rg.group));
   const sign = makeSign(M); corner.add(sign.group);
-  // puddle (blobby disc)
-  const pg = new THREE.CircleGeometry(1, 48); { const p = pg.attributes.position; for (let i = 1; i < p.count; i++) { const a = Math.atan2(p.getY(i), p.getX(i)); const k = 1 + 0.16 * Math.sin(3 * a + 0.5) + 0.09 * Math.sin(5 * a + 2.0) + 0.05 * Math.sin(9 * a); p.setXY(i, p.getX(i) * k, p.getY(i) * k); } }
-  pg.rotateX(-Math.PI / 2);
-  const puddle = new THREE.Mesh(pg, M.puddle); puddle.renderOrder = 1; puddle.visible = false; corner.add(puddle);
+  // puddle: an Object3D whose transform (unit blob radius, local X = long axis) drives the in-floor water shading (wet
+  // darker boards + mirrored warm wall + bulb glint, see floorShader). visible = on. Hand-placing it after update() works:
+  // the floor reads its matrix right before it is drawn.
+  const puddle = new THREE.Object3D(); puddle.name = 'backroom.puddle'; puddle.visible = false; corner.add(puddle);
+  room.floor.onBeforeRender = () => {
+    const on = puddle.visible && corner.visible && puddle.parent !== null;
+    FLOOR_U.uPudA.value = on ? clamp(puddle.userData.amount ?? 1) : 0;
+    if (on) FLOOR_U.uPudInv.value.copy(puddle.matrixWorld).invert();
+  };
+  // the splash: real water drops (stretched along their velocity, normal blending, glints) + a little crown
+  const NDROP = 44;
+  const drops = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), M.water, NDROP); drops.count = 0; drops.frustumCulled = false; drops.renderOrder = 3; corner.add(drops);
+  const crownM = fakeGlow(M.water.clone(), { wrap: 0.8, spec: 2.2, shin: 60 }); crownM.side = THREE.DoubleSide;
+  const crownG = new THREE.CylinderGeometry(1, 0.55, 1, 24, 1, true); crownG.translate(0, 0.5, 0);
+  { const p = crownG.attributes.position; for (let i = 0; i < p.count; i++) if (p.getY(i) > 0.5) { const a = Math.atan2(p.getZ(i), p.getX(i)); p.setY(i, 1 + 0.35 * Math.max(0, Math.sin(a * 9))); } }   // spiky rim
+  const crown = new THREE.Mesh(crownG, crownM); crown.visible = false; crown.renderOrder = 3; corner.add(crown);
   // contact shadows
   const shadowOf = (w, d, o) => { const s = contactShadow(w, d, o); corner.add(s); return s; };
   const shW = shadowOf(0.7, 0.7, 0.55), shA = shadowOf(0.5, 0.5, 0.5), shB = shadowOf(0.48, 0.48, 0.5), shSign = shadowOf(0.55, 0.5, 0.4), shRag = shadowOf(0.55, 0.45, 0.4);
   const shCorner = contactShadow(2.6, 2.0, 0.45); shCorner.position.set(RIGHT_X - 0.9, 0.0035, BACK_Z + 0.85); shCorner.rotation.z = Math.PI / 4; corner.add(shCorner);
+  const shBack = contactShadow(1.7, 0.75, 0.32); shBack.position.set(2.45, 0.0034, BACK_Z + 0.38); corner.add(shBack);
   const furn = contactShadow(2.4, 1.0, 0.5); furn.position.set(-2.9, 0.0035, -4.45); scene.add(furn);
   const furn2 = contactShadow(1.5, 1.3, 0.45); furn2.position.set(-4.2, 0.0035, -4.3); scene.add(furn2);
 
   // --- particles: additive (motes, splash, stars) + normal (dust puffs)
-  const fx = new Particles({ max: 520, blending: 'add', intensity: 1.4 }); scene.add(fx.mesh);
+  const fx = new Particles({ max: 220, blending: 'add', intensity: 1.4 }); scene.add(fx.mesh);
+  // the cosmos backdrop (stars + nebulae) is drawn FIRST among the transparents (before the fading room twins, which
+  // write depth): the walls then fade over it, so the sky shows through continuously instead of popping in at the end
+  const fxSky = new Particles({ max: 320, blending: 'add', intensity: 1.4, renderOrder: -6 }); scene.add(fxSky.mesh);
   const fxN = new Particles({ max: 80, blending: 'normal', intensity: 1.0 }); scene.add(fxN.mesh);
   const r0 = rng(808);
   const MOTES = [];
@@ -952,15 +1106,16 @@ export async function create() {
   const I = {};
   const setT = (obj, p, q) => { obj.position.copy(p); obj.quaternion.copy(q); };
   const wallN_R = V(-1, 0, 0);
-  I.W = { p: V(4.22, 0, -4.45), q: qAx(UP, 0.12) };
+  I.W = { p: V(4.45, 0, -4.62), q: qAx(UP, 0.12) };     // tucked right into the corner, behind the landing spot
   I.A = { p: V(3.56, 0, -4.66), q: qAx(UP, 0.4) };
-  I.B = { p: V(3.04, 0.27 + 0.006, -4.68), q: qAx(UP, -0.3).multiply(qAx(V(1, 0, 0), Math.PI)) };   // upside down: a stool
-  I.mop = (() => { const foot = V(4.22, 0.17, -4.39), top = V(4.66, 1.56, -4.86); return { p: foot, q: qBasis(top.clone().sub(foot), V(-1, 0, 1)) }; })();
+  I.B = { p: V(2.69, 0.27 + 0.006, -4.68), q: qAx(UP, -0.3).multiply(qAx(V(1, 0, 0), Math.PI)) };   // upside down: a stool
+  I.mop = (() => { const foot = V(4.45, 0.17, -4.56), top = V(4.7, 1.56, -4.9); return { p: foot, q: qBasis(top.clone().sub(foot), V(-1, 0, 1)) }; })();
   I.b1 = (() => { const foot = V(4.56, 0, -3.72), top = V(RIGHT_X - 0.03, 1.58, -3.98); return { p: foot, q: qBasis(top.clone().sub(foot), wallN_R), top }; })();
   I.b2 = (() => { const foot = V(4.52, 0, -3.02), top = V(RIGHT_X - 0.03, 1.42, -3.12); return { p: foot, q: qBasis(top.clone().sub(foot), wallN_R), top }; })();
-  I.s1 = { p: V(3.0, 0.284 + 0.11, -4.64), q: qAx(UP, -0.6) };
-  I.s2 = { p: V(3.14, 0.284 + 0.11, -4.74), q: qAx(UP, 0.9) };
-  I.rags = rags.map((rg, i) => ({ p: V(2.46 + 0.012 * Math.sin(i * 2.1), 0.018 + i * 0.033, -4.7 + 0.01 * Math.cos(i * 1.7)), q: qAx(UP, 0.15 * Math.sin(i * 1.9 + 0.4)) }));
+  I.s1 = { p: V(2.65, 0.284 + 0.11, -4.64), q: qAx(UP, -0.6) };
+  I.s2 = { p: V(2.79, 0.284 + 0.11, -4.74), q: qAx(UP, 0.9) };
+  const RAG_X = 2.13;
+  I.rags = rags.map((rg, i) => ({ p: V(RAG_X + 0.012 * Math.sin(i * 2.1), 0.018 + i * 0.033, -4.7 + 0.01 * Math.cos(i * 1.7)), q: qAx(UP, 0.15 * Math.sin(i * 1.9 + 0.4)) }));
   I.sign = { p: V(3.22, 0, -3.5), yaw: -Math.PI / 4 + 0.22, roll: 0.025 };
   const SIGN_SPREAD = 0.2;
 
@@ -988,10 +1143,10 @@ export async function create() {
   const props = {
     cage: cage.group, cageDoor: cage.door, latch: cage.lever, tag: cage.tag,
     bucketHat: bA.group, bucketB: bB.group, wringer: W.group, mop: mop.group, broom1: broom1.group, broom2: broom2.group,
-    spray1: spray1.group, spray2: spray2.group, rags: rags.map((r) => r.group), sign: sign.group, puddle,
-    corner, room: room.group, voidLight, bulb: bulb.light, bulb2: bulb2.light, key, hemi, fx, fxN,
+    spray1: spray1.group, spray2: spray2.group, rags: rags.map((r) => r.group), sign: sign.group, puddle, drops, crown,
+    corner, room: room.group, floor: room.floor, voidLight, bulb: bulb.light, bulb2: bulb2.light, key, hemi, fx, fxN, fxSky,
   };
-  const look = { bloom: 0.72, bloomThreshold: 0.72, bloomRadius: 0.6, vignette: 0.36, sat: 1.08, warm: 0.02, lift: [0.008, 0.007, 0.02], exposure: 1.15 };
+  const look = { bloom: 0.72, bloomThreshold: 0.8, bloomRadius: 0.6, vignette: 0.36, sat: 1.08, warm: 0.02, lift: [0.008, 0.007, 0.02], exposure: 1.15 };
 
   /** world point on a fixed cage bar: angleDeg around the cage (0 = door centre, + toward the hinge side), height y */
   function cageBar(angleDeg, y) {
@@ -1006,6 +1161,7 @@ export async function create() {
   const tmpQ = new THREE.Quaternion();
   let roomFading = false;   // which twin set is assigned (a pure function of opts.cosmos > 0 each frame)
   const BAR_ROT = new THREE.Quaternion();
+  const _violet = new THREE.Color(0.2, 0.16, 0.34), _fogCos = new THREE.Color(0x0a0618);
   function update(t, o = {}) {
     const cosmos = clamp(o.cosmos ?? 0);
     const L = o.lights || {};
@@ -1027,16 +1183,24 @@ export async function create() {
     bulb.pivot.rotation.set(0.004 * Math.cos(t * 0.53), 0, sway1);
     const kick = w * (tc > 0 ? 0.11 * Math.exp(-tc * 0.42) * Math.sin(tc * 2.7) : 0);
     bulb2.pivot.rotation.set(kick * 0.6 + 0.003 * Math.sin(t * 0.47), 0, kick + 0.004 * Math.sin(t * 0.58));
-    bulb.light.intensity = bulb.base * (L.bulb ?? 1) * dimRoom;
-    bulb2.light.intensity = bulb2.base * (L.bulb2 ?? 1) * dimRoom;
+    // the bulbs go out smoothly with the cosmos: glass, halo, cord and light all reach exactly 0 at cosmos 0.9; only the
+    // cord/socket/glass/halo MESHES are hidden once they are at 0 (the pivots and their PointLights stay: no recompiles)
+    const bulbOut = 1 - smooth(cosmos / 0.9);
+    bulb.light.intensity = bulb.base * (L.bulb ?? 1) * dimRoom * bulbOut;
+    bulb2.light.intensity = bulb2.base * (L.bulb2 ?? 1) * dimRoom * bulbOut;
     bulb2.light.visible = !!L.cornerLight;
-    { const k = (L.bulb2 ?? 1) * dimRoom * (L.cornerLight ? 0.3 : 1);
+    { const k = (L.bulb2 ?? 1) * dimRoom * bulbOut * (L.cornerLight ? 0.3 : 1);
       bulb2.pivot.updateMatrixWorld(true); bulb2.glass.getWorldPosition(FAKE.uFGPos.value);
       FAKE.uFGCol.value.setRGB(1.0, 0.55, 0.24).multiplyScalar(2.6 * k); FAKE.uFGR.value = 1.7; }
-    bulb.glass.material.color.set(0xffb468).multiplyScalar(5 * (L.bulb ?? 1) * dimRoom); bulb.halo.material.opacity = (L.bulb ?? 1) * dimRoom;
-    bulb2.glass.material.color.set(0xffa95e).multiplyScalar(5 * (L.bulb2 ?? 1) * dimRoom); bulb2.halo.material.opacity = (L.bulb2 ?? 1) * dimRoom;
+    for (const [b, kL] of [[bulb, L.bulb ?? 1], [bulb2, L.bulb2 ?? 1]]) {
+      const glow = kL * dimRoom * bulbOut;
+      b.glass.material.color.copy(b.col).multiplyScalar(5 * kL * dimRoom);
+      b.glass.material.opacity = bulbOut; b.halo.material.opacity = glow;
+      b.cord.material.opacity = bulbOut; b.sock.material.opacity = bulbOut;
+      b.cord.visible = b.sock.visible = b.glass.visible = b.halo.visible = bulbOut > 0;
+      b.pivot.visible = true;
+    }
     bulb.glass.getWorldPosition(anchors.bulb); bulb2.glass.getWorldPosition(anchors.bulb2);
-    for (const b of [bulb, bulb2]) b.pivot.visible = cosmos < 0.98;
     // the Void's starlight (scene-movable)
     const vl = o.voidLight;
     voidLight.position.copy(VOID_LIGHT_POS); voidLight.intensity = 3.2; voidLight.color.set(0x9a7cff); voidLight.distance = 7;
@@ -1046,7 +1210,7 @@ export async function create() {
     anchors.voidLight.copy(voidLight.position);
 
     // ---- fog / background / room fade (cosmos)
-    scene.fog.color.copy(FOG_COL).lerp(new THREE.Color(0x0a0618), cosmos); scene.background.copy(scene.fog.color);
+    scene.fog.color.copy(FOG_COL).lerp(_fogCos, cosmos); scene.background.copy(scene.fog.color);
     scene.fog.far = lerp(40, 90, cosmos); scene.fog.near = lerp(11, 30, cosmos);
     domeU.uCos.value = cosmos;
     for (const m of M.fadeable) m.userData.twin.opacity = 1 - cosmos;
@@ -1054,10 +1218,11 @@ export async function create() {
       roomFading = cosmos > 0;
       room.group.traverse((ob) => { if (ob.material) { const base = ob.userData.baseMat || (ob.userData.baseMat = ob.material); ob.material = roomFading && base.userData.twin ? base.userData.twin : base; } });
     }
-    room.group.visible = cosmos < 0.999;
-    room.floor.visible = true;
-    M.floor.color.setRGB(1, 1, 1).lerp(new THREE.Color(0.2, 0.16, 0.34), cosmos);
-    screen.material.opacity = 1 - cosmos; screenHalo.material.opacity = 1 - cosmos; streak.material.opacity = 1 - cosmos;
+    room.group.visible = cosmos < 0.999;        // the twins are at opacity <= 0.001 by then: no visible step
+    room.floor.visible = true;                  // the floor is NOT in room.group: it stays (deep violet, melting into the dome far out)
+    M.floor.color.setRGB(1, 1, 1).lerp(_violet, cosmos);
+    FLOOR_U.uCos.value = cosmos; FLOOR_U.uKeyDir.value.copy(KEY_DIR);
+    screen.material.opacity = 1 - cosmos; screenHot.material.opacity = 1 - cosmos; screenHalo.material.opacity = 1 - cosmos; streak.material.opacity = 1 - cosmos;
     for (const m of [furn, furn2]) m.material.opacity = 0.5 * (1 - cosmos);
     // shafts
     const shK = (o.shafts ?? 1) * (1 - cosmos);
@@ -1087,7 +1252,7 @@ export async function create() {
     updateCorner(t, tc, w, o);
 
     // ---- particles
-    fx.begin(); fxN.begin();
+    fx.begin(); fxN.begin(); fxSky.begin();
     // dust motes drifting in the shafts (wrap invisibly: alpha follows the shaft profile)
     if (shK > 0.01 && (o.dust ?? 1) > 0) {
       for (const m of MOTES) {
@@ -1107,17 +1272,33 @@ export async function create() {
     }
     // cosmos backdrop: far stars + faint nebulae
     if (cosmos > 0.002) {
-      for (const s of STARS) fx.add([s.p.x, s.p.y, s.p.z], s.sz, s.c < 0.3 ? 0xbfd8ff : s.c < 0.55 ? 0xffe6c8 : s.c < 0.75 ? 0xd8c4ff : 0xffffff, cosmos * (0.55 + 0.45 * Math.sin(t * (0.6 + s.c) + s.ph)), 0, CELL.star);
-      for (const [x, y, z, sz, col] of NEB) fx.add([x, y, z], sz, col, 0.22 * cosmos, 0.3 * Math.sin(t * 0.03 + x), CELL.nebula);
+      for (const s of STARS) fxSky.add([s.p.x, s.p.y, s.p.z], s.sz, s.c < 0.3 ? 0xbfd8ff : s.c < 0.55 ? 0xffe6c8 : s.c < 0.75 ? 0xd8c4ff : 0xffffff, cosmos * (0.55 + 0.45 * Math.sin(t * (0.6 + s.c) + s.ph)), 0, CELL.star);
+      for (const [x, y, z, sz, col] of NEB) fxSky.add([x, y, z], sz, col, 0.22 * cosmos, 0.3 * Math.sin(t * 0.03 + x), CELL.nebula);
     }
     crashFX(t, tc, w);
-    fx.end(); fxN.end();
+    fx.end(); fxN.end(); fxSky.end();
   }
+
+  // ---------------------------------------------------------------------------------------- cutaway (per render)
+  // Wall dressing that would stand between a camera placed beyond the single-sided right / back wall and the set is
+  // hidden for that render only (decided from the camera actually rendering this scene, so it does not matter whether
+  // a scene calls update() before or after placing its camera; frames stay pure).
+  const _cp = V();
+  const prevOBR = scene.onBeforeRender;
+  scene.onBeforeRender = function (r, sc, cam, rt) {
+    if (cam) {
+      _cp.setFromMatrixPosition(cam.matrixWorld);
+      const outR = _cp.x > RIGHT_X - 0.05, outB = _cp.z < BACK_Z + 0.05;
+      room.cutR.visible = !outR; room.cutB.visible = !outB; room.cutC.visible = !(outR || outB);
+    }
+    if (prevOBR && prevOBR !== THREE.Object3D.prototype.onBeforeRender) prevOBR.call(this, r, sc, cam, rt);
+  };
 
   // ---------------------------------------------------------------------------------------- crash choreography
   // tc = seconds since impact (magician hits the pile at crashSpot moving along BACK). w = blend intact -> crashed.
   const SIGN_FALL_T = 4.6, BROOM_SLIDE_T = 7.2;
   const P_A = { v0: V(-0.75, 4.4, 0.85), spin: 3 * Math.PI, land: 0.92 };
+  const HAT_LIFT = 0.075;
   const lyingBucketQ = (axisDir, roll, rT, rB, h) => {   // a bucket lying on its side: local +Y along axisDir (bottom -> rim)
     const tilt = Math.atan2(rT - rB, h);
     const ax = axisDir.clone().setY(0).normalize(); const side = V(-ax.z, 0, ax.x);
@@ -1126,7 +1307,7 @@ export async function create() {
   };
   // rolling path for bucket B: quadratic Bezier from beside the stool spot to `to` ([x,z]), bulging toward the back
   // wall; arc-length LUT so the roll speed/angle are exact. ROLL_S0 = metres it rolls during the crash itself.
-  const ROLL_S0 = 0.75, ROLL_FROM = V(3.0, 0, -4.42), ROLL_TO = V(-1.25, 0, -3.35);
+  const ROLL_S0 = 0.75, ROLL_FROM = V(2.66, 0, -4.42), ROLL_TO = V(-1.25, 0, -3.35);
   const _paths = new Map();
   function rollPath(to) {
     const key = to ? to.join(',') : 'default';
@@ -1154,28 +1335,49 @@ export async function create() {
     out.p = c.clone().addScaledVector(ax, -b.h / 2).setY(b.rB + 0.004);
     return out;
   }
+  // wringer: rock (0.02-0.32 s) then topple about its -X caster edge onto its side (0.3-0.62 s), sliding a hand along the
+  // back wall and turning its mouth a little toward the room (WR_YAW). Pure function of tc.
+  const WR_PIV = 0.178, WR_YAW = 0.14, WR_TIP = Math.PI / 2 - 0.075, AX_Z = V(0, 0, 1);
+  function wringerPose(tc, on) {
+    const jolt = on ? sm(0, 0.1, tc) * (1 - 0.6 * sm(0.12, 0.4, tc)) : 0;
+    const rock = on ? 0.3 * Math.sin(Math.PI * clamp((tc - 0.02) / 0.3)) * (tc < 0.32 ? 1 : 0) : 0;
+    const fall = on ? fallU(tc, 0.3, 0.62, 0.07) : 0;
+    const R = qAx(UP, WR_YAW * clamp(fall)).multiply(qAx(AX_Z, WR_TIP * fall + rock * (1 - clamp(fall))));
+    const piv = I.W.p.clone().add(V(-WR_PIV + 0.05 * jolt - 0.1 * clamp(fall), 0, -0.04 * jolt + 0.03 * clamp(fall)));
+    const p = piv.clone().add(V(WR_PIV, 0, 0).applyQuaternion(R));
+    p.y += on ? 0.03 * Math.sin(Math.PI * clamp(tc / 0.2)) : 0;           // the hop of the hit
+    return { p, q: R.multiply(I.W.q.clone()), fall: clamp(fall) };
+  }
+  const WR = (() => {                       // where the water comes out (rest pose of the tipped wringer)
+    const r = wringerPose(10, true);
+    const ax = V(0, 1, 0).applyQuaternion(r.q);
+    const mouth = r.p.clone().addScaledVector(ax, 0.06 + 0.32);
+    const mouthDir = ax.clone().setY(0).normalize();
+    return { mouth, mouthDir, gush: 0.5 };
+  })();
   const tmpB = { p: V(), q: new THREE.Quaternion() };
   const tmpA = { p: V(), q: new THREE.Quaternion() };
   function updateCorner(t, tc, w, o) {
     const on = w > 0;
-    // ---- wringer bucket: tips over toward +Z (opening to the room), water spills
+    // ---- wringer bucket: the body slams it back into the corner; it rocks, then topples over sideways ALONG THE BACK
+    //      WALL (toward -X, behind the landing spot, mouth turned a little to the room) and the water gushes out.
+    //      Its tipped volume stays behind the seated magician (clear of a 2.1 m body sitting at crashSpot, legs to the room).
     {
-      const tip = on ? fallU(tc, 0.04, 0.42, 0.08) : 0;
-      const pivot = I.W.p.clone().add(V(0, 0, 0.2));
-      const q = qAx(V(1, 0, 0), tip * (Math.PI / 2 - 0.08)).multiply(I.W.q);
-      const rel = I.W.p.clone().sub(pivot).applyQuaternion(qAx(V(1, 0, 0), tip * (Math.PI / 2 - 0.08)));
-      const p = pivot.add(rel).add(V(0.05 * sm(0, 0.3, tc) * (on ? 1 : 0), 0.035 * Math.sin(Math.PI * clamp(tc / 0.25)) * (on ? 1 : 0), 0));
-      setT(W.group, I.W.p.clone().lerp(p, w), slerpQ(I.W.q, q, w));
+      const wr = wringerPose(on ? tc : 0, on);
+      setT(W.group, I.W.p.clone().lerp(wr.p, w), slerpQ(I.W.q, wr.q, w));
       hangBail(W.bucket, t, 5);
-      shW.position.set(W.group.position.x, 0.0035, W.group.position.z + 0.12 * tip * w); shW.scale.set(1 + 0.3 * tip * w, 1 + 0.5 * tip * w, 1);
+      const c = W.group.position.clone().add(V(0, 0.22, 0).applyQuaternion(W.group.quaternion));
+      shW.position.set(c.x, 0.0035, c.z); shW.scale.set(1 + 0.55 * wr.fall * w, 1, 1);
     }
-    // ---- puddle
+    // ---- puddle (drives the in-floor water shading): spreads from the wringer's mouth toward the room
     {
-      const grow = on ? sm(0.38, 2.4, tc) : 0;
+      const grow = on ? sm(WR.gush, WR.gush + 2.0, tc) : 0;
       puddle.visible = grow * w > 0.003;
-      puddle.position.set(I.W.p.x - 0.12 * grow, 0.0032, I.W.p.z + 0.42 + 0.45 * grow);
-      puddle.scale.set(0.12 + 0.5 * grow, 1, 0.16 + 0.72 * grow).multiplyScalar(w);
-      puddle.rotation.y = 0.4;
+      const d = WR.mouthDir;
+      puddle.position.set(WR.mouth.x + d.x * (0.12 + 0.34 * grow), 0, WR.mouth.z + d.z * (0.12 + 0.34 * grow) + 0.3 * grow);
+      puddle.rotation.set(0, Math.atan2(-d.z, d.x) - 0.45, 0);
+      puddle.scale.set((0.13 + 0.62 * grow) * w, 1, (0.11 + 0.46 * grow) * w);
+      puddle.userData.amount = 1;
     }
     // ---- mop: thrown out of the wringer, falls toward the room, lands flat (or becomes a wig on the bucket hat)
     {
@@ -1268,12 +1470,12 @@ export async function create() {
     // ---- rags flop over
     rags.forEach((rg, i) => {
       const t0 = 0.12 + 0.035 * i, u = on ? ease.outBack(clamp((tc - t0) / 0.42)) : 0, uu = clamp(u);
-      const pEnd = V(2.46 - 0.07 - 0.085 * i, 0.018 + Math.max(0, 2 - i) * 0.028 + (i > 2 ? 0.012 : 0), -4.7 + 0.07 + 0.075 * i);
+      const pEnd = V(RAG_X - 0.07 - 0.085 * i, 0.018 + Math.max(0, 2 - i) * 0.028 + (i > 2 ? 0.012 : 0), -4.7 + 0.07 + 0.075 * i);
       const qEnd = qAx(UP, 0.4 * Math.sin(i * 2.3) + 0.3).multiply(qAx(V(0, 0, 1), (i > 2 ? 0.22 : 0.05) * (i % 2 ? 1 : -1))).multiply(qAx(V(1, 0, 0), i === 4 ? 0.3 : 0));
       const p = I.rags[i].p.clone().lerp(pEnd, u).add(V(0, 0.09 * Math.sin(Math.PI * uu) * (i / 4), 0));
       setT(rg.group, I.rags[i].p.clone().lerp(p, w), slerpQ(I.rags[i].q, slerpQ(I.rags[i].q, qEnd, uu), w));
     });
-    shRag.position.set(2.32, 0.0035, -4.52);
+    shRag.position.set(RAG_X - 0.14, 0.0035, -4.52);
     // ---- broom 1 (corn broom): topples into the room right away
     {
       const u = on ? fallU(tc, 0.06, 0.62, 0.1) : 0;
@@ -1324,7 +1526,7 @@ export async function create() {
     const q = qBasis(up.clone().negate(), V(Math.sin(h.yaw ?? 0), 0, Math.cos(h.yaw ?? 0)));   // bucket +Y -> -up (opening down)
     if (h.tilt) q.premultiply(qAx(V(1, 0, 0).applyQuaternion(q), h.tilt));
     // origin = the bucket's (outer) bottom centre, now on top: the inner bottom rests on the head top, the rim hangs over the face
-    const pOn = top.clone().addScaledVector(up, 0.022 + (h.lift ?? 0));
+    const pOn = top.clone().addScaledVector(up, 0.022 + (h.lift ?? HAT_LIFT));   // default rides 7.5 cm high: the nose clears under the rim
     const at = h.at ?? P_A.land;
     if (h.blend == null && tc >= at) return { p: pOn, q };
     const u = h.blend != null ? clamp(h.blend) : clamp(tc / at);
@@ -1363,20 +1565,70 @@ export async function create() {
     return { p, q, spread };
   }
   // particles for the crash: dust puffs, water splash, little debris
+  // crash particles: a soft dust puff + a little debris (normal blending: no additive sparkle) + the water SPLASH
   function crashFX(t, tc, w) {
+    drops.count = 0; crown.visible = false;
     if (w <= 0 || tc <= 0 || tc > 6) return;
     fxN.burst({ t: tc, at: 0.0, count: 12, seed: 41, life: 1.6, jitter: 0.12, origin: [CRASH.x + 0.1, 0.35, CRASH.z - 0.1], vel: [-0.3, 0.55, 0.3], spread: [0.9, 0.35, 0.9], drag: 2.2,
       size: [0.25, 0.45], grow: 2.2, color: [0x8d8494, 0x7e7488, 0x9a90a0], alpha: 0.32 * w, fade: [0.1, 0.6], cell: CELL.puff, spin: 0.6 });
-    fx.burst({ t: tc, at: 0.38, count: 34, seed: 43, life: 0.62, jitter: 0.1, origin: [I.W.p.x - 0.02, 0.22, I.W.p.z + 0.36], vel: [-0.2, 1.7, 1.2], spread: [0.8, 0.9, 0.7], gravity: [0, -9.8, 0],
-      size: [0.014, 0.03], color: [0xbfe4ff, 0xe6f4ff, 0x9fcfff], alpha: 0.85 * w, fade: [0.05, 0.35], cell: CELL.dot });
-    fx.burst({ t: tc, at: 0.42, count: 10, seed: 44, life: 0.5, origin: [I.W.p.x - 0.05, 0.03, I.W.p.z + 0.55], vel: [0, 0.9, 0.6], spread: [0.7, 0.3, 0.6], gravity: [0, -7, 0],
-      size: [0.03, 0.05], color: 0xd6ecff, alpha: 0.5 * w, fade: [0.05, 0.4], cell: CELL.dot });
-    fx.burst({ t: tc, at: 0.0, count: 16, seed: 45, life: 1.0, origin: [CRASH.x, 0.5, CRASH.z], vel: [-0.6, 1.6, 0.6], spread: [1.4, 1.0, 1.4], gravity: [0, -6, 0],
-      size: [0.012, 0.022], color: [0xd8d0c0, 0xbfb6a6], alpha: 0.7 * w, fade: [0.05, 0.4], cell: CELL.dust });
+    fxN.burst({ t: tc, at: 0.0, count: 16, seed: 45, life: 1.0, origin: [CRASH.x, 0.5, CRASH.z], vel: [-0.6, 1.6, 0.6], spread: [1.4, 1.0, 1.4], gravity: [0, -6, 0],
+      size: [0.014, 0.024], color: [0x6e655c, 0x8a7f70, 0x5a5250], alpha: 0.85 * w, fade: [0.05, 0.4], cell: CELL.dust });
+    splash(tc, w);
+  }
+  // water: drops gush out of the wringer's mouth (stretched along their velocity), hit the floor and flatten out; a
+  // small spiky crown rises where the gush lands. Deterministic (seeded launch data, analytic ballistics).
+  const G = 9.8, _dm = new THREE.Matrix4(), _dq = new THREE.Quaternion(), _ds = V(), _dp = V(), _dv = V();
+  const DROPS = (() => {
+    const out = [], d = WR.mouthDir, side = V(-d.z, 0, d.x), land = WR.mouth.clone().addScaledVector(d, 0.3).setY(0);
+    for (let i = 0; i < NDROP; i++) {
+      const r = rng(900 + i);
+      if (i < 30) {
+        const o = WR.mouth.clone().addScaledVector(side, (r() - 0.5) * 0.2).add(V(0, (r() - 0.5) * 0.16, 0));
+        const v = d.clone().multiplyScalar(0.6 + 1.3 * r()).add(V(0, 0.35 + 1.15 * r(), 0)).addScaledVector(side, (r() - 0.5) * 0.9);
+        out.push({ o, v, tb: WR.gush + 0.02 + 0.3 * r(), r: 0.007 + 0.01 * r() });
+      } else {
+        const az = (i - 30) / (NDROP - 30) * TAU + r() * 0.4, rad = V(Math.cos(az), 0, Math.sin(az));
+        const o = land.clone().addScaledVector(rad, 0.05).setY(0.01);
+        out.push({ o, v: rad.multiplyScalar(0.35 + 0.45 * r()).add(V(0, 0.8 + 0.7 * r(), 0)), tb: WR.gush + 0.12 + 0.06 * r(), r: 0.005 + 0.006 * r() });
+      }
+    }
+    return { list: out, land };
+  })();
+  function splash(tc, w) {
+    if (tc < WR.gush || tc > WR.gush + 1.6) return;
+    let n = 0;
+    for (const D of DROPS.list) {
+      const a = tc - D.tb;
+      if (a < 0) continue;
+      const tl = (D.v.y + Math.sqrt(D.v.y * D.v.y + 2 * G * D.o.y)) / G;          // time to hit the floor
+      if (a > tl + 0.14) continue;
+      if (a <= tl) {
+        _dp.copy(D.o).addScaledVector(D.v, a); _dp.y -= 0.5 * G * a * a;
+        _dv.copy(D.v); _dv.y -= G * a;
+        const sp = _dv.length();
+        _dq.setFromUnitVectors(UP, _dv.multiplyScalar(1 / Math.max(sp, 1e-4)));
+        _ds.set(D.r * 0.85, D.r * (1 + Math.min(2.6, sp * 0.95)), D.r * 0.85).multiplyScalar(w);
+      } else {                                                                   // splat: flattens and shrinks away
+        const u = (a - tl) / 0.14;
+        _dp.copy(D.o).addScaledVector(D.v, tl); _dp.y = 0.003;
+        _dq.identity(); _ds.set(D.r * 2.2, D.r * 0.3, D.r * 2.2).multiplyScalar(w * (1 - u));
+      }
+      _dm.compose(_dp, _dq, _ds); drops.setMatrixAt(n++, _dm);
+    }
+    drops.count = n; drops.instanceMatrix.needsUpdate = true;
+    const u = (tc - WR.gush - 0.1) / 0.42;
+    if (u > 0 && u < 1) {
+      crown.visible = true; crown.position.copy(DROPS.land); crown.quaternion.identity();
+      const rr = 0.04 + 0.12 * ease.out(u);
+      crown.scale.set(rr, (0.05 * Math.sin(Math.PI * Math.min(1, u * 1.25)) + 0.004) * w, rr);
+      crownM.opacity = 0.42 * (1 - u) * w;
+    }
   }
 
+
   const timing = { hatLand: P_A.land, signFall: SIGN_FALL_T, signFallDur: 0.62, broomSlide: BROOM_SLIDE_T, broomSlideDur: 0.75,
-    puddle: [0.38, 2.4], splash: 0.38, rollDuringCrash: [0.33, 2.33], autoSpan: 6.0 };
+    wringerFall: [0.3, 0.62], puddle: [WR.gush, WR.gush + 2.0], splash: WR.gush, rollDuringCrash: [0.33, 2.33], autoSpan: 6.0 };
   update(0, {});
   return { scene, update, anchors, props, look, yaws, layout: LAYOUT, timing, cageBar, flightPos, name: 'BACKROOM' };
 }
+export const __dbgU = { FLOOR_U, FAKE };

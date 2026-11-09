@@ -1026,7 +1026,7 @@ export class Void extends Character {
           const dt = D.kickT.clone().sub(hip).normalize();
           dir = dB.clone().lerp(dt, clamp(0.85 - 0.6 * Math.max(0, 0.5 - dt.dot(dB)))).normalize();
         }
-        const len = KICK_LEN * (0.82 + 0.18 * kP) - FOOT[1];
+        const len = KICK_LEN * (E.kickReach ?? 1) * (0.82 + 0.18 * kP) - FOOT[1];   // kickReach: opt-in rubber-hose stretch (default 1)
         const kCentre = hip.clone().addScaledVector(dir, len + FOOT[1] * 0.9);
         const kUp = dir.clone().negate();                                   // the sole (pad) faces the target
         const kFwd = V3(0, 1, 0).addScaledVector(kUp, -kUp.y).normalize(); // toes up

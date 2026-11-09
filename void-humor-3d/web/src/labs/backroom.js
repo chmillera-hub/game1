@@ -86,7 +86,7 @@ export async function update(t, app, S) {
   else if (seg.name === 'fearPOV') { shot = { pos: [F.x - 0.75, 0.55, F.z + 0.55], look: [Vs.x - 0.45, 2.05, Vs.z + 0.45], fov: 50, drift: 0 }; }
   else if (seg.name === 'lurk') shot = { pos: [2.95, 1.55, -2.4], look: [-1.2, 0.8, 0.3], fov: 38, drift: 0 };
   else if (seg.name === 'sideKick') shot = { pos: [6.6, 1.0, 5.8], look: [0.3, 1.45, -0.5], fov: 35, drift: 0 };
-  else if (seg.name === 'farCorner') { shot = { pos: [-3.6, 1.3, 2.6], look: [1.2, 0.9, -2.2], fov: 38, drift: 0 }; }
+  else if (seg.name === 'farCorner') { shot = { pos: [-5.6, 3.1, -2.6], look: [3.7, 0.55, -4.25], fov: 34, drift: 0 }; }   // from the left wall, high: clears the Void
   else if (seg.name === 'high') shot = { pos: [-3.5, 7.5, 6.5], look: [1.0, 0.0, -2.0], fov: 45, drift: 0 };
   else if (seg.name === 'latch') { o.latch = sm(0.2, 1.0, u); const L = A.cageLatch; shot = framed([L.x, L.y + 0.05, L.z], { dist: 0.85, yaw: 38, pitch: 8, fov: 30, screenY: 0.5, drift: 0 }); P.vg.visible = false; P.fg.position.copy(A.cageInside); P.fg.rotation.y = Y.fearInCage; }
   else if (seg.name === 'door') {
@@ -103,7 +103,8 @@ export async function update(t, app, S) {
     } else {
       sitMag(P, A, Y);
       o.crash = 1; o.crashT = tc; o.signOn = 0.3;
-      shot = CORNER_SHOT;
+      // first the documented corner medium, then a low side view along the back wall (wringer clearance, puddle, sign)
+      shot = tc < 5.0 ? CORNER_SHOT : { pos: [1.2, 0.75, -2.6], look: [3.95, 0.3, -4.35], fov: 40, drift: 0 };
     }
     P.hat.visible = tc < 0.3;
   } else if (seg.name === 'hat') {
@@ -111,16 +112,18 @@ export async function update(t, app, S) {
     P.mg.updateMatrixWorld(true);
     const top = P.headTop.getWorldPosition(V(0, 0, 0)), q = P.head.getWorldQuaternion(new THREE.Quaternion()), up = V(0, 1, 0).applyQuaternion(q);
     o.crash = 1; o.crashT = 0.2 + u; o.signOn = 0.35;
-    o.bucketHat = { pos: top, up, yaw: 0, at: 1.0, lift: 0.04 * sm(3.0, 3.4, u) * (1 - sm(3.9, 4.3, u)) };
+    // default seat (lift 0.075: the nose clears under the rim) + the "bucket lifts an inch" peek on top
+    o.bucketHat = { pos: top, up, yaw: 0, at: 1.0, lift: 0.075 + 0.035 * sm(3.0, 3.4, u) * (1 - sm(3.9, 4.3, u)) };
     o.mopWig = sm(1.4, 2.2, u);
     o.signFall = 0;
-    const oy = (-30 + 150 * sm(2.4, 4.5, u)) * Math.PI / 180, od = 1.9;
-    shot = { pos: [top.x + od * Math.sin(oy - Math.PI / 4), top.y + 0.35, top.z + od * Math.cos(oy - Math.PI / 4)], look: [top.x, top.y - 0.05, top.z], fov: 34, drift: 0 };
+    // orbit stays INSIDE the room (camera x < 4.6, z > -4.8): -75 .. +18 deg around the head, from the room side
+    const oy = (-75 + 93 * sm(2.4, 4.5, u)) * Math.PI / 180, od = 1.7;
+    shot = { pos: [top.x + od * Math.sin(oy), top.y + 0.32, top.z + od * Math.cos(oy)], look: [top.x, top.y - 0.06, top.z], fov: 34, drift: 0 };
   } else if (seg.name === 'roll') {
     o.crash = 1; o.crashT = 12; o.rollBucket = sm(0.2, 2.8, u); o.signOn = 0.3;
     sitMag(P, A, Y);
     P.vg.visible = false; P.fg.visible = false;
-    shot = { pos: [0.6, 2.3, 3.4], look: [0.7, 0.2, -4.0], fov: 40, drift: 0 };
+    shot = { pos: [0.7, 2.6, 4.8], look: [0.7, 0.15, -3.9], fov: 54, drift: 0 };   // the whole path, corner -> rollEnd, in frame
   } else if (seg.name === 'cosmos') {
     o.cosmos = sm(0.2, 2.6, u); o.cageDoor = 1; o.latch = 1; o.crash = 1; o.crashT = 12;
     shot = framed([-0.2, 1.4, -0.6], { dist: 9.5, yaw: 10, pitch: 6, fov: 38, screenY: 0.47, drift: 0 });

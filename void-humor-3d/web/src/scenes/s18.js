@@ -1,6 +1,6 @@
 // s18 the_magician_lurks — the danger only we can see, right behind the Void's big body.
-//   b01 "that right behind the big body of the void,"   slow orbit round the Void from Fear's side toward its left
-//        flank: its soft face, then velvet sliding through the frame. The magician, crouched at HIDE pressed to the back
+//   b01 "that right behind the big body of the void,"   slow orbit round the Void (stage yaw -58 -> -24 deg, r 4.0,
+//        rising 1.3 -> 1.6 m) from Fear's side toward its left flank: its soft face, then velvet sliding through the frame. The magician, crouched at HIDE pressed to the back
 //        of the cloak, stays hidden behind its curve; on "big body" the dented hat rises over its shoulder silhouette
 //        against the back wall like a periscope; on "void" the face comes up after it.
 //   b02 "the ~depression magician was lurking."   MED, long lens from the camera side: only his head, shoulder and the
@@ -228,7 +228,7 @@ function magPose(t, st) {
   const glee = pulse(t, TT.b6 + 0.05, 0.25, TT.out - TT.b6 + 0.15, 0.5);
   const listen = inB7 ? ramp(t, tip.tOut - 0.08, tip.tOut + 0.18) : 0;
   const body = {
-    crouch: lerp(1.0, 0.1, rise) + 0.06 * glee + (inB7 ? 0.05 : 0),
+    crouch: lerp(1.0, 0.1, rise) + 0.06 * glee + (inB7 ? 0.18 : 0),
     peek: inB7 ? -0.1 : atPeek ? -0.8 : 0.25 + 0.6 * lean,
     hunch: 0.28 + 0.25 * glee - 0.1 * rise,
     lean: (atPeek ? 0.12 : 0.06) + 0.08 * glee,

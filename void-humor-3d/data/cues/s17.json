@@ -1,13 +1,13 @@
 {
   "sfx": [
     {"t": "s17b01+1.12", "name": "shimmer", "gain_db": -4, "pan": 0.1},
-    {"t": "s17b02+0.40", "name": "cloth_rustle", "gain_db": -9, "pan": 0.35},
-    {"t": "s17b02+2.00", "name": "lock_click", "gain_db": 0, "pan": 0.05},
-    {"t": "s17b02+2.24", "name": "cage_creak", "until": "s17b02+3.35", "gain_db": -2, "pan": 0.0},
-    {"t": "s17b04+0.30", "name": "twinkle", "gain_db": -5, "pan": 0.25}
+    {"t": "s17b02+0.30", "name": "cloth_rustle", "gain_db": -9, "pan": 0.35},
+    {"t": "s17b02+2.00", "name": "lock_click", "gain_db": 0, "pan": 0.1},
+    {"t": "s17b02+2.24", "name": "cage_creak", "until": "s17b02+3.30", "gain_db": -2, "pan": 0.05},
+    {"t": "s17b04+0.40", "name": "twinkle", "gain_db": -5, "pan": 0.25}
   ],
   "hits": [
     {"t": "s17b02+2.00", "kind": "pluck"},
-    {"t": "s17b04+0.35", "kind": "ping"}
+    {"t": "s17b04+0.40", "kind": "ping"}
   ]
 }

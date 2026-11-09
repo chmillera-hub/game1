@@ -349,6 +349,21 @@ at the same speed from `FRAME0`.
   around it, RIGHT hand at his belt, innocent smile, one "wait for it" nod. User: phone held up in front of the face
   (`shield`), one slow blink.
 
+- **AS BUILT (s03 rev 2, web/src/scenes/s03.js — deviations from the plan above; neighbours must match these):**
+  Jesus finishes s02's walk at **`JV_OUT` = JV + 0.28 m away from the Void** (edgeprops.js `JV_OUT`; at JV his
+  shoulder touches its velvet, leaving no room for a visible arm-around or a whisper without the hood cutting his
+  head). His local yaw: **0.05** on the landing (b01–b03), pivots to **0.88** for the whisper (b04–b05), back to
+  **0.2** by s03b06+0.6 (s04 holds 0.2; s05 starts at 0.2). Arm around = edgeprops `aroundContact`/`aroundArm`:
+  palm at world height **1.3** on the Void's right flank just round its curve (~0.45 m from his shoulder), upper arm
+  level out to his side, elbow pole stage-fixed (no flips). b01 camera = front two-shot sliding right (−3° → +9°,
+  dist 5.6 → 3.75), not the side shot. b02 USER_CU (yaw 108): the raised RIGHT hand is pulled in front of the chest
+  (frame-right, below the chin) for the CU only and blends back offscreen to s04/s05's `defendTarget` during b03.
+  Whisper: the Void does NOT use `whisperPose`; it sinks straight down (`crouch` 0.95, `tilt` −0.18, head yaw +0.5
+  toward camera, roll 0.1) so the side of its hood comes to his mouth (hood clearance ≥ 5.8 cm, measured); cameras
+  are fitted two-shot / close-up from the front-right (camera ≈ local (1.6, 1.4, 3.2) and (2.1, 1.7, 2.0)), not the
+  `WHISPER` preset (that one is for s07's opposite whisper; **s06/s07: re-verify `WHISPER` with Jesus at yaw 0.2,
+  and note s05 puts him back on JV**). b06 = CUT to OTS stepped in, pulling back to `OTS`.
+
 ### s04 cosmic_laughter (43.8–60.4) — tod 0.14 → 0.19, look s04 (more bloom for stars)
 - **b01 (0.9 s silent)** CAM close two-shot of the heads, locked ◇ `EDGE.shot([0.45, 1.85, −0.8], {dist 2.4, yaw −20,
   fov 33, screenY sy(380)})`. Everything stops; the Void dead still behind its hand, eyes round, slow blink, lower lids
@@ -378,6 +393,20 @@ at the same speed from `FRAME0`.
   y≈400 looking frame-right/up, the pair small soft upper-right). The little galaxy rolls in from frame-right, spirals to
   a stop against the sneaker (stage ≈ (−0.85, 0.02, 0.85)), wobbles like a coin, lies flat. User looks down at it, then
   slowly back up at the pair; one slow blink; brows can't decide (`browAsym`).
+
+- **AS BUILT (s04 rev 2, web/src/scenes/s04.js):** Jesus at `JV_OUT`, yaw 0.2, LEFT arm around at 1.3 m (as s03);
+  during **b13 (pair offscreen) he slides back onto JV**, so s05 starts on the mark. b01–b03 camera
+  `EDGE.at((−0.6, 1.75, 4.5) → (0.3, 1.43, −0.56), fov 33)` (clean sky behind his head; push to 90 %). b04–b06
+  "low" angle at Jesus's head height (1.78 m), yaw −19 → −14 (−28 put the camera in the user; lower cameras show
+  dark wedges at the Void's hood/capelet junction — rig). The Void's RIGHT hand sits on its belly 10 cm out and 30 cm
+  toward its middle (sleeve side-on, off his hip), blended back to plain `belly` during b13 (s05 starts there).
+  Slaps: two contacts on HA peaks (b05+1.04, +1.58), stamp on "Maniacally". Little galaxy (edgeprops): new roll path
+  (a loop out to the user's left, then straight down their facing axis into the right sneaker), steady speed, the
+  last ~0.35 m inside s04b13 (stop b13+0.75, flat b13+1.37; rest point unchanged). Beach-ball galaxy: bezier over the
+  user's head toward camera-left, leaving the OTS top-left ~1.1 s after launch, at `GALAXY.from` by b11.end.
+  **The b13 shot starts early, at b11+1.68** (the user's jaw drop as it sails overhead), low at the user's
+  right-front; the pair are off-frame right; the rose-gold hero tree is hidden for that shot only (edgeprops
+  `hideDuring`, it would stand right behind the sneaker); final gaze frame-right/up toward the pair, held.
 
 ### s05 a_pretty_good_sense_of_humor (60.4–77.8) — tod 0.19 → 0.25
 - **b01 "Then Jesus looks at the Twitter user,"** `JESUS_CU` medium (dist 2.4, face y≈400), his left arm still around
@@ -793,8 +822,8 @@ Between s14 and s15 (offscreen) the Void has risen and shuffled from VSIT to V15
 |---|---|---|---|
 | s01→s02 | (chase upstream) → empty bend; user & Void offscreen | user running, sobbing, phone in LEFT fist; Void hem lifted, hand half-raised | title gone by s01b02+1.0; tod 0.03 continuous; seeds from the set |
 | s02→s03 | Jesus mid-walk ≈ (−0.1, 0.4) → JV; user at U; Void at V | user seated, RIGHT hand up (`defend`), phone clutched LEFT; Void hands knotted at its middle; Jesus same walk phase function across the cut | phone glow on (feed); no galaxies yet |
-| s03→s04 | Jesus JV, Void V (unbent), user U | Void's hand over its mouth, quivering; Jesus LEFT arm around it (stays until s05 end), heels down; user phone raised as a shield | `extra.stars` 1.6 on the Void → keep at start of s04 |
-| s04→s05 | same | Void doubled over → wheezy aftershocks; Jesus laughing, hand on its back; user flattened on elbows, jaw open | big galaxy at `GALAXY.from` (galaxyAt); little galaxy flat at the user's sneaker; drifting stars from the laugh still fading (ease alpha to 0 by s05b02) |
+| s03→s04 | Jesus **JV_OUT** (JV + 0.28 m, yaw 0.2), Void V (unbent), user U | Void's hand over its mouth, quivering; Jesus LEFT arm around it (stays until s05 end), heels down; user phone raised as a shield | `extra.stars` 1.6 on the Void → keep at start of s04 |
+| s04→s05 | Jesus back on JV (slid there offscreen in s04b13), Void V, user U | Void doubled over (lean ~0.2), both hands on the belly → wheezy aftershocks; Jesus laughing, LEFT arm around it at 1.3 m; user flattened on elbows, jaw open | big galaxy at `GALAXY.from` (galaxyAt); little galaxy flat at the user's sneaker; drifting stars from the laugh still fading (ease alpha to 0 by s05b02) |
 | s05→s06 | same | Jesus "tee-hee" smile stiffening; Void giggly; user staring, RIGHT hand up, tear | little galaxy at sneaker |
 | s06→s07 | same | Jesus amused pressed line; Void hand over mouth, eyes narrowed at the user | — |
 | s07→s08 | Jesus JV, Void V full height | Jesus "I'll ask" tight smile looking at the user; Void unbent, hands lowering | tod 0.32 (s08 "late dusk") is the same ramp: no jump |

@@ -11,7 +11,7 @@ import { EDGE, todAt, voidSkyAt, lookFor, sy, px } from './marks.js';
 import { VX } from '../chars/void.js';
 import { JX } from '../chars/jesus.js';
 import { UX, headShake } from '../chars/user.js';
-import { V3, loadWords, wordT, pulse, ramp, wobble, gazeSched, scopeVisible, faceSeq, fitShot, fadeSeedsNear, fadeMotesNear, JOUT, JV_OUT, AROUND_H, aroundContact, aroundArm } from './edgeprops.js';
+import { V3, loadWords, wordT, pulse, ramp, wobble, gazeSched, scopeVisible, faceSeq, fitShot, fadeSeedsNear, fadeMotesNear, hideDuring, JOUT, JV_OUT, AROUND_H, aroundContact, aroundArm } from './edgeprops.js';
 
 const DEBUG = false;
 const M = EDGE.M;
@@ -85,6 +85,12 @@ export default {
     let walkS02 = null;
     try { walkS02 = (await import('./s02.js')).jesusWalkS02 || null; } catch (e) { walkS02 = null; }
     const st = { scene: set.scene, set, jesus, vd, user, fx, walkS02, look: lookFor('s03', set.look) };
+    // the two golden puff trees (world (18.5, 9.5) and (41, 27) on the far crest) sit right behind Jesus's head in the
+    // front two-shots of b01-b05 (a halo): hide them for those shots only (they are never in the b06 OTS)
+    for (const [gx, gz] of [[18.5, 9.5], [41, 27]]) {
+      const gold = (set.props.trees || []).find((tr) => Math.hypot(tr.position.x - gx, tr.position.z - gz) < 1.5);
+      if (gold) hideDuring(gold, 's03', 's03b06');
+    }
     const S = times();
     // reference anchors (pure: computed once from fixed times)
     user.update(S.s, { pos: W(M.U.p), yaw: EDGE.Y(M.U.yaw), body: { sit: 1, shrug: 0.55, hunch: 0.25 } });
@@ -115,8 +121,7 @@ export default {
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const S = times();
     // camera first (eye catchlights read CTX.camera during the rig updates)
-    const D = (typeof window !== 'undefined' && window.DBG) || null;
-    applyShot(app.camera, D && D.cam ? EDGE.at(D.cam.slice(0, 3), D.cam.slice(3, 6), D.cam[6] || 40, { drift: 0 }) : shotAt(t, cams(S, st.R)), t, 3);
+    applyShot(app.camera, shotAt(t, cams(S, st.R)), t, 3);
     poseAll(t, S, st);
 
     // ---------------------------------------------------------------- particles: the star mote that pops off its shoulder
@@ -136,7 +141,7 @@ export default {
     const faces = [[vd.anchor('eyes'), 260], [jesus.anchor('eyes'), 110], [user.anchor('eyes'), 160]];
     fadeSeedsNear(set, app.camera, faces); fadeMotesNear(set, app.camera, faces);
     st.look = lookFor('s03', set.look);
-    if (DEBUG || (D && D.print)) debugPrint(t, app, st, S);
+    if (DEBUG) debugPrint(t, app, st, S);
   },
 };
 
@@ -233,7 +238,7 @@ function userPose(t, S, st) {
 // camera side and tips its hood a little toward him, so the SIDE of its hood (not the face opening) comes down beside
 // his mouth. Kept upright (no sideways lean) so the hood never cuts into his head.
 function listenCrouch(a) {
-  const L = { crouch: 0.95, lean: 0.05, tilt: -0.18, twist: 0.06, hy: 0.5, hp: 0.06, hr: 0.1, ...(((typeof window !== 'undefined' && window.DBG) || {}).lc || {}) };
+  const L = { crouch: 0.95, lean: 0.05, tilt: -0.18, twist: 0.06, hy: 0.5, hp: 0.06, hr: 0.1 };
   return {
     body: { crouch: L.crouch * a, lean: L.lean * a, tilt: L.tilt * a, twist: L.twist * a },
     head: { yaw: L.hy * a, pitch: L.hp * a, roll: L.hr * a },
@@ -353,11 +358,11 @@ function jesusPose(t, S, st, vd) {
     w = { pos: a.clone().lerp(b, u), phase: t * 0.85, amount: 1 - smooth((u - 0.6) / 0.4) };
     yawWalk = Math.atan2(b.x - a.x, b.z - a.z);
   }
-  const DB = (typeof window !== 'undefined' && window.DBG) || {};
-  const off = V3(...W(JV_OUT)).sub(V3(...W(M.JV.p))).multiplyScalar(ramp(t, S.arrive - 0.75, S.arrive - 0.1) * (DB.jout ?? JOUT) / JOUT);
+  // he finishes the walk 28 cm further out than JV (edgeprops JV_OUT), blended in over his last strides
+  const off = V3(...W(JV_OUT)).sub(V3(...W(M.JV.p))).multiplyScalar(ramp(t, S.arrive - 0.75, S.arrive - 0.1));
   P.pos = w.pos.add(off).toArray();
   // b04: he pivots toward the Void as he rises onto his toes (whispers into the side of its hood); b06 back to 0.2
-  const yawMark = EDGE.Y(DB.jyaw ?? k(t, [[S.whispW - 0.1, JYAW], [S.whispW + 0.6, JYAW_W, 'inOut'], [S.b06 - 0.05, JYAW_W], [S.b06 + 0.6, JYAW_6, 'inOut']]));
+  const yawMark = EDGE.Y(k(t, [[S.whispW - 0.1, JYAW], [S.whispW + 0.6, JYAW_W, 'inOut'], [S.b06 - 0.05, JYAW_W], [S.b06 + 0.6, JYAW_6, 'inOut']]));
   // turn toward the camera side during the hop (he swings round to his left)
   let dy = yawMark - yawWalk; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
   const turn = ramp(t, S.arrive - 0.5, S.arrive + 0.15, 'inOut');

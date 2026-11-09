@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { CTX } from '../core/context.js';
 import { clamp, lerp, smooth, ease, fbm1, DEG } from '../core/util.js';
-import { ROOM } from './marks.js';
+import { ROOM, sy } from './marks.js';
 
 // ------------------------------------------------------------------------------------------- word timings
 let LINES = null;
@@ -113,6 +113,8 @@ export function pix(cam, p) {
 // Fear's facing at FOUT (stage-local yaw): toward the star, i.e. 3/4 toward the camera side (its face reads in the
 // KICK wide and in every close-up from the camera side); the Void stands at its front-left.
 export const FEAR_LYAW = 0.62;
+/** s21b05: Fear turns this much (rad) from the star toward the Void and keeps it into s22 */
+export const FEAR_TURN = 0.55;
 // call after ROOM.fit(set)
 export function marks() {
   const M = ROOM.M;
@@ -152,13 +154,13 @@ export function times() {
   c.bonk = c.B7 + 0.14;                              // the hat bucket comes down: BONK
   c.wig0 = c.bonk + 0.32; c.wig1 = c.wig0 + 0.5;     // the mop flops onto it
   c.daggerLand = c.B7 + 1.18;                        // dagger thunks point-down into the floor
-  c.puff = c.B7 + 1.35;                              // the pouch puffs grey dust on him
-  c.sign0 = c.B7 + 1.72; c.sign1 = c.sign0 + 0.62;   // the wet-floor sign tips and lands on him
+  c.puff = c.B7 + 1.62;                              // the pouch puffs grey dust on him (after the dagger's wobble)
+  c.sign0 = c.B7 + 1.88; c.sign1 = c.sign0 + 0.6;    // the wet-floor sign tips and lands on him
   c.rude = W('s20b08', 'rude');
   // s21
   c.broom1 = T('s21b01') + 0.24;                     // the last broom clatters flat (off-screen)
   c.shrug = W('s21b03', 'shrugs');
-  c.roll0 = T('s21b04') - 0.9; c.roll1 = T('s21b05') + 0.9;
+  c.roll0 = T('s21b04') - 0.55; c.roll1 = T('s21b05') + 0.5;   // rolling through the whole "hm?" wide, still moving at the cut
   // s22
   c.galRise = W('s22b01', 'showing');
   c.galaxies = W('s22b01', 'galaxies');
@@ -184,7 +186,7 @@ export function voidSpot(t) {
 // magician) and sways slowly; in s21b03 it floats up off the opening hand and fades.
 export function starAt(t) {
   const c = times();
-  const S0 = [1.5, 0.95, 0.75], S1 = [0.74, 0.9, 0.66], S2 = [1.02, 1.2, 1.0], S3 = [0.9, 1.3, 1.02];
+  const S0 = [1.5, 0.95, 0.75], S1 = [1.02, 0.98, 0.78], S2 = [1.05, 1.32, 1.0], S3 = [0.96, 1.48, 1.28];   // all within the arm's reach
   const p = k(t, [[c.B1 + 0.75, S0], [c.making + 0.05, S1, 'inOut'], [c.obvious + 0.25, S1, 'inOut'], [c.B2 + 1.1, S2, 'inOut'],
     [c.B3 + 0.2, S2], [c.B4 + 0.9, S3, 'inOut']]);
   // slow sway (Fear's tuft sways with it)
@@ -253,8 +255,8 @@ export function wreckPose(t, M, extra = {}) {
   const sag = smooth(clamp((t - (c.sign1 + 0.3)) / 0.5));
   return {
     pos: M.CRASH, yaw: M.yCRASH,
-    body: { sit: 1, slump: 0.35 + 0.35 * sag - 0.3 * rigid, lean: -0.08 - 0.12 * rigid, tilt: 0.1 + 0.02 * Math.sin(t * 1.3) * dz, shrug: 0.5 * rigid, breathe: 0.6, sway: 0 },
-    head: { roll: 0.14 + 0.06 * Math.sin(t * 1.7) * dz, pitch: 0.18 - 0.1 * rigid },
+    body: { sit: 1, slump: 0.35 + 0.4 * sag - 0.35 * rigid, lean: -0.08 - 0.16 * rigid + 0.05 * sag, tilt: 0.1 + 0.02 * Math.sin(t * 1.3) * dz, shrug: 1.0 * rigid, breathe: 0.6, sway: 0 },
+    head: { roll: 0.14 + 0.06 * Math.sin(t * 1.7) * dz - 0.08 * rigid, pitch: 0.18 - 0.14 * rigid + 0.06 * sag },
     face: 'dazed',
     armL: { preset: 'hang' }, armR: { preset: 'hang' },
     extra: { dizzy: dz, stars: dz, hatOff: 1, hatPos: hatRestPos(M), hatRot: [0.15, 0.6, 1.45], dagger: false, pouch: true, ...extra },
@@ -263,21 +265,51 @@ export function wreckPose(t, M, extra = {}) {
 /** where his top hat ends up: on its side on the floor beside him (world) */
 export function hatRestPos(M) { const p = M.CRASH; return [p[0] - 0.62, 0.11, p[2] + 0.42]; }
 /** where the dagger sticks point-down in the floorboards (world) */
-export function daggerRestPos(M) { return add(M.CRASH, LD(-0.42, 0, 0.5)); }   // inside the CORNER frame, clear of the sign
+export function daggerRestPos(M) { return add(M.CRASH, LD(0.2, 0, 0.36)); }   // inside the CORNER frame, clear of the sign
 
-// the lone bucket (s21b04) rolls out of the corner behind the Void and emerges past its left edge in the MASTER wide
-export const ROLL_TO = [-0.25, -2.25];
-/** the Void's open "book" hands just in front of / above Fear's face (s21b06 -> s22b01), world */
-export function bookPoint(vs) { const f = [Math.sin(vs.yaw), 0, Math.cos(vs.yaw)]; return [vs.pos[0] + f[0] * 1.12, 0.92, vs.pos[2] + f[2] * 1.12]; }
-/** the book hands' finger direction (palms up, fingers rising: an offering, not poking at Fear) */
-export const BOOK_FING = [0, 0.8, 0.6];
+// the lone bucket (s21b04) rolls out of the wreck toward the camera side, clear of the Void's silhouette in the wide
+export const ROLL_TO = [3.6, -1.75];   // rolls out of the wreck across the open floor right of the Void in the s21b04 wide
+/** the Void's open "book" hands at Fear's eye height, a forearm's length in front of Fear's face (s21b06 -> s22b01) */
+export function bookPoint(vs) { const f = [Math.sin(vs.yaw), 0, Math.cos(vs.yaw)]; return [vs.pos[0] + f[0] * 1.08, 0.7, vs.pos[2] + f[2] * 1.08]; }
+/** the book hands' finger direction (kept for callers): forward toward Fear, a little up */
+export const BOOK_FING = [0, 0.35, 1];
+/**
+ * The two big hands as a book, opening: `close` 0..1 brings them together (palms facing each other, fingers toward
+ * Fear, like a closed book held upright), `open` 0..1 opens it (each palm rolls outward about the finger axis to face
+ * UP, tilted toward Fear and the camera; the palm centres part to ~0.2 m). Palm-anchored contact (`at: 'palm'`), so the
+ * glow sits on the visible palm surfaces. Returns { armL, armR, palms (world point between the palms, on their
+ * surface), up (world palm normal of the open book) }.
+ */
+export function bookArms(vs, close, open, fromL = 'rest', fromR = 'belly', show = null) {
+  const c = Math.cos(vs.yaw), s = Math.sin(vs.yaw);
+  const R = (v) => [v[0] * c + v[2] * s, v[1], -v[0] * s + v[2] * c];   // Void-local -> world direction
+  const bp = bookPoint(vs);
+  const half = 0.075 + 0.12 * open;                           // half the palm-centre gap (0.15 m closed -> 0.39 m open)
+  const roll = (1 - open) * 1.3;                              // closed: palms face each other; open: palms up
+  // open: the palms tip toward Fear and toward the lens (`show`: world direction to the camera), so they read as palms
+  const sh = show ? (() => { const h = Math.hypot(show[0], show[2]) || 1; return [show[0] / h, 0, show[2] / h]; })() : R([0, 0, 1]);
+  const tip = add(R([0, 0, 0.25 * open]), sh.map((x) => x * 0.45 * open));
+  const mk = (sd) => {   // sd +1 = the Void's LEFT hand (local +X)
+    const pos = add(bp, R([sd * half, 0.02 * open, 0.02 * (1 - open)]));
+    const palm = add(R([-sd * Math.sin(roll), Math.cos(roll), 0]), tip);
+    const fing = R([sd * 0.3 * open, 0.15 + 0.2 * (1 - open), 1]);
+    return { preset: 'hold', from: sd > 0 ? fromL : fromR, mix: close, target: pos, reach: close, at: 'palm', palm, fingers: fing, pole: R([sd * 0.9, -0.7, -0.2]),
+      hand: { curl: 0.08 + 0.12 * (1 - open), cup: 0.2 + 0.15 * (1 - open), spread: 0.22 + 0.12 * open, thumb: 0.6 } };
+  };
+  return { armL: mk(1), armR: mk(-1), palms: add(bp, [0, 0.04 + 0.02 * open, 0]), up: R([0, 1, 0.25 * open]) };
+}
+/** FEAR_CU from the Void side: s20's crash cutaway = s21's opening (Fear's eyes y~690, the fingertip star near the top) */
+export function fearCU(fe, push = 0) {
+  return ROOM.shot(ROOM.L(fe), { dist: 2.55 - 0.1 * push, yaw: 32, pitch: -8, fov: 44, screenY: sy(700), drift: 0.05 });
+}
+
 /** BACKROOM opts for the janitor corner at t (shared by s20..s22). `mag` = the magician rig (already updated). */
 export function cornerOpts(t, mag, o = {}) {
   const c = times();
   const tc = t - c.imp;
   const out = {
     crash: 1, crashT: tc, latch: 1, cageDoor: 1,
-    signFall: clamp((t - c.sign0) / (c.sign1 - c.sign0)), signOn: 0.42,
+    signFall: clamp((t - c.sign0) / (c.sign1 - c.sign0)), signOn: 0.36, signAt: (() => { const p = add(marks().CRASH, LD(-0.3, 0, 0.52)); return [p[0], p[2]]; })(),
     broomSlide: clamp((t - (c.broom1 - 0.75)) / 0.75),
     rollBucket: smooth(clamp((t - c.roll0) / (c.roll1 - c.roll0))), rollTo: ROLL_TO,
   };

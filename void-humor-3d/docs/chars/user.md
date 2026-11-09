@@ -193,12 +193,29 @@ Exports: `UX`, `UEXPR`, `ARM`, `WALK`, `headShake`, `User`.
 - **Show the screen over the shoulder**: `armL: {preset: 'show'}`, `extra: {screen: 'blocked', phone: 1}`.
 
 ## Performance
-CPU `update()` ≈ 4 ms (torso skinning ~1k verts, ~20 swept tubes, decal redraw only when the mouth changes).
-≈ 72 draw calls / ~20k character triangles; secondary materials have no sheen; small parts (shoes, locks, hood)
-don't cast shadows. The machine was heavily loaded during development (load avg 6–8.5 on 4 cores; the trivial
-`facetest` lab benched 0.525 s). Best measured: lab set alone **0.554 s/frame**, set + USER full body (t=2)
-**0.591 s/frame**, seated action (t=50) 0.677 s; under heavier load the same frames measured up to 1.0–1.4 s
-(set alone up to 1.03 s) — the character itself adds ≈ 0.04–0.1 s.
+Materials: skin + hair = MeshStandard, cloth / sneakers / face decal = MeshLambert, all + core rim/wrap via
+`enhance()` with the unused animated fizz noise **compiled out** (USER never uses it; SwiftShader paid for it
+anyway). Draw order is outermost-first (locks before the hair shell, sleeves before the torso) so early-z rejects
+what's underneath; lenses are rim-only rings; each sneaker is one vertex-coloured draw call. Head sphere 44×32,
+hair shell 60 columns, lock tubes 12×8. CPU `update()` ≈ 4–5 ms (torso drape walk ~1k verts, ~22 swept tubes).
+
+Measured as **CPU-seconds burned by the Chromium tree per 720×1280 frame** (load-independent; the machine ran at
+load 13–24 from other agents, which made wall-clock benches swing 2–5×). Same set, same cameras, old vs new rig:
+
+| framing | set only | old rig | **new rig** |
+|---|---|---|---|
+| head close-up (terror, tears) | 0.88 | 2.19 | **1.91–1.98** |
+| full body | 0.93 | 1.30 | **1.22** |
+| phone insert (screen fills the frame) | 1.02 | 1.98 | **1.73** |
+| dark + phone glow, face CU | 0.83 | 2.17 | **1.84** |
+
+The trivial `facetest` lab is 1.22 CPU-s on the same scale, and was benched at 0.525 s wall by the builder, which
+means roughly 2.4 cores of parallelism. On that basis the USER lab comes out at about 0.55 s for full body (1.32),
+0.58 s seated (1.41), 0.68 s with the phone up at mid-shot (1.64), 0.75 s for the insert (1.80) and 0.86 s for a
+head close-up (2.09, against 0.91 for the set alone). A close-up that fills the frame with character pixels is
+still over the 0.6 s budget; what's left is ordinary per-pixel shading spread over the hair, head, hoodie, eyes and
+decal (each about 0.1–0.3 CPU-s), not one hotspot. Close-ups are where the frame budget goes. Reproduce with
+`node tools/cpubench.js user 6 2,50,96.6,97.6` (96.6 = USER head close-up, 97.6 = the same frame without USER).
 
 ## Known limitations
 - Stateless: hair swing / strings / cowlick are procedural from walk phase, impact, `lookBack` and `hairSwing`; fast

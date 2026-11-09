@@ -1,7 +1,9 @@
 // Lab: FEAR — turntable (0–4 s), expression sheet (1 s each), then key poses / actions (see `segments`).
 //   node tools/render.js sheet --lab fear --from 0 --to 3.5 --n 8 --cols 4 --out out/sheets/fear_turn.jpg
 //   node tools/render.js sheet --lab fear --from 4.6 --to 29.6 --n 26 --cols 6 --out out/sheets/fear_expr.jpg
+//   node tools/render.js sheet --lab fear --from 30.5 --to 108.5 --n 40 --cols 10 --out out/sheets/fear_act.jpg
 //   node tools/render.js stills --lab fear --t 40,50 --out out/stills
+// Actions start at 30 s; 101-105 / 105-109 replay the cage beat in a wide front shot and a side shot (clearance).
 // Every pose is a pure function of t; the rig gets the pose FUNCTION so tuft/scarf secondary motion can look back
 // in time (clamped to the segment start so segment switches don't "whip" the tuft).
 import * as THREE from 'three';
