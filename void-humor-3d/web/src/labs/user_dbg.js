@@ -22,12 +22,11 @@ export async function setup(app) {
 }
 export async function update(t, app, s) {
   const U = s.user, i = Math.floor(t);
-  const parts = [null, U.hairLocks, U.hairShell, U.glasses, U.hoodG, U.neckTube && U.neckTube.mesh, U.face.decal.mesh, U.headMesh];
-  for (const p of parts) if (p) p.visible = true;
-  if (parts[i]) parts[i].visible = false;
+  const per = 6 * 23, rng = [[0, 15], [15, 30], [30, 45], [45, 60], [15, 22], [22, 30], [36, 45], [0, 60]][i];
+  U.hairShell.geometry.setDrawRange(rng[0] * per, (rng[1] - rng[0]) * per);
+  U.hairLocks.visible = false;
   const pos = orbitPos([0, 1.42, 0], 1.5, 10, 2);
   applyShot(app.camera, { pos, look: [0, 1.42 - 0.1 * 0.8, 0], fov: 30, drift: 0 }, t);
   app.camera.updateMatrixWorld(true);
   U.update(t, { face: 'idle', gaze: 'camera', extra: { phone: 0.6 } });
-  if (parts[i]) parts[i].visible = false;
 }
