@@ -6,9 +6,9 @@ with all-original characters, and was generated entirely in code from the creato
 piece to *The Void and My Fear*: the bonus scene takes place during that film's cage scene.
 
 **Deliverables**
-- `The_Void_Has_a_Sense_of_Humor.mp4`: H.264 High + AAC, BT.709, faststart, captions burned in, under 15 MB.
-  This is the one to post anywhere.
-- `The_Void_Has_a_Sense_of_Humor_hevc.mp4`: the same film as HEVC (hvc1) at the same size. It has noticeably
+- `The_Void_Has_a_Sense_of_Humor.mp4`: H.264 High + AAC 64 kbps, BT.709, faststart, captions burned in. It is
+  **14.54 MB** and runs **5:16** (video at 297 kbps). This is the one to post anywhere.
+- `The_Void_Has_a_Sense_of_Humor_hevc.mp4`: the same film as HEVC (hvc1), **14.58 MB**. It has noticeably
   cleaner gradients and dark scenes, and plays on iPhone, recent Android and most browsers.
 - `The_Void_Has_a_Sense_of_Humor.srt`: captions as a sidecar file.
 - `thumbnail.jpg`: frame 0 with the title. The film starts on a finished image, so social previews aren't black.
