@@ -164,12 +164,13 @@ export default {
     drawStar(fx, t, starAt(t), CELL, shot === 0 || shot === 3 ? 1.2 : 1);
     // b06: a glow begins in its palms (a soft core + a few slow sparks)
     const hl = vd.anchor('handL'), hr = vd.anchor('handR');
-    const palms = hl && hr ? add(mix3(A(hl), A(hr), 0.5), [0, 0.06, 0]) : bookPoint(vs);
+    const towardFear = sub(add(M.FOUT, [0, 0.65, 0]), bookPoint(vs)); const tl = Math.hypot(...towardFear) || 1;
+    const palms = add(hl && hr ? add(mix3(A(hl), A(hr), 0.5), [0, 0.08, 0]) : bookPoint(vs), towardFear.map((x) => (x / tl) * 0.1));
     const glow = smooth(clamp((t - (L.B6 + 0.45)) / 0.6));
     if (glow > 0) {
-      fx.add(palms, 0.26 + 0.08 * glow, 0xfff0d0, 0.85 * glow, 0, CELL.dot);
-      fx.add(palms, 0.12, 0xffffff, 0.9 * glow, 0, CELL.dot);
-      fx.add(palms, 0.6, 0xb79cff, 0.3 * glow, 0, CELL.dot);
+      fx.add(palms, 0.3 + 0.1 * glow, 0xfff0d0, 0.9 * glow, 0, CELL.dot);
+      fx.add(palms, 0.14, 0xffffff, 0.95 * glow, 0, CELL.dot);
+      fx.add(palms, 0.75, 0xb79cff, 0.38 * glow, 0, CELL.dot);
       fx.stream({ t, seed: 2101, t0: L.B6 + 0.5, t1: L.B6 + 3, rate: 6, life: 1.4, origin: palms, vel: [0, 0.18, 0], spread: [0.06, 0.05, 0.06], size: [0.025, 0.045],
         color: [0xfff1d0, 0xd9c8ff, 0xa9f0ff], alpha: 0.85 * glow, fade: [0.2, 0.5], cell: CELL.star, spin: 1 });
     }

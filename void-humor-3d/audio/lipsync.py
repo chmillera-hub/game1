@@ -109,7 +109,7 @@ def main():
     vocals = json.load(open(vp)) if os.path.exists(vp) else {}
     tl = json.load(open(os.path.join(ROOT, "data/timeline.json")))
     out = {}
-    r3 = lambda a: [round(float(v), 3) for v in a]
+    r3 = lambda a: [round(float(v), 3) if np.isfinite(v) else 0.0 for v in a]   # no NaN: browsers reject it in JSON
     for bid, L in lines.items():
         if L["speaker"] == "NARRATOR" or bid not in tl["beats"]: continue
         o, w, r, c = line_frames(L)
@@ -121,7 +121,7 @@ def main():
         o, w, r, c = fr
         out[bid] = {"speaker": V["speaker"], "vocal": V["vocal"], "start": tl["beats"][bid]["start"], "fps": FPS,
                     "open": r3(o), "wide": r3(w), "round": r3(r), "close": r3(c)}
-    json.dump(out, open(os.path.join(ROOT, "data/lipsync.json"), "w"))
+    json.dump(out, open(os.path.join(ROOT, "data/lipsync.json"), "w"), allow_nan=False)
     print(f"lipsync: {len(out)} clips")
 
 if __name__ == "__main__":

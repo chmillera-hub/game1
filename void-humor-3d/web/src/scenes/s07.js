@@ -153,16 +153,7 @@ export default {
     if (DEBUG) {
       const pxs = (v) => px(app.camera, v).join(',');
       const ear = jesus.anchor('earL'), wh = vd.anchor('whisper');
-      const eR = vd.face.eyes[1].group.getWorldPosition(V3()), eL = vd.face.eyes[0].group.getWorldPosition(V3());
-      const yl = EDGE.Y(-0.12), jc = jesus.anchor('chest');
-      const tgt = velvetNear(vd, jc.clone().addScaledVector(V3(Math.cos(yl), 0, -Math.sin(yl)), 0.28).addScaledVector(V3(Math.sin(yl), 0, Math.cos(yl)), 0.12).add(V3(0, 0.16, 0))).p;
-      const js = jesus.anchor('shoulderR'), jl = jesus.anchor('shoulderL');
-      { const vn = velvetNear(vd, jesus.anchor('shoulderL').addScaledVector(V3(...W(M.V.p)).sub(V3(...W(M.JV.p))).setY(0).normalize(), 0.3).add(V3(0, -0.12, 0)));
-        console.log('velvet', vn.y.toFixed(2), vn.a.toFixed(2), 'from shL', vn.p.distanceTo(jesus.anchor('shoulderL')).toFixed(2), 'hL', jesus.anchor('handL').distanceTo(vn.p).toFixed(2), '@', pxs(vn.p)); }
-      console.log('hands', 'J.R', pxs(jesus.anchor('handR')), 'V.R', pxs(vd.anchor('handR')), 'J.shL', pxs(jesus.anchor('shoulderL')), jesus.anchor('handR').distanceTo(vd.anchor('handR')).toFixed(2));
-      console.log('cand', ['shoulderR', 'shoulderL', 'earR', 'chest', 'sideR', 'hood', 'head'].map((n) => n + ' ' + vd.anchor(n).distanceTo(js).toFixed(2) + '/' + vd.anchor(n).distanceTo(jl).toFixed(2) + ' y' + vd.anchor(n).y.toFixed(2)).join(' | '));
-      console.log(`eyeR@${pxs(eR)} eyeL@${pxs(eL)} ref ${st.R.ecuDbg ? pxs(st.R.ecuDbg) : ''} cam ${app.camera.position.distanceTo(eR).toFixed(2)} handR-tgt ${jesus.anchor('handR').distanceTo(tgt).toFixed(2)} tgt@${pxs(tgt)} hand@${pxs(jesus.anchor('handR'))} handL@${pxs(jesus.anchor('handL'))} chest@${pxs(jc)} tgt-shoulder ${jesus.anchor('shoulderR').distanceTo(tgt).toFixed(2)}`);
-      console.log(`t=${t.toFixed(2)} J.eyes@${pxs(jesus.anchor('eyes'))} V.eyes@${pxs(vd.anchor('eyes'))} U.eyes@${pxs(user.anchor('eyes'))} whisper-ear ${wh.distanceTo(ear).toFixed(2)} dy ${(wh.y - ear.y).toFixed(2)} J.handR@${pxs(jesus.anchor('handR'))}`);
+      console.log(`t=${t.toFixed(2)} J.eyes@${pxs(jesus.anchor('eyes'))} V.eyes@${pxs(vd.anchor('eyes'))} U.eyes@${pxs(user.anchor('eyes'))} whisper-ear ${wh.distanceTo(ear).toFixed(2)} dy ${(wh.y - ear.y).toFixed(2)} J.handL@${pxs(jesus.anchor('handL'))} J.handR@${pxs(jesus.anchor('handR'))}`);
     }
   },
 };
@@ -212,6 +203,80 @@ function voidPose(t, S, st, cup = null) {
       const tg = cup.p.clone().lerp(cup.mouth, 0.35 * sag).add(V3(0, -0.07 * sag, 0));
       P.armR = { preset: 'whisper', from: 'rest', mix: m, target: tg, reach: m, palm: cup.palm, fingers: cup.fing,
         hand: { curl: 0.32 + 0.2 * sag, cup: 0.85, spread: 0.06, thumb: 0.2 } };
+    }
+  }
+  // b11: hands lowering as it unbends (s08 starts from 'rest')
+  const down = ramp(t, S.unbend + 0.2, S.unbend + 0.9);
+  if (down > 0) P.armL = { preset: 'rest', from: 'belly', mix: down };
+  // ---- face
+  const uE = user.anchor('eyes'), jE = jesus.anchor('eyes'), ear = jesus.anchor('earL');
+  // side-eye depth: parks on the slide, a hair lower on "whole", a hair lower again when the user scoots
+  const lid = 0.6 - 0.06 * ramp(t, S.wholeW, S.wholeW + 0.4) - 0.04 * ramp(t, S.scoot, S.scoot + 0.25);
+  const fWh = () => VX('whisper', { lidU: 0.82, lidL: 0.3, browAsym: 0.1, saccade: 0.1 });
+  const fSide = () => {
+    const f = VX([['whisper', 0.55], ['sideeye', 0.45]], { lidU: lid, lidL: 0.36, gazeYaw: 0, saccade: 0, autoBlink: 0 });
+    // when the user peeks again (b06), one brow-wisp (the one nearer the user: its RIGHT) lowers further
+    const pk = ramp(t, S.peek2, S.peek2 + 0.25);
+    f.browInR = (f.browIn ?? 0) - 0.35 * pk; f.browOutR = (f.browOut ?? 0) - 0.2 * pk;
+    return f;
+  };
+  const fHurt = () => VX([['sad', 0.6], ['whisper', 0.4]], { lidU: 0.78, lidSad: 0.65, browIn: 0.95, browOut: -0.35, browSq: 0.15, wet: 0.7, saccade: 0, autoBlink: 0 });
+  const fNod = () => VX('sadSmile', { lidU: 0.84, wet: 0.8, mSmile: 0.18 });
+  const fHope = () => VX('hopeful', { lidU: 1.0, mSmile: 0.15, wet: 0.35 });
+  P.face = faceSeq(t, [[S.s, fWh], [S.slide - 0.05, fSide, 0.55], [S.b08 + 0.05, fHurt, 0.7], [S.thatW, fNod, 0.4], [S.b11 + 0.1, fHope, 0.5]]);
+  // ---- gaze: his ear -> slides to the user (0.6 s) and parks (tracks the scoot exactly) -> down/away (hurt) -> Jesus
+  const away = () => jE.clone().lerp(uE, 0.35).add(V3(0, -0.55, 0));
+  P.gaze = gazeSched(t, [[S.s, ear], [S.slide, () => uE, 0.6], [S.b08 + 0.25, away, 0.8], [S.b09 + 0.3, jE, 0.5], [S.b11 + 0.05, jE]]);
+  // a push into the corner (toward its right = screen-left) so the iris really parks
+  if (t >= S.slide && t < S.b08 + 0.6) P.face.gazeYaw = (P.face.gazeYaw ?? 0) - 0.2 * ramp(t, S.slide, S.slide + 0.6) * (1 - ramp(t, S.b08 + 0.1, S.b08 + 0.6));
+  P.blinkAt = [S.b11 + 0.2];
+  P.speech = sp || false;
+  return P;
+}
+
+// ---------------------------------------------------------------------------------------------------------- Jesus
+function jesusPose(t, S, st, vd) {
+  const { user } = st;
+  // facing: s06's -> s08's; turns toward his friend for the sincere part, back to the user on "I'll ask"
+  const yawL = k(t, [[S.s, JY0], [S.bendB, JY1, 'inOut'], [S.b08 + 0.2, JY1], [S.b09 + 0.3, -0.12, 'inOut'], [S.b11 + 0.25, -0.12], [S.end - 0.05, JY1, 'inOut']]);
+  const P = { pos: W(M.JV.p), yaw: EDGE.Y(yawL), body: {}, head: {}, armL: { preset: 'clasp' }, armR: { preset: 'clasp' } };
+  const toVd = V3(...W(M.V.p)).sub(V3(...W(M.JV.p))).setY(0).normalize();
+  const uE = user.anchor('eyes');
+  const vE = vd ? vd.anchor('eyes') : V3(...EDGE.W(0.5, 1.75, -0.7));
+  // ---- listening: left ear tilted up toward it, eyes up-and-aside (unfocused), mm-hm nods
+  const listen = ramp(t, S.b01, S.bendB) * (1 - ramp(t, S.b11 - 0.1, S.b11 + 0.4));
+  const fw = V3(Math.sin(EDGE.Y(yawL)), 0, Math.cos(EDGE.Y(yawL))), lf = V3(Math.cos(EDGE.Y(yawL)), 0, -Math.sin(EDGE.Y(yawL)));
+  const jEyes0 = V3(...W(M.JV.p)).setY(1.55);
+  const aside = jEyes0.clone().addScaledVector(fw, 1.6).addScaledVector(lf, 0.9).add(V3(0, 0.45, 0));
+  const nodRate = t < S.b08 ? 1.3 : 0.8;
+  const nodAmp = t < S.b03e ? 0.1 : (t >= S.b06 - 0.2 && t < S.b07e) ? 0.08 : (t >= S.b08 && t < S.b09) ? 0.1 : 0;
+  const nods = nodAmp * Math.max(0, Math.sin(2 * Math.PI * nodRate * (t - S.b01)));
+  // ---- gaze (eyes lead)
+  P.gaze = gazeSched(t, [
+    [S.s, uE], [S.b01 + 0.2, aside, 0.2],
+    [S.flick, uE, 0.07], [S.flick + 0.3, aside, 0.08],                    // oh, this is about them
+    [S.c6, aside], [S.glance, uE, 0.18], [S.glance + 0.55, vE, 0.15],       // politely fascinated, then back to the Void
+    [S.b08 + 0.3, vE, 0.2],
+    [S.b11 + 0.12, uE, 0.1], [S.b11 + 0.45, vE, 0.1], [S.askW + 0.4, uE, 0.18],
+  ]);
+  P.head = { look: vE, follow: 0.12 + 0.18 * ramp(t, S.b08, S.b08 + 0.6), yaw: 0.25 * listen, roll: -0.12 * listen, pitch: nods };
+  if (t >= S.b11 + 0.3) P.head = { look: uE, follow: 0.6 * ramp(t, S.b11 + 0.3, S.askW + 0.6), pitch: 0 };
+  // ---- body
+  P.body.tilt = 0.06 * listen;
+  P.body.lean = 0.02 * listen;
+  P.body.twist = 0.12 * ramp(t, S.knowW - 0.2, S.knowW + 0.4) * (1 - ramp(t, S.b11, S.b11 + 0.6));
+  P.body.breathe = 1 + 1.2 * pulse(t, S.b11 - 0.1, 0.25, 0.05, 0.35);   // the small inhale before "I'll ask"
+  // ---- arms: b06/b07 a pat on its velvet beside him; b09 his left palm flat on its velvet (contact), off on "I'll ask"
+  if (vd) {
+    const patW = pulse(t, S.pat - 0.25, 0.25, 0.55, 0.35);
+    const rest = ramp(t, S.knowW + 0.05, S.knowW + 0.55) * (1 - ramp(t, S.unbend + 0.05, S.unbend + 0.5));
+    if (patW > 0 || rest > 0) {
+      // (his LEFT hand: the velvet is right beside his left shoulder; his right would have to reach ~0.8 m across)
+      const vn = velvetNear(vd, st.jesus.anchor('shoulderL').addScaledVector(toVd, 0.3).add(V3(0, -0.12, 0)));
+      const w = Math.max(patW, rest);
+      const bob = patW > 0 ? 0.03 * Math.max(0, Math.sin((t - S.pat) * 2 * Math.PI * 2.0)) * ramp(t, S.pat - 0.05, S.pat + 0.05) * (1 - ramp(t, S.pat + 0.5, S.pat + 0.6)) : 0;
+      const pat2 = 0.02 * pulse(t, S.askW + 0.02, 0.08, 0, 0.12);
+      P.armL = { preset: [['clasp', 1 - w], ['shoulder', w]], target: vn.p.add(V3(0, bob + pat2, 0)), reach: w, palm: voidNormal_(vd, vn.y, vn.a), hand: { curl: 0.14, spread: 0.18, cup: 0.28 } };
     }
   }
   // ---- face

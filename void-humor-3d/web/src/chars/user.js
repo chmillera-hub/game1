@@ -802,7 +802,8 @@ class User extends Character {
       const A = V(...pos.slice(at(j, H + 2), at(j, H + 2) + 3));
       const d = V(Math.sin(u), 0, Math.cos(u));
       const RA = Math.hypot(A.x, A.z);
-      const yTip = -0.122 + 0.012 * back - 0.008 * Math.max(0, Math.cos(u)) + 0.006 * Math.sin(u * 4.3 + 0.7);
+      // angled bob: longest at the front corners, shorter at the nape (the back underside never shows under the jaw)
+      const yTip = -0.124 + 0.036 * back * back - 0.006 * Math.max(0, Math.cos(u)) + 0.006 * Math.sin(u * 4.3 + 0.7);
       const tipFull = d.clone().multiplyScalar(RA + 0.006 + 0.004 * Math.sin(u * 3.1) - inset).setY(yTip);
       const tip = A.clone().lerp(tipFull, cwH);
       const c1 = A.clone().add(V(0, -0.06 * cwH, 0)).addScaledVector(d, 0.004 * cw - inset), c2 = tip.clone().add(V(0, 0.07 * cwH, 0)).addScaledVector(d, -0.004 * cw);
@@ -814,7 +815,7 @@ class User extends Character {
       }
       // rolled-under end: tucks toward the neck and slightly up (thick, rounded bob edge)
       const T0 = V(...pos.slice(at(j, 1), at(j, 1) + 3));
-      T0.addScaledVector(d, -0.02 * cwR).add(V(0, 0.016 * cwR, 0));
+      T0.addScaledVector(d, -0.014 * cwR).add(V(0, 0.014 * cwR, 0));
       pos.set([T0.x, T0.y, T0.z], at(j, 0));
     }
     const idx = [];
