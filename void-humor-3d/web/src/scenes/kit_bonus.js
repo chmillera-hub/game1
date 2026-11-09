@@ -289,6 +289,17 @@ export function magTiptoe(t) {
   const hold = t > tOut && t < tR ? 1 : 0;
   return { pos, yaw, walk: { amount: amt, phase, style: 'sneak' }, dist, phase, hold, f, tA, tOut, tR, tBack, moving };
 }
+/** times when a foot touches down during the tiptoe (phase crosses a multiple of 0.5, either direction) in [a, b]. */
+export function magSteps(a, b, dt = 1 / 96) {
+  const out = [];
+  let prev = magTiptoe(a).phase;
+  for (let t = a + dt; t <= b; t += dt) {
+    const ph = magTiptoe(t).phase;
+    if (Math.floor(ph * 2) !== Math.floor(prev * 2)) out.push(+t.toFixed(3));
+    prev = ph;
+  }
+  return out;
+}
 /** grey prints (analytic, from the gait): ball-of-foot contacts at mid-stance of each planted step of the walk out. */
 export function magPrints() {
   const p0 = ROOM.W(MAGPATH.PEEK), p1 = ROOM.W(MAGPATH.FAR);

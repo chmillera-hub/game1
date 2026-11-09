@@ -17,12 +17,13 @@
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
+import { EYE_LIGHT } from '../core/context.js';
 import { ROOM, lookFor, sy } from './marks.js';
 import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { MX } from '../chars/magician.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, fitShot, mixShot, project, cast, ownedGroup, bonusMarks, voidBowed,
-  MAGPATH, magTiptoe, ensureBonusDecals, clamp, smooth, lerp } from './kit_bonus.js';
+  MAGPATH, magTiptoe, magSteps, ensureBonusDecals, clamp, smooth, lerp } from './kit_bonus.js';
 
 let S = null;
 const tb = (r) => T(r);
@@ -37,6 +38,7 @@ export default {
     st.own = ownedGroup(st, 's18own'); set.scene.add(st.own);
     st.glint = glintSprite(); st.own.add(st.glint);
     S = st.S = statics(st);
+    console.log('s18 steps', JSON.stringify(magSteps(T('s18b07'), T('s19b05')).map((x) => [x, (x - T('s18b07')).toFixed(2), (x - T('s19b01')).toFixed(2)])));
     st.decals = ensureBonusDecals(set);
     console.log('s18 decals', JSON.stringify(st.decals.items.map((i) => [i.kind, i.pos.map((v) => +v.toFixed(2)), +i.t0.toFixed(2)])));
     return st;
@@ -49,6 +51,8 @@ export default {
     const shot = shotAt(t);
     applyShot(app.camera, shot, t, 18);
     set.update(t, { latch: 1, cageDoor: 1 });
+    // his close shots: the far key grazes the eye whites into glowing slits; soften it so the sunken irises read
+    if (t >= S.T.cut2 && t < S.T.cut6) EYE_LIGHT.uKeyColor.value.multiplyScalar(0.55);
     fear.update(t, fearPoseFn(t));
     vd.update(t, voidPose(t, st));
     mag.update(t, magPose(t, st));
@@ -119,7 +123,7 @@ function statics(st) {
   out.CU_B = fitShot([[out.m5.eyes, 385, 395]], 28, toV(out.CU_A.pos).lerp(toV(out.m5.eyes), 0.1), out.m5.eyes, { posReg: 10, free: [0, 0, 0] });
   // b06 LAYERED from behind-left of him: he is foreground right, the Void's flank middle, tiny Fear far left
   // (the Void hides Fear from anything behind it: the dramatic irony reads from the camera side, wide)
-  out.LAY = fitShot([[out.m6.head, 600, 390], [out.fEyes, 105, 640]], 56, ROOM.W(5.6, 1.35, 4.6), out.fEyes, { posReg: 10, free: [0, 0, 0] });
+  out.LAY = fitShot([[out.m6.head, 590, 390], [out.fEyes, 120, 650]], 52, ROOM.W(5.25, 1.3, 4.35), out.fEyes, { posReg: 10, free: [0, 0, 0] });
   // b07 wide tracking from behind-left (his tiptoe along its back), then tilt down to the prints
   out.WIDE_POS = toV(out.PEEK).lerp(toV(out.FAR), 0.5).addScaledVector(vl, 2.9).addScaledVector(vf, -1.1).setY(1.7);
   const L2 = (n) => { const a = vd.anchor(n); return a ? ROOM.L(a).map((v) => +v.toFixed(2)) : null; };
@@ -134,7 +138,7 @@ function shotAt(t) {
   if (t < TT.cut2) {                                           // b01 orbit
     const u = ramp(t, TT.s0 - 0.1, TT.cut2 + 0.2, 'inOut');
     const deg = lerp(-30, 70, u);
-    const look = S.vC.clone().lerp(toV(S.PEEK).setY(1.35), smooth(clamp((u - 0.25) / 0.75)) * 0.8);
+    const look = S.vC.clone().lerp(S.fEyes, 0.3 * (1 - smooth(clamp(u / 0.4)))).lerp(toV(S.PEEK).setY(1.35), smooth(clamp((u - 0.25) / 0.75)) * 0.8);
     return { pos: S.orbit(deg), look: look.toArray(), fov: 44, drift: 0.2 };
   }
   if (t < TT.cut3) return mixShot(S.MED, { ...S.MED, pos: toV(S.MED.pos).lerp(toV(S.MED.look), 0.08).toArray() }, ramp(t, TT.cut2, TT.cut3, 'inOut'));
@@ -206,7 +210,7 @@ function magPose(t, st) {
   const glee = pulse(t, TT.b6 + 0.05, 0.25, TT.out - TT.b6 + 0.2, 0.5);
   const listen = inB7 ? ramp(t, tip.tOut - 0.1, tip.tOut + 0.2) : 0;
   const body = {
-    crouch: lerp(0.95, 0.12, rise) + 0.05 * glee,
+    crouch: lerp(1.0, 0.12, rise) + 0.05 * glee,
     peek: (0.7 * side + 0.15 * ramp(t, TT.cut3, TT.cut3 + 0.3)) * (1 - 0.6 * ramp(t, TT.b6 - 0.2, TT.b6)) * (inB7 ? 0.2 : 1),
     hunch: 0.25 + 0.2 * glee - 0.1 * rise,
     lean: 0.08 + 0.05 * glee,

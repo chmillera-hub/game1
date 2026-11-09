@@ -88,6 +88,28 @@ export function voidNormal(vd, y, ang) {
   return d.transformDirection(vd.root.matrixWorld).normalize();
 }
 
+// ------------------------------------------------------------------------------------------------ set seeds
+/**
+ * Fade the EDGE set's drifting thought seeds that would sit on a face in this shot (call AFTER set.update() and
+ * AFTER the camera is applied). pts: [[worldPoint, radiusPx], ...]. Pure: depends only on this frame's seeds + camera.
+ */
+export function fadeSeedsNear(set, camera, pts) {
+  const S = set && set.props && set.props.seeds;
+  if (!S || !S.geo || !pts.length) return;
+  camera.updateMatrixWorld(); camera.updateProjectionMatrix();
+  const v = new THREE.Vector3(), P = pts.map(([p, r]) => { v.copy(toV(p)).project(camera); return [(v.x * 0.5 + 0.5) * 720, (1 - (v.y * 0.5 + 0.5)) * 1280, r, v.z]; });
+  const n = S.geo.instanceCount, A = S.aPos.array, Mi = S.aMisc.array;
+  for (let i = 0; i < n; i++) {
+    v.set(A[i * 3], A[i * 3 + 1], A[i * 3 + 2]).project(camera);
+    if (v.z > 1) continue;
+    const x = (v.x * 0.5 + 0.5) * 720, y = (1 - (v.y * 0.5 + 0.5)) * 1280;
+    let f = 1;
+    for (const [px, py, r] of P) { const d = Math.hypot(x - px, y - py); f = Math.min(f, smooth((d - r * 0.6) / (r * 0.4))); }
+    if (f < 1) Mi[i * 3 + 2] *= f;
+  }
+  S.aMisc.needsUpdate = true;
+}
+
 // ------------------------------------------------------------------------------------------------ sky galaxy
 /** the big sky galaxy sprite (from s04b11.end on), exactly as agreed in marks.js: size 1.1, 0xd8c0ff, alpha 0.9. */
 export function drawSkyGalaxy(ps, t) {

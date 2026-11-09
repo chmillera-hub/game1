@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { Character, gazePoint } from '../core/character.js';
 import { Face, FACE_DEFAULTS, ellipsoidSurface } from '../core/face.js';
 import { SweepTube, Limb, orientYZ } from '../core/limbs.js';
-import { glowSprite, contactShadow, GLOBAL } from '../core/materials.js';
+import { contactShadow, GLOBAL } from '../core/materials.js';
 import { Particles, CELL } from '../core/particles.js';
 import { CTX, EYE_LIGHT } from '../core/context.js';
 import { clamp, lerp, smooth, noise1, fbm1, hash1, ease } from '../core/util.js';
@@ -29,7 +29,7 @@ const CHEST_Y = 1.05, SHOULDER_Y = 1.42, HIP_Y = 0.4;
 const FR = [0.62, 0.58, 0.33], FC = [0, -0.05, 0.05];     // face-field ellipsoid (head-local)
 const HOOD = { rx: 0.82, ry: 0.79, rz: 0.8, phi0: 1.0, roll: 0.09, tilt: 0.08, peak: 0.3 };
 // shoulder capelet profile [radius, height]: from inside the hood, over the shoulders, scalloped hem, lip tucked in
-const CAPE = [[0.3, 1.88], [0.55, 1.79], [0.76, 1.655], [0.9, 1.505], [0.985, 1.37], [1.035, 1.265], [1.06, 1.19], [1.04, 1.155], [0.995, 1.165], [0.955, 1.21]];
+const CAPE = [[0.3, 1.9], [0.58, 1.8], [0.75, 1.64], [0.9, 1.5], [0.985, 1.37], [1.035, 1.265], [1.06, 1.19], [1.04, 1.155], [0.995, 1.165], [0.955, 1.21]];
 const NCR = 22, CAPE_LIP = [[-0.025, -0.035], [-0.07, -0.03], [-0.11, 0.015]];   // lip offsets [dr, dy] from the hem
 const ARM_L1 = 0.64, ARM_L2 = 0.6, HAND = 0.44;
 const ARM_R = [0.235, 0.215, 0.19, 0.165, 0.15];          // sleeve tube shoulder -> wrist (the cuff flares over the end)
@@ -59,8 +59,8 @@ export const ARM = {
   belly: { p: [0.42, -0.23, 0.99], fingers: [-0.85, -0.4, 0.2], palm: [-0.15, 0.05, -1], pole: [1, -0.5, 0.1], hand: { curl: 0.25, spread: 0.35, cup: 0.45, thumb: 0.55 } },
   // folded arms: shoulders roll forward, lower (left) forearm on the belly, right forearm stacked over it in front;
   // each hand tucks past the centre toward the other elbow (pR / fingersR... = the right arm's own values)
-  crossed: { p: [-0.36, -0.06, 0.98], pR: [-0.34, 0.11, 1.04], fingers: [-0.55, -0.2, -0.8], fingersR: [-0.5, -0.35, -0.8], palm: [0.6, -0.2, -0.8], palmR: [0.55, -0.5, -0.65],
-    pole: [0.75, -1, 0.45], shFwd: 0.3, stretch: 1.4, hs: 0.85, hand: { curl: 0.82, spread: 0.02, thumb: 0.1, cup: 0.5 } },
+  crossed: { p: [-0.32, -0.08, 0.95], pR: [-0.3, 0.1, 1.03], fingers: [-0.4, -0.2, -0.9], fingersR: [-0.45, -0.35, -0.8], palm: [0.7, -0.2, -0.65], palmR: [0.6, -0.5, -0.6],
+    pole: [0.6, -0.85, 0.85], shFwd: 0.3, stretch: 1.4, hs: 0.8, hand: { curl: 0.88, spread: 0.02, thumb: 0.1, cup: 0.5 } },
   up: { p: [0.8, 1.5, 0.35], fingers: [0.15, 1, 0.1], palm: [0, 0, 1], pole: [1, 0, -0.4], hand: { curl: 0.08, spread: 0.45, thumb: 0.65 } },
   shrug: { p: [1.15, 0.0, 0.66], fingers: [0.55, 0.2, 0.8], palm: [0.15, 1, 0.1], pole: [0.8, -1, -0.4], hand: { curl: 0.12, spread: 0.45, thumb: 0.85, cup: 0.15 } },
   wave: { p: [1.08, 1.0, 0.45], fingers: [0.1, 1, 0.1], palm: [0, 0, 1], pole: [1, -0.6, -0.4], hand: { curl: 0.05, spread: 0.5, thumb: 0.7 } },
@@ -113,16 +113,17 @@ export const VOID_EXPR = {
 
 /**
  * Whisper bend preset: side = +1 leans toward its LEFT (+X), -1 toward its right; depth scales the bend.
- * Mouth height (yaw 0, measured): depth 0 -> 1.85 m, 0.6 -> 1.77, 1.0 -> 1.69, 1.2 -> ~1.58, 1.35 -> ~1.51 (above 1 the
- * knees fold, the body tips further and the hood nods down). Returns { body, head, armL|armR } to merge into a pose.
+ * Mouth height (anchor 'mouth', yaw 0, measured with void_probe): depth 0 -> 1.86 m, 0.6 -> 1.77, 0.8 -> 1.74,
+ * 1.0 -> 1.70, 1.1 -> 1.61, 1.2 -> 1.52, 1.3 -> 1.42 (above 1 the knees fold, the body tips further and the hood nods
+ * down). Returns { body, head, armL|armR } to merge into a pose. v.solveWhisper() finds depth + position for an ear.
  * Pair with v.solvePos(t, pose, 'whisper', listenerEar) to put the Void's mouth right at someone's ear.
  */
 export function whisperPose(side = 1, depth = 1, amount = 1) {
   const k = amount, d = depth, dd = Math.max(0, d - 1);
   const arm = { preset: 'whisper', from: 'rest', mix: clamp(amount * 1.4 - 0.2) };
   return {
-    body: { lean: (0.5 * d + 0.3 * dd) * k, crouch: (0.16 * d + 1.1 * dd) * k, tilt: (0.2 + 0.1 * dd) * side * k, twist: 0.12 * side * k },
-    head: { yaw: 0.32 * side * k, pitch: (-(0.1 + 0.42 * d) + 0.75 * dd) * k, roll: 0.16 * side * k },
+    body: { lean: (0.5 * d + 0.25 * dd) * k, crouch: (0.16 * d + 0.8 * dd) * k, tilt: (0.2 + 0.1 * dd) * side * k, twist: 0.12 * side * k },
+    head: { yaw: 0.32 * side * k, pitch: (-(0.1 + 0.42 * d) + 0.5 * dd) * k, roll: 0.16 * side * k },
     ...(side > 0 ? { armL: arm } : { armR: arm }),
   };
 }
@@ -577,6 +578,10 @@ export class Void extends Character {
     this.surface = surface;
     this.faceField = new THREE.Mesh(surfaceGeometry(surface, -1.5, 1.5, -1.4, 1.35, 36, 32), this.faceMat);
     this.headGroup.add(this.faceField);
+    // a dark "floor" under the face field so nothing below the head (neck, capelet, fold) peeks in under the chin
+    this.chinPlug = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 10, 0, TAU, Math.PI * 0.35, Math.PI * 0.65), this.faceMat);
+    this.chinPlug.scale.set(0.56, 0.16, 0.42); this.chinPlug.position.set(0, -0.6, 0.12);
+    this.headGroup.add(this.chinPlug);
     const decalMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, color: new THREE.Color(DECAL_K, DECAL_K, DECAL_K) });
     const self = this;
     this.face = new Face({
@@ -593,14 +598,19 @@ export class Void extends Character {
       },
       decal: { uMin: DECAL_UV[0], uMax: DECAL_UV[1], vMin: DECAL_UV[2], vMax: DECAL_UV[3], size: [384, 320], lift: 0.004, material: decalMat },
     });
-    // lids see the face decal (blush / puff glows), and two "canthus" caps per eye (same darkness) tuck the eye
-    // corners in as the lids close, so happy / closed eyes are tapered arcs of light with no white wedges
+    // lids see the face decal (blush / puff glows). As the lids close / squint, the eye light fades into the darkness
+    // toward the corners (socket space), so happy / closed eyes are tapered arcs of light with no white corner wedges.
     this.lidMat.uniforms.uDecal.value = this.face.decal.tex;
-    this.canthi = this.face.eyes.map((ey) => [1, -1].map((cx) => {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), this.lidMat);
-      ey.inner.add(m);
-      return { m, cx };
-    }));
+    for (const ey of this.face.eyes) {
+      const u = ey.mat.uniforms;
+      u.uSock = { value: new THREE.Matrix3() }; u.uCorner = { value: 0 };
+      ey.mat.fragmentShader = ey.mat.fragmentShader
+        .replace('uniform float uIrisR,', 'uniform mat3 uSock; uniform float uCorner; uniform float uIrisR,')
+        .replace('gl_FragColor = vec4(lit, 1.0);', `vec3 sn = normalize(uSock * normalize(vWorldN));
+  lit = mix(lit, vec3(0.012, 0.010, 0.036), clamp(uCorner * 1.4 * smoothstep(0.22, 0.56, abs(sn.x)), 0.0, 1.0));
+  gl_FragColor = vec4(lit, 1.0);`);
+      ey.mat.needsUpdate = true;
+    }
     // eye halos + hood glow are analytic terms in the face shader (uHalo / uHoodGlow); eye centres in head space:
     this.FU.uEyeP.value.set(this.face.eyes[0].group.position.x, this.face.eyes[0].group.position.y, this.face.eyes[1].group.position.x, this.face.eyes[1].group.position.y);
     // brow halos (wider, fainter copies of the brow wisps)
@@ -1126,8 +1136,8 @@ export class Void extends Character {
     this.headGroup.updateMatrixWorld(true);
     { const pts = [], M = this._frameMat(NECK_Y, _m4);
       for (let i = 0; i <= 8; i++) {
-        const th = lerp(1.05, TAU - 1.05, i / 8), R = 0.66 + 0.03 * Math.cos(3 * th);
-        pts.push(V3(R * Math.sin(th), -0.035 + 0.02 * Math.sin(2.5 * th + 0.4) + shrug * 0.09 + 0.004 * br, R * Math.cos(th) * 0.9 - 0.02).applyMatrix4(M));
+        const th = lerp(1.05, TAU - 1.05, i / 8), R = 0.69 + 0.025 * Math.cos(3 * th);
+        pts.push(V3(R * Math.sin(th), 0.06 + 0.02 * Math.sin(2.5 * th + 0.4) + shrug * 0.09 + 0.004 * br, R * Math.cos(th) * 0.92 - 0.02).applyMatrix4(M));
       }
       this.collar.update(pts, (u) => 0.02 + 0.09 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.25, up: this._xd(NECK_Y, [0, 1, 0]) }); }
 
@@ -1169,15 +1179,11 @@ export class Void extends Character {
       const up = -ey.up.rotation.x, low = -ey.lo.rotation.x, r = ey.r;
       const open = clamp((up - low) / 1.45);
       this.FU.uHalo.value.setComponent(i, (0.03 + 0.1 * open) * eyeGlow * 1.6);
-      // canthus caps: grow over the eye corners as the lids close / squint (tapered arcs, no white corner wedges)
-      const c = 1 - smooth((open - 0.08) / 0.42);
-      const tm = (ey.upRoll.rotation.z + ey.loRoll.rotation.z) / 2, mid = (up + low) / 2;
-      for (const { m, cx } of this.canthi[i]) {
-        m.visible = c > 0.02;
-        const kk = lerp(0.2, 1, c);
-        m.scale.set(r * 0.44 * kk, r * 0.36 * kk, r * 0.44 * kk);
-        m.position.set(cx * r * (0.96 + 0.12 * (1 - c)), cx * r * Math.sin(tm) + r * 0.3 * Math.sin(mid), r * 0.3);
-      }
+      // eye-corner fade (see _buildHead): grows as the lids close / squint
+      ey.mat.uniforms.uCorner.value = 1 - smooth((open - 0.06) / 0.4);
+      if (open < 0.3) { ey.catch1.visible = false; ey.catch2.visible = false; }   // no catchlight dots on a squeezed eye
+      ey.group.getWorldQuaternion(_q).invert();
+      ey.mat.uniforms.uSock.value.setFromMatrix4(_m4.makeRotationFromQuaternion(_q));
     });
     this.FU.uHoodGlow.value = (0.08 + 0.12 * cosmos) * 1.2;
     this.face.brows.forEach((b, i) => {

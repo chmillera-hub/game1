@@ -41,13 +41,13 @@ export default {
     const set = await app.set('EDGE');
     const [jesus, vd, user] = await Promise.all([app.char('JESUS'), app.char('VOID'), app.char('USER')]);
     const fx = new Particles({ max: 32, intensity: 1.5 });
-    own(fx.mesh);
+    own(fx.mesh, 's13');
     const gal = makeLittleGalaxy();
     return { scene: set.scene, set, jesus, vd, user, fx, gal, look: lookFor('s13', set.look) };
   },
 
   async update(t, app, st) {
-    stamp(t);
+    stamp(t, 's13');
     const { set, jesus, vd, user, fx, gal } = st;
     for (const o of [jesus.root, vd.root, user.root, fx.mesh, gal]) st.scene.add(o);
 

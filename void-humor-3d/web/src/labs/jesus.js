@@ -61,7 +61,7 @@ const EX = [
 S('turntable', 4, () => framed([0, 0.92, 0], { dist: 4.3, yaw: 0, pitch: 3, fov: 32, screenY: 0.44, drift: 0 }),
   (lt, s) => s.jesus.update(s.t, { yaw: (lt / 4) * Math.PI * 2, face: 'kind', gaze: null, speech: false }));
 for (const [name, e] of EX) {
-  S('expr: ' + name, 1, () => framed([0, 1.47, 0], { dist: 1.25, yaw: 8, pitch: 2, fov: 30, screenY: 0.36, drift: 0 }), (lt, s) => {
+  S('expr: ' + name, 1, () => framed([0, 1.47, 0], { dist: 1.3, yaw: 8, pitch: 2, fov: 30, screenY: 0.56, drift: 0 }), (lt, s) => {
     const head = { ...(e.head || {}) };
     if (e.nod) head.pitch = (head.pitch || 0) + 0.12 * Math.max(0, Math.sin(lt * Math.PI * 2 * 1.6));
     s.jesus.update(s.t, { face: e.face, dart: e.dart, body: e.body, armL: e.armL, armR: e.armR, head,
@@ -87,7 +87,7 @@ S('run (side)', 2, (lt, s) => framed([0, 0.95, walkZ(s, 'run', lt, -2)], { dist:
 });
 
 // ---------------------------------------------------------------------------------- kneel to the seated User
-S('kneel to a seated person, open palms', 6, () => framed([0.05, 0.66, 0.8], { dist: 3.7, yaw: 76, pitch: 5, fov: 32, screenY: 0.47, drift: 0 }), (lt, s) => {
+S('kneel to a seated person, open palms', 6, () => framed([0.05, 0.7, 0.8], { dist: 4.6, yaw: 36, pitch: 6, fov: 32, screenY: 0.5, drift: 0 }), (lt, s) => {
   const U = s.user;
   U.update(s.t, { pos: [0.02, 0, 1.62], yaw: Math.PI, body: { sit: 1, sitPath: 'plain' }, face: UX('terror', { mTremble: 0.3 }), gaze: s.jesus, speech: false,
     armR: { preset: 'defend' }, armL: { preset: 'prop' } });
@@ -104,10 +104,10 @@ S('kneel to a seated person, open palms', 6, () => framed([0.05, 0.66, 0.8], { d
 
 // ---------------------------------------------------------------------------------- with the real Void
 // Void at the origin facing +Z; Jesus at its RIGHT flank (−X), his LEFT arm goes round its back.
-const JP = [-1.22, 0, 0.12], JYAW = 0.3;
+const JP = [-1.17, 0, 0.16], JYAW = 0.32;
 S('arm around the Void + whisper (front 3/4)', 6,
-  (lt) => (lt < 2.6 ? framed([-0.5, 1.3, 0.0], { dist: 5.4, yaw: -14, pitch: 4, fov: 32, screenY: 0.45, drift: 0 })
-    : framed([-0.92, 1.62, 0.15], { dist: 2.5, yaw: -30, pitch: 2, fov: 30, screenY: 0.4, drift: 0 })),
+  (lt) => (lt < 2.6 ? framed([-0.7, 1.3, 0.0], { dist: 5.8, yaw: 6, pitch: 6, fov: 32, screenY: 0.5, drift: 0 })
+    : framed([-0.85, 1.66, 0.2], { dist: 2.9, yaw: 28, pitch: 2, fov: 30, screenY: 0.58, drift: 0 })),
   (lt, s) => {
     const vd = s.vd, J = s.jesus;
     const around = ramp(lt, 0.3, 1.3), lean = ramp(lt, 1.6, 2.4) * (1 - ramp(lt, 5.4, 5.95)), wh = ramp(lt, 2.2, 2.8) * (1 - ramp(lt, 5.2, 5.8));
@@ -123,13 +123,13 @@ S('arm around the Void + whisper (front 3/4)', 6,
       armR: { preset: mix2('rest', 'whisper', wh) },
     });
   });
-S('arm around the Void (back 3/4)', 3, () => framed([-0.6, 1.3, -0.15], { dist: 4.6, yaw: -142, pitch: 8, fov: 32, screenY: 0.45, drift: 0 }), (lt, s) => {
+S('arm around the Void (back 3/4)', 3, () => framed([-0.95, 1.2, -0.15], { dist: 5.0, yaw: -146, pitch: 9, fov: 32, screenY: 0.5, drift: 0 }), (lt, s) => {
   const vd = s.vd, J = s.jesus, pat = 0.02 * Math.max(0, Math.sin(lt * Math.PI * 2 * 0.8)) * ramp(lt, 1, 1.5);
   vd.update(s.t, { armR: { preset: 'belly' }, armL: { preset: 'belly' }, face: VX('calm'), gaze: J, head: { yaw: -0.4 }, speech: false });
   J.update(s.t, { pos: JP, yaw: JYAW, face: 'warm', gaze: vd.anchor('eyes'), head: { look: vd.anchor('eyes'), follow: 0.55 }, speech: false,
     armL: { preset: 'around', surface: vd, offset: [0, pat, 0] }, armR: { preset: 'rest' } });
 });
-S('listening nods (the Void whispers to him)', 3.5, () => framed([-0.95, 1.62, 0.2], { dist: 2.7, yaw: -28, pitch: 3, fov: 30, screenY: 0.4, drift: 0 }), (lt, s) => {
+S('listening nods (the Void whispers to him)', 3.5, () => framed([-1.0, 1.6, 0.2], { dist: 2.8, yaw: -30, pitch: 3, fov: 30, screenY: 0.56, drift: 0 }), (lt, s) => {
   const vd = s.vd, J = s.jesus;
   J.update(s.t, { pos: JP, yaw: JYAW, face: 'listening', armL: { preset: 'around', surface: vd }, speech: false });   // place first (ear anchor)
   const W = { ...whisperPose(-1, 1.05, 1), armL: { preset: 'belly' }, face: VX('whisper', { gazeYaw: 0.5 }), speech: { open: 0.1 + 0.08 * Math.max(0, Math.sin(s.t * 12)), wide: 0.2, round: 0.5, close: 0 } };
@@ -138,7 +138,7 @@ S('listening nods (the Void whispers to him)', 3.5, () => framed([-0.95, 1.62, 0
   const nod = 0.13 * Math.max(0, Math.sin(lt * Math.PI * 2 * 1.3)) * ramp(lt, 0.4, 0.8);
   J.update(s.t, { pos: JP, yaw: JYAW, face: 'listening', gaze: V(0.3, 1.4, 1.6), head: { roll: 0.14, pitch: nod, yaw: -0.15 }, armL: { preset: 'around', surface: vd }, speech: false });
 });
-S('hand on the Void\'s shoulder (front 3/4)', 4, () => framed([0.85, 1.48, 0.1], { dist: 4.4, yaw: 34, pitch: 4, fov: 32, screenY: 0.42, drift: 0 }), (lt, s) => {
+S('hand on the Void\'s shoulder (front 3/4)', 4, () => framed([1.0, 1.35, 0.15], { dist: 5.0, yaw: -8, pitch: 4, fov: 32, screenY: 0.42, drift: 0 }), (lt, s) => {
   const vd = s.vd, J = s.jesus;
   const look = ramp(lt, 1.4, 2.3);
   vd.update(s.t, { yaw: Math.PI, armL: { preset: 'crossed' }, armR: { preset: 'crossed' }, face: VX(mix2('annoyed', 'gentle', look)), head: { yaw: -1.85 * look, pitch: 0.12 * look }, body: { twist: -0.33 * look }, gaze: look > 0.4 ? J : null, speech: false });
@@ -151,32 +151,32 @@ S('hand on the Void\'s shoulder (front 3/4)', 4, () => framed([0.85, 1.48, 0.1],
 });
 
 // ---------------------------------------------------------------------------------- solo beats
-S('shrug, palms up', 2.5, () => framed([0, 1.15, 0], { dist: 2.6, yaw: 10, pitch: 2, fov: 32, screenY: 0.42, drift: 0 }), (lt, s) => {
+S('shrug, palms up', 2.5, () => framed([0, 1.2, 0], { dist: 2.8, yaw: 10, pitch: 2, fov: 32, screenY: 0.55, drift: 0 }), (lt, s) => {
   const a = ramp(lt, 0.2, 0.7) * (1 - ramp(lt, 2.0, 2.4));
   s.jesus.update(s.t, { face: mix2('kind', 'shrug', a), gaze: 'camera', body: { shrug: 0.85 * a }, armL: { preset: 'shrug', reach: a }, armR: { preset: 'shrug', reach: a }, head: { roll: 0.12 * a }, speech: false });
 });
-S('look at a floating notification', 3, () => framed([-0.12, 1.62, 0.2], { dist: 2.7, yaw: 22, pitch: 0, fov: 32, screenY: 0.4, drift: 0 }), (lt, s) => {
+S('look at a floating notification', 3, () => framed([-0.14, 1.66, 0.22], { dist: 3.0, yaw: 22, pitch: 0, fov: 32, screenY: 0.55, drift: 0 }), (lt, s) => {
   s.note.visible = true;
   const np = s.note.position;
   const read = ramp(lt, 0.4, 0.9), surp = ramp(lt, 1.6, 1.9);
   s.jesus.update(s.t, { face: JX([['reading', read * (1 - surp)], ['oh', surp]]), gaze: np, head: { look: np, follow: 0.7 * read }, body: { lean: 0.05 * read, recoil: 0.12 * surp }, speech: false });
 });
-S('teehee', 2.5, () => framed([0, 1.38, 0], { dist: 1.7, yaw: 12, pitch: 2, fov: 30, screenY: 0.4, drift: 0 }), (lt, s) => {
+S('teehee', 2.5, () => framed([0, 1.42, 0], { dist: 1.8, yaw: 12, pitch: 2, fov: 30, screenY: 0.56, drift: 0 }), (lt, s) => {
   const a = ramp(lt, 0.15, 0.45) * (1 - ramp(lt, 2.1, 2.45));
   s.jesus.update(s.t, { face: mix2('warm', 'teehee', a), body: { giggle: a, shrug: 0.4 * a }, armR: { preset: 'teehee', reach: a }, gaze: 'camera', head: { roll: 0.12 * a }, speech: false });
 });
-S('awkward grimace, eyes darting', 3, () => framed([0, 1.38, 0], { dist: 1.7, yaw: 5, pitch: 2, fov: 30, screenY: 0.4, drift: 0 }), (lt, s) => {
+S('awkward grimace, eyes darting', 3, () => framed([0, 1.42, 0], { dist: 1.8, yaw: 5, pitch: 2, fov: 30, screenY: 0.56, drift: 0 }), (lt, s) => {
   const a = ramp(lt, 0.2, 0.6);
   s.jesus.update(s.t, { face: ['awkward', a], dart: a, body: { shrug: 0.7 * a, hunch: 0.25 * a }, armL: { preset: 'clasp', reach: a }, armR: { preset: 'clasp', reach: a }, gaze: null, speech: false });
 });
 const TALK = [['explain', 'rest', 'kind'], ['open', 'open', 'hopeful'], ['heart', 'rest', 'tender'], ['offer', 'explain', 'warm']];
-S('talking gestures', 5, () => framed([0, 1.15, 0], { dist: 2.6, yaw: 15, pitch: 2, fov: 32, screenY: 0.42, drift: 0 }), (lt, s) => {
+S('talking gestures', 5, () => framed([0, 1.2, 0], { dist: 2.8, yaw: 15, pitch: 2, fov: 32, screenY: 0.55, drift: 0 }), (lt, s) => {
   const ph = lt / 1.25, i = Math.floor(ph) % 4, n = (i + 1) % 4, f = smooth((ph - Math.floor(ph) - 0.7) / 0.3);
   s.jesus.update(s.t, { face: mix2(TALK[i][2], TALK[n][2], f), gaze: 'camera', speech: talkSample(s.t),
     armR: { preset: mix2(TALK[i][0], TALK[n][0], f) }, armL: { preset: mix2(TALK[i][1], TALK[n][1], f) } });
 });
 S('walk off with an arm around the Void, talking', 6,
-  (lt, s) => { const p = s.walkOff(lt).mid; const fy = Math.atan2(-0.45, -1) * 180 / Math.PI; return lt < 3 ? framed([p.x, 1.4, p.z], { dist: 5.6, yaw: fy + 14, pitch: 5, fov: 32, screenY: 0.45, drift: 0 }) : framed([p.x, 1.35, p.z], { dist: 5.2, yaw: fy + 180 - 30, pitch: 8, fov: 32, screenY: 0.45, drift: 0 }); },
+  (lt, s) => { const p = s.walkOff(lt).mid; const fy = Math.atan2(-0.45, -1) * 180 / Math.PI; return lt < 3 ? framed([p.x, 1.3, p.z], { dist: 6.4, yaw: fy - 24, pitch: 5, fov: 32, screenY: 0.5, drift: 0 }) : framed([p.x, 1.25, p.z], { dist: 6.0, yaw: fy + 180 + 34, pitch: 10, fov: 32, screenY: 0.5, drift: 0 }); },
   (lt, s) => {
     const W = s.walkOff(lt), J = s.jesus, vd = s.vd;
     vd.update(s.t, { pos: W.vpos.toArray(), yaw: W.yaw, armL: { preset: 'belly' }, armR: { preset: 'belly' }, walk: { amount: 1, phase: lt * W.vRate, style: 'waddle' }, face: VX('giggle', { mOpen: 0.15 + 0.12 * Math.max(0, Math.sin(s.t * 9)) }), gaze: J, speech: false });

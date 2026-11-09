@@ -24,13 +24,13 @@ import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { MX } from '../chars/magician.js';
 import { ROOM, sy, lookFor } from './marks.js';
+import { ensureBonusDecals, MAGPATH } from './kit_bonus.js';
 import {
   loadLines, W, V, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, blendShot, pix, marks, times,
   voidSpot, starAt, drawStar, flightTau, flightPos, wreckPose, hatRestPos, daggerRestPos, cornerOpts, placeHatBucket,
 } from './kit_s20_22.js';
 
 const ID = 's20';
-globalThis.DBG20 = true; // DEV
 
 export default {
   id: ID,
@@ -38,6 +38,8 @@ export default {
     await loadLines();
     const set = await app.set('BACKROOM');
     ROOM.fit(set);
+    ensureBonusDecals(set);   // the magician's grey footprints + dust patch (s18) stay on the floor
+    times().plate = set.anchors.cageInside ? set.anchors.cageInside.y : 0.04;
     const [vd, fear, mag] = await Promise.all([app.char('VOID'), app.char('FEAR'), app.char('MAGICIAN')]);
     const fx = new Particles({ max: 160, intensity: 1.5 });
     const fxN = new Particles({ max: 40, blending: 'normal', intensity: 1.0 });
@@ -115,7 +117,7 @@ export default {
         gaze: pass ? fe : null,
         face,
         blinkAt: [c.B1 + 0.42, c.B3 + 0.36, c.contact + 0.9],
-        armL: { preset: 'point', target: s.pos, tip: true, reach, fingers: fing, palm: [towardF[0] / hz, 0.1, towardF[2] / hz], hand: { point: 1, curl: 0.55, thumb: 0.35 } },
+        armL: { preset: 'point', from: 'rest', mix: reach, target: s.pos, tip: true, reach, fingers: fing, palm: [towardF[0] / hz, 0.1, towardF[2] / hz], hand: { point: 1, curl: 0.55, thumb: 0.35 } },
         armR: { preset: 'belly', from: 'rest', mix: k(t, [[c.B2, 0], [c.B3 + 0.6, 1, 'inOut']]) },
         extra: { kick: kickV, kickSide: 'L', kickTarget: kTarget, kickLevel: 1, stars: 1.4, hem: hemBounce, motes: 0.8 },
       };
@@ -192,6 +194,7 @@ function fearWalk(t, c, M) {
   const u = clamp((t - w0) / dur);
   const pu = smooth(u) * 0.75 + u * 0.25;
   const pos = mix3(from, to, pu);
+  pos[1] = (c.plate ?? 0.04) * (1 - smooth(clamp((pu - 0.25) / 0.2)));   // steps down off the cage's base plate
   const outYaw = Math.atan2(to[0] - from[0], to[2] - from[2]);
   const yaw = k(t, [[w0 - 0.4, M.yFDOOR], [w0 + 0.3, outYaw, 'inOut'], [w1 - 0.6, outYaw], [w1 + 0.3, M.yFOUT, 'inOut']]);
   const amount = pulse(t, w0 - 0.05, w1 + 0.1, 0.25, 0.3);
@@ -228,7 +231,8 @@ function fearPoseAt(st, t, c, M) {
     face,
     blinkAt: [c.making + 0.2, c.B3 + 0.75, c.fearCut0 + 0.06, c.imp + 1.6],
     armL: { preset: 'clasp', from: 'tiptoe', mix: 1 - wk.amount }, armR: { preset: 'clasp', from: 'tiptoe', mix: 1 - wk.amount },
-    extra: { tuftPerk: Math.max(0.45 * smooth(clamp((t - c.making - 0.1) / 0.5)), startle), startle, glow: 1.25, tremble: 0.05 },
+    extra: { tuftPerk: Math.max(0.45 * smooth(clamp((t - c.making - 0.1) / 0.5)), startle), startle, glow: 1.1, tremble: 0.05,
+      cry: 0.15 * (1 - smooth(clamp((t - T(ID)) / 2.5))) },
   };
 }
 
@@ -241,8 +245,9 @@ function magPose(st, t, pass) {
   // --- before contact: lurking at PEEK -> last tiptoe step in -> dagger high -> folded deep over the hem
   if (tau === null) {
     const step = k(t, [[c.B2 + 0.05, 0], [c.B2 + 1.15, 1, 'inOut']]);
-    const back = LD(0.34, 0, -0.16);
-    const pos = add(st.magRoot || M.PEEK2, [back[0] * (1 - step), 0, back[2] * (1 - step)]);
+    // from s19's last spot (on his toes at PEEK) the last tiptoe step in to the kick spot
+    const p0 = ROOM.W(MAGPATH.PEEK), p1 = st.magRoot || M.PEEK2;
+    const pos = mix3(p0, p1, step);
     const walking = pulse(t, c.B2 + 0.0, c.B2 + 1.25, 0.15, 0.2);
     const fold = k(t, [[c.B3 - 0.05, 0], [c.B3 + 0.75, 1, 'inOut']]);
     const daggerUp = k(t, [[c.stab - 0.35, 0], [c.stab - 0.05, 1, 'out'], [c.B3 + 0.1, 1], [c.B3 + 0.6, 0, 'inOut']]);
@@ -256,7 +261,7 @@ function magPose(st, t, pass) {
     if (hit) face = MX('popped', { mOpen: 0.12, mPout: 0.8, mWide: -0.2, mTeethU: 0, mTeethL: 0 });
     const head = A(mag.anchor('head') || add(M.PEEK2, [0, 1.7, 0]));
     return {
-      pos, yaw: M.yPEEK,
+      pos, yaw: M.yPEEK + 0.5,
       walk: { amount: walking, phase: (t - c.B2) * 1.25, style: 'sneak' },
       body: { tiptoe: 0.6 * (1 - fold) * (1 - walking), crouch: lerp(0.3, 0.22, fold) * (1 - 0.7 * walking), peek: lerp(0.65, 1.0, fold), lean: 1.05 * fold + 0.08 * Math.sin((t - c.B3) * 3) * fold, hunch: 0.25 * fold, recoil: 0.2 * uhoh },
       head: { follow: pass ? 0.5 : 0, pitch: -0.1 * uhoh },
@@ -398,13 +403,13 @@ function frameShot(st, t, shot, c, M) {
     }
     case 6: case 8: { // CORNER medium, locked (a short shake on the impact)
       const cc = add(M.CRASH, [0, 0.62, 0]);
-      const sh = ROOM.shot(ROOM.L(cc), { dist: 3.0, yaw: -8, pitch: 10, fov: 40, screenY: sy(560), drift: 0 });
+      const sh = ROOM.shot(ROOM.L(cc), { dist: 3.7, yaw: -8, pitch: 10, fov: 40, screenY: sy(560), drift: 0 });
       const sk = Math.exp(-Math.max(0, t - c.imp) * 9) * (t > c.imp ? 1 : 0);
       if (sk > 0.02) sh.shake = { amp: 0.012 * sk, freq: 11 };
       return sh;
     }
     case 7: { // FEAR_CU (the star at the top edge)
-      return ROOM.shot(ROOM.L(fe), { dist: 1.9, yaw: 26, pitch: -2, fov: 44, screenY: sy(560), drift: 0.05 });
+      return ROOM.shot(ROOM.L(fe), { dist: 1.55, yaw: 52, pitch: -4, fov: 44, screenY: sy(540), drift: 0.05 });   // = s21's opening setup
     }
   }
   return ROOM.cam('MASTER');

@@ -3,7 +3,10 @@
 // a janitor's corner of buckets + a mop).
 //   node tools/render.js sheet --lab magician --from 0 --to 4 --n 8 --cols 4 --out out/sheets/mag_turn.jpg
 //   node tools/render.js sheet --lab magician --from 4.5 --to 21.5 --n 18 --cols 6 --out out/sheets/mag_expr.jpg
+//   node tools/render.js sheet --lab magician --from 22.5 --to 76.3 --n 24 --cols 8 --out out/sheets/mag_act.jpg
+//   node tools/render.js sheet --lab magician --from 77.05 --to 90.05 --n 27 --cols 9 --out out/sheets/mag_presets.jpg
 //   SEGMENTS (exported) lists every segment [t0, t1, name]; the HUD label shows it too.
+//   Detail renders: set globalThis.__MAGCAM = { anchor: 'handR', dist, yaw, pitch, fov } in the page (review aid only).
 import * as THREE from 'three';
 import { applyShot, framed } from '../core/camera.js';
 import { EYE_LIGHT } from '../core/context.js';
@@ -24,7 +27,7 @@ const talkSample = (t, k = 1) => {
   return { open: clamp(o * k, 0, 0.75), wide: 0.3 + 0.3 * noise1(t * 3, 9), round: clamp(0.4 * noise1(t * 2.2, 11)), close: o < 0.08 ? 0.6 : 0 };
 };
 // close-ups are framed on the rig's actual head anchor (two-pass in update())
-const CLOSE = (yaw = 10, dist = 1.55, screenY = 0.4) => ({ close: { yaw, dist, screenY } });
+const CLOSE = (yaw = 10, dist = 1.55, screenY = 0.4, pitch = 2) => ({ close: { yaw, dist, screenY, pitch } });
 
 // ---------------------------------------------------------------------------------- expression sheet (1 s each)
 const EX = [
@@ -64,7 +67,7 @@ for (const [name, e] of EX) {
 // ---------------------------------------------------------------------------------- actions
 S('idle stoop, steepled fingers tapping', 3, (lt, s) => ({
   pose: { face: 'scheme', gaze: 'camera', armL: { preset: 'steeple' }, armR: { preset: 'steeple' }, extra: { dagger: false, pouch: false } },
-  shot: framed([0, 1.1, 0], { dist: 3.6, yaw: 30, pitch: 3, fov: 32, screenY: 0.44, drift: 0 }),
+  shot: framed([0.1, 1.08, 0.12], { dist: 4.7, yaw: 30, pitch: 3, fov: 32, screenY: 0.45, drift: 0 }),
 }));
 S('sneak tiptoe (side)', 4, (lt, s) => {
   const M = s.mag, rate = M.walkRate('sneak'), sp = M.walkSpeed('sneak') * rate;
@@ -100,10 +103,11 @@ S('LURK: crouch, peek around the big one, tapping', 5, (lt, s) => {
   const pk = ramp(lt, 0.4, 1.4) * (1 - 0.35 * ramp(lt, 3.6, 4.4));
   const edge = s.bigEdge();
   return {
-    pose: { pos: [-0.46, 0, -0.32], yaw: 0.25, body: { crouch: 0.55, peek: -0.85 * pk }, face: ['lurk', 1], gaze: s.fearEyes,
-      head: { follow: 0.5 * pk, roll: -0.12 * pk }, armL: { preset: 'edge', target: edge, palm: [0.9, 0, -0.3], fingers: [0.1, 1, 0.4], reach: pk },
-      armR: { preset: 'claw', reach: pk }, extra: { tap: 1, pouch: false } },
-    shot: framed([-0.25, 1.2, 0.0], { dist: 4.4, yaw: 14, pitch: 5, fov: 32, screenY: 0.45, drift: 0 }),
+    // hidden BEHIND the big body: only the head, hat, tapping hand (and the raised dagger) clear its silhouette edge
+    pose: { pos: [0.05, 0, -0.42], yaw: 0.25, body: { crouch: 0.5, peek: 1.0 * pk }, face: ['lurk', 1], gaze: s.fearEyes,
+      head: { follow: 0.6 * pk, roll: 0.1 * pk }, armL: { preset: 'edge', target: edge.p, palm: edge.n.clone().negate().toArray(), fingers: [-0.1, 0.25, 1], reach: pk },
+      armR: { preset: 'dagger_ready', reach: 0.4 + 0.6 * pk }, extra: { tap: 1, pouch: false } },
+    shot: framed([0.3, 1.18, 0.2], { dist: 3.3, yaw: 0, pitch: 4, fov: 32, screenY: 0.45, drift: 0 }),
   };
 });
 S('LICK LIPS (close-up)', 3.2, (lt, s) => {
@@ -112,7 +116,7 @@ S('LICK LIPS (close-up)', 3.2, (lt, s) => {
   const lick2 = lt < 1.9 ? 0 : clamp((lt - 1.9) / 1.0);
   const L = lick > 0 && lick < 1 ? lick : lick2;
   return { pose: { face: lt < 0.4 ? 'hungry' : (L > 0.1 && L < 0.9 ? ['hungry', 1] : 'gloat'), gaze: s.fearEyes, head: { pitch: -0.05, roll: 0.06 * Math.sin(lt * 2) }, extra: { lick: L }, speech: false },
-    ...CLOSE(18, 1.4) };
+    ...CLOSE(18, 1.4, 0.4, -4) };   // slightly from below: the tongue rides over the lip, clear of the nose
 });
 S('gloating whisper-talk (lip-sync) + dagger', 4, (lt, s) => ({
   pose: { face: lt < 2 ? 'whisper' : 'gloat', speech: talkSample(s.t, 0.55), gaze: 'camera', head: { yaw: 0.2, roll: -0.08, pitch: 0.05 }, body: { hunch: 0.4 },
@@ -122,7 +126,7 @@ S('gloating whisper-talk (lip-sync) + dagger', 4, (lt, s) => ({
 S('numbing dust: pouch pour', 3.5, (lt, s) => {
   const d = ramp(lt, 0.6, 1.2) * (1 - ramp(lt, 2.8, 3.3));
   return { pose: { face: d > 0.5 ? 'gloat' : 'scheme', gaze: V(0.2, 0.9, 1.4), armL: { preset: [['pouch', 1 - d], ['pour', d]] }, armR: { preset: 'dagger_low' }, extra: { dust: d } },
-    shot: framed([0.1, 1.2, 0.2], { dist: 2.8, yaw: 40, pitch: 3, fov: 32, screenY: 0.42, drift: 0 }) };
+    shot: framed([0.15, 1.42, 0.25], { dist: 3.5, yaw: 40, pitch: 3, fov: 32, screenY: 0.47, drift: 0 }) };
 });
 S('dagger stab at partner', 2.5, (lt, s) => {
   s.fear.visible = true;
@@ -175,7 +179,7 @@ S('getting up -> limp off, clutching back', 4.5, (lt, s) => {
     pose: { pos: [x, 0, -0.1], yaw: Math.PI / 2 * w, walk: { amount: w, phase: Math.max(0, lt - 1.0) * rate, style: 'limp' }, face: lt < 1.2 ? 'dazed' : 'sulk',
       armL: { preset: 'clutch_back', reach: w }, armR: { preset: 'hang' }, head: { pitch: 0.12 },
       extra: { crashed: up, dizzy: 1 - ramp(lt, 0.4, 1.6), hatOff: 1 - ramp(lt, 1.6, 2.6), hatPos: [0.55, 0.02, 0.42], hatRot: [0.1, 0.5, 1.5], dagger: false } },
-    shot: framed([0.8, 1.0, 0.0], { dist: 4.6, yaw: 15, pitch: 4, fov: 32, screenY: 0.44, drift: 0 }),
+    shot: framed([lerp(0.2, x + 0.3, w), 1.0, 0.0], { dist: 4.6, yaw: 15, pitch: 4, fov: 32, screenY: 0.44, drift: 0 }),
   };
 });
 S('sit (dazed) / kneel', 3.5, (lt, s) => {
@@ -186,7 +190,7 @@ S('sit (dazed) / kneel', 3.5, (lt, s) => {
 S('ta-da flourish / hand on hip', 2.5, (lt, s) => {
   const a = ramp(lt, 0.2, 0.6);
   return { pose: { face: 'gloat', gaze: 'camera', armL: { preset: 'hips', reach: a }, armR: { preset: 'present', reach: a }, extra: { dagger: false }, head: { roll: -0.1 * a } },
-    shot: framed([0, 1.15, 0], { dist: 3.4, yaw: 20, pitch: 3, fov: 32, screenY: 0.44, drift: 0 }) };
+    shot: framed([-0.15, 1.1, 0.1], { dist: 4.6, yaw: 12, pitch: 3, fov: 32, screenY: 0.45, drift: 0 }) };
 });
 // ---------------------------------------------------------------------------------- detail sheets (review aids)
 const PRESETS = ['rest', 'hang', 'hips', 'behind', 'crossed', 'steeple', 'rub', 'creep', 'claw', 'edge', 'dagger_ready', 'dagger_low',
@@ -195,7 +199,7 @@ for (const pr of PRESETS) {
   S('preset: ' + pr, 0.5, (lt, s) => {
     const prop = /dagger/.test(pr), pouch = pr === 'pouch' || pr === 'pour';
     return { pose: { face: 'sly', gaze: 'camera', armL: { preset: pr }, armR: { preset: pr }, extra: { dagger: prop, pouch, dust: pr === 'pour' ? 0.6 : 0, motes: 0 } },
-      shot: framed([0, 1.3, 0.1], { dist: 2.5, yaw: 25, pitch: 4, fov: 32, screenY: 0.5, drift: 0 }) };
+      shot: framed([0, 1.32, 0.12], { dist: 3.3, yaw: 25, pitch: 4, fov: 32, screenY: 0.52, drift: 0 }) };
   });
 }
 export const DURATION = T0;
@@ -229,10 +233,14 @@ export async function setup(app) {
   // big plump Void stand-in (lurk behind it)
   const big = new THREE.Group();
   const vm = new THREE.MeshStandardMaterial({ color: 0x2a2450, roughness: 0.6, emissive: 0x120c30 });
-  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), vm); body.scale.set(1.0, 1.25, 0.85); body.position.y = 1.2; big.add(body);
-  const hd = new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 20), vm); hd.position.set(0, 2.3, 0.05); big.add(hd);
-  big.position.set(0.95, 0, 0.35); big.visible = false; scene.add(big);
-  const bigEdge = () => V(-0.05, 1.3, 0.3);
+  // plump pear like the Void: widest low (hides the legs), narrower at head height (so a peek clears the edge)
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), vm); body.scale.set(1.25, 1.0, 0.75); body.position.y = 0.75; big.add(body);
+  const hd = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 20), vm); hd.position.set(-0.05, 1.85, 0.05); big.add(hd);
+  big.position.set(-0.7, 0, 0.3); big.visible = false; scene.add(big);
+  // a point (and outward normal) on the stand-in's right-back flank, at the silhouette edge seen from the lab camera
+  const bigEdge = () => { const c = V(-0.7, 0.75, 0.3), R = V(1.25, 1.0, 0.75), th = 0.5, ph = 1.68;
+    const d = V(Math.sin(ph) * Math.cos(th), Math.sin(th), Math.cos(ph) * Math.cos(th));
+    const p = c.clone().add(d.clone().multiply(R)); const n = V(d.x / R.x, d.y / R.y, d.z / R.z).normalize(); return { p, n }; };
   // little Fear bean stand-in
   const fear = new THREE.Group();
   const fm = new THREE.MeshStandardMaterial({ color: 0xcdb8ff, roughness: 0.5, emissive: 0x2a1a50 });

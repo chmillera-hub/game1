@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
+import { EYE_LIGHT } from '../core/context.js';
 import { ROOM, lookFor, sy } from './marks.js';
 import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
@@ -31,18 +32,19 @@ export default {
     return st;
   },
   async update(t, app, st) {
-    st.__t = t; globalThis.__dbg17 = true;
+    st.__t = t;
     const { set, vd, fear, mag } = st;
     cast(app, st.scene, ['VOID', 'FEAR', 'MAGICIAN']);
     const shot = shotAt(t);
     applyShot(app.camera, shot, t, 17);
-    set.update(t, { latch: latchAt(t), cageDoor: doorAt(t), tagSwing: 0.3 * pulse(t, S.opened + 0.25, 0.3, 0.6, 0.9) });
+    set.update(t, { latch: latchAt(t), cageDoor: doorAt(t), tagSwing: 0.3 * pulse(t, S.T.opened + 0.25, 0.3, 0.6, 0.9) });
+    // close on Fear the far key grazes its eye whites into a bloom blob: soften the eye key for those shots
+    if (t >= S.T.cutCU) EYE_LIGHT.uKeyColor.value.multiplyScalar(0.45);
     const fp = fearPoseFn(t);
     fear.update(t, fp);
     vd.update(t, voidPose(t, st));
     mag.update(t, magPose(t, st));
     st.look = lookFor('s17', set.look);
-    if (globalThis.__dbg17) console.log('s17 dbg', t.toFixed(2), JSON.stringify({ fe: fear.anchor('eyes').toArray().map((v) => +v.toFixed(2)), ve: vd.anchor('eyes').toArray().map((v) => +v.toFixed(2)), cam: app.camera.position.toArray().map((v) => +v.toFixed(2)), tip: vd.anchor('handR') && vd.anchor('handR').distanceTo(set.anchors.cageLatch).toFixed(2) }));
   },
 };
 
@@ -111,7 +113,7 @@ function statics(st) {
   out.OPEN_B = { ...out.OPEN_A, pos: toV(out.OPEN_A.pos).addScaledVector(dirO, 2.0).toArray(), look: toV(out.OPEN_A.look).addScaledVector(dirO, 2.0).toArray() };
   // INSERT: the latch low-centre, Fear sobbing behind the bars above it, room for the big hand to come down from the right
   // (from Fear's front: its sobbing face through the bars, the latch at the right edge of the cage)
-  out.INS = ROOM.shot(ROOM.L(out.latch), { dist: 1.55, yaw: -24, pitch: 12, fov: 33, screenY: sy(650) });
+  out.INS = ROOM.shot(ROOM.L(out.latch), { dist: 1.5, yaw: -10, pitch: 2, fov: 33, screenY: sy(640) });
   out.INS.err = 0;
   out.INS.drift = 0.15;
   out.MASTER = fitShot([[out.fEyesFIN, 215, 690], [out.vEyes, 400, 300], [set.anchors.cornerCenter, 615, 560, 0.25]], 44, ROOM.cam('MASTER').pos, ROOM.cam('MASTER').look, { posReg: 0.03 });
@@ -192,8 +194,8 @@ function fearPose(t) {
   // ---- face
   const sobF = FX('sob', { mOpen: 0.35 });
   const frozen = FX('cry', { mOpen: 0.05, mPress: 0.35, mTremble: 0.25, lidU: 0.86, browIn: 1.0, browOut: -0.2, tearL: 0.75, tearR: 0.7 });
-  const turned = FX('scared', { lidU: 1.3, mOpen: 0.13, mWide: 0.1, mTeethL: 0.2, mSmile: -0.25, mTremble: 0.3, pupil: 0.9, wet: 0.55, tearL: 0.3, tearR: 0.55 });
-  const awe = FX([['wonder', 0.55], ['scared', 0.45]], { mOpen: 0.15, wet: 0.6, tearR: 0.55, saccade: 0.1 });
+  const turned = FX('scared', { lidU: 1.3, mOpen: 0.13, mWide: 0.1, mTeethL: 0.2, mSmile: -0.25, mTremble: 0.3, pupil: 0.9, wet: 0.15, tearL: 0.3, tearR: 0.55 });
+  const awe = FX([['wonder', 0.55], ['scared', 0.45]], { mOpen: 0.15, wet: 0.2, tearR: 0.55, saccade: 0.1 });
   let face = mixFace(sobF, frozen, still);
   face = mixFace(face, turned, ramp(t, b3 + 0.06, b3 + 0.45));
   face = mixFace(face, awe, ramp(t, b4 + 0.2, b4 + 1.0));

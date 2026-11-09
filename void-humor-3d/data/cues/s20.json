@@ -1,0 +1,25 @@
+{"sfx": [
+  {"t": "s20b01+1.56", "name": "twinkle", "gain_db": -2, "pan": -0.25},
+  {"t": "s20b01+2.2", "name": "footsteps_soft", "until": "s20b01+4.5", "gain_db": -14, "pan": -0.3},
+  {"t": "s20b02+0.05", "name": "footsteps_soft", "until": "s20b02+1.15", "gain_db": -10, "pan": 0.35},
+  {"t": "s20b02+1.78", "name": "dagger_shing", "gain_db": -2, "pan": 0.35},
+  {"t": "s20b04-0.3", "name": "cloth_rustle", "gain_db": -8, "pan": 0.15},
+  {"t": "s20b04+0.18", "name": "kick_thump", "gain_db": 0, "pan": 0.35},
+  {"t": "s20b04+0.24", "name": "whoosh_fly", "gain_db": -4, "pan": 0.6},
+  {"t": "s20b04+1.03", "name": "whoosh", "gain_db": -9, "pan": 0.7},
+  {"t": "s20b06+0.05", "name": "whoosh_fly", "gain_db": -1, "pan": 0.1},
+  {"t": "s20b06+2.54", "name": "crash_buckets", "gain_db": 0, "pan": 0.35},
+  {"t": "s20b06+2.92", "name": "mop_clatter", "gain_db": -3, "pan": 0.5},
+  {"t": "s20b07+0.14", "name": "bucket_bonk", "gain_db": 0, "pan": 0.3},
+  {"t": "s20b07+0.32", "name": "cartoon_birdies", "until": "s20b08.end+0.4", "gain_db": -5, "pan": 0.3},
+  {"t": "s20b07+0.95", "name": "cloth_rustle", "gain_db": -9, "pan": 0.3},
+  {"t": "s20b07+1.18", "name": "dagger_shing", "gain_db": -6, "pan": 0.1},
+  {"t": "s20b07+1.35", "name": "dust_sparkle", "gain_db": -6, "pan": 0.3},
+  {"t": "s20b07+2.34", "name": "thud_sit", "gain_db": -3, "pan": 0.2}
+],
+ "hits": [
+  {"t": "s20b06+2.54", "kind": "sting"},
+  {"t": "s20b07+0.14", "kind": "pluck"},
+  {"t": "s20b07+2.34", "kind": "pluck"},
+  {"t": "s20b08.end+0.15", "kind": "wahwah", "notes": 1}
+ ]}

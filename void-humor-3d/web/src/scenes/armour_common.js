@@ -133,20 +133,5 @@ export function userSeated(t, { gaze = null } = {}) {
 }
 
 // ------------------------------------------------------------------------------------------------ props
-/** The little galaxy coughed up in s04b09, lying flat by the user's sneaker (stage ≈ (-0.85, 0.02, 0.85)), twinkling. */
-export function galaxyFloor(ps) {
-  const tex = ps.mat.uniforms.map.value;                                  // the particles atlas (galaxy = cell 2)
-  const g = new THREE.PlaneGeometry(1, 1);
-  const uv = g.attributes.uv;
-  for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.5 + uv.getX(i) * 0.25, 0.5 + uv.getY(i) * 0.5);
-  const mat = new THREE.MeshBasicMaterial({ map: tex, color: 0xd8c0ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0.85 });
-  const mesh = new THREE.Mesh(g, mat);
-  mesh.rotation.order = 'YXZ';
-  const p = EDGE.W(-0.85, 0.025, 0.85);
-  mesh.position.set(p[0], p[1], p[2]);
-  mesh.renderOrder = 4;
-  return { mesh, update(t) { mesh.rotation.set(-Math.PI / 2, 0, 0); mesh.rotateZ(t * 0.35); const s = 0.16 * (1 + 0.05 * Math.sin(t * 1.3)); mesh.scale.set(s, s * 0.9, s); mat.opacity = 0.75 + 0.15 * Math.sin(t * 2.1); } };
-}
-
 /** The scene's post look (marks.js lookFor) — kept constant within the scene. */
 export function sceneLook(id, setLook, t) { return lookFor(id, setLook); }

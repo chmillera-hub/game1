@@ -130,9 +130,9 @@ S('"what the actual—": lean forward, flap', 2.5, (lt, s) => {
   const U = s.user;
   const lean = ramp(lt, 0.2, 0.6);
   const flap = Math.sin(Math.PI * clamp((lt - 0.9) / 0.4)) * (lt > 0.9 && lt < 1.3 ? 1 : 0);
-  U.update(s.t, { yaw: 0.25, body: { sit: 1, jut: lean, lean: 0.22 * lean }, face: lt > 1.6 ? 'scrunch' : 'wtf', gaze: 'camera', speech: lt > 0.4 && lt < 1.6 ? talkSample(s.t) : false,
-    armR: { preset: 'defend', flap }, armL: { preset: [['prop', 1 - lean * 0.6], ['knee', lean * 0.6]] } });
-  return { shot: framed([0.05, 0.72, 0.25], { dist: 2.5, yaw: 25, pitch: 5, fov: 32, screenY: 0.4, drift: 0 }) };
+  U.update(s.t, { yaw: 0.25, body: { sit: 1, jut: lean, lean: 0.12 * lean, flinch: lt > 1.6 ? 0.4 * ramp(lt, 1.6, 1.7) : 0 }, face: lt > 1.6 ? 'scrunch' : 'wtf', gaze: 'camera', speech: lt > 0.4 && lt < 1.6 ? talkSample(s.t) : false,
+    armR: { preset: 'defend', flap, threat: [-0.7, 1.9, 2.8] }, armL: { preset: [['prop', 1 - lean * 0.6], ['knee', lean * 0.6]] } });
+  return { shot: framed([0.05, 0.72, 0.25], { dist: 2.5, yaw: 35, pitch: 5, fov: 32, screenY: 0.4, drift: 0 }) };
 });
 S('"hell no": head shake (scene drives head.yaw)', 2.5, (lt, s) => {
   const U = s.user;
@@ -183,14 +183,14 @@ S('stomp away + look back over the shoulder', 3, (lt, s) => {
   const U = s.user, rate = U.walkRate('stomp'), sp = U.walkSpeed('stomp') * rate;
   const z = -0.5 - sp * lt;
   const lb = ramp(lt, 1.0, 1.35) * (1 - ramp(lt, 2.0, 2.35));
-  U.update(s.t, { pos: [0, 0, z], yaw: Math.PI, walk: { amount: 1, phase: lt * rate, style: 'stomp' }, body: { lookBack: lb }, face: lb > 0.3 ? 'guilt' : 'storm', gaze: lb > 0.3 ? V(0.5, 1.4, 3) : null, extra: { phone: 0.5 } });
-  return { shot: framed([0, 0.9, z], { dist: 3.6, yaw: 12, pitch: 4, fov: 32, screenY: 0.45, drift: 0 }) };
+  U.update(s.t, { pos: [0, 0, z], yaw: Math.PI, walk: { amount: 1, phase: lt * rate, style: 'stomp' }, body: { lookBack: lb }, face: lb > 0.3 ? 'guilt' : 'storm', gaze: lb > 0.3 ? V(-1.2, 1.4, z + 3) : null, extra: { phone: 0.5 } });
+  return { shot: framed([0, 0.9, z], { dist: 3.6, yaw: -24, pitch: 4, fov: 32, screenY: 0.45, drift: 0 }) };
 });
 S('thumb-tap Block -> blocked (insert)', 3, (lt, s) => {
   const U = s.user;
   const scr = lt < 1.6 ? 'block' : 'blocked';
   const tap = Math.max(bumpT(lt, 1.2, 0.16), bumpT(lt, 1.45, 0.16));
-  const pose = { face: 'glare', extra: { phone: 1, phoneUp: 1, screen: scr, tap, thumb: 1 }, head: { pitch: 0.1 } };
+  const pose = { face: 'glare', extra: { phoneUp: 1, screen: scr, tap, thumb: ramp(lt, 0.3, 0.9) }, head: { pitch: 0.1 } };
   pose.gaze = U.anchor('phoneScreen'); U.update(s.t, pose);
   const p = U.anchor('phoneScreen'); pose.gaze = p; U.update(s.t, pose);
   const ph = U.anchor('phoneScreen'), hd = U.anchor('eyes');
@@ -213,7 +213,7 @@ S('defend toward the partner (arm target), eyes locked', 2.5, (lt, s) => {
   const B = s.bigAnchors();
   const a = ramp(lt, 0.2, 0.5);
   U.update(s.t, { yaw: 0.6, body: { sit: 1, shrug: 0.7, recoil: 0.2, tremble: 0.5 }, face: 'terror', gaze: B.eye, head: { follow: 0.6 },
-    armR: { preset: 'defend', target: U.anchor('shoulderR').lerp(B.eye, 0.18), reach: a, tremble: 1 }, armL: { preset: 'prop' }, extra: { tears: 0.5 } });
+    armR: { preset: 'defend', threat: B.eye, reach: a, tremble: 1 }, armL: { preset: 'prop' }, extra: { tears: 0.5 } });
   return { shot: framed([0.12, 0.62, 0.15], { dist: 3.3, yaw: 64, pitch: 8, fov: 34, screenY: 0.48, drift: 0 }) };
 });
 S('wipe tear, push glasses up, glare', 3, (lt, s) => {
@@ -235,6 +235,40 @@ S('kneel + crouch (generic)', 2.5, (lt, s) => {
   const U = s.user, k = ramp(lt, 0.2, 1.2) * (1 - ramp(lt, 1.6, 2.2)), c = ramp(lt, 1.6, 2.2);
   U.update(s.t, { body: { kneel: k, crouch: c * 0.8 }, face: 'idle', gaze: 'camera', extra: { phone: 0.6 } });
   return { shot: framed([0, 0.7, 0], { dist: 3.4, yaw: 45, pitch: 4, fov: 32, screenY: 0.45, drift: 0 }) };
+});
+
+// ---------------------------------------------------------------------------------- probes (review fixes) + bench framings
+S('phone hold close-up (cradle grip, orbit)', 3, (lt, s) => {
+  const U = s.user;
+  const pose = { face: 'idle', head: { pitch: 0.18 }, extra: { phone: 0.85 } };
+  U.update(s.t, pose); pose.gaze = U.anchor('phoneScreen'); U.update(s.t, pose);
+  const p = U.anchor('phone');
+  return { shot: framed([p.x, p.y + 0.02, p.z], { dist: 0.75, yaw: -70 + 140 * (lt / 3), pitch: 12, fov: 30, screenY: 0.5, drift: 0 }) };
+});
+S('defend: from the threat POV, then 3/4', 3, (lt, s) => {
+  const U = s.user;
+  s.big.visible = lt >= 1.5;
+  const B = s.bigAnchors();
+  U.update(s.t, { yaw: 0.6, body: { sit: 1, shrug: 0.5, tremble: 0.5 }, face: 'terror', gaze: B.eye, head: { follow: 0.6 },
+    armR: { preset: 'defend', threat: B.eye, tremble: 0.6 }, armL: { preset: 'clutch' }, extra: { tears: 0.5 } });
+  if (lt < 1.5) { const e = U.anchor('eyes'); const c = B.eye.clone().lerp(e, 0.15); return { shot: { pos: c.toArray(), look: e.toArray(), fov: 24, drift: 0 } }; }
+  const e = U.anchor('eyes');
+  return { shot: framed([e.x, e.y - 0.15, e.z], { dist: 1.9, yaw: -20, pitch: 6, fov: 32, screenY: 0.42, drift: 0 }) };
+});
+S('look back (3/4-back camera, close)', 2.5, (lt, s) => {
+  const U = s.user, rate = U.walkRate('stomp');
+  const lb = ramp(lt, 0.3, 0.7) * (1 - ramp(lt, 1.9, 2.3));
+  U.update(s.t, { yaw: Math.PI, walk: { amount: 1, phase: lt * rate, style: 'stomp' }, body: { lookBack: lb }, face: 'guilt', gaze: lb > 0.3 ? 'camera' : null, extra: { phone: 0.5 } });
+  return { shot: framed([0, 1.4, 0], { dist: 1.7, yaw: -32, pitch: 3, fov: 30, screenY: 0.4, drift: 0 }) };
+});
+S('bench: head close-up (USER)', 1, (lt, s) => {
+  s.user.update(s.t, { face: 'terror', gaze: 'camera', extra: { tears: 0.6, phone: 0.85 } });
+  return { shot: framed([0, 1.43, 0], { dist: 0.85, yaw: 15, pitch: 2, fov: 30, screenY: 0.4, drift: 0 }) };
+});
+S('bench: head close-up (set only)', 1, (lt, s) => {
+  s.user.update(s.t, { face: 'terror', gaze: 'camera', extra: { tears: 0.6, phone: 0.85 } });
+  s.user.root.visible = false;
+  return { shot: framed([0, 1.43, 0], { dist: 0.85, yaw: 15, pitch: 2, fov: 30, screenY: 0.4, drift: 0 }) };
 });
 export const DURATION = T0;
 export const SEGMENTS = seg.map((x) => ({ name: x.name, t0: x.t0, t1: x.t1 }));
@@ -285,7 +319,7 @@ export async function update(t, app, s) {
   s.t = t;
   const tt = ((t % DURATION) + DURATION) % DURATION;
   const sg = seg.find((x) => tt >= x.t0 && tt < x.t1) || seg[0];
-  s.big.visible = false; s.dim = 1;
+  s.big.visible = false; s.dim = 1; s.user.root.visible = true;
   // pass 1: run the segment to get the shot (the rig needs the final camera for catchlights / gaze 'camera')
   const r0 = sg.fn(tt - sg.t0, s, app) || {};
   applyShot(app.camera, r0.shot, t);

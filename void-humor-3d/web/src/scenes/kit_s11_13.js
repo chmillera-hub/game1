@@ -50,14 +50,15 @@ export function SV(x, y, z) { const o = EDGE.W(0, 0, 0), p = EDGE.W(x, y, z); re
 // ------------------------------------------------------------------------------------------- leak guard
 // Props live in the shared EDGE scene. So they never draw in another scene's frame, each update() stamps
 // the frame time and the meshes collapse themselves in onBeforeRender when the stamp is stale.
-const STAMP = { t: NaN };
-export function stamp(t) { STAMP.t = t; }
+const STAMPS = {};
+export function stamp(t, id = 'default') { STAMPS[id] = t; }
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
-export function own(obj) {
+/** guard every mesh under obj: it draws only in frames whose update() called stamp(t, id) for this very t */
+export function own(obj, id = 'default') {
   obj.traverse((o) => {
     if (!o.isMesh && !o.isPoints && !o.isSprite) return;
     const prev = o.onBeforeRender;
-    o.onBeforeRender = function (...a) { if (CTX.t !== STAMP.t) this.matrixWorld.copy(ZERO); if (prev) prev.apply(this, a); };
+    o.onBeforeRender = function (...a) { if (CTX.t !== STAMPS[id]) this.matrixWorld.copy(ZERO); if (prev) prev.apply(this, a); };
   });
   return obj;
 }
@@ -70,10 +71,12 @@ export function drawSkyGalaxy(ps, t) {
 }
 /** the little galaxy lying flat by the user's sneaker: the SHARED prop of edgeprops.js (same rest spot / look as
  *  s04-s10; it scopes itself to [s04, s14.end)). Returns its group with userData.update(t). */
+let _lg = null;
 export function makeLittleGalaxy() {
+  if (_lg) return _lg;                                 // ONE instance shared by s11-s13 (no stacked stale copies)
   const lg = mkLittleGalaxy();
   lg.group.userData.update = (t) => lg.update(t);
-  return lg.group;
+  return (_lg = lg.group);
 }
 
 // ------------------------------------------------------------------------------------------- two-pass solve

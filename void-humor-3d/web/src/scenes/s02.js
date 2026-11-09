@@ -309,9 +309,13 @@ function frameLocal(eyes, o) {   // EDGE.shot on a world point (look in world, y
   return EDGE.shot(EDGE.L(eyes), o);
 }
 function wide7Shot(t, st) {
-  const c = st.camW7, u = smooth(clamp((t - T('s02b07')) / 1.6));
-  const dir = V3(...c.look).sub(V3(...c.pos)).normalize();
-  return { pos: V3(...c.pos).addScaledVector(dir, 0.15 * u).toArray(), look: c.look, fov: 44, drift: 0.25 };
+  // starts aimed ~9 deg left on Jesus stepping past the user ("one sec"), then follow-pans with him to the Void
+  const c = st.camW7, t7 = T('s02b07');
+  const u = smooth(clamp((t - t7) / 1.6)), pan = smooth(clamp((t - t7 - 0.55) / 0.6));
+  const P = V3(...c.pos), L = V3(...c.look), dir = L.clone().sub(P).normalize();
+  const right = dir.clone().cross(V3(0, 1, 0)).normalize(), dist = L.distanceTo(P);
+  const look = L.clone().addScaledVector(right, -dist * Math.tan(9 * Math.PI / 180) * (1 - pan)).add(V3(0, -0.25 * (1 - pan), 0));
+  return { pos: P.addScaledVector(dir, 0.15 * u).toArray(), look: look.toArray(), fov: 44, drift: 0.25 };
 }
 
 // ------------------------------------------------------------------------------------------------ VOID acting
@@ -445,7 +449,7 @@ function jesusPose(t, st, J, JW, ue, vEyes, shot) {
     // (reads as a silhouette from behind), head turning to the user with a nod
     const sh = jesus.anchor('shoulder' + side);
     const sideW = V3(onLeft ? 1 : -1, 0, 0).transformDirection(jesus.root.matrixWorld), fwdW = V3(0, 0, 1).transformDirection(jesus.root.matrixWorld);
-    const tgt = sh ? sh.clone().addScaledVector(sideW, 0.42).addScaledVector(fwdW, 0.12).add(V3(0, -0.22, 0)) : uEyes;
+    const tgt = sh ? sh.clone().addScaledVector(sideW, 0.46).addScaledVector(fwdW, 0.16).add(V3(0, -0.1, 0)) : uEyes;
     const gest = sec > 0.01 ? { preset: 'stop', target: tgt.toArray(), reach: sec, palm: [0, -1, 0], fingers: sideW.clone().addScaledVector(fwdW, 0.3).normalize().toArray(), hand: { curl: 0.06, spread: 0.25, cup: 0.12 } } : { preset: 'rest' };
     P.armL = onLeft ? gest : { preset: 'rest' };
     P.armR = onLeft ? { preset: 'rest' } : gest;

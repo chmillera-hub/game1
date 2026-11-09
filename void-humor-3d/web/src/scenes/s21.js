@@ -19,7 +19,8 @@ import { Particles, CELL } from '../core/particles.js';
 import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { ROOM, sy, lookFor } from './marks.js';
-import { loadLines, W, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, pix, marks, times, voidSpot, starAt, drawStar, wreckPose, cornerOpts } from './kit_s20_22.js';
+import { ensureBonusDecals } from './kit_bonus.js';
+import { loadLines, W, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, pix, marks, times, voidSpot, starAt, drawStar, wreckPose, cornerOpts, bookPoint, BOOK_FING } from './kit_s20_22.js';
 
 const ID = 's21';
 
@@ -29,6 +30,7 @@ export default {
     await loadLines();
     const set = await app.set('BACKROOM');
     ROOM.fit(set);
+    ensureBonusDecals(set);   // the magician's grey footprints + dust patch stay until the cosmos takes the floor
     const [vd, fear, mag] = await Promise.all([app.char('VOID'), app.char('FEAR'), app.char('MAGICIAN')]);
     const fx = new Particles({ max: 80, intensity: 1.5 });
     own(ID, fx.mesh);
@@ -70,27 +72,26 @@ export default {
         [L.B5 + 0.3, Fhm], [L.B5 + 1.0, Fwarm, 'inOut']]);
       face.autoBlink = 0;
       const gazeOn = (t < c.shrug - 0.05 || t > L.B5 + 0.6);
-      // arms: the right holds the star until the shrug; both go to 'shrug'; then together -> open book (palms up)
+      // arms: the LEFT fingertip holds the star (from s20) until the shrug releases it; the right rests on the belly;
+      // both open into the shrug (palms up), settle, then come together in front of Fear and open like a book
       const reach = 1 - smooth(clamp((t - (c.shrug - 0.25)) / 0.35));
       const fing = [towardF[0] / hz * 0.35, 1, towardF[2] / hz * 0.35];
-      const front = add(vs.pos, add(rotY([0, 0, 0.9], vs.yaw), [0, 0.98, 0]));   // in front of its belly, above Fear
+      const front = bookPoint(vs);   // in front of Fear's face, a little above it
       const bookL = add(front, rotY([0.17 - 0.12 * openU, 0, 0.06], vs.yaw)), bookR = add(front, rotY([-0.17 + 0.12 * openU, 0, 0.06], vs.yaw));
       const palmUp = rotY([0, 1, 0.15], vs.yaw);
       const tilt = (s0) => add(palmUp, rotY([s0 * 0.9 * (1 - openU), 0, 0], vs.yaw));
-      const armBook = (side) => ({ preset: 'hold', target: side > 0 ? bookL : bookR, reach: bookU, palm: tilt(-side), fingers: rotY([0, 0.15, 1], vs.yaw), hand: { curl: 0.2, cup: 0.5, spread: 0.15, thumb: 0.5 } });
-      let armR, armL;
-      if (bookU > 0.001) { armR = armBook(-1); armL = armBook(1); }
-      else if (reach > 0.001) {
-        armR = { preset: 'point', target: s.pos, tip: true, reach: 1, fingers: fing, palm: [towardF[0] / hz, 0.1, towardF[2] / hz], hand: { point: 1, curl: 0.55, thumb: 0.35 } };
-        // blend toward the shrug as the star is released
-        if (reach < 1) armR = { preset: 'shrug', from: 'rest', mix: Math.min(shrug, 1) * (1 - reach) + 0.0, target: s.pos, reach: reach * reach, hand: { point: reach, curl: 0.2, thumb: 0.6 } };
-        armL = { preset: 'belly', from: 'rest', mix: 1 };
+      const sh = clamp(shrug);
+      let armL, armR;
+      if (bookU > 0.001) {
+        const book = (side, from) => ({ preset: 'hold', from, mix: bookU, target: side > 0 ? bookL : bookR, reach: bookU, palm: tilt(-side), fingers: rotY(BOOK_FING, vs.yaw), hand: { curl: 0.2, cup: 0.5, spread: 0.15, thumb: 0.5 } });
+        armL = book(1, 'rest'); armR = book(-1, 'belly');
+      } else if (reach >= 1) {
+        armL = { preset: 'point', target: s.pos, tip: true, reach: 1, fingers: fing, palm: [towardF[0] / hz, 0.1, towardF[2] / hz], hand: { point: 1, curl: 0.55, thumb: 0.35 } };
+        armR = { preset: 'belly', from: 'rest', mix: 1 };
       } else {
-        armR = { preset: 'shrug', from: 'rest', mix: clamp(shrug) };
-        armL = { preset: 'shrug', from: 'belly', mix: clamp(shrug) };
+        armL = { preset: 'shrug', from: 'rest', mix: sh * (1 - reach), target: s.pos, reach: reach * reach, hand: { point: reach, curl: 0.2, thumb: 0.6 } };
+        armR = { preset: 'shrug', from: 'belly', mix: sh };
       }
-      if (reach >= 1 && bookU <= 0) armL = { preset: 'belly', from: 'rest', mix: 1 };
-      else if (reach < 1 && reach > 0.001 && bookU <= 0) armL = { preset: 'shrug', from: 'belly', mix: clamp(shrug) };
       // the shuffle: three little waddle steps under the hem
       const shuffle = pulse(t, c.shrug - 0.2, c.shrug + 0.6, 0.12, 0.15);
       const hmTilt = pulse(t, L.B4 + 0.05, L.B5 + 0.2, 0.3, 0.4);
@@ -120,7 +121,7 @@ export default {
       const peek = k(tt, [[L.B2 + 0.25, 0], [L.B2 + 0.85, 1, 'inOut'], [c.shrug + 0.1, 1], [c.shrug + 0.55, 0.35, 'inOut'], [L.B4 + 0.6, 0, 'inOut']]);
       const blocked = smooth(clamp((tt - (c.shrug + 0.1)) / 0.5));
       // eyes: the star -> dart toward the noise -> peek past the flank -> up at the Void (blocked) -> up at it -> corner glance -> Void -> palms
-      const palms = add(vs.pos, add(rotY([0, 0, 0.9], vs.yaw), [0, 0.98, 0]));
+      const palms = bookPoint(vs);
       const g = k(tt, [[ID, s.pos], [tw + 0.04, s.pos], [tw + 0.12, mix3(s.pos, corner, 0.5), 'out'], [tw + 0.5, mix3(s.pos, corner, 0.5)],
         [L.B2 + 0.2, mix3(s.pos, corner, 0.35), 'inOut'], [L.B2 + 0.8, peekP, 'inOut'], [L.gulp, peekP], [L.gulp + 0.1, mix3(peekP, ve, 0.4), 'out'], [L.what2, peekP, 'out'],
         [c.shrug + 0.2, peekP], [c.shrug + 0.45, ve, 'inOut'], [L.B4 + 0.7, ve], [L.B4 + 0.85, corner, 'out'], [L.B5 - 0.05, corner], [L.B5 + 0.05, ve, 'out'],
@@ -146,7 +147,7 @@ export default {
         face,
         blinkAt: [tw + 0.02, c.shrug + 0.55, L.oh + 0.12, L.oh + 0.42, L.okay + 0.6],
         armL: { preset: 'clasp', mix: 1 - 0.6 * peek }, armR: { preset: 'clasp', mix: 1 - 0.6 * peek },
-        extra: { tuftPerk: Math.max(0.8 * peek, startle, 0.3 * (1 - smooth(clamp((tt - L.okay) / 0.8)))), startle, glow: 1.25, tremble: 0.12 * (1 - smooth(clamp((tt - L.okay) / 1.0))) },
+        extra: { tuftPerk: Math.max(0.8 * peek, startle, 0.3 * (1 - smooth(clamp((tt - L.okay) / 0.8)))), startle, glow: 1.1, tremble: 0.12 * (1 - smooth(clamp((tt - L.okay) / 1.0))) },
       };
     };
     const fPose = (pass) => (pass ? (tt) => fearPose(Math.max(tt, T(shotStart))) : fearPose(t));
@@ -162,11 +163,13 @@ export default {
     fx.begin();
     drawStar(fx, t, starAt(t), CELL, shot === 0 || shot === 3 ? 1.2 : 1);
     // b06: a glow begins in its palms (a soft core + a few slow sparks)
-    const palms = add(vs.pos, add(rotY([0, 0, 0.9], vs.yaw), [0, 1.05, 0]));
+    const hl = vd.anchor('handL'), hr = vd.anchor('handR');
+    const palms = hl && hr ? add(mix3(A(hl), A(hr), 0.5), [0, 0.06, 0]) : bookPoint(vs);
     const glow = smooth(clamp((t - (L.B6 + 0.45)) / 0.6));
     if (glow > 0) {
-      fx.add(palms, 0.22 + 0.06 * glow, 0xffe9c0, 0.55 * glow, 0, CELL.dot);
-      fx.add(palms, 0.55, 0xb79cff, 0.22 * glow, 0, CELL.dot);
+      fx.add(palms, 0.26 + 0.08 * glow, 0xfff0d0, 0.85 * glow, 0, CELL.dot);
+      fx.add(palms, 0.12, 0xffffff, 0.9 * glow, 0, CELL.dot);
+      fx.add(palms, 0.6, 0xb79cff, 0.3 * glow, 0, CELL.dot);
       fx.stream({ t, seed: 2101, t0: L.B6 + 0.5, t1: L.B6 + 3, rate: 6, life: 1.4, origin: palms, vel: [0, 0.18, 0], spread: [0.06, 0.05, 0.06], size: [0.025, 0.045],
         color: [0xfff1d0, 0xd9c8ff, 0xa9f0ff], alpha: 0.85 * glow, fade: [0.2, 0.5], cell: CELL.star, spin: 1 });
     }
@@ -174,7 +177,8 @@ export default {
 
     if (globalThis.DBG21) {
       const cam = app.camera;
-      console.log('DBG21', t.toFixed(2), 'shot', shot, JSON.stringify({ v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), star: pix(cam, starAt(t).pos), m: pix(cam, mag.anchor('head')) }));
+      const bb = new THREE.Vector3(); set.props.bucketB.getWorldPosition(bb);
+      console.log('DBG21', t.toFixed(2), 'shot', shot, JSON.stringify({ bucket: pix(cam, bb), bw: [bb.x.toFixed(2), bb.z.toFixed(2)], v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), star: pix(cam, starAt(t).pos), m: pix(cam, mag.anchor('head')) }));
     }
     st.look = lookFor(ID, set.look);
   },
@@ -187,11 +191,11 @@ function frameShot(st, t, shot, L, c, M) {
   const fe = A(fear.anchor('eyes'));
   if (shot === 0 || shot === 3) {
     const push = shot === 0 ? smooth(clamp((t - L.B2) / (L.B3 - L.B2))) : smooth(clamp((t - L.B5) / 2.0));
-    return ROOM.shot(ROOM.L(fe), { dist: 1.05 - 0.08 * push, yaw: 62, pitch: -6, fov: 36, screenY: sy(470), drift: 0.05 });
+    return ROOM.shot(ROOM.L(fe), { dist: 1.55 - 0.1 * push, yaw: 52, pitch: -4, fov: 44, screenY: sy(540), drift: 0.05 });
   }
   if (shot === 1 || shot === 4) {
     const vs = voidSpot(t);
-    return ROOM.shot(add(ROOM.L(vs.pos), [-0.67, 1.45, 0.35]), { dist: 3.6, yaw: -40, pitch: 4, fov: 44, screenY: sy(470), drift: 0.12 });
+    return ROOM.shot(add(ROOM.L(vs.pos), [-0.67, 1.35, 0.35]), { dist: 4.9, yaw: -40, pitch: 4, fov: 44, screenY: sy(470), drift: 0.12 });
   }
   return ROOM.cam('MASTER', { drift: 0.1 });
 }

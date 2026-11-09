@@ -37,9 +37,9 @@ function sweep(tube, pts, rad, opts) { tube.curve.needsUpdate = true; return tub
 // ---------------------------------------------------------------------------------------------------------
 // Palette (desaturated grey-blue gloom)
 const C = {
-  face: 0xb3b9c6, socket: 0x666b80, coat: 0x4a5266, lapel: 0x30364a, shirt: 0xc3c7d0, cravat: 0x7f8494,
+  face: 0xb3b9c6, socket: 0x666b80, coat: 0x4a5266, lapel: 0x30364a, shirt: 0xc3c7d0, cravat: 0x5f6476,
   glove: 0xcfd0d0, stripeA: 0x8b909e, hat: 0x353b4b, band: 0x1d2029, shoe: 0x262932, hair: 0x3c4050,
-  velvet: 0x4d3d5c, blade: 0xa9b2c4, tongue: 0x8c7f98, cold: 0x9fb9ea,
+  velvet: 0x4d3d5c, blade: 0xc2cad8, tongue: 0x8c7f98, cold: 0x9fb9ea,
 };
 // Proportions (metres). Root at the feet, facing +Z, +X = the magician's LEFT.
 const HIP_Y = 1.035, HIP_X = 0.078, THIGH = 0.475, SHIN = 0.465, ANKLE_Y = 0.062;
@@ -163,7 +163,7 @@ export const ARM = {
   hips: { sp: 'chest', t: [0.215, 0.0, -0.01], pole: [1, 0.2, -0.4], palm: [-0.45, 0, -1], fing: [-0.4, -0.75, 0.5], hand: { curl: 0.9, thumb: 0.2 } },
   behind: { sp: 'chest', t: [0.06, 0.02, -0.2], pole: [1, -0.2, -0.2], palm: [0.3, 0.2, -1], fing: [-0.8, -0.4, 0.1], hand: { curl: 0.5, thumb: 0.3 } },
   crossed: { sp: 'chest', t: [-0.075, 0.25, 0.17], pole: [1, -0.6, 0.1], palm: [0, -0.4, -1], fing: [-1, 0.2, -0.1], hand: { curl: 0.55, spread: 0.05, thumb: 0.3 } },
-  steeple: { sp: 'chest', t: [0.085, 0.24, 0.27], pole: [1, -0.6, -0.1], palm: [-1, 0.1, 0.15], fing: [-0.45, 0.85, 0.35], hand: { curl: 0.08, spread: 0.32, thumb: 0.45 }, anim: 'steeple' },
+  steeple: { sp: 'chest', t: [0.12, 0.24, 0.27], pole: [1, -0.6, -0.1], palm: [-1, 0.1, 0.15], fing: [-0.3, 0.88, 0.3], hand: { curl: 0.06, spread: 0.2, thumb: 0.45 }, anim: 'steeple' },
   rub: { sp: 'chest', t: [0.05, 0.2, 0.27], pole: [1, -0.6, 0], palm: [-1, 0, 0.1], fing: [-0.2, 0.75, 0.6], hand: { curl: 0.12, spread: 0.08, thumb: 0.3 }, anim: 'rub' },
   creep: { sp: 'chest', t: [0.2, 0.42, 0.3], pole: [1, -0.3, -0.4], palm: [0, -1, 0.1], fing: [0.1, -0.55, 1], hand: { curl: 0.42, spread: 0.45, thumb: 0.3 }, anim: 'wiggle' },
   claw: { sp: 'chest', t: [0.24, 0.42, 0.32], pole: [1, -0.2, -0.4], palm: [0, -0.2, 1], fing: [0.15, 1, 0.1], hand: { curl: 0.55, spread: 0.55, thumb: 0.4 }, anim: 'wiggle' },
@@ -194,7 +194,9 @@ export const GAIT = {
   walk: { rate: 0.8, stride: 0.95, stance: 0.6, lift: 0.085, bob: 0.02, sway: 0.018, twist: 0.12, lean: 0.03, arm: 0.17, heel: 0, crouch: 0, run: 0 },
   sneak: { rate: 0.55, stride: 0.72, stance: 0.5, lift: 0.2, bob: 0.04, sway: 0.03, twist: 0.08, lean: 0.12, arm: 0, heel: 0.6, crouch: 0.28, run: 0, knee: 1 },
   tiptoe: { rate: 0.9, stride: 0.55, stance: 0.55, lift: 0.1, bob: 0.03, sway: 0.02, twist: 0.06, lean: 0.04, arm: 0.05, heel: 0.75, crouch: 0.05, run: 0 },
-  run: { rate: 1.45, stride: 2.0, stance: 0.38, lift: 0.22, bob: 0.05, sway: 0.012, twist: 0.2, lean: 0.25, arm: 0.42, heel: 0, crouch: 0.05, run: 1 },
+  run: { rate: 1.45, stride: 2.0, stance: 0.38, lift: 0.22, bob: 0.05, sway: 0.012, twist: 0.2, lean: 0.1, arm: 0.42, heel: 0, crouch: 0.05, run: 1 },
+  stomp: { rate: 0.85, stride: 0.8, stance: 0.6, lift: 0.13, bob: 0.04, sway: 0.025, twist: 0.1, lean: 0.08, arm: 0.22, heel: 0, crouch: 0.06, run: 0 },
+  waddle: { rate: 1.0, stride: 0.45, stance: 0.6, lift: 0.06, bob: 0.02, sway: 0.06, twist: 0.05, lean: 0.0, arm: 0.1, heel: 0, crouch: 0.03, run: 0 },
   limp: { rate: 0.62, stride: 0.5, stance: 0.62, lift: 0.07, bob: 0.018, sway: 0.03, twist: 0.08, lean: 0.06, arm: 0.06, heel: 0, crouch: 0.04, run: 0, limp: 1 },
 };
 function footCycle(u, S, bad) {
@@ -231,9 +233,30 @@ function gloom(color, o = {}) {
   const m = o.physical ? new THREE.MeshPhysicalMaterial({ ...base,
     sheen: o.sheen ?? 0.45, sheenColor: new THREE.Color(o.sheenColor ?? 0xa9b6d6), sheenRoughness: o.sheenRoughness ?? 0.5,
     clearcoat: o.clearcoat ?? 0, clearcoatRoughness: o.ccRough ?? 0.35 }) : new THREE.MeshStandardMaterial(base);
-  return enhance(m, { rim: o.rim ?? 0.55, rimColor: o.rimColor ?? C.cold, rimPower: o.rimPower ?? 2.6, glow: o.glow ?? 0.05,
-    fizz: o.fizz ?? 0, fizzColor: o.fizzColor ?? 0xb5c3e6, fizzScale: o.fizzScale ?? 9, fizzSpeed: 0.18,
-    wrap: o.wrap ?? 0.25, wrapColor: o.wrapColor ?? 0x7f92c8, jaw: o.jaw });
+  enhance(m, { rim: o.rim ?? 0.55, rimColor: o.rimColor ?? C.cold, rimPower: o.rimPower ?? 2.6, glow: o.glow ?? 0.05,
+    fizz: 0, wrap: o.wrap ?? 0.25, wrapColor: o.wrapColor ?? 0x7f92c8, jaw: o.jaw });
+  return o.fizz ? fizzLite(m, o.fizz, o.fizzColor ?? 0xb5c3e6, o.fizzScale ?? 9) : m;
+}
+// Cheap effervescent shimmer (the BIBLE's 'made of gloom' fizz): ONE octave of core's value noise (vh_noise, already in
+// the enhance() shader), slowly drifting -> soft low-contrast mottling + sparse soft glints, stronger toward the rim.
+// A third of core's 3-octave fbm fizz (which A/B'd at ~15% of a close-up frame on SwiftShader). (A sine-product
+// version was cheaper still but read as a regular polka-dot lattice on the coat.)
+function fizzLite(mat, amt, color, scale) {
+  const prev = mat.onBeforeCompile, key = mat.customProgramCacheKey();
+  const u = { uFzA: { value: amt }, uFzC: { value: new THREE.Color(color) }, uFzS: { value: scale } };
+  mat.userData.uniforms.uFizzLite = u.uFzA;
+  mat.onBeforeCompile = (sh) => {
+    prev(sh);
+    Object.assign(sh.uniforms, u);
+    const anchor = 'totalEmissiveRadiance += uWrapColor * uWrap * pow(fres, 1.5) * 0.35;';
+    if (!sh.fragmentShader.includes(anchor)) return;           // core changed: just no fizz
+    sh.fragmentShader = sh.fragmentShader.replace('uniform vec3 uRimColor', 'uniform float uFzA, uFzS; uniform vec3 uFzC;\n        uniform vec3 uRimColor')
+      .replace(anchor, `${anchor}
+          { float n = vh_noise(vObjPos * uFzS + vec3(0.0, uTime * 0.22, uTime * 0.13));
+            totalEmissiveRadiance += uFzC * uFzA * (0.4 * n + 0.8 * smoothstep(0.62, 0.92, n)) * (0.5 + 0.5 * fres); }`);
+  };
+  mat.customProgramCacheKey = () => key + 'FZL';
+  return mat;
 }
 // vertical pinstripes: per-vertex aRing = (cos, sin) of the around-angle (seam-free), anti-aliased with fwidth
 function striped(mat, n = 8, dark = 0.52) {
@@ -448,7 +471,7 @@ class GloveHand {
       let c = perFinger ? perFinger[i] : curl;
       c = lerp(c, i === 0 ? 0 : 1, clamp(point));
       let b0 = c * 1.42 + cup * 0.22 - splay * 0.32, b1 = c * 1.6 + cup * 0.3 - splay * 0.1, b2 = c * 1.02 + cup * 0.2 - splay * 0.06;
-      if (pinch > 0) { const P = [[0.62, 0.55, 0.32], [0.72, 0.62, 0.3], [1.3, 1.5, 0.9], [1.35, 1.5, 0.9]][i]; b0 = lerp(b0, P[0], pinch); b1 = lerp(b1, P[1], pinch); b2 = lerp(b2, P[2], pinch); }
+      if (pinch > 0) { const P = [[1.0, 0.9, 0.4], [1.12, 1.0, 0.45], [1.3, 1.5, 0.9], [1.35, 1.5, 0.9]][i]; b0 = lerp(b0, P[0], pinch); b1 = lerp(b1, P[1], pinch); b2 = lerp(b2, P[2], pinch); }
       const G = GL.FIST[i];
       b0 = lerp(b0, G[0], grip); b1 = lerp(b1, G[1], grip); b2 = lerp(b2, G[2], grip);
       const sp = -th * f.lat * 0.15 * (spread + 0.7 * splay) * (1 - grip) * (1 - 0.6 * pinch);
@@ -459,7 +482,9 @@ class GloveHand {
     let a = lerp(0.3, 1.12, tOut) + 0.15 * splay, b = 0.22 + 0.3 * cup + 0.25 * curl * (1 - tOut);
     let f1 = 0.12 + 0.45 * curl * (1 - tOut) - 0.2 * splay, f2 = 0.1 + 0.5 * curl * (1 - tOut) - 0.25 * splay;
     a = lerp(a, -0.06, grip); b = lerp(b, 0.8, grip); f1 = lerp(f1, 0.3, grip); f2 = lerp(f2, 0.6, grip);
-    a = lerp(a, 0.5, pinch); b = lerp(b, 0.9, pinch); f1 = lerp(f1, 0.3, pinch); f2 = lerp(f2, 0.25, pinch);
+    a = lerp(a, 0.5, pinch); b = lerp(b, 0.68, pinch); f1 = lerp(f1, 0.3, pinch); f2 = lerp(f2, 0.3, pinch);
+    const tk = clamp(point) * 0.85;                                       // pointing: thumb tucks over the curled fingers
+    a = lerp(a, 0.2, tk); b = lerp(b, 0.85, tk); f1 = lerp(f1, 0.45, tk); f2 = lerp(f2, 0.5, tk);
     thumbQuat(th, a, b, this.thumb.b[0].quaternion);
     this.thumb.b[1].rotation.set(f1, 0, 0); this.thumb.b[2].rotation.set(f2, 0, 0);
     return this;
@@ -480,7 +505,8 @@ const CHEST = [
   [0.405, 0.152, 0.072, 0.098, -0.022], [0.44, 0.1, 0.055, 0.066, -0.016], [0.462, 0.03, 0.03, 0.03, -0.01],
 ];
 // hips/trousers profile (pelvis-local): [h, rx, rzF, rzB]
-const HIPS = [[-0.14, 0.04, 0.04, 0.04], [-0.11, 0.09, 0.072, 0.075], [-0.05, 0.106, 0.08, 0.086], [0.02, 0.108, 0.082, 0.088], [0.1, 0.1, 0.08, 0.084], [0.17, 0.09, 0.075, 0.078]];
+// (wide enough at the seat to swallow the tops of the leg tubes, narrowing into the crotch between them)
+const HIPS = [[-0.155, 0.03, 0.03, 0.034], [-0.125, 0.075, 0.06, 0.07], [-0.075, 0.122, 0.077, 0.088], [0.0, 0.127, 0.082, 0.092], [0.08, 0.113, 0.081, 0.086], [0.17, 0.097, 0.075, 0.079]];
 
 // ---------------------------------------------------------------------------------------------------------
 class Magician extends Character {
@@ -505,23 +531,26 @@ class Magician extends Character {
 
   // ------------------------------------------------------------------ materials
   _mats() {
-    this.faceMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35, jaw: JAW });
-    this.skinMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35 });
-    this.lidMat = gloom(C.socket, { roughness: 0.6, rim: 0.3, glow: 0.04, fizz: 0 });
-    this.coatMat = gloom(C.coat, { rim: 0.6, wrap: 0.35 });
-    this.coat2Mat = gloom(C.coat, { rim: 0.5, wrap: 0.35, side: THREE.DoubleSide });
-    this.lapelMat = gloom(C.lapel, { roughness: 0.4, sheen: 0.9, sheenColor: 0xb0bde0, rim: 0.45 });
-    this.shirtMat = gloom(C.shirt, { roughness: 0.75, rim: 0.4, glow: 0.06 });
-    this.cravatMat = gloom(C.cravat, { roughness: 0.5, sheen: 0.8, sheenColor: 0xd0d6ee, rim: 0.4 });
-    this.cuffMat = gloom(C.glove, { roughness: 0.65, rim: 0.4, glow: 0.07, side: THREE.DoubleSide });
-    this.gloveMat = gloom(C.glove, { roughness: 0.65, sheen: 0.4, sheenColor: 0xffffff, rim: 0.45, glow: 0.07 });
-    this.trouserMat = striped(gloom(C.stripeA, { roughness: 0.85, rim: 0.45 }), 8, 0.5);
-    this.hatMat = gloom(C.hat, { roughness: 0.7, sheen: 0.7, sheenColor: 0x8d99bb, rim: 0.6 });
-    this.bandMat = gloom(C.band, { roughness: 0.45, sheen: 0.9, sheenColor: 0x7f8aa8, rim: 0.3 });
-    this.shoeMat = gloom(C.shoe, { roughness: 0.3,  clearcoat: 0.8, ccRough: 0.25, sheen: 0.2, rim: 0.5 });
-    this.hairMat = gloom(C.hair, { roughness: 0.45, sheen: 0.8, sheenColor: 0x9aa6c8, rim: 0.4 });
+    // MeshStandard everywhere (physical only on the velvet pouch + wet tongue, where sheen / clearcoat actually show).
+    // Gloom look: cold fresnel rim on every silhouette + a faint, slow, low-contrast fizz on the coat and skin.
+    const FZ = { fizz: 0.04, fizzColor: 0xb9c6ea, fizzScale: 9 };
+    this.faceMat = gloom(C.face, { roughness: 0.52, rim: 0.85, glow: 0.07, wrap: 0.38, jaw: JAW, ...FZ });
+    this.skinMat = gloom(C.face, { roughness: 0.52, rim: 0.85, glow: 0.07, wrap: 0.38, ...FZ });
+    this.lidMat = gloom(C.socket, { roughness: 0.6, rim: 0.35, glow: 0.04 });
+    this.coatMat = gloom(C.coat, { rim: 0.78, wrap: 0.35, ...FZ, fizz: 0.045 });
+    this.coat2Mat = gloom(C.coat, { rim: 0.65, wrap: 0.35, side: THREE.DoubleSide, ...FZ, fizz: 0.045 });
+    this.lapelMat = gloom(C.lapel, { roughness: 0.3, metalness: 0.15, rim: 0.55 });            // satin-ish lapels / waistcoat
+    this.shirtMat = gloom(C.shirt, { roughness: 0.75, rim: 0.45, glow: 0.06 });
+    this.cravatMat = gloom(C.cravat, { roughness: 0.42, rim: 0.45 });
+    this.gloveMat = gloom(C.glove, { roughness: 0.6, rim: 0.5, glow: 0.07 });
+    this.trouserMat = striped(gloom(C.stripeA, { roughness: 0.85, rim: 0.55 }), 8, 0.5);
+    this.hatMat = gloom(C.hat, { roughness: 0.62, rim: 0.7 });
+    this.bandMat = gloom(C.band, { roughness: 0.32, metalness: 0.2, rim: 0.35 });
+    this.shoeMat = gloom(C.shoe, { roughness: 0.18, metalness: 0.25, rim: 0.6 });                 // glossy patent shoes
+    this.hairMat = gloom(C.hair, { roughness: 0.38, rim: 0.45 });
+    this.mothMat = gloom(0x9c9688, { roughness: 0.9, rim: 0.5, glow: 0.05, side: THREE.DoubleSide });
     this.velvetMat = gloom(C.velvet, { physical: true, roughness: 0.9, sheen: 1, sheenColor: 0xa992cc, sheenRoughness: 0.35, rim: 0.55, rimColor: 0xb7a6e6 });
-    this.bladeMat = gloom(C.blade, { roughness: 0.24, metalness: 0.6, rim: 0.9, rimColor: 0xd8e6ff, glow: 0.1, fizz: 0 }); this.bladeMat.vertexColors = true;
+    this.bladeMat = gloom(C.blade, { roughness: 0.3, metalness: 0.2, rim: 1.1, rimColor: 0xd8e6ff, glow: 0.36, fizz: 0 }); this.bladeMat.vertexColors = true;
     this.darkMat = gloom(0x23252e, { roughness: 0.5, rim: 0.3, fizz: 0 });
     this.tongueMat = new THREE.MeshPhysicalMaterial({ color: C.tongue, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.12 });
     enhance(this.tongueMat, { rim: 0.45, rimColor: 0xc9c0e0, glow: 0.06, wrap: 0.35, wrapColor: 0x9a86aa });
@@ -563,22 +592,36 @@ class Magician extends Character {
     }, true);
     const hips = new THREE.Mesh(hipGeo, this.trouserMat); hips.castShadow = true;
     this.pelvisG.add(hips);
-    // shirt front, lapels, buttons, cravat (an ascot: puffed knot + one droopy fold + a pale pin) — merged per material
+    // dark waistcoat band over the waist seam: hides where coat, hips and leg tubes meet; pointed at the front
+    const vestGeo = deformSphere(36, 16, (a, s2, out) => {
+      const y = lerp(-0.075, 0.15, s2), ca = Math.cos(a);
+      const ybot = -0.004 - 0.042 * Math.pow(Math.max(0, ca), 6), ytop = 0.13;
+      const inn = smoothstep(ybot - 0.006, ybot + 0.004, y) * (1 - smoothstep(ytop, ytop + 0.02, y));
+      const rx = pw(HIPS, y, 1) + lerp(-0.014, 0.007, inn), rzF = pw(HIPS, y, 2) + lerp(-0.014, 0.009, inn), rzB = pw(HIPS, y, 3) + lerp(-0.014, 0.007, inn);
+      const sx = se(Math.sin(a), 2.3), cz = se(ca, 2.3);
+      out.set(rx * sx, y, (cz >= 0 ? rzF : rzB) * cz);
+    });
+    this.pelvisG.add(new THREE.Mesh(vestGeo, this.lapelMat));
+    // shirt front, lapels, buttons, wilted bow tie — merged per material
     const gs = (p, sc, r = [0, 0, 0], seg = [20, 14]) => {
       const g = new THREE.SphereGeometry(1, seg[0], seg[1]); g.deleteAttribute('uv');
       return g.applyMatrix4(new THREE.Matrix4().compose(V(...p), new THREE.Quaternion().setFromEuler(new THREE.Euler(...r)), V(...sc)));
     };
-    const fold = deformSphere(18, 14, (a, s2, out) => {        // teardrop fold, wider and flatter at the bottom
-      const r = Math.sin(Math.PI * s2) * (0.55 + 0.45 * (1 - s2));
-      out.set(Math.sin(a) * r * 0.026, lerp(-0.05, 0.012, s2), Math.cos(a) * r * 0.012 + 0.004 * Math.sin(Math.PI * s2));
-    });
-    fold.deleteAttribute('normal'); fold.translate(0, 0.392, 0.088); fold.rotateX(0.0);
+    // a sad, WILTED bow tie: small knot, two floppy lobes drooping toward the floor
+    const lobe = (k) => {
+      const g = deformSphere(16, 12, (a, s2, out) => {
+        const r = 0.021 * Math.pow(Math.sin(Math.PI * Math.pow(s2, 0.85)), 0.4) * (0.42 + 0.58 * s2);   // pinched at the knot, fat blunt end
+        const along = s2 * 0.046, dr = 0.55 + 0.3 * s2;                    // droops more toward the tip
+        const ca = Math.cos(a) * r;   // cross-section spans the shirt plane perpendicular to the lobe's axis
+        out.set(k * along * Math.cos(dr) + Math.sin(dr) * ca, -along * Math.sin(dr) + k * Math.cos(dr) * ca, Math.sin(a) * r * 0.42);
+      });
+      g.deleteAttribute('normal'); g.translate(0, 0.392, 0.094); g.computeVertexNormals(); return g;
+    };
     const addM = (geos, mat) => { const m = new THREE.Mesh(mergeGeometries(geos.map((g) => (g.index ? g : g))), mat); this.chestG.add(m); return m; };
-    for (const g of [fold]) g.computeVertexNormals();
-    addM([gs([0, 0.3, 0.068], [0.056, 0.12, 0.026]), gs([0.0, 0.352, 0.104], [0.0058, 0.0058, 0.0058], [0, 0, 0], [8, 6])].map((g) => { g.computeVertexNormals(); return g; }), this.shirtMat);
+    addM([gs([0, 0.3, 0.068], [0.056, 0.12, 0.026])], this.shirtMat);
     addM([1, -1].map((k) => gs([k * 0.064, 0.27, 0.074], [0.03, 0.15, 0.013], [0.12, k * 0.5, -k * 0.32])), this.lapelMat);
     addM([1, -1].map((k) => gs([k * 0.026, 0.035, 0.092], [0.009, 0.009, 0.006], [0, 0, 0], [10, 8])), this.darkMat);
-    addM([gs([0, 0.398, 0.086], [0.024, 0.019, 0.017]), fold], this.cravatMat);
+    addM([gs([0, 0.391, 0.095], [0.011, 0.012, 0.009]), lobe(1), lobe(-1)], this.cravatMat);
     // high collar: a flared, open-fronted lathe, taller at the back
     const prof = [[0.064, 0], [0.07, 0.05], [0.088, 0.12], [0.112, 0.175], [0.118, 0.182]].map(([r, y]) => new THREE.Vector2(r, y));
     const cg = new THREE.LatheGeometry(prof, 36, 0.95, TAU - 1.9);
@@ -616,15 +659,17 @@ class Magician extends Character {
     sweep(nose, [SP(0, EYE_V + 0.01, -0.006), SP(0, -0.02, 0.008), SP(0, -0.09, 0.024), SP(0, -0.135, 0.046), SP(0, -0.16, 0.06), SP(0, -0.19, 0.058)],
       [0.0075, 0.0098, 0.0128, 0.0148, 0.0108, 0.0055], { up: V(1, 0, 0), flatten: 0.5 });
     this.headG.add(nose.mesh);
-    // ears: long, flat, a bit pointy at the back
-    for (const s of [1, -1]) {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), this.skinMat);
-      const p = SP(s * 1.5, -0.02, -0.004);
-      e.position.copy(p); e.scale.set(0.007, 0.034, 0.019); e.rotation.set(-0.3, s * -0.45, s * -0.12);
-      this.headG.add(e);
-      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.008, 0.026, 8), this.skinMat);
-      tip.position.set(0, 0.95, -0.25); tip.scale.set(1 / 0.007 * 0.004, 1 / 0.034, 1 / 0.019); tip.rotation.x = -0.45; e.add(tip);
+    // ears: long, flat, a bit pointy at the back (both ears + tips merged into one mesh)
+    const earG = [];
+    for (const k of [1, -1]) {
+      const p = SP(k * 1.5, -0.02, -0.004);
+      const em = new THREE.Matrix4().compose(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.3, k * -0.45, k * -0.12)), V(0.007, 0.034, 0.019));
+      const e = new THREE.SphereGeometry(1, 16, 12); e.deleteAttribute('uv'); e.applyMatrix4(em); earG.push(e);
+      const tip = new THREE.ConeGeometry(0.008, 0.026, 8); tip.deleteAttribute('uv');
+      tip.applyMatrix4(new THREE.Matrix4().compose(V(0, 0.95, -0.25), new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.45, 0, 0)), V(1 / 0.007 * 0.004, 1 / 0.034, 1 / 0.019)).premultiply(em));
+      earG.push(tip.toNonIndexed());
     }
+    this.headG.add(new THREE.Mesh(mergeGeometries(earG.map((g) => (g.index ? g.toNonIndexed() : g))), this.skinMat));
     // slicked horseshoe of hair around the back/sides (the top is bald: see the comb-over strands)
     const NU = 40, NV = 9, hp = [], hi = [];
     for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
@@ -701,6 +746,13 @@ class Magician extends Character {
       // cheek hollow under the cheekbone
       soft(U(s * 0.76), Vv(-0.38), U(0.2), Vv(-0.2) - Vv(-0.4), s * 0.3, '46,50,80', 0.38);
     }
+    // tired eye-bags: a soft crease arcing under each lower lid (the 'depression' in the magician)
+    g.lineCap = 'round';
+    for (const k of [-1, 1]) {
+      const cx = U(k * EYE_U), cy = Vv(EYE_V - 0.2), rx = U(0.17);
+      g.strokeStyle = 'rgba(52,54,84,0.42)'; g.lineWidth = HW0 * 0.045;
+      g.beginPath(); g.moveTo(cx - rx, cy + HW0 * 0.12); g.quadraticCurveTo(cx + k * rx * 0.15, cy - HW0 * 0.16, cx + rx * 0.95, cy + HW0 * 0.2); g.stroke();
+    }
     // soft shadow under the lower lip + chin
     soft(m.shift, m.bot - HW0 * 0.38, m.w * 0.55, HW0 * 0.22, 0, '44,42,70', 0.3);
     // pencil moustache: a straight, near-horizontal pencil line just above the upper lip, split around the nose
@@ -746,7 +798,6 @@ class Magician extends Character {
     }
     const crown = mergeVertices(cg); crown.computeVertexNormals();
     const hm = new THREE.Group(); this.hatG.add(hm); this.hatMesh = hm;
-    const cm = new THREE.Mesh(crown, this.hatMat); cm.castShadow = true; hm.add(cm);
     // band
     const bg = new THREE.CylinderGeometry(0.0855, 0.0875, 0.036, 44, 1, true);
     const band = new THREE.Mesh(bg, this.bandMat); band.position.y = 0.03; band.scale.set(1.012, 1, 1.012); hm.add(band);
@@ -761,11 +812,23 @@ class Magician extends Character {
       BP.setXYZ(i, x, y + 0.03 * Math.pow(ax, 3) - 0.008 * Math.pow(Math.abs(z) / 0.135, 2) * (1 - ax), z);
     }
     const brim = mergeVertices(brg); brim.computeVertexNormals();
-    hm.add(new THREE.Mesh(brim, this.hatMat));
-    // a grey playing card tucked in the band (plain, one dark diamond pip)
-    const card = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.048, 0.0016), this.shirtMat);
-    card.position.set(-0.07, 0.052, 0.055); card.rotation.set(-0.15, -0.88, 0.32); hm.add(card);
-    const pip = new THREE.Mesh(new THREE.BoxGeometry(0.009, 0.009, 0.0018), this.darkMat); pip.rotation.z = Math.PI / 4; card.add(pip);
+    const cm = new THREE.Mesh(mergeGeometries([crown, brim]), this.hatMat); cm.castShadow = true; hm.add(cm);
+    // a dead grey moth pinned to the band (original motif): furry body + drooping forewings/hindwings, one mesh
+    const mothParts = [];
+    const wing = (len, wid, droop) => {
+      const sh = new THREE.Shape(); sh.moveTo(0, 0);
+      sh.bezierCurveTo(len * 0.3, wid * 0.9, len * 0.85, wid * 0.7, len, wid * 0.15);
+      sh.bezierCurveTo(len * 0.9, -wid * 0.35, len * 0.4, -wid * 0.4, 0, 0);
+      const g = new THREE.ShapeGeometry(sh, 6); g.deleteAttribute('uv'); g.rotateZ(-droop); return g;
+    };
+    for (const k of [1, -1]) {
+      const f = wing(0.034, 0.018, 0.35); f.rotateY(k > 0 ? 0 : Math.PI); f.rotateZ(k * 0.0); mothParts.push(f);
+      const h = wing(0.022, 0.014, 0.95); h.rotateY(k > 0 ? 0 : Math.PI); h.translate(0, -0.004, -0.0005); mothParts.push(h);
+    }
+    const mb = new THREE.SphereGeometry(1, 8, 6); mb.deleteAttribute('uv'); mb.scale(0.0045, 0.013, 0.0045); mb.translate(0, -0.003, 0.002); mothParts.push(mb.toNonIndexed());
+    for (const k of [1, -1]) { const an = new THREE.CylinderGeometry(0.0006, 0.0006, 0.014, 3); an.deleteAttribute('uv'); an.rotateZ(k * 0.5); an.translate(k * 0.004, 0.015, 0.002); mothParts.push(an.toNonIndexed()); }
+    const moth = new THREE.Mesh(mergeGeometries(mothParts.map((g) => { if (!g.attributes.normal) g.computeVertexNormals(); return g.index ? g.toNonIndexed() : g; })), this.mothMat);
+    moth.position.set(-0.062, 0.036, 0.064); moth.rotation.set(-0.1, -0.75, 0.25); hm.add(moth);
     this.hatRest = new THREE.Matrix4().compose(V(0.004, 0.096, -0.012), qE(-0.2, 0.0, 0.11, 'XYZ'), V(1, 1, 1));
   }
 
@@ -831,7 +894,7 @@ class Magician extends Character {
     for (let i = 0; i <= N; i++) {
       const u = i / N, x = X0 + u * L, yc = wave(u), w = half(u), tz = thick(u);
       // 4 cross-section verts: top edge, front ridge, bottom edge, back ridge
-      for (const [y, z, c] of [[yc + w, 0, 1.25], [yc, tz, 0.42], [yc - w, 0, 1.25], [yc, -tz, 0.42]]) { bp.push(x, y, z); bc.push(c, c, c * 1.04); }
+      for (const [y, z, c] of [[yc + w, 0, 1.3], [yc, tz, 0.34], [yc - w, 0, 1.3], [yc, -tz, 0.34]]) { bp.push(x, y, z); bc.push(c, c, c * 1.04); }
     }
     for (let i = 0; i < N; i++) for (let k = 0; k < 4; k++) {
       const a = i * 4 + k, b = i * 4 + (k + 1) % 4, c = a + 4, d = b + 4; bi.push(a, b, c, b, d, c);
@@ -862,7 +925,15 @@ class Magician extends Character {
       out.set(Math.sin(a) * r * wob, y, Math.cos(a) * r * wob);
     }), this.velvetMat);
     pg.add(body);
-    const neckR = new THREE.Mesh(new THREE.TorusGeometry(0.015, 0.0035, 6, 18), this.cravatMat); neckR.rotation.x = Math.PI / 2; neckR.position.y = -0.012; pg.add(neckR);
+    const tieG = [];                          // neck tie ring + drawstring ends + knots: one merged mesh
+    const nr = new THREE.TorusGeometry(0.015, 0.0035, 6, 18); nr.deleteAttribute('uv'); nr.rotateX(Math.PI / 2); nr.translate(0, -0.012, 0); tieG.push(nr);
+    for (const k of [1, -1]) {
+      const st = new SweepTube({ material: this.cravatMat, segments: 6, radial: 5, capRings: 1 });
+      sweep(st, [V(k * 0.014, -0.012, 0.004), V(k * 0.026, -0.03, 0.012), V(k * 0.022, -0.055, 0.016)], 0.0022);
+      tieG.push(st.geo.clone());
+      const kn = new THREE.SphereGeometry(0.0045, 8, 6); kn.deleteAttribute('uv'); kn.translate(k * 0.022, -0.057, 0.016); tieG.push(kn);
+    }
+    pg.add(new THREE.Mesh(mergeGeometries(tieG.map((g) => (g.index ? g.toNonIndexed() : g))), this.cravatMat));
     this.frill = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.014, 0.03, 18, 1, true), this.velvetMat);
     this.frill.material = this.velvetMat; this.frill.position.y = 0.004; pg.add(this.frill);
     const fp = this.frill.geometry.attributes.position;
@@ -871,12 +942,6 @@ class Magician extends Character {
     this.velvetMat.side = THREE.DoubleSide;
     this.pouchHole = new THREE.Mesh(new THREE.CircleGeometry(0.026, 18), new THREE.MeshBasicMaterial({ color: 0x0c0a12 }));
     this.pouchHole.rotation.x = -Math.PI / 2; this.pouchHole.position.y = 0.012; pg.add(this.pouchHole);
-    for (const s of [1, -1]) {   // drawstring ends
-      const st = new SweepTube({ material: this.cravatMat, segments: 6, radial: 5, capRings: 1 });
-      sweep(st, [V(s * 0.014, -0.012, 0.004), V(s * 0.026, -0.03, 0.012), V(s * 0.022, -0.055, 0.016)], 0.0022);
-      pg.add(st.mesh);
-      const kn = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 8, 6), this.cravatMat); kn.position.set(s * 0.022, -0.057, 0.016); pg.add(kn);
-    }
     this.pouchMouth = new THREE.Object3D(); this.pouchMouth.position.set(0, 0.02, 0); pg.add(this.pouchMouth);
     this.pouch = pg; this.root.add(pg);
   }
@@ -989,7 +1054,7 @@ class Magician extends Character {
     }
     pel.y += (B.bounce ?? 0) * wS;
     if (snick > 0) pel.y += 0.006 * snick * Math.abs(gp);
-    if (peek) { pel.x += 0.05 * peek; pelRoll -= 0.05 * peek; }
+    if (peek) { pel.x += 0.12 * peek; pelRoll -= 0.06 * peek; }
 
     // ---- kicked flight (K) & crashed (C) configurations
     const fl = (k, f, a) => a * Math.sin(t * TAU * f + k);
@@ -1005,10 +1070,10 @@ class Magician extends Character {
     this.pelvisG.position.set(0, 0, 0);
     this.pelvisG.rotation.set(pelPitch * wS + 0.45 * wK + 0.1 * wC, pelYaw * wS, pelRoll * wS);
     // chest
-    const stoop = STOOP + hunch * 0.35 + slump * 0.25;
+    const stoop = STOOP + hunch * 0.35 + slump * 0.25 - amt * (ST.run || 0) * 0.24;   // running straightens the stoop a little
     const chestPitch = (stoop + lean + (B.lean ?? 0) - recoil * 0.3 + br * 0.014 + 0.01 * fbm1(t * 0.23, 12) * idle) * wS
       + (-0.4 + 0.06 * fl(4, 2.2, flail)) * wK + (0.3 + 0.05 * daze) * wC;
-    const chestTilt = (-(B.tilt ?? 0) + chestRoll - 0.16 * peek + 0.015 * fbm1(t * 0.25, 14) * idle) * wS + 0.1 * fl(5, 1.7, flail) * wK + 0.12 * wC;
+    const chestTilt = (-(B.tilt ?? 0) + chestRoll - 0.38 * peek + 0.015 * fbm1(t * 0.25, 14) * idle) * wS + 0.1 * fl(5, 1.7, flail) * wK + 0.12 * wC;
     this.chestG.position.set(0, WAIST - slump * 0.02 * wS, 0);
     this.chestG.rotation.set(chestPitch, (chestYaw + (B.twist ?? 0) + 0.025 * fbm1(t * 0.19, 13) * idle) * wS, chestTilt);
     this.bodyG.updateMatrixWorld(true);
@@ -1044,8 +1109,9 @@ class Magician extends Character {
     }
     const qHead = qBase.clone().multiply(qE(hp, hy, -hr));
     const nd = V(0, Math.cos(NECK_TILT + 0.35 * clamp(hp, -0.5, 0.8)), Math.sin(NECK_TILT + 0.35 * clamp(hp, -0.5, 0.8))).applyQuaternion(qChest);
-    const neckLen = NECK_LEN * (1 + 0.25 * wK + 0.1 * peek * peek) - shrug * 0.03;
+    const neckLen = NECK_LEN * (1 + 0.25 * wK + 0.3 * Math.abs(peek)) - shrug * 0.03;
     const neckTop = neckBase.clone().addScaledVector(nd, neckLen);
+    if (peek) neckTop.addScaledVector(V(1, 0, 0).transformDirection(this.Mb), 0.11 * peek * wS);   // neck slides sideways round the edge
     const headPos = neckTop.clone().add(V(0, 0.098, 0.03).multiplyScalar(HEAD_S).applyQuaternion(qHead));
     this.headG.position.copy(headPos); this.headG.quaternion.copy(qHead);
     this.headG.updateMatrixWorld(true);
@@ -1067,7 +1133,12 @@ class Magician extends Character {
     const gaze = gazePoint(P.gaze, CTX.camera);
     if (dizzy > 0) { fp.saccade = 0; fp.autoBlink = (fp.autoBlink ?? 1) * (1 - dizzy); }
     for (const b of this.face.brows || []) b.tube.curve.needsUpdate = true;   // brow tubes: see sweep()
-    this.face.update(t, fp, { gaze: dizzy > 0.5 ? null : gaze, speech: tongueAmt > 0.3 ? null : sp, blinkAt: P.blinkAt });
+    // quantise the painted-mouth inputs (pure: same t -> same values) so near-static holds don't redraw the decal canvas
+    const QK = 100;
+    for (const kq of ['mOpen', 'mWide', 'mRound', 'mSmile', 'mAsym', 'mTeethU', 'mTeethL', 'mClench', 'mPress', 'mTongue', 'mPout', 'mShift', 'blush', 'tearL', 'tearR'])
+      if (typeof fp[kq] === 'number') fp[kq] = Math.round(fp[kq] * QK) / QK;
+    const spq = sp ? { open: Math.round(sp.open * QK) / QK, wide: Math.round((sp.wide || 0) * QK) / QK, round: Math.round((sp.round || 0) * QK) / QK, close: Math.round((sp.close || 0) * QK) / QK } : null;
+    this.face.update(t, fp, { gaze: dizzy > 0.5 ? null : gaze, speech: tongueAmt > 0.3 ? null : spq, blinkAt: P.blinkAt });
     // popped eyes (scale up the whole eye) + dizzy swirls
     const popS = 1 + 0.32 * wK + 0.08 * clamp((fp.lidU - 1.25) / 0.17) * (1 - wK) + (E.eyePop ?? 0) * 0.35;
     this.face.eyes.forEach((eye, i) => {
@@ -1115,8 +1186,8 @@ class Magician extends Character {
       Lg.shoe.position.copy(ankle); Lg.shoe.quaternion.copy(qShoe);
       const sd = knee.clone().sub(Lg.hip).normalize(), ad = ankle.clone().sub(knee).normalize();
       const end = ankle.clone().addScaledVector(ad, -0.03);
-      sweep(Lg.tube, [Lg.hip.clone().addScaledVector(sd, -0.03), Lg.hip.clone().lerp(knee, 0.5), knee, knee.clone().lerp(ankle, 0.55), end],
-        [0.056, 0.05, 0.043, 0.037, 0.046], { up: pFwd, capEnd: false });
+      sweep(Lg.tube, [Lg.hip.clone().addScaledVector(sd, -0.07), Lg.hip.clone().lerp(knee, 0.5), knee, knee.clone().lerp(ankle, 0.55), end],
+        [0.06, 0.051, 0.043, 0.037, 0.046], { up: pFwd, capEnd: false });
       this._anch['knee' + side].position.copy(knee); this._anch['foot' + side].position.copy(ankle);
     }
 
@@ -1165,7 +1236,7 @@ class Magician extends Character {
     if (typeof list === 'string') list = [[list, 1]];
     const acc = { t: V(), pole: V(), palm: V(), fing: V(), hand: {} };
     for (const k of HAND_KEYS) acc.hand[k] = 0;
-    let wsum = 0, restW = 0; const anims = [];
+    let wsum = 0, restW = 0, edgeW = 0; const anims = [];
     for (const [name, w0] of list) {
       const d = ARM[name] || ARM.rest, w = Math.max(0, w0);
       if (w <= 0) continue;
@@ -1173,6 +1244,7 @@ class Magician extends Character {
       acc.t.addScaledVector(o.t, w); acc.pole.addScaledVector(o.pole, w); acc.palm.addScaledVector(o.palm, w); acc.fing.addScaledVector(o.fing, w);
       for (const k of HAND_KEYS) acc.hand[k] += (d.hand[k] ?? HAND_DEF[k]) * w;
       if (name === 'rest' || name === 'hang') restW += w;
+      if (name === 'edge') edgeW += w;
       if (d.anim) anims.push([d.anim, w]);
       wsum += w;
     }
@@ -1183,6 +1255,8 @@ class Magician extends Character {
     if (A.palm) acc.palm.copy(toV(A.palm)).applyQuaternion(this.rootQInv);
     if (A.fingers) acc.fing.copy(toV(A.fingers)).applyQuaternion(this.rootQInv);
     if (A.offset) acc.t.add(toV(A.offset).applyQuaternion(this.rootQInv));
+    // 'edge' with a surface target: back the wrist off along the palm normal so the (tapping) fingers rest ON it
+    if (A.target && edgeW > 0) acc.t.addScaledVector(acc.palm.clone().normalize(), -(A.gap ?? 0.03) * edgeW / Math.max(1e-6, wsum));
     const reach = clamp(A.reach ?? 1);
     if (reach < 1) {
       const r = this._presetToRoot(ARM.rest, s, sh);

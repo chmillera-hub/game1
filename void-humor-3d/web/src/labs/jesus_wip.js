@@ -22,6 +22,11 @@ const SHOTS = [
   { pose: { face: 'kind', yaw: -1.4 }, shot: framed([0, 0.95, 0], { dist: 3.6, yaw: 0, pitch: 3, fov: 32, screenY: 0.45, drift: 0 }) },
   { pose: { face: 'kind' }, shot: framed([-0.08, 1.12, -0.1], { dist: 0.9, yaw: 200, pitch: 4, fov: 30, screenY: 0.5, drift: 0 }) },
   { pose: { face: 'kind' }, shot: framed([-0.12, 1.0, 0.05], { dist: 0.9, yaw: -70, pitch: 4, fov: 30, screenY: 0.5, drift: 0 }) },
+  { pose: { face: 'kind', armL: { preset: 'up' }, armR: { preset: 'wave' } }, shot: framed([0, 1.45, 0], { dist: 1.5, yaw: 150, pitch: 10, fov: 30, screenY: 0.5, drift: 0 }) },
+  { pose: { face: 'kind', armL: { preset: 'around', target: [0.62, 1.48, -0.25] }, armR: { preset: 'shoulder', target: [-0.5, 1.5, 0.3], palm: [0.3, -0.9, 0.1] } }, shot: framed([0, 1.45, 0], { dist: 1.6, yaw: -150, pitch: 10, fov: 30, screenY: 0.5, drift: 0 }) },
+  { pose: { face: 'kind', body: { kneel: 1 }, armL: { preset: [['knee_rest', 0.6], ['open', 0.4]] }, armR: { preset: 'open' } }, shot: framed([0, 0.6, 0.1], { dist: 2.6, yaw: 180, pitch: 8, fov: 32, screenY: 0.5, drift: 0 }) },
+  { pose: { face: 'kind', armL: { preset: 'open', hand: { splay: 0.08, cup: 0.45 } }, armR: { preset: 'offer' } }, shot: framed([0.2, 1.08, 0.3], { dist: 0.7, yaw: 25, pitch: 15, fov: 30, screenY: 0.5, drift: 0 }) },
+  { pose: { face: 'kind', armR: { preset: 'shoulder', target: [-0.45, 1.48, 0.38], palm: [0.2, -0.95, -0.2] } }, shot: framed([-0.2, 1.4, 0.2], { dist: 1.6, yaw: -40, pitch: 8, fov: 30, screenY: 0.5, drift: 0 }) },
 ];
 export const DURATION = SHOTS.length;
 export async function setup(app) {

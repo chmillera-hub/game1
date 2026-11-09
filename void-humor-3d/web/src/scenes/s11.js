@@ -25,13 +25,13 @@ export default {
     const set = await app.set('EDGE');
     const [jesus, vd, user] = await Promise.all([app.char('JESUS'), app.char('VOID'), app.char('USER')]);
     const fx = new Particles({ max: 48, intensity: 1.5 });
-    own(fx.mesh);
+    own(fx.mesh, 's11');
     const gal = makeLittleGalaxy();
     return { scene: set.scene, set, jesus, vd, user, fx, gal, look: lookFor('s11', set.look) };
   },
 
   async update(t, app, st) {
-    stamp(t);
+    stamp(t, 's11');
     const { set, jesus, vd, user, fx, gal } = st;
     for (const o of [jesus.root, vd.root, user.root, fx.mesh, gal]) st.scene.add(o);
 
@@ -49,7 +49,10 @@ export default {
       const d = k(t, [['s11', 2.08], ['s11b01.end', 1.92, 'inOut']]);   // the faintest push while the look builds
       shot = EDGE.shot(EYE_JM_L, { dist: d, yaw: 3, pitch: 0.5, fov: 21, screenY: sy(420), drift: 0 });
     } else {
-      shot = EDGE.cam('MASTER', { drift: 0.3 });
+      // the symmetrical wide; in the held second after "awkward" it creeps in a touch (the silence gets louder)
+      const m = EDGE.cam('MASTER', { drift: 0.3 });
+      const u = k(t, [['s11b04.end', 0], ['s11.end', 0.12, 'inOut']]);
+      shot = { ...m, pos: m.pos.map((x, i) => x + (m.look[i] - x) * u) };
     }
     applyShot(app.camera, shot, t, 11);
 

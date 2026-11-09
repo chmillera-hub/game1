@@ -151,14 +151,14 @@ export function times() {
   c.fearCut0 = c.imp + 0.30; c.fearCut1 = c.fearCut0 + 0.6;   // the 0.6 s cutaway to Fear on the crash
   c.bonk = c.B7 + 0.14;                              // the hat bucket comes down: BONK
   c.wig0 = c.bonk + 0.32; c.wig1 = c.wig0 + 0.5;     // the mop flops onto it
-  c.daggerLand = c.B7 + 0.95;                        // dagger thunks point-down into the floor
+  c.daggerLand = c.B7 + 1.18;                        // dagger thunks point-down into the floor
   c.puff = c.B7 + 1.35;                              // the pouch puffs grey dust on him
   c.sign0 = c.B7 + 1.72; c.sign1 = c.sign0 + 0.62;   // the wet-floor sign tips and lands on him
   c.rude = W('s20b08', 'rude');
   // s21
   c.broom1 = T('s21b01') + 0.24;                     // the last broom clatters flat (off-screen)
   c.shrug = W('s21b03', 'shrugs');
-  c.roll0 = T('s21b04') - 0.7; c.roll1 = T('s21b05') + 2.2;
+  c.roll0 = T('s21b04') - 0.9; c.roll1 = T('s21b05') + 0.9;
   // s22
   c.galRise = W('s22b01', 'showing');
   c.galaxies = W('s22b01', 'galaxies');
@@ -250,6 +250,12 @@ export function hatRestPos(M) { const p = M.CRASH; return [p[0] - 0.62, 0.11, p[
 /** where the dagger sticks point-down in the floorboards (world) */
 export function daggerRestPos(M) { const p = M.CRASH; return [p[0] - 0.95, 0, p[2] + 0.62]; }
 
+// the lone bucket (s21b04) rolls out of the corner behind the Void and emerges past its left edge in the MASTER wide
+export const ROLL_TO = [-0.25, -2.25];
+/** the Void's open "book" hands just in front of / above Fear's face (s21b06 -> s22b01), world */
+export function bookPoint(vs) { const f = [Math.sin(vs.yaw), 0, Math.cos(vs.yaw)]; return [vs.pos[0] + f[0] * 1.12, 0.92, vs.pos[2] + f[2] * 1.12]; }
+/** the book hands' finger direction (palms up, fingers rising: an offering, not poking at Fear) */
+export const BOOK_FING = [0, 0.8, 0.6];
 /** BACKROOM opts for the janitor corner at t (shared by s20..s22). `mag` = the magician rig (already updated). */
 export function cornerOpts(t, mag, o = {}) {
   const c = times();
@@ -258,7 +264,7 @@ export function cornerOpts(t, mag, o = {}) {
     crash: 1, crashT: tc, latch: 1, cageDoor: 1,
     signFall: clamp((t - c.sign0) / (c.sign1 - c.sign0)), signOn: 0.42,
     broomSlide: clamp((t - (c.broom1 - 0.75)) / 0.75),
-    rollBucket: smooth(clamp((t - c.roll0) / (c.roll1 - c.roll0))),
+    rollBucket: smooth(clamp((t - c.roll0) / (c.roll1 - c.roll0))), rollTo: ROLL_TO,
   };
   if (mag && t >= c.imp) {
     const lift = 0.075 + (o.lift ?? 0);              // rides high and askew: the moustache shows below the rim

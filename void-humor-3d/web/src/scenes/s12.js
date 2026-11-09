@@ -25,13 +25,13 @@ export default {
     const set = await app.set('EDGE');
     const [jesus, vd, user] = await Promise.all([app.char('JESUS'), app.char('VOID'), app.char('USER')]);
     const fx = new Particles({ max: 48, intensity: 1.5 });
-    own(fx.mesh);
+    own(fx.mesh, 's12');
     const gal = makeLittleGalaxy();
     return { scene: set.scene, set, jesus, vd, user, fx, gal, look: lookFor('s12', set.look) };
   },
 
   async update(t, app, st) {
-    stamp(t);
+    stamp(t, 's12');
     const { set, jesus, vd, user, fx, gal } = st;
     for (const o of [jesus.root, vd.root, user.root, fx.mesh, gal]) st.scene.add(o);
 
@@ -135,7 +135,6 @@ export default {
         const follow = [jl[0], 1.3, jl[2]];
         const lk = [lerp(follow[0], C.look[0], lead), lerp(follow[1], C.look[1], lead), lerp(follow[2], C.look[2], lead)];
         shot = EDGE.at(C.pos, lk, 33, { drift: 0.25 });
-        if (globalThis.DBGA) console.log('DBGA', t.toFixed(2), JSON.stringify({ jl: jl.map((x) => +x.toFixed(2)), lk: lk.map((x) => +x.toFixed(2)), u: +wk.u.toFixed(2) }));
       } else if (shotB) {
         const lk = [VEYE_END[0] + 0.05, VEYE_END[1] - 0.04, VEYE_END[2] - 0.09];   // centre between both eyes
         shot = EDGE.shot(lk, { dist: k(t, [['s12b02', 2.75], [B2 + 1.5, 2.15, 'inOut'], ['s12b02.end', 2.05, 'inOut']]), yaw: CAMB_YAW, pitch: 4, fov: 33,
@@ -152,7 +151,6 @@ export default {
       clear: [[POS.U[0], POS.U[2], 0.8], [POS.VSIT[0], POS.VSIT[2], 1.4]],
     });
     solve(t, [[vd, vPose], [user, uPose], [jesus, jPose]], frameCam);
-    if (globalThis.DBG12) console.log('DBG', t.toFixed(2), JSON.stringify({ ve: EDGE.L(vd.anchor('eyes')).map(x=>+x.toFixed(2)), vsh: EDGE.L(vd.anchor('shoulderR')).map(x=>+x.toFixed(2)), je: EDGE.L(jesus.anchor('eyes')).map(x=>+x.toFixed(2)), jh: EDGE.L(jesus.anchor('handR')).map(x=>+x.toFixed(2)), cam: EDGE.L(app.camera.position).map(x=>+x.toFixed(2)) }));
 
     // ---------------------------------------------------------------- particles: a star mote drifts up past his hand
     fx.begin();

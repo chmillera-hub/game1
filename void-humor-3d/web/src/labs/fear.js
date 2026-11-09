@@ -23,6 +23,7 @@ const T_EX = 4, T_ACT = T_EX + EXPRS.length;
 const ACTS = [
   ['idle', 3], ['walk', 3], ['sneak', 4], ['run', 2.5], ['noise', 5], ['tremble', 3], ['cage', 6], ['cry', 5.5], ['hug', 3.5],
   ['wonder', 5.5], ['shy', 4], ['partner', 4.5], ['cling', 3.5], ['sit', 3], ['kneel', 3], ['cower', 3], ['wave', 2.5], ['snap', 3.5], ['talk', 3],
+  ['cageWide', 4], ['cageSide', 4],   // (appended so earlier segment times stay stable) cage clearance checks
 ];
 export const segments = [[0, 4, 'turntable'], ...EXPRS.map((n, i) => [T_EX + i, T_EX + i + 1, 'expr:' + n])];
 { let t0 = T_ACT; for (const [n, d] of ACTS) { segments.push([t0, t0 + d, n]); t0 += d; } }
@@ -36,7 +37,8 @@ function segAt(t) {
 
 // ---------------------------------------------------------------------------------------------------------
 // props
-const CAGE = { R: 0.4, H: 1.02, n: 16, pos: [0, 0, -0.06] };
+const CAGE = { R: 0.42, H: 1.02, n: 16, pos: [0, 0, -0.02] };
+const FEAR_IN_CAGE = [0, 0, 0.0];   // ~2 cm in front of the cage centre: body + scarf stay >= 2 cm inside the bars
 function cage() {
   const g = new THREE.Group();
   const m = new THREE.MeshStandardMaterial({ color: 0xb79a5a, metalness: 0.75, roughness: 0.35 });
@@ -126,6 +128,19 @@ const talkSample = (u, a, b, seed = 1) => {
   return { open: o * e, wide: 0.2 + 0.2 * noise1(u * 3, seed + 1), round: 0.35 + 0.3 * noise1(u * 4, seed + 2), close: 0 };
 };
 
+/** cowering in the cage gripping two bars beside the face (bars at +-56 deg), crying, then peeking out hopeful */
+function cagePose(u) {
+  const c = sm(0.1, 1.2, u), cr = sm(2.4, 3.2, u);
+  const g = sm(0.5, 1.4, u);
+  const peek = env(u, 4.2, 6.2, 0.4, 0.3);
+  let face = mixFace(FX('scared'), FX('cry'), cr);
+  face = mixFace(face, FX('hopeful', { wet: 1, tearL: 0.6, tearR: 0.6 }), peek * 0.8);
+  return { pos: FEAR_IN_CAGE, face, gaze: 'camera', body: { cower: 0.55 * c * (1 - 0.4 * peek), lean: 0.04 },
+    head: { pitch: 0.12 * (1 - peek) - 0.1 * peek, roll: 0.08 * Math.sin(u * 0.7), up: 0.02 * peek, forward: 0.015 * peek },
+    extra: { tremble: 0.6 * c * (1 - 0.5 * peek), cry: 0.8 * cr },
+    armL: { preset: 'grip', target: barPoint(2, 0.46 + 0.04 * peek), reach: g }, armR: { preset: 'grip', target: barPoint(CAGE.n - 3, 0.43 + 0.04 * peek), reach: g } };
+}
+
 /** pose + shot + props at t (pure). */
 function act(t) {
   const seg = segAt(t), u = seg.u;
@@ -150,9 +165,10 @@ function act(t) {
     if (ex === 'shy' || ex === 'shySmile') { head.roll = -0.12; head.pitch = 0.1; }
     if (ex === 'sad' || ex === 'whimper') { head.pitch = 0.12; extra.tuftDroop = 0.7; }
     if (ex === 'curious' || ex === 'confused') head.roll = 0.16;
-    if (ex === 'flinch') { head.pitch = 0.12; head.yaw = -0.15; body.shrug = 0.6 * sm(0, 0.2, u); extra.tremble = 0.5; extra.tuftDroop = 0.4; }
+    if (ex === 'flinch') { head.pitch = 0.1; head.yaw = -0.15; body.shrug = 0.6 * sm(0, 0.2, u); extra.tremble = 0.5; extra.tuftDroop = 0.4; }
+    if (ex === 'sob') extra.tuftDroop = 0.6;
     if (ex === 'gulp') body.shrug = 0.3;
-    R.pose = { face, extra, head, body, gaze: ex === 'shy' ? null : 'camera' };
+    R.pose = { face, extra, head, body, gaze: ex === 'shy' || ex === 'shySmile' ? null : 'camera' };
     R.shot = framed([0, 0.6, 0], { dist: 1.5, yaw: 9, pitch: 3, fov: 30, screenY: 0.4, drift: 0 });
     R.label = 'expr: ' + ex;
   } else if (name === 'idle') {
@@ -180,35 +196,34 @@ function act(t) {
       head: { look: src, track: 0.45 * snap * (1 - back), roll: 0.12 * sm(1.2, 1.6, u) * (1 - back) }, body: { twist: -0.18 * snap * (1 - back) },
       armL: { preset: 'up', from: 'rest', mix: env(u, 0.6, 1.5, 0.08, 0.5) * 0.7 }, armR: { preset: 'chest', from: 'rest', mix: sm(0.65, 0.9, u) * (1 - sm(3.4, 4, u)) },
       speech: talkSample(u, 1.9, 3.1, 3), blinkAt: [seg.t0 + 0.55] };
-    R.shot = FULL(-0.12, 0.47, 1.75, -12, 4, 0.44);
+    R.shot = FULL(-0.12, 0.52, 2.1, -12, 4, 0.5);
     R.props.bucket = true;
   } else if (name === 'tremble') {
     const tr = sm(0.2, 2.0, u);
     R.pose = { face: mixFace(FX('worried'), FX('scared'), tr), gaze: 'camera', extra: { tremble: tr }, armL: { preset: 'hug', from: 'rest', mix: sm(0.2, 0.8, u) }, armR: { preset: 'hug', from: 'rest', mix: sm(0.3, 0.9, u) }, body: { shrug: 0.4 * tr } };
     R.shot = FULL(0, 0.5, 1.45, 10, 3, 0.42);
-  } else if (name === 'cage') {
-    const c = sm(0.1, 1.2, u), cr = sm(2.4, 3.2, u);
-    const g = sm(0.5, 1.4, u);
-    const peek = env(u, 4.2, 6.2, 0.4, 0.3);
-    let face = mixFace(FX('scared'), FX('cry'), cr);
-    face = mixFace(face, FX('hopeful', { wet: 1, tearL: 0.6, tearR: 0.6 }), peek * 0.8);
-    R.pose = { pos: [0, 0, 0.12], face, gaze: 'camera', body: { cower: 0.55 * c * (1 - 0.4 * peek), lean: 0.06 },
-      head: { pitch: 0.12 * (1 - peek) - 0.1 * peek, roll: 0.08 * Math.sin(u * 0.7), up: 0.02 * peek, forward: 0.015 * peek },
-      extra: { tremble: 0.6 * c * (1 - 0.5 * peek), cry: 0.8 * cr },
-      armL: { preset: 'grip', target: barPoint(1, 0.47 + 0.04 * peek), reach: g }, armR: { preset: 'grip', target: barPoint(CAGE.n - 2, 0.44 + 0.04 * peek), reach: g } };
+  } else if (name === 'cage' || name === 'cageWide' || name === 'cageSide') {
+    const uu = name === 'cage' ? u : 1.4 + u * 1.1;     // the wide/side shots replay cower -> cry -> peek
+    R.pose = cagePose(uu);
     R.props.cage = true;
-    R.shot = framed([0, 0.5, 0.1], { dist: 1.7, yaw: 6, pitch: 5, fov: 30, screenY: 0.43, drift: 0 });
+    R.shot = name === 'cage' ? framed([0, 0.52, 0.02], { dist: 1.7, yaw: 6, pitch: 5, fov: 30, screenY: 0.43, drift: 0 })
+      : name === 'cageWide' ? framed([0, 0.5, -0.02], { dist: 3.0, yaw: 0, pitch: 4, fov: 30, screenY: 0.47, drift: 0 })
+        : framed([0, 0.5, -0.02], { dist: 2.6, yaw: 90, pitch: 2, fov: 30, screenY: 0.47, drift: 0 });
   } else if (name === 'cry') {
-    const wl = env(u, 1.9, 3.4, 0.35, 0.35), wr = env(u, 3.3, 4.9, 0.35, 0.4);
+    const wl = env(u, 1.8, 3.5, 0.35, 0.35), wr = env(u, 3.4, 5.2, 0.35, 0.4);
+    const sniff = env(u, 3.25, 3.75, 0.08, 0.35) + env(u, 4.95, 5.45, 0.08, 0.35);   // sniff + shoulders up after each rub
     let face = mixFace(FX('sob'), FX('sniffle'), sm(1.6, 2.2, u));
-    R.pose = { face, gaze: 'camera', head: { pitch: 0.1 - 0.06 * sm(2, 3, u), roll: 0.06 * (wl - wr) },
+    face = mixFace(face, FX('sniffle', { mPout: 0.6, mPress: 0.6, lidU: 0.7, browIn: 1 }), clamp(sniff));
+    R.pose = { face, gaze: 'camera', head: { pitch: 0.1 - 0.06 * sm(2, 3, u) - 0.05 * sniff },
       extra: { cry: 1 - 0.3 * sm(3, 5, u), sob: 1 - sm(1.3, 1.9, u), tuftDroop: 0.6 },
-      armL: { preset: 'wipe', from: 'rest', mix: wl }, armR: { preset: 'wipe', from: 'rest', mix: wr }, body: { slump: 0.3 } };
+      armL: { preset: 'wipe', from: 'rest', mix: wl }, armR: { preset: 'wipe', from: 'rest', mix: wr }, body: { slump: 0.3, shrug: 0.45 * clamp(sniff), stretch: 0.02 * sniff } };
     R.shot = FULL(0, 0.55, 1.3, 10, 3, 0.42);
   } else if (name === 'hug') {
-    const w = sm(0.1, 0.8, u);
-    R.pose = { face: mixFace(FX('worried'), FX('whimper'), w), gaze: 'camera', extra: { tremble: 0.35 * w },
-      armL: { preset: 'hug', from: 'rest', mix: w }, armR: { preset: 'hug', from: 'rest', mix: sm(0.25, 0.95, u) }, body: { shrug: 0.6 * w, hunch: 0.2 * w } };
+    const w = sm(0.1, 0.8, u), rock = Math.sin((u - 0.8) * TAU * 0.55) * sm(0.6, 1.2, u);
+    R.pose = { face: mixFace(FX('worried'), FX('whimper', { lidU: 0.86 }), w), gaze: 'camera', extra: { tremble: 0.25 * w, tuftDroop: 0.35 * w },
+      armL: { preset: 'hug', from: 'rest', mix: w }, armR: { preset: 'hug', from: 'rest', mix: sm(0.25, 0.95, u) },
+      body: { shrug: 0.55 * w, hunch: 0.22 * w, squash: 0.04 * w, twist: 0.07 * rock, tilt: 0.045 * rock },
+      head: { pitch: 0.1 * w, roll: -0.08 * w - 0.05 * rock } };
     R.shot = FULL(0, 0.48, 1.6, 14, 3, 0.43);
   } else if (name === 'wonder') {
     const up = sm(0.3, 1.6, u), aw = sm(2.6, 3.6, u);
@@ -221,11 +236,13 @@ function act(t) {
     R.props.cosmos = up;
     R.shot = framed([0, 0.6, 0], { dist: 1.7, yaw: 38, pitch: -2, fov: 34, screenY: 0.6, drift: 0 });
   } else if (name === 'shy') {
-    const a = sm(0.3, 1.0, u), sm2 = sm(1.6, 2.4, u), look = env(u, 2.2, 3.5, 0.3, 0.4);
+    // eyes down, a small pressed smile grows; ONE quick glance up at the camera (u 2.0-2.55), then down again, smiling
+    const a = sm(0.3, 1.0, u), sm2 = sm(1.2, 2.0, u), look = env(u, 2.0, 2.55, 0.08, 0.12);
     let face = mixFace(FX('neutral'), FX('shy'), a);
     face = mixFace(face, FX('shySmile'), sm2);
-    face.gazePitch = lerp(-0.25, 0, look) * a; face.gazeYaw = lerp(0.22, 0, look) * a;
-    R.pose = { face, gaze: look > 0.5 ? 'camera' : null, head: { roll: -0.14 * a, pitch: 0.1 * a * (1 - look * 0.6), yaw: 0.12 * a * (1 - look) }, body: { twist: 0.12 * Math.sin(u * 1.8) * a, shrug: 0.25 * a },
+    face = mixFace(face, FX('shySmile', { lidU: 1.05, mSmile: 0.42, gazePitch: 0, gazeYaw: 0 }), look);
+    R.pose = { face, gaze: look > 0.5 ? 'camera' : null, head: { roll: -0.15 * a, pitch: 0.14 * a * (1 - look * 0.5), yaw: 0.1 * a * (1 - look) },
+      body: { twist: 0.1 * Math.sin(u * 1.8) * a, shrug: 0.25 * a },
       armL: { preset: 'fidget', from: 'rest', mix: a }, armR: { preset: 'fidget', from: 'rest', mix: a }, extra: {} };
     R.shot = FULL(0, 0.5, 1.4, 12, 3, 0.43);
   } else if (name === 'partner') {
@@ -242,12 +259,15 @@ function act(t) {
   } else if (name === 'cling') {
     // hides behind a big partner's leg (post), both hands on it, peeking out past its edge
     const w = sm(0.2, 1.0, u), pk = sm(1.4, 2.2, u);
-    const c = V(0.14, 0, 0.3);
+    const c = V(0.13, 0, 0.27), pr = 0.08;              // post centre / radius
     R.props.post = c;
-    R.pose = { pos: [-0.1, 0, 0], yaw: 0.35, face: mixFace(FX('scared'), FX('peek'), pk * 0.7), gaze: 'camera', head: { yaw: -0.35 * w - 0.15 * pk, roll: 0.16 * w, forward: 0.01 * pk },
+    const fp = V(-0.1, 0, 0), n = V(fp.x - c.x, 0, fp.z - c.z).normalize(), tn = V(-n.z, 0, n.x);   // post surface normal toward Fear
+    const onPost = (side, y) => c.clone().addScaledVector(n, pr + 0.012).addScaledVector(tn, side * 0.035).setY(y);
+    const palmIn = n.clone().negate().toArray();
+    R.pose = { pos: fp.toArray(), yaw: 0.35, face: mixFace(FX('scared'), FX('peek'), pk * 0.7), gaze: 'camera', head: { yaw: -0.35 * w - 0.15 * pk, roll: 0.16 * w, forward: 0.01 * pk },
       body: { tilt: 0.12 * w, lean: 0.08 * w, shrug: 0.3 * w }, extra: { tremble: 0.35 * w },
-      armL: { target: V(c.x - 0.04, 0.42, c.z - 0.065), reach: w, palm: [0.6, 0, 0.8], fingers: [0.1, 1, 0.2], hand: { curl: 0.55, cup: 0.5 } },
-      armR: { target: V(c.x - 0.075, 0.33, c.z - 0.025), reach: sm(0.4, 1.2, u), palm: [1, 0, 0.3], fingers: [0.1, 1, 0.3], hand: { curl: 0.6, cup: 0.5 } } };
+      armL: { target: onPost(1, 0.43), reach: w, palm: palmIn, fingers: [0.1, 1, 0.1], hand: { curl: 0.55, cup: 0.5 } },
+      armR: { target: onPost(-1, 0.36), reach: sm(0.4, 1.2, u), palm: palmIn, fingers: [0.1, 1, 0.1], hand: { curl: 0.6, cup: 0.5 } } };
     R.shot = FULL(0.0, 0.45, 1.9, -6, 4, 0.45);
   } else if (name === 'sit') {
     const s = sm(0.2, 1.3, u);
@@ -259,7 +279,7 @@ function act(t) {
     R.shot = FULL(0, 0.4, 2.0, 30, 6, 0.48);
   } else if (name === 'cower') {
     const c = sm(0.1, 0.5, u);
-    R.pose = { face: mixFace(FX('scared'), FX('flinch'), c), gaze: 'camera', body: { cower: c }, head: { pitch: 0.15 * c, yaw: -0.25 * c }, extra: { tremble: 0.8 * c },
+    R.pose = { face: mixFace(FX('scared'), FX('flinch'), c), gaze: 'camera', body: { cower: c }, head: { pitch: 0.12 * c, yaw: -0.22 * c }, extra: { tremble: 0.8 * c, tuftDroop: 0.5 * c },
       armL: { preset: 'shield', from: 'rest', mix: c }, armR: { preset: 'shield', from: 'rest', mix: sm(0.15, 0.55, u) } };
     R.shot = FULL(0, 0.42, 1.7, 10, 4, 0.45);
   } else if (name === 'wave') {

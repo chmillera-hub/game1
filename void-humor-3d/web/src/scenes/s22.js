@@ -14,7 +14,8 @@ import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
 import { MX } from '../chars/magician.js';
 import { ROOM, sy, lookFor } from './marks.js';
-import { loadLines, W, A, V, add, sub, mix3, LD, pulse, jiggle, stamp, own, live, solve, aim, blendShot, pix, marks, times, voidSpot, wreckPose, cornerOpts } from './kit_s20_22.js';
+import { ensureBonusDecals } from './kit_bonus.js';
+import { loadLines, W, A, V, add, sub, mix3, LD, pulse, jiggle, stamp, own, live, solve, aim, blendShot, pix, marks, times, voidSpot, wreckPose, cornerOpts, bookPoint, BOOK_FING } from './kit_s20_22.js';
 
 const ID = 's22';
 
@@ -24,6 +25,7 @@ export default {
     await loadLines();
     const set = await app.set('BACKROOM');
     ROOM.fit(set);
+    ensureBonusDecals(set);   // the magician's grey footprints + dust patch stay until the cosmos takes the floor
     const cos = await app.set('COSMOS');
     const [vd, fear, mag] = await Promise.all([app.char('VOID'), app.char('FEAR'), app.char('MAGICIAN')]);
     const fx = new Particles({ max: 140, intensity: 1.5 });
@@ -48,7 +50,7 @@ export default {
     st.shot = shot;
     const vs = voidSpot(t);
     const fwd = rotY([0, 0, 1], vs.yaw);
-    const palms = add(vs.pos, [fwd[0] * 1.16, 0.95, fwd[2] * 1.16]);
+    const palms = bookPoint(vs);
     const reveal = k(t, [[c.galRise - 0.2, 0], [c.galaxies, 0.12, 'inOut'], [L.B2, 0.3, 'linear'], [L.B3, 0.8, 'linear'], [L.B3 + 1.8, 1, 'out']]);
     const corner = add(M.CRASH, [0, 0.55, 0]);
     const lg = littleGalaxy(t, L, M, fear);
@@ -85,13 +87,13 @@ export default {
       }
       // arms: palms up "book" -> the galaxy rises -> arms lift slowly ('open') pouring nebulae -> LEFT hand onto Fear's
       // RIGHT shoulder (contact) and stays; the right hand rests on its belly
-      const bookL = add(palms, rotY([0.13, 0, 0], vs.yaw)), bookR = add(palms, rotY([-0.13, 0, 0], vs.yaw));
+      const bookL = add(palms, rotY([0.05, 0, 0.06], vs.yaw)), bookR = add(palms, rotY([-0.05, 0, 0.06], vs.yaw));
       const palmUp = rotY([0, 1, 0.1], vs.yaw);
       const open = k(t, [[L.B2 - 0.3, 0], [L.B3 - 0.2, 1, 'inOut'], [L.B4, 1], [L.B5 - 0.2, 0.55, 'inOut']]);
       const onSh = k(t, [[L.hand0, 0], [L.hand1, 1, 'inOut']]);
       const shT = sh ? add(A(sh), [0, 0.07 + 0.012 * Math.sin(t * 1.2) * smooth(clamp((t - L.B12) / 1)), 0]) : add(M.FOUT, [0, 0.55, 0]);
       const cup = 1 - smooth(clamp((t - (L.B2 - 0.4)) / 0.8));
-      const armBook = (side) => ({ preset: 'hold', target: side > 0 ? bookL : bookR, reach: 1, palm: palmUp, fingers: rotY([side * -0.25, 0.15, 1], vs.yaw), hand: { curl: 0.18, cup: 0.5, spread: 0.18, thumb: 0.5 } });
+      const armBook = (side) => ({ preset: 'hold', target: side > 0 ? bookL : bookR, reach: 1, palm: palmUp, fingers: rotY(BOOK_FING, vs.yaw), hand: { curl: 0.2, cup: 0.5, spread: 0.15, thumb: 0.5 } });
       let armL, armR;
       if (cup > 0.001) {
         armL = { ...armBook(1), reach: 1 };
@@ -223,7 +225,7 @@ function fearPoseAt(st, t, L, c, M, vs, palms, corner) {
   const yaw = fearYaw(t, L, c, M);
   // where to look: the rising galaxy -> all around (the cosmos) -> the Void's face (b04 search, two eyes) -> eyes shut on
   // the hand -> the little galaxy -> up at the Void -> the star on the scarf -> up -> the galaxy held up
-  const up1 = add(M.FOUT, add(rotY([0.3, 2.4, 1.6], 1.6), [0, 0, 0]));
+  const up1 = ROOM.W(add(ROOM.M.FOUT.p, [0.5, 1.55, 1.4]));   // up and out toward the FEAR_CU lens side: the upturned face reads
   const up2 = add(M.FOUT, [1.6, 2.6, 1.8]);
   const galRise = add(palms, [0, 0.25 + 0.3 * smooth(clamp((t - c.galRise) / 1.4)), 0]);
   const ls = lastStar(t, L, fear);
@@ -266,7 +268,7 @@ function fearPoseAt(st, t, L, c, M, vs, palms, corner) {
     armL = { preset: 'hold', target: add(hold, rotY([0.035, 0, 0], yaw)), reach: holdG, palm: [0, 1, 0], hand: { curl: 0.35, cup: 0.7, spread: 0.1, thumb: 0.5 } };
     armR = { preset: 'hold', target: add(hold, rotY([-0.035, 0, 0], yaw)), reach: holdG, palm: [0, 1, 0], hand: { curl: 0.35, cup: 0.7, spread: 0.1, thumb: 0.5 } };
   }
-  const look = k(t, [[L.S, 0.5], [L.B4, 0.5], [L.B4 + 0.3, 0.62, 'inOut']]);
+  const look = k(t, [[L.S, 0.5], [L.B3, 0.42], [L.B4, 0.42], [L.B5, 0.5, 'inOut']]);
   const nodDown = k(t, [[L.B8 + 1.0, 0], [L.B8 + 1.4, 0.35, 'inOut'], [L.B9 - 0.3, 0.35], [L.B9 + 0.2, 0, 'inOut']]);
   return {
     pos: M.FOUT, yaw,
@@ -349,52 +351,50 @@ function drawGalaxies(ps, t, L, c, palms, lg, vs) {
 
 // ======================================================================================================== cameras
 function frameShot(st, t, shot, L, c, M, vs) {
-  const { vd, fear } = st;
+  const { vd, fear, mag } = st;
   const ve = A(vd.anchor('eyes')), fe = A(fear.anchor('eyes'));
-  const wide = (dist, sy0 = 0.48) => ROOM.shot([1.3, 1.3, 0.35], { dist, yaw: -45, pitch: 6, fov: 54, screenY: sy0, drift: 0.15 });
+  const mid = (a, b, u = 0.5) => mix3(a, b, u);
+  const wideOf = (dist, y0 = 614) => { const w = ROOM.shot([1.3, 1.3, 0.35], { dist, yaw: -45, pitch: 6, fov: 54, screenY: y0 / 1280 }); return w; };
   switch (shot) {
-    case 0: { // close two-shot from low beside the Void's hands -> on "galaxies" pull back to COSMOS_WIDE
-      const pos = ROOM.W(add(ROOM.M.FOUT.p, [0.95, 0.55, 0.95]));
-      const close = aim(pos, fe, 300, 470, 36, { drift: 0.1 });
+    case 0: { // close two-shot from low beside the Void's open hands, Fear's face just beyond -> on "galaxies" pull back to the wide
       const u = k(t, [[c.galaxies - 0.15, 0], [L.B3, 1, 'inOut']]);
-      return u > 0 ? blendShot(close, wide(6.5), u) : close;
+      const wide = wideOf(6.5);
+      const pos = mix3(ROOM.W(0.55, 0.9, 3.25), wide.pos, u);
+      const subj = mix3(mix3(fe, bookPoint(vs), 0.4), ROOM.W(1.3, 1.3, 0.35), u);
+      return aim(pos, subj, lerp(330, 360, u), lerp(610, 614, u), lerp(46, 54, u), { drift: 0.1 });
     }
-    case 1: { // FEAR_CU from the Void side (face y~430, nebula light)
+    case 1: { // FEAR_CU from the Void side (face ~y 470, nebula light): tears of awe, the question
       const push = smooth(clamp((t - L.B3) / (L.B4e - L.B3)));
-      return ROOM.shot(ROOM.L(fe), { dist: 1.15 - 0.15 * push, yaw: 40, pitch: -5, fov: 34, screenY: sy(440), drift: 0.06 });
+      return ROOM.shot(ROOM.L(fe), { dist: 1.5 - 0.12 * push, yaw: 15, pitch: 10, fov: 40, screenY: sy(470), drift: 0.06 });
     }
-    case 2: { // close on the Void (eyes ~330) -> widen to the two-shot (hand on the shoulder) -> slow pull back revealing the corner
-      const closeV = ROOM.shot(ROOM.L(ve), { dist: 2.3, yaw: -28, pitch: -6, fov: 33, screenY: sy(330), drift: 0.08 });
-      const two = ROOM.shot([1.2, 1.25, 0.5], { dist: 4.4, yaw: -12, pitch: 4, fov: 44, screenY: sy(420), drift: 0.1 });
-      const far = ROOM.shot([1.5, 1.2, 0.2], { dist: 7.6, yaw: -10, pitch: 6, fov: 44, screenY: sy(400), drift: 0.1 });
+    case 2: { // close on the Void -> widen to the two-shot (hand on the shoulder) -> pull back until the corner shows (b06)
+      const closeV = ROOM.shot(ROOM.L(ve), { dist: 3.8, yaw: -28, pitch: -6, fov: 36, screenY: sy(330), drift: 0.08 });
+      const two = aim(ROOM.W(0.3, 1.5, 4.7), mid(ve, fe), 330, 490, 44, { drift: 0.1 });
+      const far = aim(ROOM.W(-0.6, 2.0, 8.2), ve, 228, 340, 52, { drift: 0.1 });
       const u1 = k(t, [[L.B5 + 0.6, 0], [L.B5 + 1.8, 1, 'inOut']]);
       const u2 = k(t, [[L.B6 + 0.4, 0], [T('s22b06.end') + 0.2, 1, 'inOut']]);
       return blendShot(blendShot(closeV, two, u1), far, u2);
     }
-    case 3: { // VOID_LOW close from Fear's low angle; the little galaxy glowing in Fear's palm at the lower edge
-      const pos = ROOM.W(add(ROOM.M.FOUT.p, [0.05, 0.42, 0.32]));
-      return aim(pos, ve, 380, 330, 40, { drift: 0.06 });
-    }
+    case 3: // VOID_LOW from beside Fear (its tuft and the little galaxy in its palms at the lower edge)
+      return aim(ROOM.W(-1.15, 0.62, 2.55), ve, 380, 330, 46, { drift: 0.06 });
     case 4: { // two-shot, a slow 3-4 degree orbit through the long pause
-      const yaw = k(t, [[L.B8, -16], [L.B9, -12.5]]);
-      return ROOM.shot([1.2, 1.15, 0.5], { dist: 3.5, yaw, pitch: 3, fov: 44, screenY: sy(450), drift: 0.06 });
+      const o = k(t, [[L.B8, -0.2], [L.B9, 0.15]]);
+      return aim(ROOM.W(0.3 + o, 1.5, 4.6 - 0.1 * o), mid(ve, fe), 330, 500, 44, { drift: 0.05 });
     }
     case 5: case 7: { // the corner: the bucket on the magician's head
-      const cc = add(M.CRASH, [0, 0.62, 0]);
-      return ROOM.shot(ROOM.L(cc), { dist: 2.4, yaw: -6, pitch: 7, fov: 40, screenY: sy(500), drift: 0 });
+      const ht = A(mag.anchor('headTop') || add(M.CRASH, [0, 1, 0]));
+      return ROOM.shot(ROOM.L(ht), { dist: 2.1, yaw: -8, pitch: 6, fov: 36, screenY: sy(460), drift: 0 });
     }
-    case 6: case 8: { // the Void close, head perfectly still; Fear's tuft at the lower edge
-      return ROOM.shot(ROOM.L(ve), { dist: 2.5, yaw: -24, pitch: -10, fov: 33, screenY: sy(340), drift: 0 });
-    }
-    case 9: { // straight down its hood axis: it looks into the lens; wink; "Tee-hee."
-      return ROOM.shot(ROOM.L(ve), { dist: 2.4, yaw: -60, pitch: -2, fov: 33, screenY: sy(360), drift: 0.04 });
-    }
-    case 10: { // pull back to the cosmos wide for the end title (title band y 150-310 stays calm)
+    case 6: case 8: // the Void close, head perfectly still; Fear's tuft at the lower edge
+      return ROOM.shot(ROOM.L(ve), { dist: 4.1, yaw: -24, pitch: -9, fov: 36, screenY: sy(340), drift: 0 });
+    case 9: // straight down its hood axis: it looks into the lens; wink; "Tee-hee."
+      return ROOM.shot(ROOM.L(ve), { dist: 4.0, yaw: -58, pitch: -3, fov: 34, screenY: sy(370), drift: 0.04 });
+    case 10: { // pull back to the cosmos wide for the end title (the title band y 150-310 stays calm nebula)
       const u = k(t, [[L.cutJ, 0], [L.B12 + 1.6, 0.7, 'inOut'], [L.E, 1, 'out']]);
-      const start = ROOM.shot(ROOM.L(ve), { dist: 2.4, yaw: -60, pitch: -2, fov: 33, screenY: sy(360), drift: 0.04 });
+      const start = ROOM.shot(ROOM.L(ve), { dist: 4.0, yaw: -58, pitch: -3, fov: 34, screenY: sy(370), drift: 0.04 });
       const end = ROOM.shot([1.3, 1.1, 0.35], { dist: 9.0, yaw: -45, pitch: 4, fov: 54, screenY: sy(560), drift: 0.12 });
       return blendShot(start, end, u);
     }
   }
-  return wide(6.5);
+  return wideOf(6.5);
 }

@@ -19,8 +19,9 @@ import { EDGE, todAt, voidSkyAt, galaxyAt, galaxySpin, sy, px } from './marks.js
 import { VX, eyeRoll } from '../chars/void.js';
 import { JX } from '../chars/jesus.js';
 import { UX } from '../chars/user.js';
+import { scopeVisible, ensureLittleGalaxy } from './edgeprops.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, fitShot, mixShot, W, WY, MARKS as M, starSprite, seedSprite } from './armour_shared.js';
-import { galaxyFloor, userPos, sceneLook } from './armour_common.js';
+import { userPos, sceneLook } from './armour_common.js';
 
 let S = null;
 const TAU = Math.PI * 2;
@@ -36,13 +37,14 @@ export default {
     st.puffs = new Particles({ max: 24, blending: 'normal', intensity: 1.0 }); set.scene.add(st.puffs.mesh);
     st.seed = seedSprite(0.3); set.scene.add(st.seed);
     st.tear = starSprite(0xdff4ff, 0.08); set.scene.add(st.tear);
-    st.floorGal = galaxyFloor(st.fx); set.scene.add(st.floorGal.mesh);
+    ensureLittleGalaxy(set);                                       // the shared little galaxy by the sneaker (edgeprops)
+    for (const o of [st.fx.mesh, st.mote, st.puffs && st.puffs.mesh, st.seed, st.tear]) if (o) scopeVisible(o, 's10', 's11');
     S = st.S = statics(st);
     return st;
   },
   async update(t, app, st) {
     const { set, jesus, vd, user } = st;
-    st.scene.add(jesus.root, vd.root, user.root, st.fx.mesh, st.puffs.mesh, st.seed, st.tear, st.floorGal.mesh);
+    st.scene.add(jesus.root, vd.root, user.root, st.fx.mesh, st.puffs.mesh, st.seed, st.tear);
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const shot = shotAt(t);
     applyShot(app.camera, shot, t, 10);
@@ -64,7 +66,6 @@ export default {
     st.seed.visible = sd.a > 0.01; st.seed.position.copy(sd.p); st.seed.material.opacity = sd.a; st.seed.material.rotation = sd.rot;
     const tr = tearState(t);
     st.tear.visible = tr.a > 0.01; st.tear.position.copy(tr.p); st.tear.material.opacity = tr.a; st.tear.scale.setScalar(0.08 * tr.s);
-    st.floorGal.update(t);
     st.look = sceneLook('s10', set.look, t);
   },
 };
@@ -97,12 +98,12 @@ function statics(st) {
   out.vSit = toV(W(M.VSIT));
   // cameras
   out.VCU_A = EDGE.shot(EDGE.L(out.vEyes), { dist: 3.5, yaw: -36, pitch: -4, fov: 33, screenY: sy(385), drift: 0.2 });
-  out.VCU_B = EDGE.shot(EDGE.L(out.vEyes), { dist: 6.0, yaw: -34, pitch: -3, fov: 33, screenY: sy(740), drift: 0.2 });
+  out.VCU_B = EDGE.shot(EDGE.L(out.vEyes), { dist: 6.3, yaw: -34, pitch: -3, fov: 33, screenY: sy(630), drift: 0.2 });
   out.MASTER = EDGE.cam('MASTER', { drift: 0.2 });
   out.MASTER_B = { ...EDGE.cam('MASTER', { drift: 0.15 }), fov: 42 };
   // starts medium (the big finger picking at the grass reads above the subtitle band), pushes in to the face for "a lot"
   out.ROUND = EDGE.shot(EDGE.L(out.vEyesSit), { dist: 5.4, yaw: 124, pitch: 5, fov: 33, screenY: sy(330), drift: 0.2 });
-  out.ROUND_B = EDGE.shot(EDGE.L(out.vEyesSit), { dist: 3.5, yaw: 120, pitch: 5, fov: 33, screenY: sy(385), drift: 0.15 });
+  out.ROUND_B = EDGE.shot(EDGE.L(out.vEyesSit), { dist: 3.5, yaw: 120, pitch: 0, fov: 33, screenY: sy(385), drift: 0.15 });
   // USER_LOST: close lost profile of the user (face y~420) looking frame-right at the seated Void's back
   // b07: close 3/4 on the user looking off frame-right at the Void's back (the Void sits 3.3 m straight ahead of the
   // user, so no portrait frame holds both a readable face and its back: the face wins — the guilt flicker must read)
@@ -169,13 +170,13 @@ function voidPose(t) {
     lean: -0.06 * puff + 0.08 * bl + 0.05 * ramp(t, K.contact, K.contact + 0.5) + 0.06 * pick,
     slump: 0.25 * ramp(t, K.contact + 0.2, K.contact + 0.8) + 0.25 * deflate,
     breathe: t < K.b4 ? 0.6 : 1,
-    twist: -0.12 * pick,
+    twist: 0,
   };
   // ---- head
   const headUp = ramp(t, K.b4 - 0.1, K.b4 + 0.3) * (1 - ramp(t, K.contact, K.contact + 0.35));
   const head = {
     pitch: -0.14 * (t < K.b4 ? 1 : 0) * (1 - ramp(t, K.rollA - 0.4, K.rollA)) - 0.13 * roll - 0.06 * puff + 0.05 * bl
-      - 0.18 * headUp + 0.26 * ramp(t, K.contact + 0.05, K.contact + 0.6) + 0.08 * ramp(t, K.b6 + 0.2, K.b6 + 1.0) + 0.06 * deflate,
+      - 0.18 * headUp + 0.26 * ramp(t, K.contact + 0.05, K.contact + 0.6) - 0.1 * ramp(t, K.b6 + 0.2, K.b6 + 1.2) + 0.06 * deflate,
     yaw: 0.3 * headUp * (1 - tp * 0.5) + 0.18 * ramp(t, K.rollB, K.rollB + 0.3) * (1 - ramp(t, K.b4, K.b4 + 0.4)),
     roll: 0.07 * roll + 0.06 * headUp,
   };

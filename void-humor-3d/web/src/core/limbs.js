@@ -49,6 +49,7 @@ export class SweepTube {
     const pts = points.map((p) => (p instanceof THREE.Vector3 ? p : new THREE.Vector3(...p)));
     if (pts.length === 2) pts.splice(1, 0, pts[0].clone().lerp(pts[1], 0.5));
     this.curve.points = pts;
+    this.curve.needsUpdate = true;   // invalidate the cached arc-length table (else getPointAt() uses the previous frame's)
     const rad = typeof radius === 'function' ? radius
       : Array.isArray(radius) ? (s) => { const f = s * (radius.length - 1); const i = Math.min(radius.length - 2, Math.floor(f)); return lerp(radius[i], radius[i + 1], f - i); }
       : () => radius;

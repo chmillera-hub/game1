@@ -16,8 +16,9 @@ import { EDGE, todAt, voidSkyAt, galaxyAt, galaxySpin, lookFor, sy, px } from '.
 import { VX } from '../chars/void.js';
 import { JX } from '../chars/jesus.js';
 import { UX } from '../chars/user.js';
+import { scopeVisible, ensureLittleGalaxy } from './edgeprops.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, fitShot, mixShot, W, WY, faceYaw, MARKS as M, jesusStep, starSprite } from './armour_shared.js';
-import { voidArmour, moteState, galaxyFloor, userSeated, sceneLook, computeMote } from './armour_common.js';
+import { voidArmour, moteState, userSeated, sceneLook, computeMote } from './armour_common.js';
 
 let S = null;   // static points/shots (computed once in setup; pure data afterwards)
 
@@ -30,13 +31,14 @@ export default {
     const st = { scene: set.scene, set, jesus, vd, user };
     st.fx = new Particles({ max: 24 }); set.scene.add(st.fx.mesh);
     st.mote = starSprite(0xfff2d0, 0.2); set.scene.add(st.mote);
-    st.floorGal = galaxyFloor(st.fx); set.scene.add(st.floorGal.mesh);
+    ensureLittleGalaxy(set);                                       // the shared little galaxy by the sneaker (edgeprops)
+    for (const o of [st.fx.mesh, st.mote, st.puffs && st.puffs.mesh, st.seed, st.tear]) if (o) scopeVisible(o, 's08', 's09');
     S = st.S = computeStatics(st);
     return st;
   },
   async update(t, app, st) {
     const { set, jesus, vd, user } = st;
-    st.scene.add(jesus.root, vd.root, user.root, st.fx.mesh, st.mote, st.floorGal.mesh);
+    st.scene.add(jesus.root, vd.root, user.root, st.fx.mesh, st.mote);
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const shot = shotAt(t);
     applyShot(app.camera, shot, t, 8);
@@ -54,7 +56,6 @@ export default {
     const ms = moteState(t, S.MOTE);
     st.mote.visible = ms.a > 0.01;
     st.mote.position.copy(ms.p); st.mote.material.opacity = ms.a; st.mote.scale.setScalar(0.2 * ms.s);
-    st.floorGal.update(t);
     st.look = sceneLook('s08', set.look, t);
   },
 };

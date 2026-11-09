@@ -353,7 +353,6 @@ export default {
       }
     }
     st.fx.end();
-    if (globalThis.__dbg) console.log("fx n", st.fx.n, JSON.stringify(Array.from(st.fx.aPos.array.slice(0, 6)).map((v) => +v.toFixed(2))), "eyes", user.anchor("eyes").toArray().map((v) => +v.toFixed(2)));
 
     // ---------------------------------------------------------------------------- set + look
     const mid = [(uW[0] + vW[0]) / 2, 0, (uW[2] + vW[2]) / 2];

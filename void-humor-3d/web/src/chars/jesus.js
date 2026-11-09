@@ -12,7 +12,7 @@ import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometr
 import { Character, gazePoint } from '../core/character.js';
 import { Face, EXPR, FACE_DEFAULTS } from '../core/face.js';
 import { SweepTube, solveIK2, orientYZ } from '../core/limbs.js';
-import { enhance, contactShadow } from '../core/materials.js';
+import { contactShadow } from '../core/materials.js';
 import { CTX } from '../core/context.js';
 import { clamp, lerp, smooth, smoothstep, noise1, fbm1, hash1, schedule } from '../core/util.js';
 
@@ -69,14 +69,36 @@ function bake(parent, meshes) {
   return out;
 }
 
-// MeshStandard + core enhance() (cheap rim / wrap / glow): the perf-friendly replacement for MeshPhysical sheen
+// Cheap materials: MeshStandard (skin) / MeshLambert (matte cloth, hair, rope, leather) + a slim injected rim / glow /
+// wrap term (same look as core enhance() but without its fizz-noise code, which costs SwiftShader fill time even
+// when switched off). Exposes mat.userData.uniforms.uRim like enhance() does; o.jaw adds the same jaw-drop deformation.
 function stdMat(color, o = {}) {
-  const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: o.roughness ?? 0.85, metalness: 0,
-    side: o.side ?? THREE.FrontSide, vertexColors: !!o.vertexColors });
-  return enhance(m, { rim: o.rim ?? 0.2, rimColor: o.rimColor ?? 0xffffff, rimPower: o.rimPower ?? 3.2, glow: o.glow ?? 0.03,
-    wrap: o.wrap ?? 0, wrapColor: o.wrapColor ?? 0xff8866, jaw: o.jaw });
+  const m = o.lambert ? new THREE.MeshLambertMaterial({ color: new THREE.Color(color), side: o.side ?? THREE.FrontSide, vertexColors: !!o.vertexColors })
+    : new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: o.roughness ?? 0.85, metalness: 0,
+      side: o.side ?? THREE.FrontSide, vertexColors: !!o.vertexColors });
+  const u = {
+    uRim: { value: o.rim ?? 0.2 }, uRimColor: { value: new THREE.Color(o.rimColor ?? 0xffffff) }, uRimPower: { value: o.rimPower ?? 3.2 },
+    uGlow: { value: o.glow ?? 0.03 }, uWrap: { value: o.wrap ?? 0 }, uWrapColor: { value: new THREE.Color(o.wrapColor ?? 0xff8866) },
+  };
+  const J = o.jaw;
+  if (J) Object.assign(u, { uJaw: { value: 0 }, uJawY: { value: J.y }, uJawDrop: { value: J.drop }, uJawBack: { value: J.back ?? 0 }, uJawSoft: { value: J.soft ?? 0.05 } });
+  m.userData.uniforms = u; m.userData.uJaw = u.uJaw;
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u);
+    if (J) sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uJaw, uJawY, uJawDrop, uJawBack, uJawSoft;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        float jw = uJaw * (1.0 - smoothstep(uJawY - uJawSoft, uJawY + uJawSoft, transformed.y));
+        transformed.y -= jw * uJawDrop; transformed.z -= jw * uJawBack;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uRim, uRimPower, uGlow, uWrap; uniform vec3 uRimColor, uWrapColor;')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        { float fres = 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
+          totalEmissiveRadiance += uRimColor * uRim * pow(fres, uRimPower) + uGlow * diffuseColor.rgb + uWrapColor * uWrap * pow(fres, 1.5) * 0.35; }`);
+  };
+  m.customProgramCacheKey = () => 'jlite' + (J ? 'J' : '') + m.type;
+  return m;
 }
-
 // ---------------------------------------------------------------------------------------------------------
 // Head surface (head-local: origin = head centre, +Z out of the face). Shared by mesh, Face, hair, beard.
 function headPoint(u, v, out = new THREE.Vector3()) {
@@ -159,7 +181,7 @@ function hermite(K, a) {
   return K[n - 1][1];
 }
 // cheek line with soft tuft scallops (the mustache stays clean)
-const beardTop = (a) => hermite(BEARD_TOP, a) + 0.016 * Math.pow(Math.max(0, Math.sin(a * 15 + 0.3)), 2) * smoothstep(0.5, 0.75, a) * smoothstep(1.4, 1.1, a);
+const beardTop = (a) => hermite(BEARD_TOP, a) + 0.014 * Math.pow(Math.max(0, Math.sin(a * 15 + 0.3)), 2) * smoothstep(0.42, 0.6, a) * smoothstep(0.82, 0.7, a);
 const beardBot = (a) => hermite(BEARD_BOT, a);
 const beardEdge = (u, v) => { const a = Math.abs(u); return Math.min((beardTop(a) - v) / 0.1, (v - beardBot(a)) / 0.14, (1.6 - a) / 0.16); };
 function beardStatic(u, v) {
@@ -171,7 +193,10 @@ function beardStatic(u, v) {
   const lower = smoothstep(-0.5, -0.85, v);
   // tuft lobes along the jaw / chin silhouette + soft flow variation on the cheeks
   T *= 1 + 0.32 * Math.pow(Math.max(0, Math.sin(u * 8.5 + 0.6 + Math.sin(v * 3) * 0.8)), 2) * lower - 0.08 * lower + 0.05 * Math.sin(u * 9 - v * 4) * (1 - lower);
-  return lerp(-0.0045, T, rounded(e));
+  // e < 0: a linear signed ramp under the skin, so the shell crosses the skin exactly ON the contour (the visible
+  // edge is then interpolated along the triangles = a smooth curve, not grid stair-steps)
+  const em = e * 0.0165;                                 // ~metres across the contour
+  return e >= 0 ? Math.min(T * rounded(e), em * 1.1) : Math.max(-0.0045, em * 1.1);
 }
 
 // Painted-mouth geometry (mirrors core/face.js _drawDecal) in decal metres around the mouth centre.
@@ -284,7 +309,7 @@ export const ARM = {
   knee_rest: { t: [0.2, -0.32, 0.36], pole: [1, -0.2, -0.3], palm: [-0.2, 0.9, 0.3], fing: [-0.2, 0, 1], hand: { curl: 0.12, spread: 0.3, thumb: 0.55, cup: 0.4, splay: 0.05 }, anim: 'knee' },
   // head-space (face) presets — target relative to the head centre
   whisper: { space: 'head', t: [0.095, -0.15, 0.115], pole: [0.8, -1, 0.0], palm: [-0.62, 0.0, 0.78], fing: [-0.1, 1, 0.08], hand: { curl: 0.14, spread: 0.1, thumb: 0.35, cup: 0.7 } },
-  teehee: { space: 'head', t: [0.05, -0.178, 0.148], pole: [0.8, -1, 0.1], palm: [-0.5, -0.15, -0.85], fing: [-0.45, 0.88, 0.15], hand: { curl: 0.5, spread: 0.06, thumb: 0.25, cup: 0.4 } },
+  teehee: { space: 'head', t: [0.042, -0.166, 0.15], pole: [0.8, -1, 0.1], palm: [-0.5, -0.15, -0.85], fing: [-0.45, 0.88, 0.15], hand: { curl: 0.5, spread: 0.06, thumb: 0.25, cup: 0.4 } },
   cover_mouth: { space: 'head', t: [0.04, -0.19, 0.15], pole: [0.8, -1, 0.1], palm: [-0.1, 0, -1], fing: [-0.4, 0.92, 0.0], hand: { curl: 0.18, spread: 0.08, thumb: 0.3, cup: 0.45 } },
   chin: { space: 'head', t: [0.03, -0.30, 0.09], pole: [0.8, -1, 0.2], palm: [0.1, -0.3, -1], fing: [-0.2, 0.7, 0.6], hand: { curl: 0.75, spread: 0.05, thumb: 0.5 } },
   wipe_eye: { space: 'head', t: [0.09, -0.10, 0.115], pole: [0.8, -1, 0.2], palm: [-0.4, -0.2, -1], fing: [-0.35, 0.8, 0.2], hand: { curl: 0.85, point: 0, thumb: 0.2 } },
@@ -550,21 +575,22 @@ class Jesus extends Character {
 
   // ------------------------------------------------------------------ materials
   _mats() {
-    // Perf: everything is MeshStandard + core enhance() (rim / wrap / glow) — no MeshPhysical sheen passes.
+    // Perf: skin = MeshStandard, matte cloth / hair / rope / leather = MeshLambert, all with the slim rim/glow/wrap of
+    // stdMat() (no MeshPhysical sheen passes, no enhance() fizz code). Sleeves / mantle cast no shadows.
     const sk = { rim: 0.42, rimColor: GOLD, wrap: 0.34, wrapColor: 0xff7a58, roughness: 0.5, glow: 0.05 };
     this.headSkin = stdMat(SKIN, { ...sk, jaw: JAW });
     this.bodySkin = stdMat(SKIN, sk);
-    const hs = { roughness: 0.7, rim: 0.5, rimColor: 0xffbf70, rimPower: 2.6, glow: 0.07, wrap: 0.2, wrapColor: 0x8a4a28, vertexColors: true };
+    const hs = { lambert: true, roughness: 0.7, rim: 0.5, rimColor: 0xffbf70, rimPower: 2.6, glow: 0.07, wrap: 0.2, wrapColor: 0x8a4a28, vertexColors: true };
     this.hairMat = stdMat(0xffffff, hs);
     this.hairShellMat = stdMat(0xffffff, { ...hs, side: THREE.DoubleSide }); this.hairShellMat.shadowSide = THREE.BackSide;
-    this.beardMat = stdMat(0x45291a, { roughness: 0.7, rim: 0.42, rimColor: 0xffbf70, rimPower: 2.6, glow: 0.02 });
-    const cl = { roughness: 0.92, rim: 0.36, rimColor: 0xffd28c, rimPower: 3.2, glow: 0.035, wrap: 0.25, wrapColor: 0xffe8c8 };
+    this.beardMat = stdMat(0x45291a, { lambert: true, roughness: 0.7, rim: 0.42, rimColor: 0xffbf70, rimPower: 2.6, glow: 0.02 });
+    const cl = { lambert: true, roughness: 0.92, rim: 0.36, rimColor: 0xffd28c, rimPower: 3.2, glow: 0.035, wrap: 0.25, wrapColor: 0xffe8c8 };
     this.robeMat = stdMat(ROBE_C, cl);
     this.sleeveMat = stdMat(ROBE_C, cl);
-    this.liningMat = stdMat(0xb09878, { roughness: 0.95, rim: 0, glow: 0.04, vertexColors: true });   // lit sleeve interior (darkens inward)
-    this.mantleMat = stdMat(MANTLE_C, { roughness: 0.85, rim: 0.34, rimColor: 0xffb070, rimPower: 3, glow: 0.04, wrap: 0.3, wrapColor: 0xff8a5c });
-    this.ropeMat = stdMat(ROPE_C, { roughness: 0.92, rim: 0.2, rimColor: 0xffd090, glow: 0.03 });
-    this.leatherMat = stdMat(LEATHER_C, { roughness: 0.62, rim: 0.2, rimColor: 0xffc080, glow: 0.02 });
+    this.liningMat = stdMat(0xb09878, { lambert: true, roughness: 0.95, rim: 0, glow: 0.04, vertexColors: true });   // lit sleeve interior (darkens inward)
+    this.mantleMat = stdMat(MANTLE_C, { lambert: true, roughness: 0.85, rim: 0.34, rimColor: 0xffb070, rimPower: 3, glow: 0.04, wrap: 0.3, wrapColor: 0xff8a5c });
+    this.ropeMat = stdMat(ROPE_C, { lambert: true, roughness: 0.92, rim: 0.2, rimColor: 0xffd090, glow: 0.03 });
+    this.leatherMat = stdMat(LEATHER_C, { lambert: true, roughness: 0.62, rim: 0.2, rimColor: 0xffc080, glow: 0.02 });
     this.creaseMat = new THREE.MeshBasicMaterial({ color: 0x24130b });
     this._rims = [[this.headSkin, 0.42], [this.bodySkin, 0.42], [this.hairMat, 0.5], [this.hairShellMat, 0.5], [this.beardMat, 0.42], [this.robeMat, 0.36], [this.sleeveMat, 0.36], [this.mantleMat, 0.34], [this.ropeMat, 0.2], [this.leatherMat, 0.2]];
   }
@@ -630,7 +656,8 @@ class Jesus extends Character {
         tongue: '#c55a60', lipTintRGB: '168,82,72', blushColor: '235,115,90', blushX: HW0 * 2.3, blushY: HW0 * 1.6,
         drawExtra: (g, p) => this._drawExtra(g, p),
       },
-      decal: { uMin: -0.82, uMax: 0.82, vMin: MOUTH_V - 0.3, vMax: EYE_V + 0.1, size: [640, 400] },
+      decal: { uMin: -0.82, uMax: 0.82, vMin: MOUTH_V - 0.3, vMax: EYE_V + 0.1, size: [640, 400],
+        material: new THREE.MeshLambertMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }) },
       jaw: [this.headSkin.userData.uJaw],
     });
     this._buildCreases();
@@ -694,7 +721,7 @@ class Jesus extends Character {
     const sm = Math.max(smoothstep(0.3, 0.95, p.mSmile), hap);
     g.lineCap = 'round';
     if (sm > 0.01) {
-      g.strokeStyle = `rgba(118,58,38,${0.13 * sm})`; g.lineWidth = 0.002;
+      g.strokeStyle = `rgba(118,58,38,${0.09 * sm})`; g.lineWidth = 0.0018;
       for (const s of [-1, 1]) {
         const x0 = s * 0.16 * d.rxEff, y0 = (-0.25 - MOUTH_V) * d.ryEff, x1 = s * 0.27 * d.rxEff, y1 = (-0.33 - MOUTH_V) * d.ryEff;
         g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x1 + s * 0.006, (y0 + y1) / 2 + 0.004, x1, y1); g.stroke();
@@ -716,8 +743,8 @@ class Jesus extends Character {
       const ey = (EYE_V - MOUTH_V) * d.ryEff - EYE_R * 0.98;
       for (const s of [-1, 1]) {
         const xc = s * EYE_U * d.rxEff * 1.02;
-        g.strokeStyle = `rgba(112,52,34,${0.34 * cb})`; g.lineWidth = 0.0022;
-        g.beginPath(); g.moveTo(xc - s * EYE_R * 0.75, ey + 0.004); g.quadraticCurveTo(xc + s * 0.004, ey - 0.0085, xc + s * EYE_R * 0.95, ey + 0.002); g.stroke();
+        g.strokeStyle = `rgba(112,52,34,${0.26 * cb})`; g.lineWidth = 0.002;
+        g.beginPath(); g.moveTo(xc - s * EYE_R * 0.55, ey + 0.002); g.quadraticCurveTo(xc + s * 0.004, ey - 0.007, xc + s * EYE_R * 0.8, ey + 0.001); g.stroke();
         const ag = g.createRadialGradient(xc + s * 0.004, ey - 0.016, 0, xc + s * 0.004, ey - 0.016, 0.022);
         ag.addColorStop(0, `rgba(255,190,160,${0.22 * cb})`); ag.addColorStop(1, 'rgba(255,190,160,0)');
         g.fillStyle = ag; g.beginPath(); g.ellipse(xc + s * 0.004, ey - 0.016, 0.024, 0.016, 0, 0, Math.PI * 2); g.fill();
@@ -771,6 +798,10 @@ class Jesus extends Character {
         // S-wave lobes (each lock its own phase) + lock bulge (grooves between locks)
         const env = smoothstep(1.0, 0.55, sb) * cw;
         pnt.addScaledVector(d, (0.011 * Math.sin(sb * Math.PI * 2.3 + L.ph) + 0.014 * L.c - 0.004) * env);
+        // never inside the head / beard (front columns hug the cheeks): push out radially to surface + margin
+        const rr = pnt.length(), uu = Math.atan2(pnt.x, pnt.z), vv = Math.asin(clamp(pnt.y / Math.max(rr, 1e-6), -1, 1));
+        const rs = headPoint(uu, vv, _hw).length() + 0.007 + 0.014 * smoothstep(0.3, -0.1, vv) * smoothstep(1.75, 1.3, Math.abs(uu));
+        if (rr < rs) pnt.multiplyScalar(rs / rr);
         rest.push(pnt);
         const band = Math.exp(-(((sb - 0.62) / 0.14) ** 2));
         setCol(j, i, (0.9 + 0.14 * L.c + 0.2 * band * L.c + 0.16 * smoothstep(0.25, 0, sb)) * lerp(1, 0.85, 1 - L.c));
@@ -859,7 +890,7 @@ class Jesus extends Character {
     // grid denser around the mouth (u near 0, v near the mouth); vertices next to the static contour are snapped
     // ONTO it at build time and vertices next to the live lip-hole contour are snapped onto it every frame, so the
     // beard edge is a clean curve instead of grid stair-steps.
-    const NU = this.bNU = 84, NV = this.bNV = 50, U1 = 1.62, V0 = -1.42, V1 = 0.16;
+    const NU = this.bNU = 66, NV = this.bNV = 42, U1 = 1.62, V0 = -1.42, V1 = 0.16;
     const n = (NU + 1) * (NV + 1);
     const ym = (() => { const target = (MOUTH_V - V0) / (V1 - V0); let y = target; for (let i = 0; i < 40; i++) y = target + 0.55 * Math.sin(2 * Math.PI * y) / (2 * Math.PI); return y; })();
     const gv = (y) => y - 0.55 * (Math.sin(2 * Math.PI * (y - ym)) + Math.sin(2 * Math.PI * ym)) / (2 * Math.PI);
@@ -872,18 +903,7 @@ class Jesus extends Character {
     for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
       const k = j * (NU + 1) + i;
       let u = gu(i / NU * 2 - 1), v = V0 + (V1 - V0) * gv(j / NV);
-      let T0 = beardStatic(u, v);
-      // snap the first ring OUTSIDE the static contour onto it (Newton on beardEdge = 0)
-      const e = beardEdge(u, v);
-      if (e < 0 && e > -0.55) {
-        for (let it = 0; it < 3; it++) {
-          const ee = beardEdge(u, v), gx = (beardEdge(u + eps, v) - beardEdge(u - eps, v)) / (2 * eps), gy = (beardEdge(u, v + eps) - beardEdge(u, v - eps)) / (2 * eps);
-          const g2 = gx * gx + gy * gy; if (g2 < 1e-9) break;
-          u -= ee * gx / g2; v -= ee * gy / g2;
-        }
-        u = clamp(u, -U1, U1);
-        T0 = 0.0004;
-      }
+      const T0 = beardStatic(u, v);
       const { p, n: nn } = headSurf(u, v);
       const pv = headPoint(u, v + 0.01).sub(headPoint(u, v - 0.01)).multiplyScalar(1 / (0.02 * d.ryEff));   // d(pos)/d(decal Y)
       this.bTv.set([pv.x, pv.y, pv.z], k * 3);
@@ -910,7 +930,6 @@ class Jesus extends Character {
     if (key === this._beardKey) return;
     this._beardKey = key;
     const B = this.bBase, N = this.bN, P = this.bPos, rxE = this.rxEff, ryE = this.ryEff;
-    const eps = 0.0004, band = 0.0042, hs = { p: null, n: null };
     const TV = this.bTv;
     // the mustache rides the upper lip: corners up in a smile -> the mustache curves up with them (no "toothbrush" patch)
     const lipLift = (X) => {
@@ -931,18 +950,9 @@ class Jesus extends Character {
           if (Math.abs(dY) > 2e-4) { Y += dY; x += TV[k * 3] * dY; y0 += TV[k * 3 + 1] * dY; z += TV[k * 3 + 2] * dY; }
         }
         const dd = lipHoleDist(X, Y, g);
-        if (dd < 0 && dd > -band) {
-          // first ring inside the opening: snap onto the lip-hole contour -> a smooth edge
-          let x2 = X, y2 = Y;
-          for (let it = 0; it < 2; it++) {
-            const e0 = lipHoleDist(x2, y2, g), gx = (lipHoleDist(x2 + eps, y2, g) - lipHoleDist(x2 - eps, y2, g)) / (2 * eps), gy = (lipHoleDist(x2, y2 + eps, g) - lipHoleDist(x2, y2 - eps, g)) / (2 * eps);
-            const g2 = gx * gx + gy * gy; if (g2 < 1e-8) break;
-            x2 -= e0 * gx / g2; y2 -= e0 * gy / g2;
-          }
-          const sp = headSurf(x2 / rxE, (y2 + jw * JAW.drop) / ryE + MOUTH_V);
-          x = sp.p.x; y0 = sp.p.y; z = sp.p.z; nx = sp.n.x; ny = sp.n.y; nz = sp.n.z;
-          T = 0.0006;
-        } else T = lerp(-0.0045, T, rounded(dd / 0.0058));
+        // same linear signed ramp at the lip-hole contour: the opening's edge is a clean interpolated curve
+        T = dd >= 0 ? Math.min(T * rounded(dd / 0.0058), dd * 1.1) : Math.max(-0.0045, dd * 1.1);
+        if (this.bT0[k] < 0) T = Math.min(T, this.bT0[k]);
       }
       P[k * 3] = x + nx * T;
       P[k * 3 + 1] = y0 + ny * T - jw * JAW.drop;
@@ -1331,7 +1341,7 @@ class Jesus extends Character {
   /** 'around': walk the hand round the partner's flank toward its back as far as the arm comfortably reaches */
   _aroundContact(A, s, shW, chestFwd) {
     const S = this._surf(A.surface), tg = A.target ? toV(A.target) : null;
-    const h = tg ? tg.y : (A.height ?? shW.y + 0.1);
+    const h = tg ? tg.y : (A.height ?? shW.y + 0.16);
     const C = S.C, e0 = V(shW.x - C.x, 0, shW.z - C.z).normalize();
     const back = V(-chestFwd.x, 0, -chestFwd.z).normalize();
     const sg = Math.sign(e0.z * back.x - e0.x * back.z) || 1;
@@ -1343,7 +1353,7 @@ class Jesus extends Character {
       if (r) r.phi = phi;
       return r;
     };
-    const budget = A.span ?? 0.5;
+    const budget = A.span ?? 0.47;
     let phiMax = 1.7;
     if (tg) { const dt = V(tg.x - C.x, 0, tg.z - C.z).normalize(); phiMax = Math.min(phiMax, Math.max(0, Math.acos(clamp(dt.dot(e0), -1, 1)))); }
     let prev = hitAt(0);
@@ -1431,8 +1441,9 @@ class Jesus extends Character {
           acc.t.copy(c.p).addScaledVector(n, 0.004).applyMatrix4(this.rootInv);
           if (!A.palm) acc.palm.copy(n).negate().applyQuaternion(this.rootQInv);
           if (!A.fingers) acc.fing.copy(tw).multiplyScalar(0.94).add(V(0, -0.2, 0)).addScaledVector(n, -0.12).normalize().applyQuaternion(this.rootQInv);
-          const back = V(-chestFwd.x, 0, -chestFwd.z).normalize();
-          contactPole = n.clone().multiplyScalar(0.55).add(V(0, 0.8, 0)).addScaledVector(back, 0.3).normalize().applyQuaternion(this.rootQInv);
+          // elbow: up and out toward the partner's side (reads from the front as the arm going up and round behind them)
+          const toAx = c.C ? V(c.C.x - shW.x, 0, c.C.z - shW.z).normalize() : n.clone().negate().setY(0).normalize();
+          contactPole = toAx.multiplyScalar(0.45).add(V(0, 0.85, 0)).addScaledVector(n, 0.25).normalize().applyQuaternion(this.rootQInv);
           arm.contact = { p: c.p.clone(), n };
         }
       } else if (A.target) {
@@ -1734,7 +1745,13 @@ class Jesus extends Character {
       F.knee.copy(knee); F.ankle.copy(ankle);
       F.g.position.copy(ankle); F.g.rotation.set(f.pitch, f.yaw + pelYaw * 0.4, 0);
       const sd = knee.clone().sub(ankle).normalize();
-      F.shin.update([ankle.clone().addScaledVector(sd, 0.01), ankle.clone().addScaledVector(sd, 0.16)], [0.036, 0.04]);
+      if (sit > 0.35) {   // seated: the robe drapes over the raised shins (no bare stick legs)
+        F.shin.mesh.material = this.robeMat;
+        F.shin.update([ankle.clone().addScaledVector(sd, 0.035), ankle.clone().lerp(knee, 0.55), knee.clone().add(V(0, 0.02, 0))], [0.062, 0.078, 0.092]);
+      } else {
+        F.shin.mesh.material = this.bodySkin;
+        F.shin.update([ankle.clone().addScaledVector(sd, 0.01), ankle.clone().addScaledVector(sd, 0.16)], [0.036, 0.04]);
+      }
       const fwd = V(0, 0, 1).applyEuler(F.g.rotation);
       const toe = ankle.clone().addScaledVector(fwd, 0.15).add(V(0, -0.04, 0).applyEuler(F.g.rotation));
       caps.push({ a: F.hip, b: knee, ra: 0.088, rb: 0.066 }, { a: knee, b: ankle, ra: 0.063, rb: 0.046 }, { a: ankle, b: toe, ra: 0.045, rb: 0.035 });

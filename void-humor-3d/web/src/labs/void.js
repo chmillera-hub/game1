@@ -166,7 +166,7 @@ export async function update(t, app, S) {
     // Jesus stands; the Void steps in and bends so its mouth is right at his ear (solveWhisper: depth + position)
     J.root.visible = true;
     const close = u > 2.6;
-    cam(close ? framed([0.72, 1.6, 1.05], { dist: 3.6, yaw: -38, pitch: 3, fov: 30, screenY: 0.42, drift: 0 })
+    cam(close ? framed([0.6, 1.62, 1.05], { dist: 3.9, yaw: 14, pitch: 2, fov: 30, screenY: 0.42, drift: 0 })
       : framed([0.4, 1.5, 0.6], { dist: 7.8, yaw: 25, pitch: 4, fov: 32, screenY: 0.45, drift: 0 }));
     jpose = { pos: [0.95, 0, 1.25], yaw: -0.55, face: JX('listening'), gaze: 'camera', head: { roll: 0.08 } };
     J.update(t, jpose);
@@ -202,7 +202,7 @@ export async function update(t, app, S) {
     // beat 15: the Void puts an arm around him (palm on his far shoulder). Front view, then 3/4.
     J.root.visible = true;
     const isPat = name === 'pat', view34 = u > seg.dur * 0.5;
-    cam(view34 ? framed([0.75, 1.5, 0.6], { dist: 5.2, yaw: isPat ? 52 : 125, pitch: 6, fov: 32, screenY: 0.42, drift: 0 })
+    cam(view34 ? framed([0.75, 1.5, 0.7], { dist: 5.2, yaw: isPat ? -22 : 125, pitch: 6, fov: 32, screenY: 0.42, drift: 0 })
       : framed([0.6, 1.55, 0.6], { dist: 5.6, yaw: 10, pitch: 3, fov: 32, screenY: 0.42, drift: 0 }));
     const jy = isPat ? -0.25 : 0.1;
     jpose = isPat
@@ -240,7 +240,7 @@ export async function update(t, app, S) {
     S.cg.g.visible = true; S.cg.g.position.set(0.55, 0.75, 1.55); S.cg.g.rotation.y = Math.PI;
     const latch = S.cg.latch.getWorldPosition(new THREE.Vector3());
     const w = sm(0.3, 1.4, u);
-    cam(framed([0.35, 1.45, 1.0], { dist: 5.2, yaw: 38, pitch: 6, fov: 32, screenY: 0.44, drift: 0 }));
+    cam(framed([0.3, 1.5, 0.8], { dist: 7.0, yaw: 40, pitch: 6, fov: 32, screenY: 0.46, drift: 0 }));
     pose = { face: VX('tender', { gazePitch: -0.1 }), gaze: latch, body: { lean: 0.32 * w, crouch: 0.3 * w }, head: { pitch: 0.22 * w },
       armL: { preset: 'tip', target: latch.clone().add(V(0, 0, -0.03)), reach: w, fingers: [-0.1, -0.35, 1] } };
   } else if (name === 'sit') {
@@ -262,9 +262,9 @@ export async function update(t, app, S) {
     pose = { face: VX('proud'), extra: { cosmos: c }, armL: { preset: 'open', from: 'rest', mix: c }, armR: { preset: 'open', from: 'rest', mix: c } };
   } else if (name === 'silhouette') {
     // TRUE backlight: low sun behind the Void, almost no fill -> a dark silhouette against a bright dusk sky
-    S.skyU.uTop.value.set(0x4a3f8f); S.skyU.uMid.value.set(0xf09a9a); S.skyU.uBot.value.set(0xffc27a); S.skyU.uSun.value.set(0.05, 0.12, -1); S.skyU.uSunK.value = 1;
-    S.key.intensity = 2.0; S.key.position.set(0.5, 1.6, -9); S.key.castShadow = false; S.rim.intensity = 0.0; S.hemi.intensity = 0.16; S.groundMat.color.set(0x6a4a60);
-    S.look = { ...S.look, exposure: 1.0, bloom: 0.75 };
+    S.skyU.uTop.value.set(0x3a3070); S.skyU.uMid.value.set(0xc87a90); S.skyU.uBot.value.set(0xe8a070); S.skyU.uSun.value.set(0.25, 0.06, -1); S.skyU.uSunK.value = 0.35;
+    S.key.intensity = 1.6; S.key.position.set(2, 1.2, -9); S.key.castShadow = false; S.rim.intensity = 0.0; S.hemi.intensity = 0.12; S.groundMat.color.set(0x4a3448);
+    S.look = { ...S.look, exposure: 0.95, bloom: 0.55 };
     cam(framed([0, 1.6, 0], { dist: 10, yaw: 0, pitch: -3, fov: 32, screenY: 0.47, drift: 0 }));
     pose = { face: VX('gentle'), yaw: 0.6 * Math.sin(u * 0.8), gaze: 'camera', extra: { rim: 1.6, eyeGlow: 1.15 } };
   }

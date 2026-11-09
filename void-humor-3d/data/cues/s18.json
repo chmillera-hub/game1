@@ -1,0 +1,17 @@
+{
+  "sfx": [
+    {"t": "s18b01+0.05", "name": "rumble_low", "gain_db": -5, "pan": 0.0},
+    {"t": "s18b01+1.05", "name": "cloth_rustle", "gain_db": -12, "pan": 0.4},
+    {"t": "s18b03+0.38", "name": "dagger_shing", "gain_db": -1, "pan": 0.3},
+    {"t": "s18b03+1.60", "name": "dust_sparkle", "gain_db": -2, "pan": 0.35},
+    {"t": "s18b06+0.58", "name": "dust_sparkle", "gain_db": -9, "pan": 0.45},
+    {"t": "s18b07+0.08", "name": "footsteps_soft", "gain_db": -11, "pan": 0.4},
+    {"t": "s18b07+0.69", "name": "footsteps_soft", "gain_db": -10, "pan": 0.35},
+    {"t": "s18b07+1.09", "name": "footsteps_soft", "gain_db": -10, "pan": 0.3},
+    {"t": "s18b07+0.72", "name": "dust_sparkle", "gain_db": -12, "pan": 0.35}
+  ],
+  "hits": [
+    {"t": "s18b01+1.0", "kind": "creep"},
+    {"t": "s18b07+1.52", "kind": "pluck"}
+  ]
+}

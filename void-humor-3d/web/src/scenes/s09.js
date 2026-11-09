@@ -16,8 +16,9 @@ import { Particles, CELL } from '../core/particles.js';
 import { EDGE, todAt, voidSkyAt, galaxyAt, galaxySpin, sy } from './marks.js';
 import { JX } from '../chars/jesus.js';
 import { UX, headShake } from '../chars/user.js';
+import { scopeVisible, ensureLittleGalaxy } from './edgeprops.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, fitShot, mixShot, W, WY, faceYaw, MARKS as M, starSprite } from './armour_shared.js';
-import { voidArmour, moteState, galaxyFloor, userSeated, sceneLook, computeMote, scaryT } from './armour_common.js';
+import { voidArmour, moteState, userSeated, sceneLook, computeMote, scaryT } from './armour_common.js';
 
 let S = null;
 
@@ -30,13 +31,14 @@ export default {
     const st = { scene: set.scene, set, jesus, vd, user };
     st.fx = new Particles({ max: 24 }); set.scene.add(st.fx.mesh);
     st.mote = starSprite(0xfff2d0, 0.2); set.scene.add(st.mote);
-    st.floorGal = galaxyFloor(st.fx); set.scene.add(st.floorGal.mesh);
+    ensureLittleGalaxy(set);                                       // the shared little galaxy by the sneaker (edgeprops)
+    for (const o of [st.fx.mesh, st.mote, st.puffs && st.puffs.mesh, st.seed, st.tear]) if (o) scopeVisible(o, 's09', 's10');
     S = st.S = statics(st);
     return st;
   },
   async update(t, app, st) {
     const { set, jesus, vd, user } = st;
-    st.scene.add(jesus.root, vd.root, user.root, st.fx.mesh, st.mote, st.floorGal.mesh);
+    st.scene.add(jesus.root, vd.root, user.root, st.fx.mesh, st.mote);
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const shot = shotAt(t);
     applyShot(app.camera, shot, t, 9);
@@ -53,7 +55,6 @@ export default {
     const ms = moteState(t, S.MOTE);
     st.mote.visible = ms.a > 0.01;
     st.mote.position.copy(ms.p); st.mote.material.opacity = ms.a; st.mote.scale.setScalar(0.2 * ms.s);
-    st.floorGal.update(t);
     st.look = sceneLook('s09', set.look, t);
   },
 };
@@ -114,7 +115,10 @@ function userPose(t) {
   const jab = ramp(t, that - 0.14, that + 0.06, 'out') * (1 - ramp(t, thing - 0.06, thing + 0.16));
   const cross = ramp(t, thing - 0.06, thing + 0.16, 'out');
   const rDown = 0.55 * ramp(t, b1 + 0.15, b1 + 1.0) + 0.45 * ramp(t, that - 0.1, that + 0.25);
-  P.armL = { preset: [['hold', (1 - jab) * (1 - cross) + 1e-4], ['jab', jab], ['crossed', cross]], tremble: 0.7 * jab + 0.15 * cross };
+  // the jab goes out and UP (a flashlight at a monster) so it reads past the user's head from the high master
+  const uy = WY(M.U), uL = [Math.cos(uy), 0, -Math.sin(uy)];
+  P.armL = { preset: [['hold', (1 - jab) * (1 - cross) + 1e-4], ['jab', jab], ['crossed', cross]], tremble: 0.7 * jab + 0.15 * cross,
+    offset: [uL[0] * 0.1 * jab, 0.2 * jab, uL[2] * 0.1 * jab] };
   P.armR = { preset: [['defend', (1 - rDown) * (1 - cross) + 1e-4], ['knee', rDown * (1 - cross)], ['crossed', cross]], tremble: 0.35 * (1 - rDown) + 0.15 * cross };
   // ---- body
   const jabLean = pulse(t, that - 0.14, 0.18, 0.12, 0.3);

@@ -1,0 +1,13 @@
+{
+  "sfx": [
+    {"t": "s19b01+0.44", "name": "footsteps_soft", "gain_db": -14, "pan": 0.55},
+    {"t": "s19b01+0.82", "name": "footsteps_soft", "gain_db": -14, "pan": 0.55},
+    {"t": "s19b01+1.38", "name": "footsteps_soft", "gain_db": -13, "pan": 0.5},
+    {"t": "s19b05+0.10", "name": "shimmer", "gain_db": -6, "pan": -0.1}
+  ],
+  "hits": [
+    {"t": "s19b01+0.50", "kind": "creep"},
+    {"t": "s19b03+1.58", "kind": "ping"},
+    {"t": "s19b05", "kind": "swell", "len": 2.0}
+  ]
+}

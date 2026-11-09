@@ -7,7 +7,7 @@ export async function setup(app) {
   app.camera.position.set(0, 2, 8); app.camera.lookAt(0, 1.5, 0); app.camera.updateMatrixWorld();
   const bad = [];
   const chk = (label) => {
-    for (const g of [vd.bodyGeo, vd.capeGeo, vd.arms.L.tube.geo, vd.arms.R.tube.geo, vd.legs.L.geo, vd.legs.R.geo, vd.arms.L.merged.mesh.geometry]) {
+    for (const g of [vd.bodyGeo, vd.capeGeo, vd.arms.L.tube.geo, vd.arms.R.tube.geo, vd.legs.L.geo, vd.legs.R.geo, vd.arms.L.merged.mesh.geometry, vd.arms.R.cuff.geo, vd.collar.geo]) {
       const a = g.attributes.position.array; for (let i = 0; i < a.length; i++) if (!Number.isFinite(a[i])) { bad.push(label + ' geo'); return; }
     }
     for (const n of ['head', 'eyes', 'mouth', 'mouthDir', 'whisper', 'earL', 'earR', 'chest', 'back', 'backLow', 'shoulderL', 'shoulderR', 'sideL', 'sideR', 'hip', 'handL', 'handR', 'footL', 'footR', 'kickFoot', 'hoodTop']) {
@@ -25,6 +25,18 @@ export async function setup(app) {
     { armL: { preset: 'tip', target: [0.5, 1.2, 1.1], tip: true, fingers: [0, 0, 1] }, armR: { preset: 'pat', target: [-1.5, 1.5, 0.5], pat: 1 } },
   ];
   extremes.forEach((p, i) => { vd.update(3 + i * 0.1, p); chk('extreme ' + i); n++; });
+  // partner contact (pat / around via `on`) with a minimal stand-in character
+  const pr = new THREE.Group(); pr.position.set(1.1, 0, 0.8); pr.updateMatrixWorld(true);
+  const A = { head: [0, 1.53, 0], eyes: [0, 1.55, 0.14], shoulderL: [0.165, 1.35, -0.01], shoulderR: [-0.165, 1.35, -0.01] };
+  const partner = { root: pr, height: 1.75, anchor: (nm) => (A[nm] ? new THREE.Vector3(...A[nm]).applyMatrix4(pr.matrixWorld) : null) };
+  for (const preset of ['pat', 'around']) for (const reach of [0, 0.5, 1]) {
+    vd.update(4.5, { yaw: 0.3, armL: { preset, on: partner, reach, pat: 1 } }); chk('on ' + preset + reach); n++;
+    if (reach === 1) console.log(preset, 'palm->target', vd.anchor('handL').distanceTo(partner.anchor(preset === 'pat' ? 'shoulderR' : 'shoulderL')).toFixed(3));
+  }
+  // whisper heights (yaw 0, mouth anchor) for the docs table
+  console.log('whisper mouth y:', [0, 0.6, 0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5].map((d) => { vd.update(4, { ...whisperPose(1, d) }); return d + ':' + vd.anchor('mouth').y.toFixed(3); }).join('  '));
+  const sw = vd.solveWhisper(4, { yaw: 0.35 }, new THREE.Vector3(1.0, 1.52, 1.2), 1);
+  console.log('solveWhisper ear 1.52 -> depth', sw.depth.toFixed(3), 'err', sw.err.toFixed(3), 'whisper->ear', vd.anchor('whisper').distanceTo(new THREE.Vector3(1.0, 1.52, 1.2)).toFixed(3));
   const pos = vd.solvePos(4, { ...whisperPose(1, 0.9) }, 'whisper', new THREE.Vector3(1, 1.6, 1.2));
   console.log('solvePos', pos.map((v) => v.toFixed(2)), 'err', pos.err.toFixed(3), 'whisper now', vd.anchor('whisper').toArray().map((v) => v.toFixed(2)));
   vd.update(5, { gaze: vd });   // Character as gaze (its own eyes: degenerate but must not NaN)
