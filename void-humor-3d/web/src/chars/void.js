@@ -1170,8 +1170,9 @@ export class Void extends Character {
         const th = lerp(1.05, TAU - 1.05, i / 8), e = Math.pow(Math.abs(i / 4 - 1), 3), R = 0.69 + 0.025 * Math.cos(3 * th) - 0.03 * e;
         pts.push(V3(R * Math.sin(th), 0.06 + 0.02 * Math.sin(2.5 * th + 0.4) + shrug * 0.09 + 0.004 * br - 0.07 * e, R * Math.cos(th) * 0.92 - 0.02).applyMatrix4(M));
       }
-      // (a soft low roll, not a tyre: max radius 0.075 m, flattened against the capelet)
-      this.collar.update(pts, (u) => 0.03 + 0.045 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.42, up: this._xd(NECK_Y, [0, 1, 0]) }); }
+      // (a soft low roll, not a tyre: max radius 0.054 m (was 0.11), flattened against the capelet; it only has to hide
+      // the hood/capelet seam)
+      this.collar.update(pts, (u) => 0.022 + 0.032 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.5, up: this._xd(NECK_Y, [0, 1, 0]) }); }
 
     // ---- face
     const fp = { ...FACE_DEFAULTS, ...fIn };

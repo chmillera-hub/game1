@@ -489,6 +489,13 @@ at the same speed from `FRAME0`.
   change), lips part, thumb stops; eyes slide away, mouth sets.
 - **b11 JESUS "I'll ask."** CUT `JESUS_CU`; small inhale, eyes to the user and back, quick tight smile; the Void unbends
   (whisperPose amount 1 → 0 over 0.9 s) and its hood rises out of the top of frame.
+- **AS BUILT (s07 review fix, web/src/scenes/s07.js):** b01–b08 use a deeper whisper bend (`DEEP`: whisperPose depth
+  1.2 + side bend −0.1, lean −0.06, head roll −0.3, nod +0.12, hood yaw 0.8): the hood leans over BESIDE Jesus's
+  head, its mouth ~0.18 m from his `earL` from `T('s07b01')+0.68` on; eases back to the plain depth-1.15 bend over
+  b09's first 0.75 s (b09 unchanged). `WHISPER` is now a medium two-shot `EDGE.shot(mid of both eyes, {dist 3.4,
+  yaw −22, pitch 3, fov 33, screenY 0.32})` (his eyes y≈460, its eyes y≈330), b08 `dist 2.75, yaw −16`. The cupped
+  hand sits low beside the mouth so the whisper mouth (driven by the s07b02/b07/b08 vocal envelopes) shows just
+  behind it. The b04/b05 eye ECUs roll with the hood (lid line level).
 
 ### s08 do_you_have_a_moment (100.4–116.0) — late dusk, tod 0.32 → 0.35, voidSky → 0.78
 - **b01 "Then the void crosses its arms, and ~scowls at the Twitter user."** CAM `LOWUP` 28 mm (Void eyes y≈220, Jesus

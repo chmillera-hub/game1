@@ -1,9 +1,9 @@
 {
- "_note": "s07 the_void_whispers — cues matched to web/src/scenes/s07.js: the Void's hand leaving its mouth and the bend (VOID_CU, cut on the action), the cupped hand rising, a pizzicato button when the side-eye parks, the ECU twinkle, the user's gulp + flinch + scoot-and-hop, a second pluck on the iris tick in the insert, the fake-scroll thumb taps (fading as the user shrinks), Jesus's two pats on its sleeve, its hand settling on his arm and his hand covering it, and the unbend.",
+ "_note": "s07 the_void_whispers — cues matched to web/src/scenes/s07.js: the Void's hand leaving its mouth and the bend (VOID_CU, cut on the action; the mouth is at his ear by b01+0.68), the cupped hand rising (b01+0.5), a pizzicato button when the side-eye parks, the ECU twinkle, the user's gulp + flinch + scoot-and-hop, a second pluck on the iris tick in the insert, the fake-scroll thumb taps (fading as the user shrinks), Jesus's two pats on its sleeve, its hand settling on his arm and his hand covering it, and the unbend.",
  "sfx": [
   {"t": "s07.start+0.45", "name": "cloth_rustle", "gain_db": -9, "pan": 0.2},
   {"t": "s07b01+0.0", "name": "cloth_rustle", "gain_db": -7, "pan": 0.2, "variant": 2},
-  {"t": "s07b01+0.8", "name": "cloth_rustle", "gain_db": -12, "pan": 0.15, "variant": 3},
+  {"t": "s07b01+0.5", "name": "cloth_rustle", "gain_db": -12, "pan": 0.15, "variant": 3},
   {"t": "s07b04+0.2", "name": "twinkle", "gain_db": -8, "pan": 0.0},
   {"t": "s07b05+0.30", "name": "gulp", "gain_db": -8, "pan": 0.0},
   {"t": "s07b05+0.36", "name": "cloth_rustle", "gain_db": -11, "pan": -0.1, "variant": 3},

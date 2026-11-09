@@ -332,12 +332,15 @@ function plopMotes(t, fx) {
   const a = K.contact;
   if (t < a || t > a + 3.4) return;
   const back = S.vBackSit;
+  // spread along the back's tangent and lifted OFF the surface (a world-axis scatter put some inside the cloak, where
+  // the depth test cut them into half-discs)
+  const out = back.clone().sub(S.vHeadSit).setY(0).normalize(), lat = V3(-out.z, 0, out.x);
   for (let i = 0; i < 7; i++) {
     const h1 = hash1(500 + i), h2 = hash1(600 + i * 7), h3 = hash1(700 + i * 13);
     const age = t - a - 0.05 * i;
     if (age < 0 || age > 2.8) continue;
     const u = age / 2.8;
-    const p = back.clone().add(V3((h1 - 0.5) * 0.9, 0.1 + 0.25 * h2 + 0.32 * age, (h3 - 0.5) * 0.9));
+    const p = back.clone().addScaledVector(lat, (h1 - 0.5) * 0.9).addScaledVector(out, 0.1 + 0.3 * h3).add(V3(0, 0.1 + 0.25 * h2 + 0.32 * age, 0));
     p.x += 0.04 * Math.sin(age * 2 + i); p.z += 0.04 * Math.cos(age * 1.7 + i);
     const al = smooth(u / 0.1) * (1 - smooth((u - 0.5) / 0.5));
     fx.add(p.toArray(), 0.07 + 0.04 * h2, i % 2 ? 0xc9b8ff : 0x9fe9ff, 0.9 * al, h1 * 6, CELL.star);

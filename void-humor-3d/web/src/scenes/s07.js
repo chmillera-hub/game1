@@ -3,10 +3,12 @@
 // turns sincere: under the attitude, the Void is hurt, and the user overhears just enough to feel it.
 //   open VOID_CU (s06's established angle, a clear size step from s06's two-shot): hand still over its mouth, eyes
 //       narrowed at the user; a blink — decided; the hand comes down and it starts to bend (cut on the action).
-//   b01-b03 WHISPER (slow push): the Void bent to Jesus's left ear, its RIGHT hand cupped BESIDE ITS OWN MOUTH (forearm
-//       up, elbow down-and-out, the cuff opening downward: a hand hiding a secret, not an ear trumpet), half-lidded,
-//       soft mouth shapes; Jesus tilts his ear up, eyes up-and-aside, mm-hm nods with the brows climbing; +1.0 s into
-//       the whisper the Void's eyes slide to the user and park, lids flatten; +2.2 s Jesus's eyes flick to the user and back.
+//   b01-b03 WHISPER (medium two-shot, slow push): the Void bent from the middle, its hood leaned over BESIDE his head
+//       (mouth ~18 cm from his left ear by b01+0.7), its RIGHT hand cupped BESIDE ITS OWN MOUTH (forearm up, elbow
+//       down-and-out, the cuff opening downward: a hand hiding a secret, not an ear trumpet), half-lidded, small quick
+//       whisper mouth shapes (from the whisper audio's envelope) just behind the hand's edge; Jesus tilts his ear up,
+//       eyes up-and-aside, mm-hm nods with the brows climbing; +1.0 s into the whisper the Void's eyes slide to the
+//       user and park, lids flatten; +2.2 s Jesus's eyes flick to the user and back.
 //   b04 ECU of the side-eye (its LEFT eye; framed high so the subtitle band holds only dark velvet): iris parked hard
 //       in the corner, the lid lowers a hair, no blink.
 //   b05 the Void's POV down at the user: meets the side-eye, gulps, flinches, SCOOTS back (7 cm + a little hop) ->
@@ -118,6 +120,30 @@ function cams(S, R) {
   ]);
 }
 
+/**
+ * fitShot on one eye (pinned at px, py) + a camera roll that levels most (k) of the line through both eyes: the
+ * rolled hood's lid line reads flat across the iris in the ECUs. The pin is pre-rotated so it still lands on (px, py).
+ */
+function levelFit(eye, other, px, py, fov, pos0, opts, k = 0.85) {
+  const cam = new THREE.PerspectiveCamera(fov, 720 / 1280, 0.05, 400);
+  const proj = (sh, v, roll) => {
+    cam.position.set(...sh.pos); cam.up.set(0, 1, 0); cam.lookAt(...sh.look); if (roll) cam.rotateZ(roll);
+    cam.updateMatrixWorld(); const q = v.clone().project(cam); return [(q.x * 0.5 + 0.5) * 720, (0.5 - q.y * 0.5) * 1280];
+  };
+  const s0 = fitShot([[eye, px, py]], fov, pos0, eye, opts);
+  const a = proj(s0, eye, 0), b = proj(s0, other, 0);
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]), lineAng = Math.abs(ang) > Math.PI / 2 ? ang - Math.sign(ang) * Math.PI : ang;
+  // the sign of the image rotation for a camera roll: measure it
+  const t1 = proj(s0, other, 0.1), t0 = proj(s0, eye, 0.1);
+  const ang1 = Math.atan2(t1[1] - t0[1], t1[0] - t0[0]), dImg = Math.atan2(Math.sin(ang1 - ang), Math.cos(ang1 - ang)) / 0.1;
+  const roll = -k * lineAng / dImg;
+  // pre-rotate the pin about the frame centre so that, once rolled, the eye lands on (px, py)
+  const th = roll * dImg, cx = 360, cy = 640, dx = px - cx, dy = py - cy;
+  const ppx = cx + dx * Math.cos(-th) - dy * Math.sin(-th), ppy = cy + dx * Math.sin(-th) + dy * Math.cos(-th);
+  const s1 = fitShot([[eye, ppx, ppy]], fov, pos0, eye, opts);
+  return { ...s1, roll };
+}
+
 // ---------------------------------------------------------------------------------------------------------- module
 export default {
   id: 's07',
@@ -155,8 +181,9 @@ export default {
     const a4 = at(S.b04 + 0.5);
     const toCam = toV(R.whA.pos).sub(a4.vEyeL).normalize().add(V3(0, 0.1, 0)).normalize();
     const ecuPos = a4.vEyeL.clone().addScaledVector(toCam, 1.75);
-    R.ecuA = fitShot([[a4.vEyeL, 470, 300]], 17, ecuPos, a4.vEyeL, { free: [0, 0, 0], drift: 0.04 });
-    R.ecuB = fitShot([[a4.vEyeL, 470, 300]], 16.2, ecuPos.clone().addScaledVector(toCam, -0.1), a4.vEyeL, { free: [0, 0, 0], drift: 0.04 });
+    // (the hood leans over onto his head now: the ECUs roll with it, so the lid line reads flat across the iris)
+    R.ecuA = levelFit(a4.vEyeL, a4.vEyeR, 470, 300, 17, ecuPos, { free: [0, 0, 0], drift: 0.04 });
+    R.ecuB = levelFit(a4.vEyeL, a4.vEyeR, 470, 300, 16.2, ecuPos.clone().addScaledVector(toCam, -0.1), { free: [0, 0, 0], drift: 0.04 });
     // b05 the Void's POV down at the user (they meet its eyes = the lens); the insert re-uses the ECU, a hair tighter
     const a5 = at(S.b05 + 0.3);
     const toV5 = a5.vE.clone().sub(a5.uE).normalize();
@@ -165,8 +192,8 @@ export default {
     R.povB = fitShot([[a5.uE, 360, 505]], 28.5, povP.clone().addScaledVector(toV5, -0.06), a5.uE, { free: [0, 0, 0], drift: 0.1 });
     R.povC = fitShot([[a5.uE, 360, 510]], 27, povP.clone().addScaledVector(toV5, -0.12), a5.uE, { free: [0, 0, 0], drift: 0.1 });
     const a5i = at(S.c5i + 0.2);
-    R.ecuC = fitShot([[a5i.vEyeL, 500, 320]], 16, ecuPos, a5i.vEyeL, { free: [0, 0, 0], drift: 0.03 });
-    R.ecuD = fitShot([[a5i.vEyeL, 500, 320]], 15.2, ecuPos.clone().addScaledVector(toCam, -0.05), a5i.vEyeL, { free: [0, 0, 0], drift: 0.03 });
+    R.ecuC = levelFit(a5i.vEyeL, a5i.vEyeR, 500, 320, 16, ecuPos, { free: [0, 0, 0], drift: 0.03 });
+    R.ecuD = levelFit(a5i.vEyeL, a5i.vEyeR, 500, 320, 15.2, ecuPos.clone().addScaledVector(toCam, -0.05), { free: [0, 0, 0], drift: 0.03 });
     // b06 OTS over the user's right shoulder (soft, lower-left; their raised hand clear of his hem), pushing in to a
     // medium on Jesus: face ~220 px by "just"
     const a6 = at(S.b06 + 1.0);
@@ -287,10 +314,10 @@ function voidPose(t, S, st, F = null) {
   const wh = sp ? sp.open : 0;
   P.head.pitch += 0.03 * wh + 0.16 * pulse(t, S.thatW + 0.05, 0.45, 0.15, 0.6);
   P.body.breathe = 1 - 0.5 * amt;
-  // b04 ECU: the bright mouth line stays dim (it'd fight the subtitles; the hand hides the whisper anyway)
-  if (t >= S.c4 && t < S.c5) P.extra.mouthGlow = -0.6;
-  // ECUs: the lit cuff lip at the lower-left corner would sit in the subtitle band: dim the rims for those shots
-  if ((t >= S.c4 && t < S.c5) || (t >= S.c5i && t < S.c5j)) P.extra.rim = 0.3;
+  // the ECUs (b04 and the b05 insert): the mouth and the lit cuff lip sit at the lower-left corner, in the subtitle
+  // band -- the mouth shut and dim (no whisper shapes there), the rims dimmed
+  const ecu = (t >= S.c4 && t < S.c5) || (t >= S.c5i && t < S.c5j);
+  if (ecu) { P.extra.mouthGlow = -1; P.extra.rim = 0.3; }
   if (F) {
     // its RIGHT hand: the cup beside its own mouth (forearm up, elbow down and out, cuff opening downward) -> sags in
     // b08 -> b09 comes to rest on the front of his left upper arm (fingers down his arm, cuff down) -> off as it unbends
@@ -320,7 +347,7 @@ function voidPose(t, S, st, F = null) {
   // s06's end: narrowed at the user; the decision blink
   const fIdea = () => VX([['calm', 0.5], ['smug', 0.25], ['sideeye', 0.25]], { gazeYaw: 0, mPress: 0.6, lidU: 0.62, lidL: 0.45, browIn: -0.25, blush: 0.25 });
   // the whisper: conspiratorially half-lidded (the steep look down drags the uppers: lift them less, raise the lowers)
-  const fWh = () => VX('whisper', { lidU: 0.76, lidL: 0.5, browAsym: 0.1, browIn: 0.05, saccade: 0.1 });
+  const fWh = () => VX('whisper', { lidU: 0.6, lidL: 0.46, browAsym: 0.1, browIn: 0.05, saccade: 0.1 });
   const fSide = () => {
     const f = VX([['whisper', 0.55], ['sideeye', 0.45]], { lidU: lid, lidL: 0.36, gazeYaw: 0, saccade: 0, autoBlink: 0 });
     // when the user peeks again (b06), one brow-wisp (the one nearer the user: its RIGHT) lowers further
@@ -334,7 +361,7 @@ function voidPose(t, S, st, F = null) {
   P.face = faceSeq(t, [[S.s, fIdea], [S.decide + 0.2, fWh, 0.4], [S.slide - 0.05, fSide, 0.55], [S.b08 + 0.05, fHurt, 0.7], [S.thatW, fNod, 0.4], [S.b11 + 0.1, fHope, 0.5]]);
   // ---- gaze: the user (s06) -> his ear -> slides to the user (0.6 s) and parks (tracks the scoot) -> down/away (hurt) -> Jesus
   const away = () => jE.clone().lerp(uE, 0.35).add(V3(0, -0.55, 0));
-  const atJ = () => jE.clone().add(V3(0, 0.3, 0));
+  const atJ = () => jE.clone().add(V3(0, 0.08, 0));          // (down at his ear: the hood is at his head height now)
   P.gaze = gazeSched(t, [[S.s, uE], [S.decide + 0.08, atJ, 0.15], [S.slide, () => uE, 0.6], [S.b08 + 0.25, away, 0.8], [S.b09 + 0.3, jE, 0.5], [S.b11 + 0.05, jE]]);
   // a push into the corner (toward its right = screen-left) so the iris really parks; an extra tick after the scoot
   if (t >= S.slide && t < S.b08 + 0.6) {
@@ -342,7 +369,8 @@ function voidPose(t, S, st, F = null) {
     P.face.gazeYaw = (P.face.gazeYaw ?? 0) - (0.2 + tick) * ramp(t, S.slide, S.slide + 0.6) * (1 - ramp(t, S.b08 + 0.1, S.b08 + 0.6));
   }
   P.blinkAt = [S.decide, S.b11 + 0.2];
-  P.speech = sp || false;
+  P.speech = ecu ? false : (sp || false);
+  if (ecu) { P.face.mOpen = 0.03; P.face.mRound = 0.3; }
   return P;
 }
 

@@ -20,12 +20,13 @@ profile) · 57 eye-roll → huff & puff → turn back · 61.5 pat (real Jesus; f
 
 ## Look
 
-A huge (~3.1 m to the hood tip), plump, bell-shaped hooded cloak-being. Deep indigo velvet (MeshLambert + a
+A huge (~3.05 m to the hood tip), plump, bell-shaped hooded cloak-being. Deep indigo velvet (MeshLambert + a
 key-lit violet sheen term), faint stars drifting *inside* the fabric (parallax, varied size and brightness, tinted
 violet/teal, fading out toward the silhouette, a rare brighter "hero" star), faint nebula shimmer, an HDR
 violet→teal fresnel rim (bloom-friendly) and sparse star motes. A shoulder **capelet** (open at the front, rounded
-sloping shoulders) is married to the hood by a soft **collar roll** at the back/sides. The **hood** is a cowl: a
-teardrop side profile with a drooping peak, a deep edge (brim forward over the brow, sides set back, chin edge drawn
+sloping shoulders, a thin rolled lip so its hem blends into the body) is married to the hood by a thin, soft **collar
+roll** at the back/sides (max radius ~5 cm: piping, not a tyre). The **hood** is a cowl: round from behind and from the
+side (only a low, soft crown at the top-back, ~10 cm: never a pointed cone or a flat-topped box), a deep edge (brim forward over the brow, sides set back, chin edge drawn
 forward and down), a rolled brim that is thick at the top and thin at the sides, a soft shield-shaped opening with a
 slightly off-centre V at the chin, and one asymmetric overlap fold (its left side laps over the right at the chin).
 
@@ -54,7 +55,7 @@ flatter palm, fingers a little apart and longer, less cup (pass `hand.flat` to o
 (no chest showing through the lower face from low cameras); level / tipped-back heads are unchanged.
 **Legs**: short fat round legs (r ≈ 0.29) with round feet; each sole has a soft glowing pad + three toe beans.
 
-Rest measurements (root at the feet, facing +Z): hood tip ≈ 3.1, eyes 2.16, mouth 1.86, head centre 2.15 (z 0.10),
+Rest measurements (root at the feet, facing +Z): hood tip ≈ 3.05 (anchor `hoodTop` 3.065), eyes 2.16, mouth 1.86, head centre 2.15 (z 0.10),
 shoulder tops ±0.77 @ ~1.56, chest front z 0.87 @ 1.2, base radius 1.1 (≈ 2.2 m wide), hands hang at ~0.6.
 
 ## Pose API — `void.update(t, pose)` (pure function of t + pose)
