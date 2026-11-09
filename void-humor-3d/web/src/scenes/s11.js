@@ -17,6 +17,8 @@ const JM = EDGE.M.JM;
 // Jesus's eyes at JM (static estimate: the camera is applied BEFORE the rigs update)
 const EYE_JM_L = [JM.p[0] + 0.14 * Math.sin(JM.yaw), 1.545, JM.p[2] + 0.14 * Math.cos(JM.yaw)];
 const EYE_JM = SW(...EYE_JM_L);
+// the b04 wide (stage-local; MASTER's direction: yaw -9.4, pitch 14.3)
+const MW = { look: [-0.55, 1.2, -0.05], yaw: -9.4, pitch: 13, fov: 33, sy: 520, d0: 6.4, d1: 5.2, d2: 4.7 };
 
 export default {
   id: 's11',
@@ -49,10 +51,11 @@ export default {
       const d = k(t, [['s11', 2.08], ['s11b01.end', 1.92, 'inOut']]);   // the faintest push while the look builds
       shot = EDGE.shot(EYE_JM_L, { dist: d, yaw: 3, pitch: 0.5, fov: 21, screenY: sy(420), drift: 0 });
     } else {
-      // the symmetrical wide; in the held second after "awkward" it creeps in a touch (the silence gets louder)
-      const m = EDGE.cam('MASTER', { drift: 0.3 });
-      const u = k(t, [['s11b04.end', 0], ['s11.end', 0.12, 'inOut']]);
-      shot = { ...m, pos: m.pos.map((x, i) => x + (m.look[i] - x) * u) };
+      // the symmetrical wide, tightened: MASTER's direction on a longer lens, the look lowered toward Jesus (knee-up at
+      // centre), the Void's seated back filling the right, the user's head + shoulders lower-left. It creeps in from the
+      // cut (a third of the way by "awkward"), then keeps creeping through the held silence.
+      const d = k(t, [[tCut, MW.d0], [tAwk + 0.1, MW.d1, 'inOut'], ['s11.end', MW.d2, 'inOut']]);
+      shot = EDGE.shot(MW.look, { dist: d, yaw: MW.yaw, pitch: MW.pitch, fov: MW.fov, screenY: sy(MW.sy), drift: 0.25 });
     }
     applyShot(app.camera, shot, t, 11);
 
@@ -84,13 +87,15 @@ export default {
         [tCut, U], [tAwk - 0.25, U], [tAwk - 0.05, G.vside, 'out'], [tAwk + 0.5, G.vside], [tAwk + 0.62, U, 'out'],
       ]);
       // the face assembles on the words
+      // the look: WORRIED brows (inner tips way up, outer ends a touch down), a flat strained rectangle of clenched
+      // teeth with the corners pulled OUT and DOWN (never a grin), a little lower-lid tension
       const F0 = JX('listening', { browIn: 0.22, mSmile: 0.08 });
-      const F1 = JX('listening', { browIn: 0.98, browOut: 0.62, browMid: 0.1, lidU: 1.14, mSmile: 0.02, mPress: 0.25, lidSad: 0.12 });
-      const F1b = JX('awkward', { mClench: 0.0, mWide: 0.45, mSmile: -0.06, mPress: 0.45, browIn: 1.05, browOut: 0.5, lidSad: 0.2 });   // corners stretch first
-      const AWK = { mSmile: -0.12, mAsym: 0.18, browIn: 1.15, browOut: 0.45, browMid: 0.12, lidSad: 0.28, lidU: 1.16 };
-      const F2o = JX('awkward', { ...AWK, mWide: 1.15, browIn: 1.25, browOut: 0.55, lidU: 1.24 });
+      const F1 = JX('listening', { browIn: 1.0, browOut: 0.12, browMid: 0.1, browSq: 0.12, lidU: 1.14, mSmile: -0.05, mPress: 0.3, lidSad: 0.3 });
+      const F1b = JX('awkward', { mClench: 0.0, mOpen: 0.06, mWide: 0.7, mSmile: -0.3, mAsym: 0.06, mPress: 0.55, browIn: 1.1, browOut: 0.0, lidSad: 0.36 });   // corners stretch out + down first
+      const AWK = { mSmile: -0.36, mWide: 1.2, mOpen: 0.3, mAsym: 0.1, browIn: 1.22, browOut: -0.12, browMid: 0.06, browSq: 0.22, browAsym: 0.1, lidSad: 0.46, lidU: 1.16, lidL: 0.24 };
+      const F2o = JX('awkward', { ...AWK, mWide: 1.3, mSmile: -0.42, browIn: 1.32, lidU: 1.24 });
       const F2 = JX('awkward', AWK);
-      const F3 = JX('awkward', { ...AWK, mWide: 1.12, mSmile: 0.08, browIn: 1.2 });   // "a notch wider"                     // "a notch wider"
+      const F3 = JX('awkward', { ...AWK, mWide: 1.32, mSmile: -0.4, mOpen: 0.33, browIn: 1.28 });   // "a notch wider" (still down-turned)
       const face = k(t, [
         ['s11', F0], [tGets, F0], [tGets + 0.5, F1, 'inOut'],
         [tLook - 0.1, F1], [tLook + 0.05, F1b, 'inOut'], [tLook + 0.24, F2o, 'out'], [tLook + 0.5, F2, 'inOut'],
@@ -98,7 +103,7 @@ export default {
       ]);
       // brow bob on "awkward" (up and back), held grimace
       const bob = pulse(t, tAwk - 0.02, tAwk + 0.42, 0.12, 0.3);
-      face.browIn += 0.22 * bob; face.browOut += 0.18 * bob;
+      face.browIn += 0.38 * bob; face.browOut += 0.3 * bob; face.lidU += 0.12 * bob;
       face.autoBlink = wide ? 1 : 0; face.saccade = 0;
       face.talk = 0.4;
       // posture: neck draws into the shoulders, the slow inhale through the teeth lifts them, exhale-hold
@@ -116,7 +121,7 @@ export default {
       const arm = { preset: [['clasp', clamp(clasp)], ['side', 1 - clamp(clasp)]] };
       return {
         pos: POS.JM, yaw: YAW.JM,
-        body: { shrug, breathe: wide ? 1 : 0.35, sway: wide ? 0.8 : 0.08, tiptoe: 0.45 * rock, recoil: 0.06 * rockB },
+        body: { shrug, breathe: wide ? 1 : 0.35, sway: wide ? 0.8 : 0.08, tiptoe: 0.8 * rock, recoil: 0.14 * rockB },
         head: { yaw: hy, pitch: hp, roll: k(t, [['s11', 0], [tFace, 0], [tFace + 0.4, -0.03]]), talk: 0.3 },
         gaze: pass ? gaze : null,
         face,

@@ -163,3 +163,37 @@ export function aim(pos, target, py, fov, extra = {}) {
   const dir = d.clone().normalize().applyAxisAngle(right, ang);
   return { pos: P.toArray(), look: P.clone().addScaledVector(dir, dist).toArray(), fov, drift: 0.15, ...extra };
 }
+
+/** like aim(), but also places the target at screen column `px` (px of 720) */
+export function aimXY(pos, target, px, py, fov, extra = {}) {
+  const P = toV(pos), Tg = toV(target);
+  const d = Tg.clone().sub(P), dist = d.length();
+  const hf = 2 * Math.atan(Math.tan((fov * Math.PI / 180) / 2) * 720 / 1280);
+  const ax = ((px / 720) - 0.5) * hf, ay = ((py / 1280) - 0.5) * fov * Math.PI / 180;
+  const dir = d.clone().normalize().applyAxisAngle(V3(0, 1, 0), ax);
+  const right = V3().crossVectors(dir, V3(0, 1, 0)).normalize();
+  dir.applyAxisAngle(right, ay);
+  return { pos: P.toArray(), look: P.clone().addScaledVector(dir, dist).toArray(), fov, drift: 0.1, ...extra };
+}
+
+// ------------------------------------------------------------------------------------------- cheat a prop out of an insert
+import { CTX } from '../core/context.js';
+/**
+ * Hide `obj` while the frame time CTX.t is inside any registered window [a, b) (absolute seconds). Pure (a getter on
+ * `visible`, no per-frame state), so it never leaks into other scenes' frames. Windows from several scenes accumulate.
+ * Used to cheat the USER's hoodie drawstrings out of the lens in the phone inserts (the camera sits at the chest).
+ */
+export function hideDuring(obj, wins) {
+  const ud = obj.userData;
+  if (!ud.hideWins) {
+    ud.hideWins = [];
+    let own = obj.visible;
+    Object.defineProperty(obj, 'visible', {
+      configurable: true,
+      get() { const t = CTX.t; return own && !ud.hideWins.some(([a, b]) => t >= a && t < b); },
+      set(v) { own = !!v; },
+    });
+  }
+  for (const w of wins) if (!ud.hideWins.some(([a, b]) => a === w[0] && b === w[1])) ud.hideWins.push(w);
+  return obj;
+}

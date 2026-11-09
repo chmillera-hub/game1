@@ -91,7 +91,9 @@ export default {
       const palmUp = rotY([0, 1, 0.1], vs.yaw);
       const open = k(t, [[L.B2 - 0.3, 0], [L.B3 - 0.2, 1, 'inOut'], [L.B4, 1], [L.B5 - 0.2, 0.55, 'inOut']]);
       const onSh = k(t, [[L.hand0, 0], [L.hand1, 1, 'inOut']]);
-      const shT = sh ? add(A(sh), [0, 0.07 + 0.012 * Math.sin(t * 1.2) * smooth(clamp((t - L.B12) / 1)), 0]) : add(M.FOUT, [0, 0.55, 0]);
+      // the palm settles on top of Fear's (camera-side) shoulder, the big fingers draping down its back (not over its face)
+      const fy = fearYaw(t, L, c, M), fback = [-Math.sin(fy), 0, -Math.cos(fy)];
+      const shT = sh ? add(A(sh), [fback[0] * 0.09, 0.075 + 0.012 * Math.sin(t * 1.2) * smooth(clamp((t - L.B12) / 1)), fback[2] * 0.09]) : add(M.FOUT, [0, 0.55, 0]);
       const cup = 1 - smooth(clamp((t - (L.B2 - 0.4)) / 0.8));
       const armBook = (side) => ({ preset: 'hold', target: side > 0 ? bookL : bookR, reach: 1, palm: palmUp, fingers: rotY(BOOK_FING, vs.yaw), hand: { curl: 0.2, cup: 0.5, spread: 0.15, thumb: 0.5 } });
       let armL, armR;
@@ -104,7 +106,7 @@ export default {
         armR = { preset: 'open', from: 'belly', mix: Math.max(open, 0.0) };
         if (open < 0.5 && t > L.B4) armR = { preset: 'belly', from: 'open', mix: 1 - open * 2 };
       }
-      if (onSh > 0.001) armL = { preset: 'pat', target: shT, reach: onSh, palm: [0, -1, 0], fingers: add(rotY([0.2, -0.25, 1], vs.yaw), [0, 0, 0]), hand: { curl: 0.18, cup: 0.4, spread: 0.18, thumb: 0.35 } };
+      if (onSh > 0.001) armL = { preset: 'pat', from: 'open', mix: onSh, target: shT, reach: onSh, palm: [fback[0] * 0.3, -1, fback[2] * 0.3], fingers: [fback[0] * 0.75, -0.65, fback[2] * 0.75], hand: { curl: 0.3, cup: 0.45, spread: 0.12, thumb: 0.3 } };
       const hum = pulse(t, L.B12, T(ID + '.end') + 1, 0.6, 0.6);
       return {
         pos: vs.pos, yaw: vs.yaw,

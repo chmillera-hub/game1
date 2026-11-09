@@ -2,7 +2,7 @@
 // (the Void for arm-around / whisper / listening / hand-on-shoulder / walk-off, the User seated for the kneel).
 //   node tools/render.js sheet --lab jesus --from 0 --to 3.5 --n 8 --cols 8 --out out/sheets/jesus_turn.jpg
 //   node tools/render.js sheet --lab jesus --from 4.5 --to 28.5 --n 25 --cols 5 --out out/sheets/jesus_expr.jpg
-//   node tools/render.js sheet --lab jesus --from 29.5 --to 90 --n 30 --cols 6 --out out/sheets/jesus_act.jpg
+//   node tools/render.js sheet --lab jesus --from 29.5 --to 86.5 --n 30 --cols 6 --out out/sheets/jesus_act.jpg
 // Segment list: exported SEGMENTS ({name, t0, t1}); the name is printed in a HUD label on every frame.
 // Every segment is a pure function of its local time; face / preset changes crossfade with weights (no pops).
 import * as THREE from 'three';

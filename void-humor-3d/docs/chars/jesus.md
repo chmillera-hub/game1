@@ -170,22 +170,33 @@ lopsided closed smile: an amiable "eh — oh well"), `rueful`, `oh`, `ooh`, `sur
   `armR: {preset: [['open', 1-w], ['explain', w]]}`.
 
 ## Performance
-CPU `update()` ≈ 6 ms/frame (robe drape + hair curtain + beard opening + arms); 60 meshes / ~49k triangles
-(feet, belt, nose/ears, palms merged; only robe, head, hair shell, sleeves and mantle cast shadows; outer layers
-draw first so early-z culls the skin underneath; face decal kept small). GPU (SwiftShader fill) dominates.
-Measured: quiet machine, before the last optimisation pass — empty lab 0.42 s, lab + Jesus in a head-filling
-close-up 0.81 s. Under the shared load during development (load avg ≈ 11 on 4 cores) the trivial `facetest` lab
-benched 0.88–1.37 s/frame and this lab 1.04–1.45 s (full body) / 1.23–1.76 s (close-up), i.e. Jesus costs about
-0–30 % more than the facetest head in the same conditions. Frames are bit-identical regardless of render order.
+- Materials: skin = MeshStandard, cloth / hair / beard / rope / leather = MeshLambert, all with a slim injected
+  rim / glow / wrap term (`stdMat()` in jesus.js: no MeshPhysical sheen, no core `enhance()` fizz-noise code, which
+  costs SwiftShader fill even when off). Only robe, head and hair shell cast shadows (sleeves / sash do not).
+  Face decal uses a Lambert material. Outer layers draw first so early-z culls the skin underneath.
+- CPU `update()` ≈ 5–7 ms/frame (robe drape, hair curtain + collisions, beard opening, arms); an `around` /
+  `shoulder` contact with `surface` adds ~10 raycasts against the partner (≈ 5–12 ms with the Void).
+- Benchmarks (machine load 17–28 on 4 cores, so measured as summed CPU time of the browser + SwiftShader threads per
+  frame, interleaved with the core `facetest` lab, 10 frames each, two rounds):
+  facetest 1.22–1.29 · full body (lab set) 1.23 (≈1.0× facetest) · face close-up 1.47–1.49 (≈1.2×) · partner
+  two-shot with the real Void 1.55–1.73 (≈1.3–1.4×, includes the Void) · head filling the frame: original rig
+  2.04–2.13 → now 1.48–1.57 (−27 %). With facetest at ≈0.42–0.48 s/frame unloaded this puts Jesus at ≈0.45 s full
+  body, ≈0.55 s in a face close-up and ≈0.6 s in a Jesus + Void two-shot.
+- Frames are a pure function of t: Jesus's pixels are identical whatever the render order (checked on lab frames
+  rendered in two different orders).
 
 ## Known limitations
-- Legs are invisible IK colliders; only ankles/sandals are drawn (fine under the robe; `sit` shows shins).
-- Robe and hair have no momentum (stateless): swing is procedural from the walk phase; fast turns don't swish.
-- The beard's mouth opening mirrors the mouth math of `core/face.js` (`mouthGeom`); if the core mouth drawing
-  changes, update `mouthGeom()` in `jesus.js`.
-- The mantle is rigid with the chest (no flutter); raising the LEFT arm very high intersects its shoulder band
-  slightly — prefer `armR` for overhead gestures, or `armL` with moderate height.
-- `around` cannot physically reach behind a 3 m-wide body: put the target on the partner's near side/back
-  within ~0.5 m of his shoulder (the Void should stand close / lean in).
+- Legs are invisible IK colliders; only ankles/sandals are drawn. `sit` wraps the raised shins in robe cloth, but the
+  skirt itself puddles flat instead of tenting over the knees — keep `sit` out of hero shots.
+- Robe, hair and sash have no momentum (stateless): swing is procedural from the walk phase; fast turns don't swish.
+- The beard's mouth opening and the mustache lift mirror the mouth math of `core/face.js` (`mouthGeom`); if the core
+  mouth drawing changes, update `mouthGeom()` in `jesus.js`.
+- `around` reaches ~0.47 m (`span`) from the shoulder: on the 2.2 m-wide Void the hand lands on its flank / lower back,
+  not its far side. From a straight front camera the arm reads as going up and round behind it (that is what an
+  arm round a much bigger body looks like); show the hand / arm across the back with a back or side 3/4 angle.
+- `surface` raycasts the partner's visible opaque meshes: if the partner's hand / arm hangs where the contact goes,
+  the hand rests on that instead (put the Void's near arm on its belly / hips).
 - Pupils/eyelids follow the core `Eye` (spherical lid shells); extreme upward gazes show sclera below the iris —
   turn the head (`head.follow`) for big look-ups.
+- `framed()`'s `screenY` in core/camera.js places the look point at (1 − screenY) of the frame height from the top
+  (the comment says the opposite); the lab uses values > 0.5 for faces in the upper half.

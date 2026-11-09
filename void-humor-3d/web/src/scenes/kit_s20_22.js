@@ -148,7 +148,7 @@ export function times() {
   c.resume = c.B6;                                   // the flight clock resumes on the cut into b06
   c.flightA = 0.3;                                   // seconds of flight seen in the kick wide
   c.F = c.flightA + Math.max(0.6, c.imp - c.resume); // total flight time
-  c.fearCut0 = c.imp + 0.30; c.fearCut1 = c.fearCut0 + 0.6;   // the 0.6 s cutaway to Fear on the crash
+  c.fearCut0 = c.imp + 0.85; c.fearCut1 = c.fearCut0 + 0.6;   // hold the crash ~0.85 s, then the 0.6 s cutaway to Fear
   c.bonk = c.B7 + 0.14;                              // the hat bucket comes down: BONK
   c.wig0 = c.bonk + 0.32; c.wig1 = c.wig0 + 0.5;     // the mop flops onto it
   c.daggerLand = c.B7 + 1.18;                        // dagger thunks point-down into the floor
@@ -184,7 +184,7 @@ export function voidSpot(t) {
 // magician) and sways slowly; in s21b03 it floats up off the opening hand and fades.
 export function starAt(t) {
   const c = times();
-  const S0 = [1.5, 0.95, 0.75], S1 = [0.74, 0.9, 0.66], S2 = [1.06, 1.18, 1.0], S3 = [0.98, 1.24, 1.1];
+  const S0 = [1.5, 0.95, 0.75], S1 = [0.74, 0.9, 0.66], S2 = [1.02, 1.2, 1.0], S3 = [0.9, 1.3, 1.02];
   const p = k(t, [[c.B1 + 0.75, S0], [c.making + 0.05, S1, 'inOut'], [c.obvious + 0.25, S1, 'inOut'], [c.B2 + 1.1, S2, 'inOut'],
     [c.B3 + 0.2, S2], [c.B4 + 0.9, S3, 'inOut']]);
   // slow sway (Fear's tuft sways with it)
@@ -195,6 +195,21 @@ export function starAt(t) {
   loc[1] += 0.55 * fl; loc[0] -= 0.12 * fl; loc[2] += 0.08 * fl;
   const lit = smooth(clamp((t - c.making) / 0.22)) * (1 - smooth(clamp((t - (c.shrug + 0.3)) / 1.1)));
   return { pos: ROOM.W(loc), lit, held: 1 - fl };
+}
+/** the world position of the Void's LEFT index fingertip (after vd.update), nudged a little past the tip */
+export function fingerTip(vd, side = 'L', past = 0.035) {
+  const h = vd.arms && vd.arms[side] && vd.arms[side].hand;
+  if (!h || !h.indexTip) return null;
+  h.root.updateWorldMatrix(true, false);
+  const tip = h.root.localToWorld(h.indexTip.clone());
+  const dir = new THREE.Vector3(0, 1, 0).transformDirection(h.root.matrixWorld);
+  return A(tip.addScaledVector(dir, past));
+}
+/** the star as drawn: glued to the real fingertip while held, its keyed path once it floats off */
+export function heldStar(vd, s) {
+  const tip = fingerTip(vd);
+  if (!tip || s.held <= 0) return s;
+  return { ...s, pos: mix3(s.pos.isVector3 ? A(s.pos) : s.pos, tip, smooth(clamp(s.held))) };
 }
 /** draw the star (a warm white sparkle with a soft halo, a slow twinkle — no flicker) */
 export function drawStar(ps, t, s, CELL, scale = 1) {
@@ -248,7 +263,7 @@ export function wreckPose(t, M, extra = {}) {
 /** where his top hat ends up: on its side on the floor beside him (world) */
 export function hatRestPos(M) { const p = M.CRASH; return [p[0] - 0.62, 0.11, p[2] + 0.42]; }
 /** where the dagger sticks point-down in the floorboards (world) */
-export function daggerRestPos(M) { const p = M.CRASH; return [p[0] - 0.95, 0, p[2] + 0.62]; }
+export function daggerRestPos(M) { return add(M.CRASH, LD(-0.42, 0, 0.5)); }   // inside the CORNER frame, clear of the sign
 
 // the lone bucket (s21b04) rolls out of the corner behind the Void and emerges past its left edge in the MASTER wide
 export const ROLL_TO = [-0.25, -2.25];

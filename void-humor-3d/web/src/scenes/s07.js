@@ -4,15 +4,17 @@
 //   b01-b03 WHISPER (slow push): the Void bends to Jesus's left ear, right hand cupped, soft mouth shapes; Jesus tilts
 //       his ear up, eyes up-and-aside, mm-hm nods; +1.0 s into the whisper the Void's eyes slide to the user and park,
 //       lids flatten; +2.2 s Jesus's eyes flick to the user and back.
-//   b04 ECU of the Void's eye nearest the user: iris parked in the corner, the lid lowers a hair, no blink.
+//   b04 ECU of the side-eye (its left eye: the one nearer the user hides behind the cupped hand from every camera-side
+//       angle): iris parked hard in the corner, the lid lowers a hair, no blink.
 //   b05 over-the-hood: the user meets the side-eye, flinches, scoots back an inch (the iris follows exactly), fake-
 //       scrolls fast, peeks once over the glasses.
 //   b06-b07 OTS -> slow push on Jesus: steady nods, "oh really?" brows, a polite glance down at the user, a pat on the
-//       Void's sleeve, a sympathetic wince, a slow nod. The user shrinks behind the phone.
+//       Void's sleeve (his left hand, under the cupped hand), a sympathetic wince, a slow nod. The user shrinks behind the phone.
 //   b08 WHISPER: the whisper slows; the side-eye melts into hurt (outer lids droop, wisps up in the middle, the stars
 //       in the velvet dim, the cupped hand sags). Jesus's smile fades, brows draw together, eyes up to the Void's.
-//   b09 JESUS_CU, hood edge soft at right: "No, I know. That hurts." — his right hand rests flat on its velvet; the
-//       Void nods once, slowly.
+//   b09 JESUS_CU, the Void's eye above-right: "No, I know. That hurts." — its big velvet hand has come to rest by his
+//       shoulder and his LEFT hand rests flat over it (his right could not reach its velvet without crossing ~0.8 m);
+//       the Void nods once, slowly.
 //   b10 USER_CU closer: the flicker — squint drops, brows lift, two blinks, lips part, thumb stops; eyes slide away.
 //   b11 JESUS_CU: small inhale, eyes to the user and back, a quick tight smile; the Void unbends out of frame.
 import * as THREE from 'three';
@@ -101,12 +103,11 @@ export default {
     R.whB = { ...R.whA, pos: toV(R.whA.pos).lerp(mid, 0.2).toArray() };
     R.wh8 = fitShot([[a1.jE, 290, 420], [a1.vE, 450, 300]], 33, toV(R.whA.pos).lerp(mid, 0.22), a1.jE, { posReg: 0.5, yMin: 1.2, yMax: 1.8, drift: 0.12 });
     R.wh8b = { ...R.wh8, pos: toV(R.wh8.pos).lerp(mid, 0.06).toArray() };
-    // b04 ECU of its RIGHT eye (nearest the user), frontal to the hood
+    // b04 ECU of the side-eye, frontal to the hood
     const a4 = at(S.b04 + 0.5);
     // (its LEFT eye: the right one is behind the cupped hand from every camera-side angle)
     const toCam = toV(R.whA.pos).sub(a4.vEyeL).normalize().add(V3(0, 0.08, 0)).normalize();
     const ecuPos = a4.vEyeL.clone().addScaledVector(toCam, 1.9);
-    R.ecuDbg = a4.vEyeL.clone();
     R.ecuA = fitShot([[a4.vEyeL, 400, 420]], 21, ecuPos, a4.vEyeL, { free: [0, 0, 0], drift: 0.04 });
     R.ecuB = fitShot([[a4.vEyeL, 400, 420]], 20, ecuPos.clone().addScaledVector(toCam, -0.12), a4.vEyeL, { free: [0, 0, 0], drift: 0.04 });
     // b05 over the hood: from just beside the Void's left eye, looking at the user (user face ~560, the eye glow at right)
@@ -115,7 +116,6 @@ export default {
     const hp = a5.vHead.clone().add(loc(0.62, 0.42, 0.05));
     R.hood = fitShot([[a5.uE, 300, 560]], 25, hp, a5.uE, { free: [0, 0, 0], drift: 0.08 });
     R.hoodB = fitShot([[a5.uE, 302, 552]], 23, hp.clone().lerp(a5.uE, 0.04), a5.uE, { free: [0, 0, 0], drift: 0.08 });
-    R.hoodP = hp;
     // b06 OTS (user small lower-left) -> slow push on Jesus (face ~400)
     const a6 = at(S.b06 + 1.2);
     R.ots = EDGE.cam('OTS', { drift: 0.2 });
@@ -123,8 +123,8 @@ export default {
     // b09 / b11 JESUS_CU, the hood edge soft in the right foreground
     const a9 = at(S.b09 + 1.0);
     const j9p = V3(...EDGE.shot(EDGE.L(a9.jE), { dist: 1.9, yaw: -8, pitch: 1, fov: 33, screenY: sy(400) }).pos);
-    R.j9 = fitShot([[a9.jE, 290, 400], [a9.jH, 520, 760, 0.5]], 36, j9p, a9.jE, { free: [0, 0, 0], drift: 0.1 });
-    R.j9b = fitShot([[a9.jE, 292, 395], [a9.jH, 525, 760, 0.5]], 34, j9p, a9.jE, { free: [0, 0, 0], drift: 0.1 });
+    R.j9 = EDGE.shot(EDGE.L(a9.jE), { dist: 2.0, yaw: -10, pitch: 1, fov: 33, screenY: sy(400), drift: 0.1 });
+    R.j9b = EDGE.shot(EDGE.L(a9.jE), { dist: 1.86, yaw: -10, pitch: 1, fov: 33, screenY: sy(400), drift: 0.1 });
     const a11 = at(S.b11 + 0.3);
     R.j11 = EDGE.shot(EDGE.L(a11.jE), { dist: 1.6, yaw: -20, pitch: 1, fov: 33, screenY: sy(420), drift: 0.1 });
     R.j11b = EDGE.shot(EDGE.L(a11.jE), { dist: 1.52, yaw: -20, pitch: 1, fov: 33, screenY: sy(420), drift: 0.1 });
@@ -132,7 +132,7 @@ export default {
     const a10 = at(S.b10 + 0.4);
     R.u10 = EDGE.shot(EDGE.L(a10.uE), { dist: 1.4, yaw: 112, pitch: 4, fov: 33, screenY: sy(400), drift: 0.08 });
     R.u10b = EDGE.shot(EDGE.L(a10.uE), { dist: 1.32, yaw: 112, pitch: 4, fov: 33, screenY: sy(400), drift: 0.08 });
-    console.log('s07 fits', R.whA.err.toFixed(1), R.wh8.err.toFixed(1), R.hood.err.toFixed(1), R.otsB.err.toFixed(1), R.j9.err.toFixed(1));
+    console.log('s07 fits', R.whA.err.toFixed(1), R.wh8.err.toFixed(1), R.hood.err.toFixed(1), R.otsB.err.toFixed(1));
     return st;
   },
 
@@ -146,8 +146,8 @@ export default {
     fx.begin();
     drawSkyGalaxy(fx, t);
     fx.end();
-    const close = (t >= S.c4 && t < S.c6) || t >= S.c9;
-    set.update(t, { tod: todAt(t), voidSky: voidSkyAt(t) * (close ? 0.75 : 0.9), voidPos: vd.root.position.toArray(), shadowAt: W([0, 0, 0]),
+    // voidSky constant across the scene's cuts (STAGING §1.5)
+    set.update(t, { tod: todAt(t), voidSky: voidSkyAt(t) * 0.85, voidPos: vd.root.position.toArray(), shadowAt: W([0, 0, 0]),
       sunGlow: (t >= S.c10 && t < S.c11) ? 0.6 : 1 });
     st.look = lookFor('s07', set.look);
     if (DEBUG) {
@@ -166,7 +166,8 @@ function poseAll(t, S, st) {
   vd.update(t, voidPose(t, S, st));                      // pre-pass: this frame's mouth
   const mo = vd.anchor('mouth'), ear = jesus.anchor('earL');
   const camSide = WDIR(-0.25, 1);
-  const cup = { mouth: mo, p: mo.clone().lerp(ear, 0.42).addScaledVector(camSide, 0.04).add(V3(0, -0.1, 0)), palm: camSide.clone().negate(), fing: V3(0, 1, 0).addScaledVector(ear.clone().sub(mo).normalize(), 0.35).normalize() };
+  const shL = jesus.anchor('shoulderL'), toVd0 = V3(...W(M.V.p)).sub(V3(...W(M.JV.p))).setY(0).normalize();
+  const cup = { mouth: mo, shoulder: shL.clone().addScaledVector(toVd0, 0.14).addScaledVector(camSide, 0.06).add(V3(0, 0.1, 0)), p: mo.clone().lerp(ear, 0.42).addScaledVector(camSide, 0.04).add(V3(0, -0.1, 0)), palm: camSide.clone().negate(), fing: V3(0, 1, 0).addScaledVector(ear.clone().sub(mo).normalize(), 0.35).normalize() };
   vd.update(t, voidPose(t, S, st, cup));
   jesus.update(t, jesusPose(t, S, st, vd));
   user.update(t, userPose(t, S, st, true));
@@ -189,6 +190,8 @@ function voidPose(t, S, st, cup = null) {
     armL: { preset: 'belly', hand: { curl: 0.5, spread: 0.12, cup: 0.5 } },
     armR: Wp.armR ? { ...Wp.armR } : { preset: 'rest' },
   };
+  const unCover = ramp(t, S.s + 0.1, S.s + 0.6);
+  if (unCover < 1) P.armL = { preset: 'cover_mouth', from: 'belly', mix: 1 - unCover, hand: { curl: 0.12 + 0.38 * unCover, cup: 0.4, spread: 0.06 } };
   P.head.yaw *= HEADYAW;
   // whisper rhythm in the body (soft); a slow nod on "That hurts"
   const sp = speechSafe('VOID', t);
@@ -200,7 +203,9 @@ function voidPose(t, S, st, cup = null) {
     if (cup) {
       // the cupped hand between its mouth and his ear, back of the hand to the camera (it hides the secret)
       const m = clamp(amt * 1.4 - 0.2);
-      const tg = cup.p.clone().lerp(cup.mouth, 0.35 * sag).add(V3(0, -0.07 * sag, 0));
+      // b08 the cupped hand sags toward its own mouth; b09 it comes to rest by his shoulder (where his hand will cover it)
+      const rest9 = ramp(t, S.b09 - 0.1, S.b09 + 0.45) * (1 - ramp(t, S.unbend, S.unbend + 0.5));
+      const tg = cup.p.clone().lerp(cup.mouth, 0.35 * sag).add(V3(0, -0.07 * sag, 0)).lerp(cup.shoulder, rest9);
       P.armR = { preset: 'whisper', from: 'rest', mix: m, target: tg, reach: m, palm: cup.palm, fingers: cup.fing,
         hand: { curl: 0.32 + 0.2 * sag, cup: 0.85, spread: 0.06, thumb: 0.2 } };
     }
@@ -212,7 +217,9 @@ function voidPose(t, S, st, cup = null) {
   const uE = user.anchor('eyes'), jE = jesus.anchor('eyes'), ear = jesus.anchor('earL');
   // side-eye depth: parks on the slide, a hair lower on "whole", a hair lower again when the user scoots
   const lid = 0.6 - 0.06 * ramp(t, S.wholeW, S.wholeW + 0.4) - 0.04 * ramp(t, S.scoot, S.scoot + 0.25);
-  const fWh = () => VX('whisper', { lidU: 0.82, lidL: 0.3, browAsym: 0.1, saccade: 0.1 });
+  // (looking steeply down at him drags the lids with the eye pitch: open them wider so they read half-lidded, not shut)
+  const fWh = () => VX('whisper', { lidU: 1.22, lidL: 0.12, browAsym: 0.1, saccade: 0.1 });
+  const fIdea = () => VX([['calm', 0.5], ['smug', 0.25], ['sideeye', 0.25]], { gazeYaw: 0, mPress: 0.6, lidU: 0.66, lidL: 0.45, browIn: -0.2, blush: 0.25 });
   const fSide = () => {
     const f = VX([['whisper', 0.55], ['sideeye', 0.45]], { lidU: lid, lidL: 0.36, gazeYaw: 0, saccade: 0, autoBlink: 0 });
     // when the user peeks again (b06), one brow-wisp (the one nearer the user: its RIGHT) lowers further
@@ -223,10 +230,11 @@ function voidPose(t, S, st, cup = null) {
   const fHurt = () => VX([['sad', 0.6], ['whisper', 0.4]], { lidU: 0.78, lidSad: 0.65, browIn: 0.95, browOut: -0.35, browSq: 0.15, wet: 0.7, saccade: 0, autoBlink: 0 });
   const fNod = () => VX('sadSmile', { lidU: 0.84, wet: 0.8, mSmile: 0.18 });
   const fHope = () => VX('hopeful', { lidU: 1.0, mSmile: 0.15, wet: 0.35 });
-  P.face = faceSeq(t, [[S.s, fWh], [S.slide - 0.05, fSide, 0.55], [S.b08 + 0.05, fHurt, 0.7], [S.thatW, fNod, 0.4], [S.b11 + 0.1, fHope, 0.5]]);
+  P.face = faceSeq(t, [[S.s, fIdea], [S.s + 0.3, fWh, 0.35], [S.slide - 0.05, fSide, 0.55], [S.b08 + 0.05, fHurt, 0.7], [S.thatW, fNod, 0.4], [S.b11 + 0.1, fHope, 0.5]]);
   // ---- gaze: his ear -> slides to the user (0.6 s) and parks (tracks the scoot exactly) -> down/away (hurt) -> Jesus
   const away = () => jE.clone().lerp(uE, 0.35).add(V3(0, -0.55, 0));
-  P.gaze = gazeSched(t, [[S.s, ear], [S.slide, () => uE, 0.6], [S.b08 + 0.25, away, 0.8], [S.b09 + 0.3, jE, 0.5], [S.b11 + 0.05, jE]]);
+  const atJ = () => jE.clone().add(V3(0, 0.3, 0));
+  P.gaze = gazeSched(t, [[S.s, uE], [S.s + 0.25, atJ, 0.15], [S.slide, () => uE, 0.6], [S.b08 + 0.25, away, 0.8], [S.b09 + 0.3, jE, 0.5], [S.b11 + 0.05, jE]]);
   // a push into the corner (toward its right = screen-left) so the iris really parks
   if (t >= S.slide && t < S.b08 + 0.6) P.face.gazeYaw = (P.face.gazeYaw ?? 0) - 0.2 * ramp(t, S.slide, S.slide + 0.6) * (1 - ramp(t, S.b08 + 0.1, S.b08 + 0.6));
   P.blinkAt = [S.b11 + 0.2];
@@ -268,18 +276,25 @@ function jesusPose(t, S, st, vd) {
   P.body.breathe = 1 + 1.2 * pulse(t, S.b11 - 0.1, 0.25, 0.05, 0.35);   // the small inhale before "I'll ask"
   // ---- arms: b06/b07 a pat on its velvet beside him; b09 his left palm flat on its velvet (contact), off on "I'll ask"
   if (vd) {
+    // his LEFT hand: a pat on its sleeve under the cupped hand (b06/b07); in b09 it rests flat over the back of the
+    // big velvet hand that has come to rest by his shoulder (contact), one pat on "I'll ask", then off
+    const camSide = WDIR(-0.25, 1);
+    const vh = vd.anchor('handR');
     const patW = pulse(t, S.pat - 0.25, 0.25, 0.55, 0.35);
-    const rest = ramp(t, S.knowW + 0.05, S.knowW + 0.55) * (1 - ramp(t, S.unbend + 0.05, S.unbend + 0.5));
-    if (patW > 0 || rest > 0) {
-      // (his LEFT hand: the velvet is right beside his left shoulder; his right would have to reach ~0.8 m across)
-      const vn = velvetNear(vd, st.jesus.anchor('shoulderL').addScaledVector(toVd, 0.3).add(V3(0, 0.02, 0)), 0.012, 1.75);
-      const w = Math.max(patW, rest);
-      const bob = patW > 0 ? 0.03 * Math.max(0, Math.sin((t - S.pat) * 2 * Math.PI * 2.0)) * ramp(t, S.pat - 0.05, S.pat + 0.05) * (1 - ramp(t, S.pat + 0.5, S.pat + 0.6)) : 0;
+    const rest = ramp(t, S.knowW, S.knowW + 0.5) * (1 - ramp(t, S.unbend + 0.05, S.unbend + 0.45));
+    if (patW > 0) {
+      const bob = 0.03 * Math.max(0, Math.sin((t - S.pat) * 2 * Math.PI * 2.0)) * ramp(t, S.pat - 0.05, S.pat + 0.05) * (1 - ramp(t, S.pat + 0.5, S.pat + 0.6));
+      P.armL = { preset: [['clasp', 1 - patW], ['shoulder', patW]], target: vh.clone().add(V3(0, -0.2 + bob, 0)).addScaledVector(camSide, 0.07), reach: patW,
+        palm: camSide.clone().negate(), hand: { curl: 0.14, spread: 0.18, cup: 0.28 } };
+    }
+    if (rest > 0) {
       const pat2 = 0.02 * pulse(t, S.askW + 0.02, 0.08, 0, 0.12);
-      P.armL = { preset: [['clasp', 1 - w], ['shoulder', w]], target: vn.p.add(V3(0, bob + pat2, 0)), reach: w, palm: voidNormal_(vd, vn.y, vn.a), hand: { curl: 0.14, spread: 0.18, cup: 0.28 } };
+      P.armL = { preset: [['clasp', 1 - rest], ['shoulder', rest]], target: vh.clone().addScaledVector(camSide, 0.065).add(V3(0, 0.02 + pat2, 0)), reach: rest,
+        palm: camSide.clone().negate(), fingers: V3(0, 0.6, 0).addScaledVector(toVd, 0.8).normalize(), hand: { curl: 0.2, spread: 0.14, cup: 0.3 } };
     }
   }
   // ---- face
+  const fPress = () => JX('pressed', { mSmile: 0.5, browIn: 0.55, browOut: 0.6, lidU: 0.86, lidL: 0.42 });   // s06's end
   const fListen = () => {
     const f = JX('listening', { mPress: 0.35, mSmile: 0.3, browIn: 0.5, browOut: 0.3, lidU: 1.0 });
     f.browIn += 0.25 * nods; f.browOut += 0.2 * nods;                    // the brows climb a little on each nod
@@ -301,7 +316,7 @@ function jesusPose(t, S, st, vd) {
     f.mSmile += 0.18 * pulse(t, S.askW + 0.1, 0.1, 0.15, 0.3);            // quick tight smile
     return f;
   };
-  P.face = faceSeq(t, [[S.s, fListen], [S.c6, fOhReally, 0.3], [S.b08 + 0.2, fConcern, 0.6], [S.b09 - 0.05, fSpeak, 0.3], [S.b11 - 0.1, fAsk, 0.3]]);
+  P.face = faceSeq(t, [[S.s, fPress], [S.b01 - 0.1, fListen, 0.4], [S.c6, fOhReally, 0.3], [S.b08 + 0.2, fConcern, 0.6], [S.b09 - 0.05, fSpeak, 0.3], [S.b11 - 0.1, fAsk, 0.3]]);
   P.blinkAt = [S.flick + 0.36, S.b08 + 0.25, S.b09 + 1.1, S.b11 + 0.05];
   // his mouth: the mm-hm vocal (closed hums) + his two lines; silent under the narration otherwise
   const sp = speechSafe('JESUS', t);
@@ -355,7 +370,9 @@ function userPose(t, S, st, final) {
   const shrink = ramp(t, S.glance + 0.1, S.glance + 0.45) * (1 - ramp(t, S.c10 - 0.2, S.c10 + 0.6));
   P.body.shrug += 0.3 * shrink; P.body.hunch += 0.2 * shrink; P.body.slump = 0.15 * shrink;
   // ---- gaze / head
-  const screen = () => user.anchor('phoneScreen');
+  // (pre-pass: a fixed point in front of the chest — never read the rig's own not-yet-updated anchors)
+  const uy = EDGE.Y(M.U.yaw);
+  const screen = () => (final ? user.anchor('phoneScreen') : V3(...W(M.U.p)).add(V3(Math.sin(uy) * 0.3, 0.95, Math.cos(uy) * 0.3)));
   const away = () => jE.clone().lerp(uEdown(R), 0.7);
   P.gaze = gazeSched(t, [
     [S.s, () => vE], [S.b02 + 0.4, () => jE.clone().lerp(vE, 0.5), 0.15],

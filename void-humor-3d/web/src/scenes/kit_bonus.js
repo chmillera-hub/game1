@@ -7,10 +7,12 @@
 //   cast(app, scene, names)         -> (re)attach exactly these characters to `scene`
 //   bonusMarks(set)                 -> world marks / yaws of the backroom (after ROOM.fit)
 //   voidBowed(t, B, over)           -> the Void's resting pose for the bonus (bowed toward Fear, beside the cage)
-//   bonusDecals(set)                -> the magician's GREY FOOTPRINTS + the numbing-dust patch (s18b03 / s18b07).
+//   ensureBonusDecals(set)          -> the magician's GREY FOOTPRINTS + the numbing-dust patch (s18b03 / s18b07).
 //                                      Persistent floor evidence: visible from the moment each lands until the
-//                                      cosmos takes the floor in s22. s20-s22 should call `bonusDecals(set, mag)`
-//                                      in their setup() (idempotent) so the prints stay on the floor in their frames.
+//                                      cosmos takes the floor in s22. EVERY backroom scene from s18 on calls
+//                                      `ensureBonusDecals(set)` in its setup() (idempotent; s18-s22 do), so the prints
+//                                      exist however the render is chunked. (`bonusDecals(set, items)` is the low-level
+//                                      builder it calls.)
 import * as THREE from 'three';
 import { T, TL } from '../core/timeline.js';
 import { CTX } from '../core/context.js';
@@ -220,13 +222,13 @@ export function bonusDecals(set, items) {
   const grp = new THREE.Group(); grp.name = 'bonusDecals';
   const ptex = printTexture(), ttex = patchTexture();
   const mk = (tex, w, h) => {
-    const m = new THREE.MeshLambertMaterial({ map: tex, color: 0xc2c4cb, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const m = new THREE.MeshLambertMaterial({ map: tex, color: 0xa9abb3, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
     mesh.rotation.order = 'YXZ'; mesh.receiveShadow = true; mesh.renderOrder = 1;
     return mesh;
   };
   const meshes = items.map((it) => {
-    const m = it.kind === 'patch' ? mk(ttex, 1, 1) : mk(ptex, 0.13, 0.3);
+    const m = it.kind === 'patch' ? mk(ttex, 1, 1) : mk(ptex, 0.2, 0.44);
     m.position.set(it.pos[0], 0.004, it.pos[1]);
     m.rotation.set(-Math.PI / 2, it.yaw || 0, 0);
     grp.add(m);
@@ -244,7 +246,7 @@ export function bonusDecals(set, items) {
       m.visible = a > 0 && fo > 0.001;
       if (!m.visible) return;
       any = true;
-      m.material.opacity = (it.alpha ?? 0.8) * a * fo;
+      m.material.opacity = (it.alpha ?? 0.92) * a * fo;
       const s = it.kind === 'patch' ? (it.size || 0.6) * (0.25 + 0.75 * g) : 1;
       m.scale.set(s, s, 1);
     });
@@ -257,73 +259,93 @@ export function bonusDecals(set, items) {
 }
 
 // ------------------------------------------------------------------------------------------------ the magician's creep
-// Where he is through the bonus (ROOM-local stage points, derived from the Void's frame at voidSpot: back = local
-// (0.868, -0.496), its left = local (0.496, 0.868)):
-//   s18b01  crouched at PEEK (behind the Void's back-left), rises like a periscope
-//   s18b02-b06  at PEEK: pressed against the back-left of the cloak, peeking round its flank toward Fear
-//   s18b07  stage tiptoe PEEK -> FAR along its back (3 steps, each leaves a grey print), freezes on one foot
-//   s19b01  tiptoes back FAR -> PEEK in reverse (hat brim bobbing at the edge of frame); on his toes at PEEK (-> s20)
+// Where he is through the bonus (ROOM-local stage points; the Void at V (1.97, 0) faces Fear (local yaw -1.05), its
+// back points local (0.868, -0.496), its LEFT flank (the camera side) local (0.496, 0.868)):
+//   s17       crouched at LURK (hidden)
+//   s18b01    crouched at HIDE, pressed to the back of the cloak (hidden from Fear AND from the orbiting camera); rises
+//             hat-first on "big body", face on "void"
+//   s18b02-b05  at HIDE, leaning out round the Void's left flank (camera side), body cheated 3/4 to the lens, the eyes
+//             sliding toward Fear
+//   s18b06    out at B6 (leaning round the flank toward Fear, still hidden from Fear by the big body)
+//   s18b07    stage tiptoe B6 -> FAR along the cloak toward its camera-side front (toward Fear, 3 steps, each leaves
+//             a grey print), freezes on one foot listening
+//   s19b01    turns round and tiptoes back FAR -> PEEK; on his toes at PEEK (-> s20, which starts from MAGPATH.PEEK)
 export const MAGPATH = {
-  PEEK: [3.2, 0, 0.01],
-  FAR: [2.93, 0, -0.85],      // 0.9 m from PEEK, behind the Void's back (slightly to its right)
-  PATCH: [2.95, 0, 0.42],      // where the numbing dust lands in s18b03 (under his pouch hand)
+  HIDE: [3.08, 0, -0.42],     // 1.2 m behind the Void's back-left (bearing ~110 deg from its centre)
+  B6: [3.2, 0, 0.45],         // s18b06: out at the Void's left flank, leaning round it toward Fear (start of the tiptoe)
+  PEEK: [3.2, 0, 0.01],       // (s20 starts here)
+  FAR: [2.55, 0, 1.15],       // the end of the s18b07 tiptoe (0.96 m from B6, toward Fear along the left flank; still
+                              // hidden from Fear by the big body - just)
+  PATCH: [3.12, 0, 0.3],      // where the numbing dust lands in s18b03 (under his pouch on "dust", measured)
   STRIDE: 0.72,               // magician GAIT.sneak metres per cycle (phase = distance / STRIDE: no foot sliding)
 };
-const PH0 = () => 0.75 - Math.hypot(MAGPATH.FAR[0] - MAGPATH.PEEK[0], MAGPATH.FAR[2] - MAGPATH.PEEK[2]) / MAGPATH.STRIDE;
-/** the tiptoe (s18b07 out, s19b01 back): { pos (world), yaw, walk, dist, phase, hold, tA, tOut, tR, tBack } — pure. */
+// two legs: OUT (s18b07) B6 -> FAR facing forward, freeze on one foot; BACK (s19b01) turn round, FAR -> PEEK facing forward.
+// The gait phase is distance-driven (phase = distance / STRIDE: no foot sliding); the OUT leg ends at phase .75 (one foot
+// up, the listening freeze) and the BACK leg starts from there (continuous).
+const LEGS = () => {
+  const a = ROOM.W(MAGPATH.B6), b = ROOM.W(MAGPATH.FAR), c = ROOM.W(MAGPATH.PEEK);
+  const L1 = Math.hypot(b[0] - a[0], b[2] - a[2]), L2 = Math.hypot(c[0] - b[0], c[2] - b[2]);
+  return { a, b, c, L1, L2, y1: Math.atan2(b[0] - a[0], b[2] - a[2]), y2: Math.atan2(c[0] - b[0], c[2] - b[2]),
+    ph1: 0.75 - L1 / MAGPATH.STRIDE, ph2: 0.75 };
+};
+const angLerp = (a, b, u) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * u; };
+/** the tiptoe (s18b07 out, s19b01 back): { pos (world), yaw, walk, dist, phase, hold, leg, tA, tOut, tR, tBack } — pure. */
 export function magTiptoe(t) {
-  const tA = T('s18b07') + 0.05, tOut = tA + 1.45;                 // out: 3 high-kneed steps
-  const tR = T('s19b01') + 0.05, tBack = tR + 1.35;                // back (reverse), into view at the Void's shoulder
-  const p0 = ROOM.W(MAGPATH.PEEK), p1 = ROOM.W(MAGPATH.FAR);
-  const L = Math.hypot(p1[0] - p0[0], p1[2] - p0[2]);
-  let f;
-  if (t < tOut) f = ease.inOut(clamp((t - tA) / (tOut - tA)));
-  else if (t < tR) f = 1;
-  else f = 1 - ease.inOut(clamp((t - tR) / (tBack - tR)));
-  const dist = f * L;
-  const pos = [lerp(p0[0], p1[0], f), 0, lerp(p0[2], p1[2], f)];
-  const yaw = Math.atan2(p1[0] - p0[0], p1[2] - p0[2]);
-  const phase = PH0() + dist / MAGPATH.STRIDE;
-  const moving = (t > tA && t < tOut + 0.6) || (t > tR - 0.1 && t < tBack + 0.15);
-  const amt = t <= tA ? 0 : t >= tBack + 0.15 ? 0 : clamp((t - tA) / 0.12) * (t > tBack ? 1 - clamp((t - tBack) / 0.15) : 1);
+  const tA = T('s18b07') + 0.05, tOut = tA + 1.45;                 // out: 3 high-kneed steps toward Fear
+  const tR = T('s19b01') + 0.05, tBack = tR + 1.35;                // back: turn round, scurry on tiptoe to PEEK
+  const G = LEGS();
+  let pos, yaw, phase, f, leg;
+  if (t < tR) {
+    leg = 1; f = ease.inOut(clamp((t - tA) / (tOut - tA)));
+    pos = [lerp(G.a[0], G.b[0], f), 0, lerp(G.a[2], G.b[2], f)];
+    yaw = G.y1; phase = G.ph1 + f * G.L1 / MAGPATH.STRIDE;
+  } else {
+    leg = 2; f = ease.inOut(clamp((t - tR - 0.12) / (tBack - tR - 0.12)));
+    pos = [lerp(G.b[0], G.c[0], f), 0, lerp(G.b[2], G.c[2], f)];
+    yaw = angLerp(G.y1, G.y2, ease.inOut(clamp((t - tR) / 0.3))); phase = G.ph2 + f * G.L2 / MAGPATH.STRIDE;
+  }
+  const amt = t <= tA ? 0 : t < tR ? clamp((t - tA) / 0.12) * (1 - 0.0 * clamp((t - tOut) / 0.2)) : clamp(1 - (t - tBack) / 0.18);
   const hold = t > tOut && t < tR ? 1 : 0;
-  return { pos, yaw, walk: { amount: amt, phase, style: 'sneak' }, dist, phase, hold, f, tA, tOut, tR, tBack, moving };
+  const moving = (t > tA && t < tOut) || (t > tR && t < tBack);
+  return { pos, yaw, walk: { amount: amt, phase, style: 'sneak' }, dist: f, phase, hold, f, leg, tA, tOut, tR, tBack, moving, G };
 }
-/** times when a foot touches down during the tiptoe (phase crosses a multiple of 0.5, either direction) in [a, b]. */
+/** times when a foot touches down during the tiptoe (phase crosses a multiple of 0.5) in [a, b]. */
 export function magSteps(a, b, dt = 1 / 96) {
   const out = [];
   let prev = magTiptoe(a).phase;
   for (let t = a + dt; t <= b; t += dt) {
     const ph = magTiptoe(t).phase;
-    if (Math.floor(ph * 2) !== Math.floor(prev * 2)) out.push(+t.toFixed(3));
+    if (Math.floor(ph * 2) !== Math.floor(prev * 2) && Math.abs(ph - prev) < 0.3) out.push(+t.toFixed(3));
     prev = ph;
   }
   return out;
 }
-/** grey prints (analytic, from the gait): ball-of-foot contacts at mid-stance of each planted step of the walk out. */
+/** grey prints (analytic, from the gait): ball-of-foot contacts at mid-stance of each planted step, on both legs. */
 export function magPrints() {
-  const p0 = ROOM.W(MAGPATH.PEEK), p1 = ROOM.W(MAGPATH.FAR);
-  const L = Math.hypot(p1[0] - p0[0], p1[2] - p0[2]);
-  const yaw = Math.atan2(p1[0] - p0[0], p1[2] - p0[2]);
-  const fwd = [Math.sin(yaw), Math.cos(yaw)], left = [Math.cos(yaw), -Math.sin(yaw)];
-  const ph0 = PH0(), ph1 = ph0 + L / MAGPATH.STRIDE;
-  const tp = magTiptoe(T('s18b07'));
-  // time at which the walk-out reaches phase ph (invert the eased distance by bisection)
-  const timeAt = (ph) => { let a = tp.tA, b = tp.tOut; for (let i = 0; i < 40; i++) { const m = (a + b) / 2; if (magTiptoe(m).phase < ph) a = m; else b = m; } return (a + b) / 2; };
+  const G = LEGS();
   const out = [];
-  for (const [side, s, off] of [['L', 1, 0.25], ['R', -1, 0.75]]) {
-    for (let n = Math.floor(ph0) - 1; n <= Math.ceil(ph1) + 1; n++) {
-      const mid = n + off;                            // mid-stance phase of this foot
-      const down = mid - 0.25;                        // touchdown phase
-      if (mid < ph0 - 0.25 || mid > ph1 + 0.01) continue;
-      const fm = clamp((mid - ph0) * MAGPATH.STRIDE / L);
-      const rx = lerp(p0[0], p1[0], fm), rz = lerp(p0[2], p1[2], fm);
-      const bx = s * 0.13, bz = 0.15;                 // ball of the foot (sneak walks on the toes), toes out
-      out.push({ kind: 'print', pos: [rx + left[0] * bx + fwd[0] * bz, rz + left[1] * bx + fwd[1] * bz], yaw: yaw + s * 0.25,
-        t0: down <= ph0 ? tp.tA : timeAt(down + 0.02), side });
+  for (const [p0, p1, L, yaw, ph0, tSeg] of [[G.a, G.b, G.L1, G.y1, G.ph1, 'out'], [G.b, G.c, G.L2, G.y2, G.ph2, 'back']]) {
+    const fwd = [Math.sin(yaw), Math.cos(yaw)], left = [Math.cos(yaw), -Math.sin(yaw)];
+    const ph1 = ph0 + L / MAGPATH.STRIDE;
+    const tp = magTiptoe(tSeg === 'out' ? T('s18b07') : T('s19b01') + 0.2);
+    const t0 = tSeg === 'out' ? tp.tA : tp.tR, t1 = tSeg === 'out' ? tp.tOut : tp.tBack;
+    const timeAt = (ph) => { let a = t0, b = t1; for (let i = 0; i < 40; i++) { const m = (a + b) / 2; if (magTiptoe(m).phase < ph) a = m; else b = m; } return (a + b) / 2; };
+    for (const [side, sg, off] of [['L', 1, 0.25], ['R', -1, 0.75]]) {
+      for (let n = Math.floor(ph0) - 1; n <= Math.ceil(ph1) + 1; n++) {
+        const mid = n + off, down = mid - 0.25;
+        if (mid < ph0 - 0.25 || mid > ph1 + 0.01) continue;
+        const fm = clamp((mid - ph0) * MAGPATH.STRIDE / L);
+        const rx = lerp(p0[0], p1[0], fm), rz = lerp(p0[2], p1[2], fm);
+        const bx = sg * 0.13, bz = 0.15;              // ball of the foot (sneak walks on the toes), toes out
+        out.push({ kind: 'print', pos: [rx + left[0] * bx + fwd[0] * bz, rz + left[1] * bx + fwd[1] * bz], yaw: yaw + sg * 0.25,
+          t0: down <= ph0 ? t0 : timeAt(down + 0.02), side });
+      }
     }
   }
-  return out.sort((a, b) => a.t0 - b.t0);
+  // drop prints that would sit on top of one another (out and back legs cross near FAR)
+  const keep = [];
+  for (const p of out.sort((a, b) => a.t0 - b.t0)) if (!keep.some((q) => Math.hypot(q.pos[0] - p.pos[0], q.pos[1] - p.pos[1]) < 0.16)) keep.push(p);
+  return keep;
 }
 
 /**
@@ -335,7 +357,7 @@ export function ensureBonusDecals(set) {
   ROOM.fit(set);
   const items = magPrints();
   const pw = ROOM.W(MAGPATH.PATCH);
-  items.push({ kind: 'patch', pos: [pw[0], pw[2]], yaw: 0.6, t0: wordT('s18b03', 'dust', { fallback: 0.75 }) + 0.3, grow: 1.4, size: 0.62, alpha: 0.7 });
+  items.push({ kind: 'patch', pos: [pw[0], pw[2]], yaw: 0.6, t0: wordT('s18b03', 'dust', { fallback: 0.75 }) + 0.3, grow: 1.4, size: 0.8, alpha: 0.88 });
   return bonusDecals(set, items);
 }
 

@@ -212,16 +212,16 @@ export default {
       let s;
       const ve = vd.anchor('eyes'), je = jesus.anchor('eyes');
       const vE = ve ? arr(ve) : SW(VP[0], 2.0, VP[2]), jE = je ? arr(je) : SW(KP[0], 1.5, KP[2]);
-      const two = (dist, py) => {
-        const mid = lerpA(jE, vE, 0.45);
-        const L = EDGE.L(mid);
-        return frame(mid, { dist, yaw: EDGE.CY(36), pitch: 4, fov: 40, screenY: sy(py), drift: 0.12 });
+      const two = (dist, py, w = 0.45, fov = 40) => {
+        const mid = lerpA(jE, vE, w);
+        return frame(mid, { dist, yaw: EDGE.CY(36), pitch: 4, fov, screenY: sy(py), drift: 0.12 });
       };
       switch (shot) {
         case 'RISE': {   // front 3/4 on Jesus getting up (the Void looming above and behind him: we are in on it)
-          const up = ramp(t, tUp0, tUp1 + 0.25);
-          const jEk = SW(KP[0] + 0.12 * Math.sin(KY), lerp(1.05, 1.55, up), KP[2] + 0.12 * Math.cos(KY));
-          s = EDGE.shot(EDGE.L(jEk), { dist: 2.75, yaw: -14, pitch: -6, fov: 42, screenY: sy(lerp(560, 600, up)), drift: 0.12 });
+          // a locked frame (only a slight tilt): he rises INTO it, so the getting-up reads
+          const up = ramp(t, tUp0 + 0.2, tUp1 + 0.4);
+          const jEk = SW(KP[0] + 0.12 * Math.sin(KY), lerp(1.2, 1.36, up), KP[2] + 0.12 * Math.cos(KY));
+          s = EDGE.shot(EDGE.L(jEk), { dist: 2.9, yaw: -14, pitch: -5, fov: 44, screenY: sy(560), drift: 0.12 });
           break;
         }
         case 'TWO': {    // cheated side two-shot, a slow push from 4.6 to 3.7 over the shrug and the pats
@@ -229,7 +229,7 @@ export default {
           s = two(lerp(4.6, 3.7, u), 430);
           break;
         }
-        case 'TWO2': s = two(3.0, 420); break;   // tighter for the deadpan + the widening eyes
+        case 'TWO2': s = two(3.3, 430, 0.38, 46); break;   // tighter for the deadpan + the widening eyes
         case 'VCU': case 'VCU2': case 'BACK': {
           const cu = frame(vE, { dist: 2.4, yaw: EDGE.CY(-10), pitch: -5, fov: 33, screenY: sy(shot === 'VCU2' ? 340 : 360), drift: 0.1 });
           if (shot === 'BACK') {

@@ -1,0 +1,12 @@
+{
+ "_note": "s06 what_the_actual — cues matched to web/src/scenes/s06.js: the lunge on 'What', the hand flap on 'actual' (the bleep is in the line audio; the trumpet doink is in music_overrides), the hiccup star 'pip', and a glock ping as the star drifts past the user's deadpan eyes.",
+ "sfx": [
+  {"t": "s06b01+0.0", "name": "cloth_rustle", "gain_db": -10, "pan": 0.1},
+  {"t": "s06b01+0.78", "name": "cloth_rustle", "gain_db": -12, "pan": 0.15, "variant": 2},
+  {"t": "s06b03+0.05", "name": "star_pop", "gain_db": -4, "pan": 0.15},
+  {"t": "s06b04+0.35", "name": "twinkle", "gain_db": -9, "pan": 0.25}
+ ],
+ "hits": [
+  {"t": "s06b04+0.40", "kind": "ping"}
+ ]
+}

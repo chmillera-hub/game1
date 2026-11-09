@@ -1,24 +1,25 @@
-// s20 the_kick — no fuss. The Void's top half is serene, steering Fear's gaze with a star on one fingertip; its bottom
-// half is one fat leg and one perfect donkey kick into the bent-over magician's chest. Rubber-hose flight into the
-// janitor corner: buckets, BONK (bucket hat), mop wig, birdies, the dagger thunks into the floor, a grey puff, and the
-// wet-floor sign that teetered all along tips onto him last. "...How rude."
+// s20 the_kick — no fuss. The Void's top half is serene and does not move, steering Fear's gaze with a star on one
+// fingertip; its bottom half is one fat leg and one perfect donkey kick into the bent-double magician's chest.
+// Rubber-hose flight into the janitor corner: buckets, BONK (bucket hat), mop wig, birdies, the dagger thunks into the
+// floor, a grey puff, and the wet-floor sign that teetered all along tips onto him last. "...How rude."
 //
 // Shots (all from beat refs / word times):
 //   A  scene start -> "shouting"+   VOID_LOW close (serene face, slow blink: it does not shout)
-//   B  -> s20b02                   low two-shot: the Void's fingertip rises, a star lights on "making"; Fear's eyes catch
-//                                  it and it lures Fear out of the cage door (FDOOR -> FOUT, tiptoe)
-//   C  s20b02 -> b03               MAG_MED: last tiptoe step in, dagger high on "stab", grin at max
-//   D  s20b03 -> b05               KICK wide (locked): magician bent double over the hem, the Void blinks; chamber, KICK on
-//                                  "kicks" (top half still), he launches out of frame right, his hat hangs a beat, then zips
+//   B  -> s20b02                   low two-shot: the Void's index finger rises, a star lights on its tip on "making";
+//                                  Fear's eyes catch it and it lures Fear out of the cage door (FDOOR -> FOUT, tiptoe)
+//   C  s20b02 -> b03               MAG_MED: last tiptoe step in, dagger high on "stab", toothy grin, eyes popping
+//   D  s20b03 -> b05               KICK wide (locked): magician bent double at the Void's flank, the Void blinks; chamber,
+//                                  KICK on "kicks" (top half locked: the rig's forward tip is cancelled), he launches out
+//                                  of frame right, his hat hangs a beat, then zips; the leg lowers toward the hem
 //   E  s20b05 -> b06               floor insert: the fat leg retracts, the foot's satisfied wiggle on "leg", hem bounce
 //   F  s20b06 -> impact            follow-pan on the flight (left -> right), limbs pinwheeling, hat + dagger behind
-//   G  impact                      CORNER: he crashes in under "buckets"
-//   H  +0.30 .. +0.90              0.6 s cutaway: Fear flinches (tuft up, scarf jumps), the star stays steady
+//   G  impact -> +0.85             CORNER: he slams back-first into the pile, props fly, short shake, he crumples
+//   H  +0.85 .. +1.45              0.6 s cutaway: Fear flinches (tuft up, eyes dart to the corner), the star stays steady
 //   I  -> end                      CORNER locked: BONK, mop wig, birdies, dagger thunk, grey puff, the sign, "...How rude."
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
-import { clamp, lerp, smooth, ease, fbm1 } from '../core/util.js';
+import { clamp, lerp, smooth, ease } from '../core/util.js';
 import { Particles, CELL } from '../core/particles.js';
 import { VX } from '../chars/void.js';
 import { FX, mixFace } from '../chars/fear.js';
@@ -26,11 +27,14 @@ import { MX } from '../chars/magician.js';
 import { ROOM, sy, lookFor } from './marks.js';
 import { ensureBonusDecals, MAGPATH } from './kit_bonus.js';
 import {
-  loadLines, W, V, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, blendShot, pix, marks, times,
-  voidSpot, starAt, drawStar, flightTau, flightPos, wreckPose, hatRestPos, daggerRestPos, cornerOpts, placeHatBucket,
+  loadLines, V, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, aim, pix, marks, times,
+  voidSpot, starAt, heldStar, drawStar, flightTau, flightPos, wreckPose, hatRestPos, daggerRestPos, cornerOpts, placeHatBucket,
 } from './kit_s20_22.js';
 
 const ID = 's20';
+globalThis.DBG20 = 1; // TEMP
+// the magician's kick pose: bent double at the Void's back-left flank, 3/4 toward Fear / the camera
+const KP = { yaw: -0.55, lean: 1.28, crouch: 0.24, peek: 0.35, hunch: 0.22 };
 
 export default {
   id: ID,
@@ -41,8 +45,8 @@ export default {
     ensureBonusDecals(set);   // the magician's grey footprints + dust patch (s18) stay on the floor
     times().plate = set.anchors.cageInside ? set.anchors.cageInside.y : 0.04;
     const [vd, fear, mag] = await Promise.all([app.char('VOID'), app.char('FEAR'), app.char('MAGICIAN')]);
-    const fx = new Particles({ max: 160, intensity: 1.5 });
-    const fxN = new Particles({ max: 40, blending: 'normal', intensity: 1.0 });
+    const fx = new Particles({ max: 170, intensity: 1.5 });
+    const fxN = new Particles({ max: 48, blending: 'normal', intensity: 1.0 });
     own(ID, fx.mesh); own(ID, fxN.mesh);
     // the dagger that flies out of his hand (a clone of his prop: shares geometry + materials)
     const dagger = mag.dagger.clone(true);
@@ -52,24 +56,36 @@ export default {
     set.update(0, {});
     const hatBase = A(set.props.bucketHat.position.clone());
     const st = { scene: set.scene, set, vd, fear, mag, fx, fxN, dagger, hatBase, look: lookFor(ID, set.look) };
-    // contact geometry, measured once from the rigs (robust to rig refinements): the Void's fat leg at full extension
-    // aims at his chest (inside its cone); slide the bent-over magician until his chest meets the foot.
-    const c = times(), M = marks();
-    st.magRoot = M.PEEK2.slice();
-    let F = null;
-    for (let i = 0; i < 4; i++) {
-      mag.update(c.contact - 0.01, { ...magPose(st, c.contact - 0.01, 0) });
-      const C = A(mag.anchor('chest'));
-      vd.update(c.contact, { pos: M.V, yaw: M.yV, body: { lean: 0.12, pitch: -0.17 }, head: { pitch: 0.25, yaw: 0.3 }, extra: { kick: 1.0, kickSide: 'L', kickTarget: C, kickLevel: 1 } });
+    // contact geometry, solved from the rigs (robust to rig refinements). The magician is posed FIRST (bent double at
+    // the flank); the leg's aim point is solved so the sole lands on his chest (the leg aims inside a cone, so the aim
+    // overshoots a little); if the chest is out of the leg's reach he is slid toward the foot.
+    const c = times(), M = marks(), tc = c.contact - 0.01;
+    st.magRoot = add(M.V, [1.32, 0, -0.5]);
+    st.aim0 = [1.45, 0.92, -0.85];
+    let C = null, F = null;
+    for (let o = 0; o < 4; o++) {
+      mag.update(tc, magPose(st, tc, 0));
+      C = A(mag.anchor('chest'));
+      st.aim0 = C.slice();
+      for (let i = 0; i < 6; i++) {
+        vd.update(c.contact, kickVoid(M, 1.0, st.aim0));
+        F = A(vd.anchor('kickFoot'));
+        st.aim0 = add(st.aim0, sub(C, F));
+      }
+      vd.update(c.contact, kickVoid(M, 1.0, st.aim0));
       F = A(vd.anchor('kickFoot'));
-      st.magRoot = [st.magRoot[0] + 0.9 * (F[0] - C[0]), 0, st.magRoot[2] + 0.9 * (F[2] - C[2])];
-      st.contactErr = Math.hypot(F[0] - C[0], F[1] - C[1], F[2] - C[2]);
+      const r = sub(F, C);
+      st.contactErr = Math.hypot(...r);
+      if (st.contactErr < 0.012) break;
+      st.magRoot = [st.magRoot[0] + r[0], 0, st.magRoot[2] + r[2]];
     }
-    mag.update(c.contact - 0.01, { ...magPose(st, c.contact - 0.01, 0) });
+    mag.update(tc, magPose(st, tc, 0));
     st.chest0 = A(mag.anchor('chest'));
     st.foot0 = F;
     st.hat0 = A(mag.anchor('hat'));
-    console.log('s20 contact: magician root', st.magRoot.map((x) => x.toFixed(2)).join(','), 'chest', st.chest0.map((x) => x.toFixed(2)).join(','), 'foot', F.map((x) => x.toFixed(2)).join(','), 'err', st.contactErr.toFixed(3));
+    vd.update(c.contact, kickVoid(M, 0, st.aim0));
+    st.hip0 = A(vd.anchor('hip'));
+    console.log('s20 contact: magician root', st.magRoot.map((x) => x.toFixed(2)).join(','), 'chest', st.chest0.map((x) => x.toFixed(2)).join(','), 'foot', F.map((x) => x.toFixed(2)).join(','), 'aim', st.aim0.map((x) => x.toFixed(2)).join(','), 'err', st.contactErr.toFixed(3));
     return st;
   },
 
@@ -83,16 +99,18 @@ export default {
 
     // ------------------------------------------------------------------ VOID
     const vs = voidSpot(t);
+    // chamber on "kicks" -0.30, fire, contact, a 4-frame overshoot, hold, then the leg lowers toward the back hem (it is
+    // already there when the insert cuts in), the wiggle on "leg", and it tucks back under the hem
     const kickV = k(t, [[c.B4 - 0.32, 0], [c.kickFire, -0.5, 'inOut'], [c.contact, 1.0, 'out'], [c.launch + 0.04, 1.1, 'out'], [c.launch + 0.2, 1.0, 'inOut'],
-      [c.B5 - 0.05, 0.96, 'inOut'], [c.B5 + 0.3, 1.0, 'inOut'], [c.leg + 0.35, 1.0], [c.leg + 0.62, 0.0, 'in']]);
-    const kP = Math.max(0, kickV);
+      [c.B5 - 0.4, 1.0], [c.B5, 0.97, 'inOut'], [c.leg + 0.35, 1.0, 'inOut'], [c.leg + 0.62, 0.0, 'in']]);
     st.kv = kickV;
-    // the kick target: frozen chest -> (insert) a spot just outside the back hem at floor level, where the foot wiggles
-    const hemOut = add(vs.pos, add(LD(0, 0, 0), rotY([0.42, 0.2, -1.22], vs.yaw)));
+    // the kick target: the solved aim point -> (lowering in the wide, before the insert) a spot just outside the back hem
+    const hemOut = add(vs.pos, rotY([0.42, 0.2, -1.22], vs.yaw));
     const wig = pulse(t, c.leg - 0.05, c.leg + 0.4, 0.06, 0.1);
-    const kt = mix3(st.chest0, hemOut, k(t, [[c.B5, 0], [c.B5 + 0.32, 1, 'inOut']]));
+    const kt = mix3(st.aim0, hemOut, k(t, [[c.B5 - 0.4, 0], [c.B5 - 0.02, 1, 'inOut']]));
     const kTarget = add(kt, rotY([0.05 * wig * Math.sin((t - c.leg) * 26), 0.02 * wig * Math.abs(Math.sin((t - c.leg) * 26)), 0], vs.yaw));
     const hemBounce = Math.max(0, jiggle(t, c.leg + 0.6, 0.18, 15, 5));
+    const KB = kickBody(kickV, kTarget[1]);
     const vPose = (pass) => {
       const fe = pass ? fear.anchor('eyes') : null;
       const s = starAt(t);
@@ -102,22 +120,24 @@ export default {
       const Fkick = VX('gentle', { lidU: 0.72, lidL: 0.52, mSmile: 0.6, browIn: 0.3, mPress: 0.2, blush: 0.2 });
       const face = k(t, [[ID, Fserene], [c.making, Fserene], [c.making + 0.6, Fsoft, 'inOut'], [c.B4 - 0.2, Fsoft], [c.contact, Fkick, 'out'], [c.contact + 0.6, Fsoft, 'inOut']]);
       face.autoBlink = 0;
-      // the LEFT (camera-side) fingertip carries the star (index up, palm toward Fear); the right hand rests on its belly
+      // the LEFT (camera-side) index finger points straight UP, palm toward Fear, thumb curled in: the star sits on the
+      // tip; the right hand rests on its belly
       const reach = k(t, [[c.B1 + 0.7, 0], [c.making - 0.05, 1, 'inOut']]);
       const towardF = sub(fw, s.pos);
       const hz = Math.hypot(towardF[0], towardF[2]) || 1;
-      const fdir = [towardF[0] / hz * 0.35, 1, towardF[2] / hz * 0.35];
-      const down = [towardF[0] / hz * 0.3, -1, towardF[2] / hz * 0.3];
-      const fing = mix3(down, fdir, smooth(reach));
-      const head = { pitch: 0.25, yaw: shot >= 3 ? 0.3 : 0.08, roll: 0.03 };
+      const fh = [towardF[0] / hz, 0, towardF[2] / hz];
+      const up = [0.08 * fh[0], 1, 0.08 * fh[2] + 0.18];
+      const down = [fh[0] * 0.3, -1, fh[2] * 0.3];
+      const fing = mix3(down, up, smooth(reach));
+      const head = { pitch: 0.25 + KB.headPitch, yaw: shot >= 3 ? 0.3 : 0.08, roll: 0.03 };
       return {
         pos: vs.pos, yaw: vs.yaw,
-        body: { lean: 0.12, pitch: -0.17 * Math.min(kP, 1), breathe: 0.9 - 0.6 * pulse(t, c.B3, c.contact + 0.2, 0.4, 0.3), breathRate: 0.2 },
+        body: { lean: 0.12 + KB.lean, hunch: KB.hunch, pitch: KB.pitch, breathe: 0.9 - 0.6 * pulse(t, c.B3, c.contact + 0.2, 0.4, 0.3), breathRate: 0.2 },
         head,
         gaze: pass ? fe : null,
         face,
         blinkAt: [c.B1 + 0.42, c.B3 + 0.36, c.contact + 0.9],
-        armL: { preset: 'point', from: 'rest', mix: reach, target: s.pos, tip: true, reach, fingers: fing, palm: [towardF[0] / hz, 0.1, towardF[2] / hz], hand: { point: 1, curl: 0.55, thumb: 0.35 } },
+        armL: { preset: 'point', from: 'rest', mix: reach, target: s.pos, tip: true, reach, fingers: fing, palm: [fh[0], 0.05, fh[2]], pole: [0.2, -1, -0.3], hand: { point: 1, curl: 1, thumb: 0, cup: 0.2 } },
         armR: { preset: 'belly', from: 'rest', mix: k(t, [[c.B2, 0], [c.B3 + 0.6, 1, 'inOut']]) },
         extra: { kick: kickV, kickSide: 'L', kickTarget: kTarget, kickLevel: 1, stars: 1.4, hem: hemBounce, motes: 0.8 },
       };
@@ -128,21 +148,22 @@ export default {
     // ------------------------------------------------------------------ MAGICIAN
     const mPose = (pass) => magPose(st, t, pass);
 
-    // ------------------------------------------------------------------ set
     // ------------------------------------------------------------------ solve (camera from pass-0 anchors)
     const shotStart = [ID, c.cutA, c.B2, c.B3, c.B5, c.B6, c.imp - 0.2, c.fearCut0, c.fearCut1][shot] ?? ID;
     solve(t, [[vd, vPose], [mag, mPose], [fear, (pass) => (pass ? (tt) => fearPose(Math.max(tt, T(shotStart))) : fearPose(t))]], () => {
       applyShot(app.camera, frameShot(st, t, shot, c, M), t, 20);
     });
     // the corner (after the rigs: the bucket hat sits on his final head anchors)
-    set.update(t, { ...cornerOpts(t, t >= c.imp ? mag : null), broomSlide: 0, rollBucket: 0 });
+    set.update(t, { ...cornerOpts(t, t >= c.imp ? mag : null), broomSlide: 0, rollBucket: 0, ...(shot === 7 ? { voidLight: 0.5 } : {}) });
     placeHatBucket(t, set, st.hatBase);
+    // the tipped wringer is nudged back a hand's width so his flopped right arm doesn't sink into it
+    if (t > c.imp && set.props.wringer) set.props.wringer.position.add(V(LD(0.12, 0, -0.12)).multiplyScalar(smooth(clamp((t - c.imp - 0.3) / 0.5))));
     mag.root.visible = shot !== 4;   // the insert: he is long gone
 
     // ------------------------------------------------------------------ props + particles
     placeDagger(st, t, c, M);
     fx.begin(); fxN.begin();
-    drawStar(fx, t, starAt(t), CELL, shot === 7 ? 1.2 : 1);
+    drawStar(fx, t, heldStar(vd, starAt(t)), CELL, shot === 7 ? 1.25 : 1);
     // contact: a soft grey "poof" off his tailcoat + a couple of tiny star glints
     fxN.burst({ t, at: c.contact, count: 6, seed: 2011, life: 0.7, jitter: 0.03, origin: st.chest0, vel: [0.5, 0.3, -0.5], spread: [0.4, 0.35, 0.4], drag: 3,
       size: [0.12, 0.22], grow: 2.0, color: [0x9890a6, 0x8a8298], alpha: 0.4, fade: [0.08, 0.6], cell: CELL.puff, spin: 0.8 });
@@ -154,15 +175,20 @@ export default {
       fxN.stream({ t, seed: 2013, t0: c.contact, t1: c.imp, rate: 9, life: 0.9, origin: (tb) => add(flightPos(flightTau(tb) ?? 0, st.magRoot, M.CRASH).pos, [0, 0.85, 0]),
         vel: [0, -0.15, 0], spread: [0.15, 0.1, 0.15], size: [0.025, 0.045], color: [0xb0aabb, 0x8f8a9c], alpha: 0.55, fade: [0.1, 0.5], cell: CELL.dust });
     }
-    // the pouch flops into his lap and puffs his own grey dust up onto him
+    // the slam: a dust burst out of the pile
+    fxN.burst({ t, at: c.imp, count: 9, seed: 2017, life: 1.1, jitter: 0.04, origin: add(M.CRASH, [0, 0.45, 0]), vel: [0, 0.35, 0], spread: [0.9, 0.4, 0.9], drag: 2.5,
+      size: [0.18, 0.32], grow: 2.2, color: [0x9d97aa, 0x8b8598], alpha: 0.42, fade: [0.06, 0.6], cell: CELL.puff, spin: 0.6 });
+    // the pouch flops into his lap and puffs his own grey dust up onto him: a dense, slow mushroom
     const lap = A(mag.anchor('belly') || M.CRASH);
-    fxN.burst({ t, at: c.puff, count: 10, seed: 2014, life: 1.5, jitter: 0.08, origin: [lap[0], lap[1] + 0.1, lap[2]], vel: [0, 0.45, 0], spread: [0.3, 0.25, 0.3], drag: 2.2,
-      size: [0.14, 0.28], grow: 2.2, color: [0xa7a1b2, 0x948ea3], alpha: 0.42, fade: [0.12, 0.55], cell: CELL.puff, spin: 0.5 });
-    fx.burst({ t, at: c.puff, count: 14, seed: 2015, life: 1.3, jitter: 0.1, origin: [lap[0], lap[1] + 0.15, lap[2]], vel: [0, 0.55, 0], spread: [0.35, 0.3, 0.35], drag: 1.8,
-      size: [0.018, 0.03], color: [0xd6d2e0, 0xbab4c8], alpha: 0.7, fade: [0.1, 0.5], cell: CELL.dust, twinkle: true });
+    fxN.burst({ t, at: c.puff, count: 16, seed: 2014, life: 1.9, jitter: 0.06, origin: [lap[0], lap[1] + 0.08, lap[2]], vel: [0, 0.6, 0], spread: [0.28, 0.3, 0.28], drag: 2.0,
+      size: [0.16, 0.3], grow: 2.4, color: [0xa7a1b2, 0x948ea3, 0xb9b3c4], alpha: 0.62, fade: [0.08, 0.6], cell: CELL.puff, spin: 0.5 });
+    fx.burst({ t, at: c.puff, count: 16, seed: 2015, life: 1.5, jitter: 0.08, origin: [lap[0], lap[1] + 0.15, lap[2]], vel: [0, 0.6, 0], spread: [0.35, 0.3, 0.35], drag: 1.8,
+      size: [0.022, 0.036], color: [0xd6d2e0, 0xbab4c8], alpha: 0.75, fade: [0.1, 0.5], cell: CELL.dust, twinkle: true });
     // the sign slaps down: a little floor dust
-    fxN.burst({ t, at: c.sign1, count: 6, seed: 2016, life: 0.9, origin: add(M.CRASH, LD(-0.55, 0.08, 0.35)), vel: [0, 0.25, 0], spread: [0.6, 0.12, 0.6], drag: 3,
-      size: [0.12, 0.2], grow: 2, color: 0x948c9c, alpha: 0.3, fade: [0.08, 0.6], cell: CELL.puff });
+    fxN.burst({ t, at: c.sign1, count: 7, seed: 2016, life: 0.9, origin: add(M.CRASH, LD(-0.4, 0.15, 0.3)), vel: [0, 0.25, 0], spread: [0.6, 0.12, 0.6], drag: 3,
+      size: [0.12, 0.22], grow: 2, color: 0x948c9c, alpha: 0.35, fade: [0.08, 0.6], cell: CELL.puff });
+    // birdies: five readable little stars circling the bucket rim (the rig's own are tiny; switched off in magPose)
+    drawBirdies(fx, t, c, set, mag);
     fx.end(); fxN.end();
 
     if (globalThis.DBG20) dbg(st, t, app);
@@ -172,6 +198,23 @@ export default {
 
 // ======================================================================================================== helpers
 function rotY(v, yaw) { const c = Math.cos(yaw), s = Math.sin(yaw); return [v[0] * c + v[2] * s, v[1], -v[0] * s + v[2] * c]; }
+
+/**
+ * Body fields that cancel the rig's kick posture so the Void's TOP HALF stays exactly where it was: the rig tips the
+ * whole body forward about its front-bottom (kP * (0.42 + ...)), leans it (+0.1 kP) and hunches/tips it back a touch
+ * in the wind-up. We subtract all of it; only the leg, the hem curtain and the foot move.
+ */
+function kickBody(kickV, aimY) {
+  const kick = clamp(kickV, -0.5, 1.25), kP = Math.max(0, kick), kM = Math.max(0, -kick) / 0.5;
+  const tip = kP * (0.42 + 0.16 * clamp((aimY - 1.1) / 0.6)) - kM * 0.05;
+  return { lean: -0.1 * kP + 0.05 * kM, hunch: -0.1 * kM, pitch: -tip, headPitch: -0.05 * kM };
+}
+/** the Void's kick pose used by the contact solve (must match vPose at the contact frame) */
+function kickVoid(M, kickV, aimP) {
+  const KB = kickBody(kickV, aimP[1]);
+  return { pos: M.V, yaw: M.yV, body: { lean: 0.12 + KB.lean, hunch: KB.hunch, pitch: KB.pitch, breathe: 0.3, breathRate: 0.2 }, head: { pitch: 0.25 + KB.headPitch, yaw: 0.3, roll: 0.03 },
+    extra: { kick: kickV, kickSide: 'L', kickTarget: aimP, kickLevel: 1 } };
+}
 
 function shotId(t, c) {
   if (c.cutA === undefined) { c.cutA = c.shouting + 0.12; }
@@ -205,31 +248,32 @@ function fearPoseAt(st, t, c, M) {
   const wk = fearWalk(t, c, M);
   const vEyes = st.vd.anchor('eyes');
   const look = s.lit > 0.2 ? s.pos : (vEyes ? A(vEyes) : add(M.V, [0, 2.1, 0]));
-  // faces: hopeful up at the Void -> the star catches its eye (enchanted) -> the 'o' -> a tiny delighted smile
+  // faces: hopeful up at the Void -> the star catches its eye (enchanted: lids wide, inner brows up, big pupils) ->
+  // the 'o' -> a tiny delighted smile -> the flinch
   const Fhope = FX('hopeful', { mSmile: 0.18, lidU: 1.04, browIn: 0.55 });
-  const Fench = FX([['wonder', 0.6], ['hopeful', 0.4]], { mSmile: 0.12, mAsym: 0.18, pupil: 1.3 });
-  const Fo = FX('wonder', { mOpen: 0.22, mRound: 0.7, mSmile: 0.05, pupil: 1.4, lidU: 1.12 });
-  const Fdelight = FX([['wonder', 0.55], ['shySmile', 0.45]], { mOpen: 0.08, mSmile: 0.34, mAsym: 0.22, pupil: 1.35, lidU: 1.0 });
+  const Fench = FX([['wonder', 0.55], ['hopeful', 0.45]], { mOpen: 0.06, mRound: 0.25, mSmile: 0.16, mAsym: 0.14, lidU: 1.26, lidL: 0, browIn: 0.85, browOut: 0.45, lidSad: 0, pupil: 1.5, wet: 0.7 });
+  const Fo = FX('wonder', { mOpen: 0.22, mRound: 0.7, mSmile: 0.05, pupil: 1.45, lidU: 1.24, lidSad: 0, browIn: 0.8 });
+  const Fdelight = FX([['wonder', 0.55], ['shySmile', 0.45]], { mOpen: 0.08, mSmile: 0.34, mAsym: 0.22, pupil: 1.4, lidU: 1.1, lidSad: 0, gazePitch: 0, gazeYaw: 0 });
   const Fflinch = FX('startle', { pupil: 0.7 });
   let face = k(t, [[ID, Fhope], [c.making + 0.12, Fhope], [c.making + 0.45, Fench, 'inOut'], [c.B3 - 0.2, Fench], [c.B3 + 0.3, Fo, 'inOut'],
-    [c.contact + 0.15, Fo], [c.contact + 0.7, Fdelight, 'inOut'], [c.fearCut0 + 0.04, Fdelight], [c.fearCut0 + 0.1, Fflinch, 'out'], [c.fearCut0 + 0.5, Fflinch],
+    [c.contact + 0.15, Fo], [c.contact + 0.7, Fdelight, 'inOut'], [c.fearCut0 - 0.02, Fdelight], [c.fearCut0 + 0.06, Fflinch, 'out'], [c.fearCut0 + 0.5, Fflinch],
     [c.fearCut0 + 1.2, mixFace(Fflinch, Fench, 0.6), 'inOut']]);
   face = { ...face, autoBlink: 0 };
-  // the flinch at the crash
-  const fl0 = c.fearCut0 + 0.05;    // Fear's flinch lands just inside the 0.6 s cutaway
+  // the flinch at the crash (lands just inside the 0.6 s cutaway)
+  const fl0 = c.fearCut0 + 0.02;
   const startle = k(t, [[fl0, 0], [fl0 + 0.06, 1, 'out'], [fl0 + 0.6, 0, 'inOut']]);
-  const dart = pulse(t, fl0 + 0.04, fl0 + 0.75, 0.05, 0.25);
-  // gaze: the Void's eyes, then the star; at the crash the eyes dart toward the corner (past its right shoulder)
+  const dart = pulse(t, fl0 + 0.05, fl0 + 0.9, 0.05, 0.3);
+  // gaze: the Void's eyes, then the star; at the crash the eyes dart hard toward the corner (screen-right)
   const corner = add(M.CRASH, [0, 0.6, 0]);
-  const gz = mix3(look, mix3(look, corner, 0.55), dart);
-    return {
+  const gz = mix3(look, mix3(look, corner, 0.92), dart);
+  return {
     pos: wk.pos, yaw: wk.yaw,
     walk: { amount: wk.amount, phase: wk.phase, style: 'sneak' },
-    body: { tiptoe: 0.25 * pulse(t, c.B3, c.B4 + 0.5, 0.5, 0.5), idle: 0.6, breathe: 0.9 },
-    head: { look, track: k(t, [[ID, 0.5], [c.making + 0.1, 0.5], [c.making + 0.5, 0.62, 'inOut']]), yaw: -0.16 * smooth(clamp((t - c.making) / 1.0)), roll: -0.06 + 0.05 * Math.sin((t - c.B3) * 1.6) * smooth(clamp((t - c.B3) / 1.2)) },
+    body: { tiptoe: 0.25 * pulse(t, c.B3, c.B4 + 0.5, 0.5, 0.5), idle: 0.6, breathe: 0.9, recoil: 0.08 * startle },
+    head: { look: mix3(look, corner, 0.25 * dart), track: k(t, [[ID, 0.5], [c.making + 0.1, 0.5], [c.making + 0.5, 0.64, 'inOut']]), yaw: -0.16 * smooth(clamp((t - c.making) / 1.0)), roll: -0.06 + 0.05 * Math.sin((t - c.B3) * 1.6) * smooth(clamp((t - c.B3) / 1.2)) },
     gaze: gz,
     face,
-    blinkAt: [c.making + 0.2, c.B3 + 0.75, c.fearCut0 + 0.06, c.imp + 1.6],
+    blinkAt: [c.making + 0.2, c.B3 + 0.75, c.fearCut0 + 0.04, c.imp + 2.0],
     armL: { preset: 'clasp', from: 'tiptoe', mix: 1 - wk.amount }, armR: { preset: 'clasp', from: 'tiptoe', mix: 1 - wk.amount },
     extra: { tuftPerk: Math.max(0.45 * smooth(clamp((t - c.making - 0.1) / 0.5)), startle), startle, glow: 1.1, tremble: 0.05,
       cry: 0.15 * (1 - smooth(clamp((t - T(ID)) / 2.5))) },
@@ -242,68 +286,88 @@ function magPose(st, t, pass) {
   const c = times(), M = marks();
   const fe = fear.anchor('eyes');
   const tau = flightTau(t);
-  // --- before contact: lurking at PEEK -> last tiptoe step in -> dagger high -> folded deep over the hem
+  // --- before contact: s19's last spot (on his toes at PEEK, dagger high) -> last tiptoe step in -> dagger right up on
+  // "stab" (toothy grin, popping eyes) -> folded double at the Void's flank, dagger cocked by his ear, tongue out
   if (tau === null) {
-    const step = k(t, [[c.B2 + 0.05, 0], [c.B2 + 1.15, 1, 'inOut']]);
-    // from s19's last spot (on his toes at PEEK) the last tiptoe step in to the kick spot
-    const p0 = ROOM.W(MAGPATH.PEEK), p1 = st.magRoot || M.PEEK2;
-    const pos = mix3(p0, p1, step);
-    const walking = pulse(t, c.B2 + 0.0, c.B2 + 1.25, 0.15, 0.2);
-    const fold = k(t, [[c.B3 - 0.05, 0], [c.B3 + 0.75, 1, 'inOut']]);
-    const daggerUp = k(t, [[c.stab - 0.35, 0], [c.stab - 0.05, 1, 'out'], [c.B3 + 0.1, 1], [c.B3 + 0.6, 0, 'inOut']]);
-    const uhoh = k(t, [[c.contact - 0.34, 0], [c.contact - 0.26, 1, 'out']]);
-    const Flurk = MX('lurk', { pupil: 0.9 });
-    const Fgloat = MX('gloat', { lidU: 0.95, lidL: 0.3, browOut: 0.9 });
-    const Fglee = MX('gloat', { lidU: 1.22, lidL: 0.1, browIn: 0.35, browOut: 1, mTongue: 1, pupil: 0.75 });
-    let face = k(t, [[ID, Flurk], [c.creepy, Flurk], [c.creepy + 0.35, Fgloat, 'inOut'], [c.stab - 0.2, Fgloat], [c.stab + 0.1, Fglee, 'out'], [c.contact - 0.34, Fglee]]);
+    const step = k(t, [[c.B2 + 0.1, 0], [c.B2 + 1.1, 1, 'inOut']]);
+    const p0 = ROOM.W(MAGPATH.PEEK), y0 = M.yPEEK + 0.5;
+    const pos = mix3(p0, st.magRoot, step);
+    const yaw = lerp(y0, KP.yaw, smooth(clamp((t - c.B2 - 0.1) / 0.9)));
+    const walking = pulse(t, c.B2 + 0.05, c.B2 + 1.2, 0.15, 0.2);
+    const fold = k(t, [[c.B3 + 0.02, 0], [c.B3 + 0.62, 1.06, 'out'], [c.B3 + 0.9, 1, 'inOut']]);
+    const daggerUp = k(t, [[c.stab - 0.3, 0], [c.stab - 0.04, 1, 'out'], [c.B3 + 0.05, 1], [c.B3 + 0.55, 0, 'inOut']]);
+    const uhoh = k(t, [[c.contact - 0.34, 0], [c.contact - 0.27, 1, 'out']]);
+    const Fgloat = MX('gloat', { lidU: 1.0, lidL: 0.25, lidAngry: 0, browOut: 0.85 });
+    // "grin at maximum, eyes popping with glee": the widest toothy grin, lids wide, tiny pupils
+    const Fglee = MX('gloat', { mSmile: 1, mWide: 1, mOpen: 0.2, mTeethU: 1, mTeethL: 1, lidU: 1.38, lidL: 0, lidAngry: 0, browIn: 0.45, browOut: 1, pupil: 0.5 });
+    const Fbent = MX('gloat', { mSmile: 1, mWide: 0.9, mOpen: 0.24, mTeethU: 1, mTeethL: 0.8, lidU: 1.2, lidL: 0.05, lidAngry: 0, browOut: 0.95, pupil: 0.6 });
+    let face = k(t, [[ID, Fgloat], [c.creepy, Fgloat], [c.stab - 0.25, Fgloat], [c.stab + 0.06, Fglee, 'out'], [c.B3 + 0.1, Fglee], [c.B3 + 0.6, Fbent, 'inOut']]);
     if (uhoh > 0) face = mixFlat(face, MX('uhoh'), uhoh);
     const hit = t >= c.contact;          // the foot lands: eyes bulge, cheeks puff, he folds round it
     if (hit) face = MX('popped', { mOpen: 0.12, mPout: 0.8, mWide: -0.2, mTeethU: 0, mTeethL: 0 });
     const head = A(mag.anchor('head') || add(M.PEEK2, [0, 1.7, 0]));
+    const glee = smooth(clamp((t - (c.stab - 0.25)) / 0.3));
+    const lean = lerp(0.25, KP.lean, fold) + 0.06 * Math.sin((t - c.B3) * 3) * smooth(clamp(fold)) * (1 - uhoh);
     return {
-      pos, yaw: M.yPEEK + 0.5,
-      walk: { amount: walking, phase: (t - c.B2) * 1.25, style: 'sneak' },
-      body: { tiptoe: 0.6 * (1 - fold) * (1 - walking), crouch: lerp(0.3, 0.22, fold) * (1 - 0.7 * walking), peek: lerp(0.65, 1.0, fold), lean: 1.05 * fold + 0.08 * Math.sin((t - c.B3) * 3) * fold, hunch: 0.25 * fold, recoil: 0.2 * uhoh },
-      head: { follow: pass ? 0.5 : 0, pitch: -0.1 * uhoh },
-      gaze: pass ? (uhoh > 0.5 ? add(M.V, [0.2, 0.5, 0.1]) : fe) : null,
+      pos, yaw,
+      walk: { amount: walking, phase: 0.75 + (t - c.B2) * 1.1, style: 'sneak' },
+      body: { tiptoe: lerp(1, 0.35, fold) * (1 - walking), crouch: lerp(0.04, KP.crouch, fold), peek: lerp(1.0, KP.peek, fold), lean, hunch: lerp(0.15, KP.hunch, fold), recoil: 0.2 * uhoh },
+      // bent double he cranes his neck up so the face reads, turned toward Fear
+      head: { follow: pass ? 0.55 : 0, look: fe || undefined, pitch: -0.42 * smooth(clamp(fold)) - 0.1 * uhoh },
+      gaze: pass ? (uhoh > 0.5 ? add(st.hip0 || M.V, [0.3, 0.2, 0]) : fe) : null,
       face,
-      armR: daggerUp > 0.01 ? { preset: 'up', reach: daggerUp, target: add(head, add(LD(-0.22, 0.5, 0.18), [0, 0.04 * Math.sin(t * 9) * daggerUp, 0])) } : { preset: 'dagger_ready' },
+      armR: daggerUp > 0.01
+        ? { preset: [['dagger_ready', 1 - daggerUp], ['up', daggerUp]], offset: [0, 0.36 * (1 - daggerUp) + 0.03 * Math.sin(t * 9) * daggerUp, 0] }
+        : { preset: 'dagger_ready', offset: [0, 0.08 + 0.28 * (1 - smooth(clamp((t - c.B3) / 0.5))), 0] },
       armL: { preset: 'pouch' },
-      extra: { eyePop: hit ? 1 : 0.5 * smooth(clamp((t - c.stab) / 0.2)) * (1 - uhoh) + 0.6 * uhoh, tongueOut: 0.35 * fold * (1 - uhoh), tap: 0.4,
-        hatOff: hit ? 0.25 : 0 },
+      extra: { eyePop: hit ? 1 : glee * (1 - 0.4 * smooth(clamp(fold))) * (1 - uhoh) + 0.7 * uhoh, tongueOut: 0.45 * smooth(clamp(fold)) * (1 - uhoh), tap: 0.4 * (1 - glee),
+        hatOff: hit ? 0.25 : 0, stars: 0 },
     };
   }
   // --- flight
   const start = st.magRoot, end = [M.CRASH[0], -0.62, M.CRASH[2]];   // the pelvis comes down to sitting height
   const fp = flightPos(tau, start, end);
   const kicked = k(t, [[c.contact, 0], [c.launch, 0.35, 'out'], [c.launch + 0.06, 1, 'out']]);
-  const land = k(t, [[c.imp + 0.1, 0], [c.imp + 0.5, 1, 'inOut']]);   // slammed into the pile (held), then slumps down
-  // during the paused part of the flight (he is off screen) park him far away; the hat keeps its own world position
   const parked = t >= c.launch + c.flightA && t < c.resume;
   const hatP = hatPath(st, t, c, M, fp);
-  if (land <= 0) {
-    const flip = -(Math.PI * 2 + 0.55) * smooth(clamp(tau / c.F)) - 0.2 * Math.sin(tau * 3);
-    const dir = sub(end, start); const dl = Math.hypot(dir[0], dir[2]);
+  const dir = sub(end, start); const dl = Math.hypot(dir[0], dir[2]);
+  const flipF = -(Math.PI * 2 + 0.55) * smooth(clamp(tau / c.F)) - 0.2 * Math.sin(tau * 3);
+  if (t < c.imp) {
     return {
       pos: parked ? [fp.pos[0], 60, fp.pos[2]] : fp.pos, yaw: M.yCRASH,
-      face: t >= c.imp ? MX('ow') : MX('popped', { mOpen: 0.95 }),
+      face: MX('popped', { mOpen: 0.95 }),
       gaze: null,
-      extra: { kicked, flip, flail: t >= c.imp ? 0.15 : 1.2, vel: [dir[0] / dl * 1.6, 0, dir[2] / dl * 1.6], hatOff: clamp((t - c.contact) / 0.12), hatPos: hatP.pos, hatRot: hatP.rot,
-        dagger: false, pouch: true, eyePop: 1 },
+      extra: { kicked, flip: flipF, flail: 1.2, vel: [dir[0] / dl * 1.6, 0, dir[2] / dl * 1.6], hatOff: clamp((t - c.contact) / 0.12), hatPos: hatP.pos, hatRot: hatP.rot,
+        dagger: false, pouch: true, eyePop: 1, stars: 0 },
     };
   }
-  // --- landing -> wreck
+  // --- the slam: back-first into the pile, tipped over onto his back, legs up (a squashy bounce), held a beat;
+  // then he slides down into a crumpled sit (the bucket hat comes later)
+  const flipEnd = -(Math.PI * 2 + 0.55) - 0.2 * Math.sin(c.F * 3);
+  const slam = smooth(clamp((t - c.imp) / 0.12));
+  const land = k(t, [[c.imp + 0.42, 0], [c.imp + 0.95, 1, 'inOut']]);
   const w = wreckPose(t, M);
-  w.extra.kicked = 1 - land;
-  w.pos = [M.CRASH[0], -0.62 * (1 - land), M.CRASH[2]];
-  w.body.bounce = 0.07 * jiggle(t, c.imp + 0.08, 1, 17, 6.5);
-  w.body.slump += 0.3 * pulse(t, c.imp + 0.05, c.imp + 0.9, 0.08, 0.6);
+  w.extra = { ...w.extra, stars: 0 };
+  if (land < 1) {
+    const bounce = 0.06 * jiggle(t, c.imp + 0.02, 1, 16, 6);
+    w.extra.kicked = 1 - land;
+    w.extra.flip = flipEnd - 0.5 * slam + 0.12 * jiggle(t, c.imp + 0.03, 1, 14, 5);
+    w.extra.flail = 0.25 * (1 - slam) + 0.06;
+    w.extra.vel = [0, 0, 0];
+    w.pos = [M.CRASH[0], -0.62 * (1 - land) - 0.08 * slam * (1 - land) + bounce * (1 - land), M.CRASH[2]];
+    w.face = MX([['ow', 0.7], ['popped', 0.3]]);
+  } else {
+    w.extra.kicked = 0;
+    w.pos = [M.CRASH[0], 0, M.CRASH[2]];
+  }
+  w.body.bounce = 0.05 * jiggle(t, c.imp + 0.95, 1, 15, 6);
+  w.body.slump += 0.3 * pulse(t, c.imp + 0.9, c.imp + 1.7, 0.1, 0.6);
   w.extra.hatPos = hatP.pos; w.extra.hatRot = hatP.rot;
   // between landing and the BONK: stunned, swaying ('ow' -> dazed)
-  const preBonk = t < c.bonk;
-  if (preBonk) w.face = MX([['ow', 0.6], ['dazed', 0.4]]);
-  // after the sign: rigid, then sag; "...How rude." (lip-sync under the bucket rim), one finger lifts weakly and drops
-  const rigid = pulse(t, c.sign1 - 0.02, c.sign1 + 0.5, 0.04, 0.3);
+  if (land >= 1 && t < c.bonk) w.face = MX([['ow', 0.6], ['dazed', 0.4]]);
+  // after the sign: rigid (shoulders up, back straight), then the sag; "...How rude." (lip-sync under the bucket rim),
+  // one finger lifts weakly and drops
+  const rigid = pulse(t, c.sign1 - 0.02, c.sign1 + 0.55, 0.04, 0.3);
   if (rigid > 0) w.face = mixFlat(MX('dazed'), MX('startled'), rigid);
   const finger = pulse(t, c.rude + 0.05, c.rude + 0.75, 0.22, 0.25);
   if (t > c.B8 - 0.2) {
@@ -346,7 +410,7 @@ function hatPath(st, t, c, M, fp) {
 function placeDagger(st, t, c, M) {
   const d = st.dagger;
   const tau = flightTau(t);
-  if (tau === null || (t >= c.resume - 1e-3 && t < c.resume && false)) { d.visible = false; return; }
+  if (tau === null) { d.visible = false; return; }
   d.visible = true;
   const rest = daggerRestPos(M);
   const tl = c.daggerLand;
@@ -359,13 +423,29 @@ function placeDagger(st, t, c, M) {
     d.rotation.set(0.3, tau * 2.0, tau * 13.0);
     return;
   }
-  if (t < tl - 0.28) { d.visible = false; return; }
-  // the drop: from above the frame straight down, point first, then the wobble
-  const u = clamp((t - (tl - 0.28)) / 0.28);
-  const y = 0.2 + 2.6 * (1 - u * u);
-  const wob = t > tl ? 0.32 * Math.exp(-(t - tl) * 4.2) * Math.sin((t - tl) * 30) : 0;
+  if (t < tl - 0.3) { d.visible = false; return; }
+  // the drop: from above the frame straight down, point first, THUNK, then a springy wobble
+  const u = clamp((t - (tl - 0.3)) / 0.3);
+  const y = 0.18 + 2.4 * (1 - u * u);
+  const wob = t > tl ? 0.38 * Math.exp(-(t - tl) * 3.6) * Math.sin((t - tl) * 28) : 0;
   d.position.set(rest[0], y, rest[2]);
-  d.rotation.set(0, 0.6, -Math.PI / 2 + wob + (1 - u) * 0.4);
+  d.rotation.set(0, 0.35, -Math.PI / 2 + wob + (1 - u) * 0.35);
+}
+
+// readable birdies: five little stars (and two tiny ones) orbiting the bucket rim at ~0.25 m, from the BONK
+function drawBirdies(fx, t, c, set, mag) {
+  if (t < c.bonk) return;
+  const b = set.props.bucketHat;
+  if (!b) return;
+  const on = smooth(clamp((t - c.bonk) / 0.3));
+  const p = new THREE.Vector3(); b.getWorldPosition(p);
+  const h = A(mag.anchor('headTop') || p);
+  const ctr = [h[0], h[1] + 0.06, h[2]];
+  for (let i = 0; i < 5; i++) {
+    const a = t * 2.6 + (i / 5) * Math.PI * 2;
+    const q = [ctr[0] + Math.cos(a) * 0.27, ctr[1] + 0.04 * Math.sin(a * 2 + i), ctr[2] + Math.sin(a) * 0.2];
+    fx.add(q, 0.075 + 0.01 * Math.sin(t * 5 + i), i % 2 ? 0xfff0b0 : 0xe8ecff, 0.95 * on, t * 2 + i, CELL.star);
+  }
 }
 
 // ---------------------------------------------------------------------------------------------- cameras
@@ -382,13 +462,13 @@ function frameShot(st, t, shot, c, M) {
       const pos = ROOM.W(1.2, 0.5, 3.15);
       return aim(pos, fe, 225, 640, 42, { drift: 0.1 });
     }
-    case 2: { // MAG_MED: 3/4 front on the magician from the camera side, high, the Void's hood soft in the left foreground
+    case 2: { // MAG_MED: 3/4 front on the magician from the camera side, the Void's hood soft in the left foreground
       const mh = A(mag.anchor('head'));
-      const pos = add(mh, LD(-1.05, 0.55, 2.05));
-      return aim(pos, mh, 420, 420, 38, { drift: 0.1 });
+      const pos = add(mh, LD(-1.05, 0.45, 2.05));
+      return aim(pos, mh, 430, 400, 36, { drift: 0.1 });
     }
-    case 3: { // KICK wide, locked: the Void 3/4 (head cheat), Fear lower-left, the magician bent over the camera-side hem
-      return aim(ROOM.W(1.85, 1.3, 7.0), ROOM.W(1.95, 2.0, 0.3), 372, 445, 50, { drift: 0 });
+    case 3: { // KICK wide, locked: Fear lower-left, the Void 3/4 (head cheat), the magician bent double at its right flank
+      return aim(ROOM.W(2.45, 1.25, 7.25), ROOM.W(2.15, 1.55, 0.3), 352, 560, 48, { drift: 0 });
     }
     case 4: { // the floor insert at the back hem: the retracting fat leg, the foot's wiggle, the hem bounce
       const vs = voidSpot(t);
@@ -405,19 +485,22 @@ function frameShot(st, t, shot, c, M) {
       const cc = add(M.CRASH, [0, 0.62, 0]);
       const sh = ROOM.shot(ROOM.L(cc), { dist: 3.7, yaw: -8, pitch: 10, fov: 40, screenY: sy(560), drift: 0 });
       const sk = Math.exp(-Math.max(0, t - c.imp) * 9) * (t > c.imp ? 1 : 0);
-      if (sk > 0.02) sh.shake = { amp: 0.012 * sk, freq: 11 };
+      if (sk > 0.02) sh.shake = { amp: 0.014 * sk, freq: 11 };
       return sh;
     }
-    case 7: { // FEAR_CU (the star at the top edge)
-      return ROOM.shot(ROOM.L(fe), { dist: 1.55, yaw: 52, pitch: -4, fov: 44, screenY: sy(540), drift: 0.05 });   // = s21's opening setup
-    }
+    case 7: // FEAR_CU from the Void side, the fingertip star at the top edge (= s21's opening setup)
+      return fearCU(fe, 0);
   }
   return ROOM.cam('MASTER');
+}
+/** FEAR_CU from the Void side shared with s21's opening: Fear's eyes y~610, the fingertip star near the top edge */
+export function fearCU(fe, push = 0) {
+  return ROOM.shot(ROOM.L(fe), { dist: 2.05 - 0.12 * push, yaw: 46, pitch: -8, fov: 44, screenY: sy(610), drift: 0.05 });
 }
 
 function dbg(st, t, app) {
   const cam = app.camera, o = {};
-  const ps = { vEyes: st.vd.anchor('eyes'), fEyes: st.fear.anchor('eyes'), mHead: st.mag.anchor('head'), mChest: st.mag.anchor('chest'), kick: st.vd.anchor('kickFoot'), star: starAt(t).pos, handR: st.vd.anchor('handR') };
+  const ps = { vEyes: st.vd.anchor('eyes'), hood: st.vd.anchor('hoodTop'), fEyes: st.fear.anchor('eyes'), mHead: st.mag.anchor('head'), mEyes: st.mag.anchor('eyes'), mChest: st.mag.anchor('chest'), kick: st.vd.anchor('kickFoot'), star: starAt(t).pos, held: heldStar(st.vd, starAt(t)).pos, dagger: st.dagger.visible ? st.dagger.position : null };
   for (const [n, p] of Object.entries(ps)) if (p) o[n] = pix(cam, p);
-  console.log('DBG20', t.toFixed(2), 'shot', st.shot, JSON.stringify(o), 'kickErr', st.vd.anchor('kickFoot').distanceTo(V(st.foot0)).toFixed(3), 'foot', A(st.vd.anchor('kickFoot')).map((x) => x.toFixed(2)).join(','), 'tgt', st.chest0.map((x) => x.toFixed(2)).join(','), 'kv', (st.kv ?? 0).toFixed(3));
+  console.log('DBG20', t.toFixed(2), 'shot', st.shot, JSON.stringify(o), 'foot-chest', st.vd.anchor('kickFoot').distanceTo(V(st.chest0)).toFixed(3), 'kv', (st.kv ?? 0).toFixed(3));
 }

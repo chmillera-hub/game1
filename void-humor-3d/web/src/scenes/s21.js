@@ -165,7 +165,7 @@ export default {
     // b06: a glow begins in its palms (a soft core + a few slow sparks)
     const hl = vd.anchor('handL'), hr = vd.anchor('handR');
     const towardFear = sub(add(M.FOUT, [0, 0.65, 0]), bookPoint(vs)); const tl = Math.hypot(...towardFear) || 1;
-    const palms = add(hl && hr ? add(mix3(A(hl), A(hr), 0.5), [0, 0.08, 0]) : bookPoint(vs), towardFear.map((x) => (x / tl) * 0.1));
+    const palms = add(hl && hr ? add(mix3(A(hl), A(hr), 0.5), [0, 0.2, 0]) : bookPoint(vs), towardFear.map((x) => (x / tl) * 0.12));
     const glow = smooth(clamp((t - (L.B6 + 0.45)) / 0.6));
     if (glow > 0) {
       fx.add(palms, 0.3 + 0.1 * glow, 0xfff0d0, 0.9 * glow, 0, CELL.dot);

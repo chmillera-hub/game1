@@ -15,7 +15,7 @@ import { VX } from '../chars/void.js';
 import { UX } from '../chars/user.js';
 import { EDGE, todAt, voidSkyAt, sy, lookFor } from './marks.js';
 import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse,
-  V3, toV, ramp, bump, pathPose, pathS, rollFor, aim, makeJesusPhone, glowSprite, fblend } from './kit_s14_16.js';
+  V3, toV, ramp, bump, pathPose, pathS, rollFor, aim, makeJesusPhone, glowSprite, fblend, hideDuring } from './kit_s14_16.js';
 
 const M = EDGE.M;
 const KP = M.K.p, KY = M.K.yaw;
@@ -36,6 +36,9 @@ export default {
     const ding = glowSprite(0xffe2b0, 0.16); own(ding, 's14');
     // path stations (metres along the EDGE path from pathStart): the user's seat, the crest of the rise
     const sU = pathS(set, POS.USEAT), sRise = pathS(set, EDGE.RISE_WORLD);
+    // the phone insert's camera sits at the user's chest: cheat the hoodie drawstrings out of the lens for that shot
+    const insW = [T('s14b03') - 0.1, T('s14b03.end') - 1.25];
+    if (user.strings) for (const sg of user.strings) { hideDuring(sg.tb.mesh, [insW]); hideDuring(sg.ag, [insW]); }
     console.log('s14 path', JSON.stringify({ sU: sU.toFixed(2), sRise: sRise.toFixed(2), rise: set.pathAt(sRise).pos.map((v) => +v.toFixed(2)) }));
     return { scene: set.scene, set, jesus, vd, user, fx, gal, phone, ding, sU, sRise, look: lookFor('s14', set.look) };
   },
@@ -138,14 +141,16 @@ export default {
         if (t < tDing + 0.05) return lerpA(uE, uPhone, ramp(t, tShow0 + 0.1, tShow0 + 0.35) * (1 - ramp(t, tShow1 - 0.1, tShow1 + 0.1)));
         if (t < tPull0) return lerpA(uE, chestP, ramp(t, tDing + 0.05, tDing + 0.15));
         const aside = [EDGE.RISE_WORLD[0] - 2.5, 2.2, EDGE.RISE_WORLD[2]];
-        if (t < tTuck0 + 0.1) return lerpA(lerpA(chestP, add(phoneP, scan(t)), ramp(t, tPull0 + 0.05, tPull0 + 0.3)), aside, pulse(t, tToo6 - 0.08, tTuck0 + 0.12, 0.06, 0.12));
+        const upOff = jesus.anchor('eyes') ? add(arr(jesus.anchor('eyes')), SV(FWD_K[0] * 3 - 0.4, 0.25, FWD_K[2] * 3)) : aside;
+        const take = pulse(t, tVoid6 - 0.06, tToo6 - 0.12, 0.08, 0.14);
+        if (t < tTuck0 + 0.1) return lerpA(lerpA(lerpA(chestP, add(phoneP, scan(t)), ramp(t, tPull0 + 0.05, tPull0 + 0.3)), upOff, take), aside, pulse(t, tToo6 - 0.08, tTuck0 + 0.12, 0.06, 0.12));
         const riseP = [EDGE.RISE_WORLD[0], EDGE.RISE_WORLD[1] + 1.2, EDGE.RISE_WORLD[2]];
         return lerpA(lerpA(phoneP, add(chestP, [0, -0.05, 0]), ramp(t, tTuck0 + 0.1, tTuck0 + 0.3)), riseP, ramp(t, tSmooth1 - 0.1, tSmooth1 + 0.15));
       })();
       const look = t < tDing + 0.05 ? uE : gz;
       // ---- head: follows the user out (eyes lead); the ding tips the chin to the chest; reading posture
       const follow = k(t, [['s14', 0.55], [tDing, 0.55], [tDing + 0.3, 0.75], [B6e + 0.5, 0.75], [tSmooth1, 0.3]]);
-      const nod = 0.06 * pulse(t, tExhale - 0.05, tExhale + 0.5, 0.1, 0.3);
+      const nod = 0.06 * pulse(t, tExhale - 0.05, tExhale + 0.5, 0.1, 0.3) - 0.1 * pulse(t, tVoid6 - 0.04, tToo6 - 0.1, 0.1, 0.16);
       const tilt = k(t, [['s14', 0.06], [tDing, 0.06], [tDing + 0.2, 0.13, 'out'], [tPull1, 0.1], [B6 + 0.6, 0.04], [tVoid6, 0.1], [B6e + 0.3, -0.04], [tSmooth1, 0.03]]);
       // ---- arms: from s13's open palms -> hands settle on the thigh/knee; the aborted little reach ("wait—")
       const settle = ramp(t, tRise0 + 0.2, tPiv1 + 0.4);
@@ -326,7 +331,7 @@ export default {
         user.phone.updateWorldMatrix(true, false);
         const n = V3(0, 0, 1).transformDirection(user.phone.matrixWorld), up = V3(0, 1, 0).transformDirection(user.phone.matrixWorld);
         const xr = V3(1, 0, 0).transformDirection(user.phone.matrixWorld);
-        const cp = ph.clone().addScaledVector(n, 0.2).addScaledVector(up, -0.025).addScaledVector(xr, -0.045);
+        const cp = ph.clone().addScaledVector(n, 0.2).addScaledVector(up, -0.025).addScaledVector(xr, -0.04);
         const look = ph.clone().addScaledVector(up, -0.012);
         applyShot(app.camera, { pos: cp.toArray(), look: look.toArray(), fov: 50, drift: 0, roll: rollFor(cp, look, up) }, t, 14);
       } else if (shot === 'JINS') {

@@ -75,6 +75,24 @@ export function scopeVisible(obj, a, b, extra = () => true) {
   return obj;
 }
 
+/** The inverse: hide `obj` (a set prop shared by every scene) only while CTX.t is in [T(a), T(b)) — a per-shot cheat. */
+export function hideDuring(obj, a, b) {
+  if (!obj) return obj;
+  const prev = Object.getOwnPropertyDescriptor(obj, 'visible');
+  let own = prev && prev.get ? null : obj.visible;
+  const wins = (obj.__hideWins = obj.__hideWins || []);
+  if (!wins.some((w) => w[0] === a && w[1] === b)) wins.push([a, b]);
+  if (!obj.__hideInstalled) {
+    obj.__hideInstalled = true;
+    Object.defineProperty(obj, 'visible', {
+      configurable: true,
+      get() { const t = CTX.t; return own !== false && !obj.__hideWins.some(([x, y]) => t >= T(x) && t < T(y)); },
+      set(v) { own = !!v; },
+    });
+  }
+  return obj;
+}
+
 // ------------------------------------------------------------------------------------------------ the Void's surface
 /** world point on the Void's velvet body at rest-height y and angle ang (0 = its front, +PI/2 = its LEFT), pushed out `out` m. */
 export function voidSurface(vd, y, ang, out = 0) {
@@ -86,6 +104,39 @@ export function voidSurface(vd, y, ang, out = 0) {
 export function voidNormal(vd, y, ang) {
   const d = vd._xd(y, [Math.sin(ang) / 1, 0, Math.cos(ang) / 0.9]);
   return d.transformDirection(vd.root.matrixWorld).normalize();
+}
+
+// ------------------------------------------------------------------------------------------------ Jesus beside the Void
+// s03/s04: Jesus stands JOUT further out from the Void than the JV mark (at JV his shoulder touches its velvet: no room
+// for the arm around it or the whisper; STAGING §8). s04b13 (him offscreen) slides him back onto JV for s05.
+export const JOUT = 0.28;
+export const JV_OUT = (() => { const J = EDGE.M.JV.p, V = EDGE.M.V.p, d = [J[0] - V[0], J[2] - V[2]], n = Math.hypot(d[0], d[1]); return [J[0] + d[0] / n * JOUT, 0, J[2] + d[1] / n * JOUT]; })();
+/** arm-around contact height (world): below his shoulder, on the velvet of the Void's right flank */
+export const AROUND_H = 1.3;
+/**
+ * Jesus's LEFT palm on the Void's right flank: world height h, swept round toward its back, ~reachM from his
+ * shoulder (palm on the velvet just round the curve). -> { p, a, n (outward normal), tb (tangent toward its back) }.
+ * Call after both rigs were updated for this frame (reads the live surface + his shoulder).
+ */
+export function aroundContact(vd, jesus, h = AROUND_H, reachM = 0.45, aPref = -1.1) {
+  const sh = jesus.anchor('shoulderL');
+  let best = null, bd = 1e9;
+  for (let a = -1.5; a <= -0.7; a += 0.025) {
+    const p = voidSurface(vd, h, a, 0.012);
+    const d = Math.abs(p.distanceTo(sh) - reachM) + 0.3 * Math.abs(a - aPref);
+    if (d < bd) { bd = d; best = [p, a]; }
+  }
+  const a = best[1], n = voidNormal(vd, h, a);
+  const tb = voidSurface(vd, h, a - 0.05, 0).sub(voidSurface(vd, h, a + 0.05, 0)).normalize();
+  return { p: best[0], a, n, tb };
+}
+/** the `armL` pose for the arm around the Void: upper arm level out to his side, forearm round its curve. lift (m) / tap */
+export function aroundArm(c, reach = 1, lift = 0) {
+  const a = EDGE.W(1, 0, 0.35), o = EDGE.W(0, 0, 0);
+  const pole = new THREE.Vector3(a[0] - o[0], -0.15 * Math.hypot(1, 0.35), a[2] - o[2]).normalize();   // stage-fixed: no elbow flips
+  const tgt = c.p.clone().addScaledVector(c.n, 0.66 * lift).add(new THREE.Vector3(0, lift, 0));
+  const fing = c.tb.clone().add(new THREE.Vector3(0, -0.25, 0)).addScaledVector(c.n, -0.1).normalize();
+  return { preset: 'around', target: tgt, normal: c.n.toArray(), pole: pole.toArray(), fingers: fing.toArray(), reach, hand: { curl: 0.25, spread: 0.18, cup: 0.35, thumb: 0.4 } };
 }
 
 // ------------------------------------------------------------------------------------------------ set seeds
@@ -110,6 +161,30 @@ export function fadeSeedsNear(set, camera, pts) {
   S.aMisc.needsUpdate = true;
 }
 
+/**
+ * Same for the set's golden motes (core Particles): fade any that sit on a face, or that drift within `near` m of the
+ * lens (they would bloom into a big blurry orb). Call AFTER set.update() and after the camera is applied.
+ */
+export function fadeMotesNear(set, camera, pts = [], near = 2.2) {
+  const S = set && set.props && set.props.motes;
+  if (!S || !S.geo) return;
+  camera.updateMatrixWorld(); camera.updateProjectionMatrix();
+  const v = new THREE.Vector3(), cp = camera.position;
+  const P = pts.map(([p, r]) => { v.copy(toV(p)).project(camera); return [(v.x * 0.5 + 0.5) * 720, (1 - (v.y * 0.5 + 0.5)) * 1280, r]; });
+  const n = S.geo.instanceCount, A = S.aPos.array, C = S.aCol.array;
+  for (let i = 0; i < n; i++) {
+    v.set(A[i * 3], A[i * 3 + 1], A[i * 3 + 2]);
+    let f = smooth((v.distanceTo(cp) - near * 0.6) / (near * 0.4));
+    v.project(camera);
+    if (v.z <= 1) {
+      const x = (v.x * 0.5 + 0.5) * 720, y = (1 - (v.y * 0.5 + 0.5)) * 1280;
+      for (const [px, py, r] of P) f = Math.min(f, smooth((Math.hypot(x - px, y - py) - r * 0.6) / (r * 0.4)));
+    }
+    if (f < 1) C[i * 4 + 3] *= f;
+  }
+  S.aCol.needsUpdate = true;
+}
+
 // ------------------------------------------------------------------------------------------------ sky galaxy
 /** the big sky galaxy sprite (from s04b11.end on), exactly as agreed in marks.js: size 1.1, 0xd8c0ff, alpha 0.9. */
 export function drawSkyGalaxy(ps, t) {
@@ -132,17 +207,38 @@ const LG = LITTLE_GALAXY;
 const tPop = () => T('s04b10') + 0.39;                 // the big hiccup in the s04b10 cough audio, on "galaxies"
 const tBounce = () => tPop() + 0.34;
 const tHop = () => tBounce() + 0.3;
-const tStop = () => T('s04b13') + 0.78;
+// it rolls at a steady pace (seen small in the s04b11 wide, rolling toward the user), and the last ~0.35 m happen in
+// the first 0.75 s of s04b13: it rolls into that shot from frame-right, decelerates, spirals to a stop at the sneaker
+const tStop = () => T('s04b13') + 0.75;
 const tFlat = () => tStop() + 0.62;
+const DECEL = 0.45;                                    // s of deceleration before the wobble
 
-function bez(a, c, b, u) { const v = 1 - u; return [v * v * a[0] + 2 * v * u * c[0] + u * u * b[0], 0, v * v * a[2] + 2 * v * u * c[2] + u * u * b[2]]; }
-const ROLL_C = [-0.42, 0, 0.18];                       // control point: the roll curls in toward the sneaker
-let _rollLen = 0;
-function rollLen() {
-  if (_rollLen) return _rollLen;
-  let L = 0, p = LG.hop;
-  for (let i = 1; i <= 64; i++) { const q = bez(LG.hop, ROLL_C, LG.rest, i / 64); L += Math.hypot(q[0] - p[0], q[2] - p[2]); p = q; }
-  return (_rollLen = L);
+// the roll path (stage x,z): a lazy loop out to the user's left, then straight down their facing axis into the sneaker
+const ROLL = [[0.18, 0.02], [-0.62, -0.42], [-0.22, 0.42], [-0.7, 1.0]];
+function cub(u) { const v = 1 - u, a = v * v * v, b = 3 * v * v * u, c = 3 * v * u * u, d = u * u * u; return [a * ROLL[0][0] + b * ROLL[1][0] + c * ROLL[2][0] + d * ROLL[3][0], 0, a * ROLL[0][1] + b * ROLL[1][1] + c * ROLL[2][1] + d * ROLL[3][1]]; }
+const bez = (a, c, b, u) => cub(u);                    // (kept signature)
+let _rollTab = null;
+function rollTab() {
+  if (_rollTab) return _rollTab;
+  const N = 96, cum = [0]; let p = cub(0);
+  for (let i = 1; i <= N; i++) { const q = cub(i / N); cum.push(cum[i - 1] + Math.hypot(q[0] - p[0], q[2] - p[2])); p = q; }
+  return (_rollTab = { N, cum, L: cum[N] });
+}
+function rollLen() { return rollTab().L; }
+/** path parameter for arc length s */
+function rollU(s) {
+  const { N, cum } = rollTab();
+  if (s <= 0) return 0; if (s >= cum[N]) return 1;
+  let i = 1; while (i < N && cum[i] < s) i++;
+  return (i - 1 + (s - cum[i - 1]) / Math.max(1e-6, cum[i] - cum[i - 1])) / N;
+}
+/** arc length rolled at t (steady speed, then a linear deceleration over DECEL s into tStop) */
+function rollS(t) {
+  const L = rollLen(), D = tStop() - tHop(), v = L / (D - DECEL / 2);
+  const tt = clamp(t - tHop(), 0, D), td = D - DECEL;
+  if (tt <= td) return v * tt;
+  const d = tt - td;
+  return v * td + v * (d - d * d / (2 * DECEL));
 }
 
 /**
@@ -175,22 +271,21 @@ export function littleGalaxyAt(t, opts = {}) {
     N = axle.clone().applyAxisAngle(d, tumble).normalize();
     spin = 9 * (tBounce() - t0) + 6 * (t - tBounce());
   } else {
-    // rolling on its edge (decelerating) -> coin wobble (Euler's disk) -> flat
+    // rolling on its edge (steady, then decelerating) -> coin wobble (Euler's disk) -> flat
     const L = rollLen(), dur = tStop() - tHop();
     const ur = clamp((t - tHop()) / dur);
-    const s = L * (1 - Math.pow(1 - ur, 2.2));          // decelerating roll
-    // find the path parameter for arc length s
-    let acc = 0, prev = LG.hop, uu = 1;
-    for (let i = 1; i <= 64; i++) { const q = bez(LG.hop, ROLL_C, LG.rest, i / 64); const dl = Math.hypot(q[0] - prev[0], q[2] - prev[2]); if (acc + dl >= s) { uu = (i - 1 + (s - acc) / Math.max(1e-6, dl)) / 64; break; } acc += dl; prev = q; }
-    const p = bez(LG.hop, ROLL_C, LG.rest, uu), p2 = bez(LG.hop, ROLL_C, LG.rest, Math.min(1, uu + 0.01));
-    const pw = W(p), dw = W(p2).sub(W(bez(LG.hop, ROLL_C, LG.rest, Math.max(0, uu - 0.01)))).setY(0);
-    if (dw.lengthSq() < 1e-9) dw.copy(W(LG.rest).sub(W(ROLL_C))).setY(0);
+    const s = rollS(t);
+    const uu = rollU(s);
+    const p = cub(uu);
+    const pw = W(p), dw = W(cub(Math.min(1, uu + 0.01))).sub(W(cub(Math.max(0, uu - 0.01)))).setY(0);
+    if (dw.lengthSq() < 1e-9) dw.copy(W(ROLL[3]).sub(W(ROLL[2]))).setY(0);
     dw.normalize();
     const axle = V3().crossVectors(up, dw).normalize();
     const rollSpin = 9 * (tBounce() - t0) + 6 * (tHop() - tBounce()) + s / R_LG;
     if (t < tStop()) {
       phase = 'roll';
-      const lean = 0.08 + 0.32 * Math.pow(ur, 3);       // leans more as it slows: it starts to curl in
+      const slow = clamp((t - (tStop() - DECEL)) / DECEL);
+      const lean = 0.1 + 0.3 * slow * slow;              // leans more as it slows: it starts to curl in
       N = axle.clone().applyAxisAngle(dw, -lean).normalize();
       c = pw.clone().setY(R_LG * Math.cos(lean));
       spin = rollSpin;

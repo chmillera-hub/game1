@@ -79,6 +79,23 @@ function bake(parent, meshes) {
   return out;
 }
 
+// merge static child meshes into ONE mesh with per-part vertex colours (taken from each part's material colour)
+function bakeColored(parent, meshes, mat) {
+  const gs = [];
+  for (const m of meshes) {
+    m.updateMatrix();
+    let g = m.geometry.clone().applyMatrix4(m.matrix);
+    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k);
+    if (g.index) g = g.toNonIndexed();
+    const c = m.material.color, n = g.attributes.position.count, col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    gs.push(g); parent.remove(m);
+  }
+  const mm = new THREE.Mesh(mergeGeometries(gs), mat); parent.add(mm);
+  return mm;
+}
+
 // ---------------------------------------------------------------------------------------------------------
 // One shader wrapper for every USER material (composes on top of core enhance()):
 //   phone   the phone screen's cool glow (a custom shading term, no extra scene light -> no shader recompiles in any
@@ -114,7 +131,7 @@ function rigMat(mat, U, opt = {}) {
           ${skinGlow ? `float fall = 0.06 / (d2 + 0.06) * smoothstep(0.0, 0.0081, d2);
           float under = 1.0 + 0.7 * smoothstep(0.1, -0.7, (vec4(nn, 0.0) * viewMatrix).y);
           vec3 ph = uPhCol * (0.2 + 0.8 * lam) * facing * fall * under;
-          totalEmissiveRadiance += diffuseColor.rgb * ph * 1.5 + ph * vec3(0.05, 0.075, 0.11);`
+          totalEmissiveRadiance += diffuseColor.rgb * ph * 0.55 + ph * vec3(0.022, 0.034, 0.055);`
           : `float fall = 0.035 / (d2 + 0.035) * smoothstep(0.0, 0.0081, d2);
           totalEmissiveRadiance += diffuseColor.rgb * uPhCol * (0.25 + 0.75 * lam) * facing * fall;`}
         }`);
@@ -134,10 +151,23 @@ function rigMat(mat, U, opt = {}) {
   mat.customProgramCacheKey = () => (prevKey ? prevKey.call(mat) : mat.type) + key;
   return mat;
 }
-// MeshStandard (not Physical: no sheen / ior / specular lobes -> much cheaper per pixel on SwiftShader) + core rim/wrap
+// USER never uses core enhance()'s animated 'fizz' (3-octave 3D noise behind a uniform branch, which SwiftShader's
+// SIMD shaders pay for anyway): compile it out for every USER material
+function noFizz(mat) {
+  const prev = mat.onBeforeCompile, prevKey = mat.customProgramCacheKey;
+  mat.onBeforeCompile = (sh, r) => { if (prev) prev.call(mat, sh, r); sh.fragmentShader = sh.fragmentShader.replace('if (uFizz > 0.0) {', 'if (false) {'); };
+  mat.customProgramCacheKey = () => (prevKey ? prevKey.call(mat) : mat.type) + '|nf';
+  return mat;
+}
+// MeshLambert + core rim/wrap: the cheap model for matte cloth and the (mostly transparent) face decal
+function lamMat(color, { rim = 0.2, rimColor = 0xffffff, rimPower = 3.2, glow = 0.03, wrap = 0, wrapColor = 0xff7058, side, transparent = false } = {}) {
+  const m = new THREE.MeshLambertMaterial({ color: new THREE.Color(color), side: side ?? THREE.FrontSide, transparent });
+  return noFizz(enhance(m, { rim, rimColor, rimPower, glow, wrap, wrapColor }));
+}
+// MeshStandard (not Physical: no sheen / ior / clearcoat) + core rim/wrap — skin and hair keep a soft specular
 function stdMat(color, { roughness = 0.8, rim = 0.2, rimColor = 0xffffff, rimPower = 3.2, glow = 0.03, wrap = 0, wrapColor = 0xff7058, jaw, metalness = 0, side } = {}) {
   const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness, metalness, side: side ?? THREE.FrontSide });
-  return enhance(m, { rim, rimColor, rimPower, glow, wrap, wrapColor, jaw });
+  return noFizz(enhance(m, { rim, rimColor, rimPower, glow, wrap, wrapColor, jaw }));
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -433,13 +463,13 @@ function screenCanvas(mode, name) {
   if (mode === 'block') {
     g.drawImage(feedCanvas(), 0, 0, W, H, 0, 70, W, H);
     header(g, W);
-    g.fillStyle = 'rgba(16,20,30,0.55)'; g.fillRect(0, 0, W, H);
+    g.fillStyle = 'rgba(16,20,30,0.5)'; g.fillRect(0, 0, W, H);
     g.fillStyle = '#ffffff'; rr(g, 22, 190, W - 44, 300, 22); g.fill();
     g.fillStyle = '#1e2430'; g.font = 'bold 30px sans-serif'; g.fillText(`Block ${name}?`, W / 2, 238);
-    g.fillStyle = '#7a8291'; g.font = '17px sans-serif';
+    g.fillStyle = '#4b5261'; g.font = '17px sans-serif';
     g.fillText('They won’t be able to message', W / 2, 284); g.fillText('you or see your posts.', W / 2, 306);
-    g.fillStyle = '#e5484d'; rr(g, 42, 344, W - 84, 54, 27); g.fill();
-    g.fillStyle = '#ffffff'; g.font = 'bold 25px sans-serif'; g.fillText('Block', W / 2, 372);
+    g.fillStyle = '#dc1f2b'; rr(g, 42, 344, W - 84, 54, 27); g.fill();
+    g.fillStyle = '#ffffff'; g.font = 'bold 26px sans-serif'; g.fillText('Block', W / 2, 372);
     g.strokeStyle = '#c3c8d1'; g.lineWidth = 3; rr(g, 42, 414, W - 84, 50, 25); g.stroke();
     g.fillStyle = '#5d6573'; g.font = 'bold 21px sans-serif'; g.fillText('Cancel', W / 2, 440);
   } else {   // 'blocked' | 'profile'
@@ -456,11 +486,11 @@ function screenCanvas(mode, name) {
     if (mode === 'profile') {
       g.fillStyle = '#4a5160'; g.font = '18px sans-serif';
       g.fillText('Would love to hear', W / 2, 352); g.fillText('about your feelings.', W / 2, 376);
-      g.fillStyle = '#e5484d'; rr(g, 42, 420, W - 84, 54, 27); g.fill();
+      g.fillStyle = '#dc1f2b'; rr(g, 42, 420, W - 84, 54, 27); g.fill();
       g.fillStyle = '#ffffff'; g.font = 'bold 25px sans-serif'; g.fillText('Block', W / 2, 448);
     } else {
       g.fillStyle = '#ffffff'; rr(g, 18, 336, W - 36, 120, 18); g.fill();
-      g.strokeStyle = '#e5484d'; g.lineWidth = 5; g.beginPath(); g.arc(W / 2, 372, 17, 0, 7); g.stroke();
+      g.strokeStyle = '#dc1f2b'; g.lineWidth = 5; g.beginPath(); g.arc(W / 2, 372, 17, 0, 7); g.stroke();
       g.beginPath(); g.moveTo(W / 2 - 12, 384); g.lineTo(W / 2 + 12, 360); g.stroke();
       g.fillStyle = '#1e2430'; g.font = 'bold 22px sans-serif'; g.fillText(`You blocked ${name}.`, W / 2, 422);
       g.strokeStyle = '#c3c8d1'; g.lineWidth = 3; rr(g, 60, 486, W - 120, 48, 24); g.stroke();
@@ -593,6 +623,9 @@ class User extends Character {
     const layer = (mats, ro) => this.root.traverse((o) => { if (o.isMesh && mats.includes(o.material)) o.renderOrder = ro; });
     layer([this.hairMat], -3);
     layer([this.hoodieMat, this.sleeveMat], -2);
+    // outermost first so early-z rejects what's underneath: locks/cowlick over the shell, sleeves over the torso
+    this.hairLocks.renderOrder = -3.5; for (const c of this.cowlick) c.tb.mesh.renderOrder = -3.5;
+    for (const sd of ['L', 'R']) this.arms[sd].sleeve.mesh.renderOrder = -2.5;
     this.tapEv = schedule(this.seed * 31 + 3, -4, 3000, 0.28, 0.6);
     this.update(0, {});
   }
@@ -611,22 +644,23 @@ class User extends Character {
     this.bodySkin = rigMat(stdMat(SKIN, sk), U, { skinGlow: true });
     // hair: matte-ish, a low brown rim that fades on downward normals (no pale undersides / outlines)
     this.hairMat = rigMat(stdMat(HAIR_C, { roughness: 0.66, rim: 0.17, rimColor: 0xa8724a, rimPower: 2.6, glow: 0.02 }), U, { rimDown: true, swing: this.HS });
-    this.hoodieMat = rigMat(stdMat(0xffffff, { roughness: 0.9, rim: 0.3, rimColor: 0xc8d8ff, rimPower: 3.2, glow: 0.03 }), U, { rimDark: true });
+    this.hoodieMat = rigMat(lamMat(0xffffff, { rim: 0.3, rimColor: 0xc8d8ff, rimPower: 3.2, glow: 0.03 }), U, { rimDark: true, rimDown: true });
     this.hoodieMat.color.set(HOODIE);
-    this.sleeveMat = rigMat(stdMat(HOODIE, { roughness: 0.9, rim: 0.3, rimColor: 0xc8d8ff, rimPower: 3.2, glow: 0.03 }), U);
-    this.jogMat = stdMat(JOG, { roughness: 0.86, rim: 0.3, rimColor: 0xb8c2dc, rimPower: 2.6, glow: 0.04 });
+    this.sleeveMat = rigMat(lamMat(HOODIE, { rim: 0.3, rimColor: 0xc8d8ff, rimPower: 3.2, glow: 0.03 }), U);
+    this.jogMat = lamMat(JOG, { rim: 0.3, rimColor: 0xb8c2dc, rimPower: 2.6, glow: 0.04 });
     this.shoeMat = stdMat(SNEAK, { roughness: 0.62, rim: 0.15 });
     this.soleMat = stdMat(SOLE, { roughness: 0.7, rim: 0.1 });
     this.outsoleMat = stdMat(OUTSOLE, { roughness: 0.8, rim: 0.05 });
     this.laceMat = stdMat(LACE, { roughness: 0.8, rim: 0.1 });
     this.tabMat = stdMat(TAB, { roughness: 0.75, rim: 0.1 });
     this.stripeMat = stdMat(STRIPE, { roughness: 0.7, rim: 0.1 });
-    this.stringMat = stdMat(0xeeeae2, { roughness: 0.8, rim: 0.15 });
+    this.sneakerMat = lamMat(0xffffff, { rim: 0.12 }); this.sneakerMat.vertexColors = true;
+    this.stringMat = lamMat(0xeeeae2, { rim: 0.15 });
     this.agletMat = new THREE.MeshStandardMaterial({ color: 0xd8dde4, roughness: 0.3, metalness: 0.7 });
     this.frameMat = new THREE.MeshStandardMaterial({ color: FRAME, roughness: 0.32, metalness: 0.1 });
     this.caseMat = rigMat(stdMat(CASE, { roughness: 0.45, rim: 0.25, rimColor: 0xffd0c0, glow: 0.06 }), U);
     this.bumpMat = new THREE.MeshStandardMaterial({ color: 0x23262e, roughness: 0.35 });
-    this.decalMat = rigMat(new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), U, { skinGlow: true });
+    this.decalMat = rigMat(new THREE.MeshLambertMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), U, { skinGlow: true });
     this.tearMat = new THREE.MeshStandardMaterial({ color: 0xdff0ff, roughness: 0.06, metalness: 0.0, emissive: 0x6d8fb8, emissiveIntensity: 0.55, transparent: true, opacity: 0.9 });
     // the wet meniscus on the lower lids: thin, soft, never brighter than white (no flat white bar)
     this.wetMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 0.95, 1.0), transparent: true, opacity: 0, depthWrite: false });
@@ -780,7 +814,8 @@ class User extends Character {
     for (let j = 0; j < J; j++) {
       const u = -Math.PI + (j / J) * 2 * Math.PI, au = Math.abs(u), vh = hairline(u);
       const cw = smoothstep(1.07, 1.2, au);                         // 0 = face (fringe covers), 1 = hanging curtain (near-vertical front edge)
-      const cwH = Math.pow(cw, 1.6), cwR = cw * cw * cw * smoothstep(1.35, 1.95, au);   // hang length / roll-under (sides + back only)
+      const cwH = Math.pow(cw, 1.6), cwR = cw * cw * cw * smoothstep(2.35, 2.85, au);   // hang length / roll-under (the nape only: from
+      // the front a roll-under band shows through the gap under the jaw as a dark 'stick')
       const inset = 0.004 * Math.sin(Math.PI * cw);                 // transition columns tuck in under the face-framing locks
       const back = Math.max(0, -Math.cos(u));
       const vEnd = lerp(vh, 0.1, cw);
@@ -917,7 +952,7 @@ class User extends Character {
       cz = c.z;
       const ring = new THREE.Mesh(new THREE.TorusGeometry(RING, TH, 8, 44), this.frameMat);
       ring.position.copy(c); ring.rotation.y = s * 0.16; parts.push(ring);
-      const lens = new THREE.Mesh(new THREE.CircleGeometry(RING * 0.97, 32), this.lensMat);
+      const lens = new THREE.Mesh(new THREE.RingGeometry(RING * 0.6, RING * 0.97, 32, 1), this.lensMat);   // glints live on the rim only
       lens.position.copy(c); lens.rotation.y = s * 0.16; lens.renderOrder = 4; this.glasses.add(lens); this.lenses.push(lens);
       // temple arm: from the outer rim along the side of the face (just off the skin), then under the hair
       const o = c.clone().add(V(s * RING * Math.cos(0.16), 0.008, -RING * Math.sin(0.16)));
@@ -986,7 +1021,7 @@ class User extends Character {
       if (len < 1e-7) nn.set(0, 1, 0); else nn.multiplyScalar(1 / len);
       const di = len - lerp(cp.ra, cp.rb, tt);
       if (d > 1e8) { d = di; n.copy(nn); continue; }
-      const K = 0.05, h = clamp(0.5 + 0.5 * (d - di) / K);
+      const K = 0.085, h = clamp(0.5 + 0.5 * (d - di) / K);
       d = lerp(d, di, h) - K * h * (1 - h);
       n.lerp(nn, h);
     }
@@ -1000,7 +1035,7 @@ class User extends Character {
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, S, S);
     const X = (th) => (th + Math.PI) / (2 * Math.PI) * S, Y = (y) => (1 - clamp((y - 0.68) / 0.62)) * S;
     // ribbed hem band
-    g.fillStyle = '#e2e2e2'; g.fillRect(0, Y(0.745), S, Y(0.69) - Y(0.745));
+    g.fillStyle = '#d4d4d4'; g.fillRect(0, Y(0.745), S, Y(0.69) - Y(0.745));
     g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(0, Y(0.748), S, 3);
     g.fillStyle = '#2c2c30'; g.fillRect(0, S - 7, S, 7);              // the inside of the hem fold (dark; uv v ~ 0)
     // pocket face + outline + slanted openings
@@ -1077,7 +1112,7 @@ class User extends Character {
       // smooth the displacement across columns (two [1 2 1] passes), then apply; inner fold rings follow the hem
       const T = this.tTmp || (this.tTmp = new Float32Array(R * 3));
       for (let i = 2; i <= iTop; i++) {
-        for (let pass = 0; pass < 2; pass++) {
+        for (let pass = 0; pass < 3; pass++) {
           for (let j = 0; j < R; j++) for (let c = 0; c < 3; c++) {
             const jm = (j + R - 1) % R, jp = (j + 1) % R;
             T[j * 3 + c] = 0.25 * D[(i * R + jm) * 3 + c] + 0.5 * D[(i * R + j) * 3 + c] + 0.25 * D[(i * R + jp) * 3 + c];
@@ -1649,7 +1684,7 @@ class User extends Character {
       const tab = new THREE.Mesh(new RoundedBoxGeometry(0.02, 0.026, 0.008, 2, 0.0035), this.tabMat);
       tab.position.set(0, -0.012, -0.09); tab.rotation.x = 0.2;
       g.add(outsole, mid, upper, collar, tongue, toe, panel, stripe, ...laces, tab);
-      bake(g, [...g.children]);
+      bakeColored(g, [...g.children], this.sneakerMat);                // one draw call per sneaker (vertex colours)
       this.root.add(g);
       const leg = new SweepTube({ material: this.jogMat, segments: 22, radial: 12, capRings: 2, castShadow: true });
       this.root.add(leg.mesh);

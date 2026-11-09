@@ -37,11 +37,13 @@ export default {
 
     // ---------------------------------------------------------------- timing
     const tHand = W('s12b01', 'hand'), tVoids = W('s12b01', "void's", { alt: ['voids'] }), tShoulder = W('s12b01', 'shoulder', { frac: 0.85 });
-    const wStart = T('s12') + 0.12, wEnd = tShoulder - 0.08;          // the walk; the palm lands on "shoulder"
-    const tTouch = tShoulder + 0.02;
+    // the walk is anchored to the END of the narrator's line (fixed 2.33 s, so data/cues/s12.json can give its
+    // footfalls as 's12b01.end-x' refs that move with re-timed audio); the palm lands on "shoulder", its last word
+    const wEnd = T('s12b01.end') - 0.58, wStart = wEnd - 2.33;
+    const tTouch = Math.max(wEnd + 0.02, tShoulder + 0.02);
     const B2 = T('s12b02'), B3 = T('s12b03');
-    const tTurn0 = B2 - 0.45, tTurn1 = B2 + 1.0;                         // the hood turns over its RIGHT shoulder
-    const tSmile = B2 + 1.2, tBlinkV = B2 + 1.85;
+    const tTurn0 = B2 - 0.85, tTurn1 = B2 + 0.95;                         // the hood turns over its RIGHT shoulder
+    const tSmile = B2 + 1.15, tBlinkV = B2 + 1.9;
     const tNod = B3 + 0.25, tThumb = B3 + 0.55, tBreath = B3 + 0.8, tSlide = B3 + 1.0;
     const shotA = t < B2, shotB = t >= B2 && t < B3, shotC = t >= B3;
 
@@ -95,7 +97,7 @@ export default {
     const vPose = (pass) => {
       const jh = jesus.anchor('handR'), je = jesus.anchor('eyes');
       const gHand = jh ? arr(jh) : SW(1.8, 1.25, -0.9), gJ = je ? arr(je) : SW(1.74, 1.55, -0.37);
-      const eyes = k(t, [['s12', gHand], [tTurn0 + 0.15, gHand], [tTurn0 + 0.75, gHand], [tTurn0 + 1.05, gJ, 'inOut']]);
+      const eyes = k(t, [['s12', gHand], [tTurn0 + 0.15, gHand], [B2 + 0.55, gHand], [B2 + 0.85, gJ, 'inOut']]);
       const Fsulk = VX('sad', { lidU: 0.7 });
       const Fsoft = VX('calm', { lidU: 0.62, lidL: 0.36, browIn: 0.42, browOut: -0.08, mSmile: 0.1 });
       const Fgentle = VX('gentle', { lidU: 0.6, lidL: 0.48, browIn: 0.5, mSmile: 0.62, blush: 0.3 });
@@ -103,14 +105,14 @@ export default {
       face.autoBlink = 0;
       return {
         pos: POS.VSIT, yaw: YAW.VSIT,
-        body: { sit: 1, slump: k(t, [['s12', 0.32], [tTouch + 0.3, 0.32], [tTouch + 1.3, 0.42, 'inOut']]) - 0.12 * stiff,
-          shrug: 0.32 * stiff, breathe: 1 - 0.8 * stiff, twist: -0.35 * turn, tilt: 0.05 * turn },
-        head: { yaw: -1.75 * turn, pitch: lerp(0.3, -0.04, turn) - 0.08 * stiff, roll: -0.08 * turn + 0.06 * (1 - turn) },
+        body: { sit: 1, slump: k(t, [['s12', 0.32], [tTouch + 0.3, 0.32], [tTouch + 1.3, 0.44, 'inOut']]) - 0.2 * stiff,
+          shrug: 0.62 * stiff, bounce: 0.03 * stiff, breathe: 1 - 0.8 * stiff, twist: -0.35 * turn, tilt: 0.05 * turn },
+        head: { yaw: -1.75 * turn, pitch: lerp(0.3, -0.04, turn) - 0.16 * stiff, roll: -0.08 * turn + 0.06 * (1 - turn) },
         armL: { preset: 'crossed' }, armR: { preset: 'crossed' },
         gaze: pass && t > tTurn0 ? eyes : null,
         face,
-        blinkAt: [tTurn0 + 0.7, tBlinkV],
-        extra: { stars: 1.1 + 0.25 * smooth(clamp((t - tSmile) / 0.8)) },
+        blinkAt: [B2 + 0.85, tBlinkV],
+        extra: { stars: 1.1 + 0.25 * smooth(clamp((t - tSmile) / 0.8)), rim: shotA ? 1 + 0.9 * smooth(clamp((t - (tTouch - 0.9)) / 0.6)) : 1 },
       };
     };
 
@@ -129,18 +131,22 @@ export default {
     const frameCam = () => {
       let shot;
       if (shotA) {
-        // BEHINDJ: a follow-pan from Jesus at JM (the exhale) to his back at the Void's shoulder
+        // BEHINDJ follow: it opens wider and further back with the seated Void's back already at frame-right (the walk
+        // has a visible destination), dollies in behind Jesus as he rounds it, and lands on BEHINDJ well before the touch
         const C = EDGE.CAM.BEHINDJ;
-        const jl = wk.local, lead = smooth(clamp((wk.u - 0.8) / 0.22));
-        const follow = [jl[0], 1.3, jl[2]];
-        const lk = [lerp(follow[0], C.look[0], lead), lerp(follow[1], C.look[1], lead), lerp(follow[2], C.look[2], lead)];
-        shot = EDGE.at(C.pos, lk, 33, { drift: 0.25 });
+        const land = smooth(clamp((wk.u - 0.25) / 0.6));
+        const back = [C.pos[0] + (C.pos[0] - C.look[0]) * CAMA.back, C.pos[1] + CAMA.up, C.pos[2] + (C.pos[2] - C.look[2]) * CAMA.back];
+        const jl = wk.local;
+        const aim = [lerp(jl[0], CAMA.v[0], CAMA.vw), 1.3, lerp(jl[2], CAMA.v[2], CAMA.vw)];
+        const lk = [lerp(aim[0], C.look[0], land), lerp(aim[1], C.look[1], land), lerp(aim[2], C.look[2], land)];
+        shot = EDGE.at([lerp(back[0], C.pos[0], land), lerp(back[1], C.pos[1], land), lerp(back[2], C.pos[2], land)], lk, lerp(CAMA.fov, 33, land), { drift: 0.2 });
       } else if (shotB) {
-        const lk = [VEYE_END[0] + 0.05, VEYE_END[1] - 0.04, VEYE_END[2] - 0.09];   // centre between both eyes
-        shot = EDGE.shot(lk, { dist: k(t, [['s12b02', 2.75], [B2 + 1.5, 2.15, 'inOut'], ['s12b02.end', 2.05, 'inOut']]), yaw: CAMB_YAW, pitch: 4, fov: 33,
-          screenY: sy(k(t, [['s12b02', 400], [B2 + 1.5, 380, 'inOut']])), drift: 0.15 });
+        // 3/4 close as the hood comes round: aimed between both eyes (a touch toward the far eye), the mouth clear of the
+        // shoulder ridge, his hand in the lower-left foreground
+        shot = EDGE.shot(CAMB.look, { dist: k(t, [['s12b02', CAMB.d0], [B2 + 1.5, CAMB.d1, 'inOut'], ['s12b02.end', CAMB.d1 - 0.08, 'inOut']]), yaw: CAMB.yaw, pitch: CAMB.pitch, fov: 33,
+          screenY: sy(k(t, [['s12b02', 380], [B2 + 1.5, 360, 'inOut']])), drift: 0.15 });
       } else {
-        shot = EDGE.shot([JEYE_JS[0] - 0.03, JEYE_JS[1], JEYE_JS[2] - 0.03], { dist: k(t, [['s12b03', 1.8], ['s12b03.end', 1.68, 'inOut']]), yaw: 137, pitch: 3, fov: 33, screenY: sy(400), drift: 0.12 });
+        shot = EDGE.shot([JEYE_JS[0] - 0.03, JEYE_JS[1], JEYE_JS[2] - 0.03], { dist: k(t, [['s12b03', 1.8], ['s12b03.end', 1.68, 'inOut']]), yaw: CAMC_YAW, pitch: 3, fov: 33, screenY: sy(400), drift: 0.12 });
       }
       applyShot(app.camera, shot, t, 12);
     };
@@ -155,12 +161,12 @@ export default {
     // ---------------------------------------------------------------- particles: a star mote drifts up past his hand
     fx.begin();
     drawSkyGalaxy(fx, t);
-    const sh = vd.anchor('shoulderR');
+    const sh = jesus.anchor('handR');                                    // it rises off the velvet right beside his hand
     if (sh) {
-      const t0m = B2 + 0.55;
+      const t0m = B2 + 0.45;
       const u = (t - t0m) / 2.6;
       if (u > 0 && u < 1) {
-        const p = [sh.x + 0.05 * Math.sin(u * 5), sh.y + 0.08 + 0.75 * u, sh.z + 0.04 * Math.cos(u * 4)];
+        const p = [sh.x + 0.05 * Math.sin(u * 5), sh.y + 0.04 + 0.75 * u, sh.z + 0.04 * Math.cos(u * 4)];
         const a = smooth(u / 0.15) * smooth((1 - u) / 0.3);
         fx.add(p, 0.04 + 0.01 * Math.sin(t * 7), 0xe8e0ff, 0.9 * a, t * 0.6, CELL.star);
         fx.add(p, 0.08, 0x9f8cff, 0.3 * a, 0, CELL.dot);
@@ -176,7 +182,9 @@ export default {
 // The Void's eyes (stage-local) when its hood has turned over its right shoulder (measured from the rig; used to
 // steady the b02 framing), and the camera yaw for the 3/4 close (inside +-50 deg of where the hood points).
 const VEYE_END = [1.33, 1.78, -1.12];
-const CAMB_YAW = 62;
+const CAMA = { back: 0.45, up: 0.15, fov: 42, v: [1.15, 0, -1.35], vw: 0.5 };
+const CAMB = { look: [VEYE_END[0] + 0.02, VEYE_END[1] - 0.06, VEYE_END[2] - 0.15], yaw: 54, pitch: 0, d0: 3.0, d1: 2.45 };
+const CAMC_YAW = 128;
 // Jesus's eyes at JS with his hand on its shoulder (stage-local, measured) — the steady look point of b03
 const JEYE_JS = [1.72, 1.55, -0.53];
 // the hand on the shoulder: palm down into the velvet (tilted with its slope), fingers forward over the shoulder

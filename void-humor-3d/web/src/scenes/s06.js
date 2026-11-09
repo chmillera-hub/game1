@@ -46,8 +46,8 @@ function times() {
 // ---------------------------------------------------------------------------------------------------------- cameras
 function cams(S, R) {
   const e = 1e-3;
-  const ucu = (ref, d, scr) => EDGE.shot(EDGE.L(ref), { dist: d, yaw: 108, pitch: 4, fov: 33, screenY: sy(scr), drift: 0.1 });
-  const u0 = ucu(R.uEyes0, 1.55, 440), u1 = ucu(R.uEyes1, 1.52, 430), u1b = ucu(R.uEyes1, 1.45, 430);
+  const ucu = (ref, d, scr, yaw = 108) => EDGE.shot(EDGE.L(ref), { dist: d, yaw, pitch: 4, fov: 33, screenY: sy(scr), drift: 0.1 });
+  const u0 = ucu(R.uEyes0, 1.75, 440, 116), u1 = ucu(R.uEyes1, 1.72, 430, 116), u1b = ucu(R.uEyes1, 1.62, 430, 116);
   const v3a = EDGE.shot(EDGE.L(R.vEyes3), { dist: 2.9, yaw: -32, pitch: -4, fov: 33, screenY: sy(330), drift: 0.12 });
   const v3b = EDGE.shot(EDGE.L(R.vEyes3), { dist: 2.75, yaw: -32, pitch: -4, fov: 33, screenY: sy(330), drift: 0.12 });
   const u4 = { ...ucu(R.uEyes4, 1.6, 430), drift: 0 };          // locked off
@@ -119,6 +119,7 @@ export default {
     st.look = lookFor('s06', set.look);
     if (DEBUG) {
       const pxs = (v) => px(app.camera, v).join(',');
+      console.log('handR', pxs(user.anchor('handR')));
       console.log(`t=${t.toFixed(2)} J.eyes@${pxs(jesus.anchor('eyes'))} V.eyes@${pxs(vd.anchor('eyes'))} U.eyes@${pxs(user.anchor('eyes'))} star ${sp ? pxs(sp.p) : '-'}`);
     }
   },
@@ -259,8 +260,13 @@ function userPose(t, S, st, final) {
   P.body.pant = t < S.b04 ? 0.5 : 0.15;
   P.body.tremble = t < S.b04 ? 0.3 : 0.12;
   // ---- the raised RIGHT hand: flaps once at the pair on "actual", snaps back; then heads for the glasses
+  // (the hand comes in closer to the face as they lunge: in frame for the flap and the glasses)
   const flap = pulse(t, S.actualW - 0.04, 0.12, 0.05, 0.2);
-  const tg = defendTarget(R).add(toV(R.toPair).multiplyScalar(0.1 * flap));
+  const tp = toV(R.toPair).setY(0).normalize();
+  const closer = toV(R.userShoulderR).add(V3(0, 0.12, 0)).addScaledVector(tp, 0.3);
+  const cw = ramp(t, S.s + 0.05, S.whatW + 0.15) * (1 - ramp(t, S.b04 + 0.3, S.b04 + 0.65));
+  const uyR = EDGE.Y(M.U.yaw), uRight = V3(-Math.cos(uyR), 0, Math.sin(uyR));       // their right = outward, clear of the face
+  const tg = defendTarget(R).lerp(closer, cw).addScaledVector(uRight, 0.12 * flap).addScaledVector(tp, 0.05 * flap).add(V3(0, 0.05 * flap, 0));
   P.armR = { preset: 'defend', tremble: 0.4, flap, target: tg, reach: 1, palm: R.toPair };
   const toG = ramp(t, S.bleep + 0.24, S.cut3 + 0.05) * (t < S.b04 ? 0.75 : 1) * (1 - ramp(t, S.b04 + 0.24, S.b04 + 0.55));
   if (toG > 0) P.armR = { preset: [['defend', 1 - toG], ['glasses', toG]], tremble: 0.2 * (1 - toG), target: toG < 0.5 ? tg : undefined, reach: 1 };

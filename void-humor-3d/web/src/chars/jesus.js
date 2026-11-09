@@ -1,11 +1,13 @@
 // JESUS — warm, kind, playful, unhurried stylized human (1.75 m). Fully procedural rig:
-//   sculpted head (custom surface shared with the Face rig) + nose/ears, big warm brown eyes with lash lines,
-//   thick swept brows, painted mouth with lips + laugh lines inside a SCULPTED BEARD SHELL whose mouth opening
-//   is recomputed every frame from the mouth shape (lips always readable, never covered by the mustache),
-//   middle-parted hair cap + chunky shoulder-length locks (gravity + shoulder collision), lathe robe whose
-//   skirt is re-draped every frame by a stateless column solver (legs / hips / floor collisions -> walk sway,
-//   kneel folds and floor puddles), wide bell sleeves that slide down raised forearms, terracotta mantle over
-//   the left shoulder, twisted rope belt with hanging ends, sandals with visible toes, subtle golden rim glow.
+//   sculpted head (custom surface shared with the Face rig) + nose/ears, big warm brown eyes with lash lines and a
+//   ^ ^ happy-squeeze crease, thick swept brows, painted mouth with lips + laugh lines + cheek bunching inside a
+//   SCULPTED BEARD SHELL whose mouth opening is recomputed every frame from the mouth shape (clean contour edges,
+//   the mustache rides the upper lip), middle-parted sculpted hair shell with 7 hanging locks (gravity, shoulder /
+//   sash / raised-arm collision), lathe robe whose skirt is re-draped every frame by a stateless column solver (legs /
+//   hips / floor -> walk sway, kneel folds, floor puddles), wide sleeves with a rolled hem + lit lining, terracotta
+//   sash over the left shoulder wrapped round the waist into a knot at the right hip, twisted rope belt with ends
+//   hanging under gravity, sandals with visible toes, subtle golden rim glow. Body contacts (arm around someone,
+//   hand on a shoulder) raycast the partner's surface; shoulders protract on far reaches.
 // Pose API + tips: docs/chars/jesus.md. Every frame is a pure function of (t, pose).
 import * as THREE from 'three';
 import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -309,7 +311,7 @@ export const ARM = {
   knee_rest: { t: [0.2, -0.32, 0.36], pole: [1, -0.2, -0.3], palm: [-0.2, 0.9, 0.3], fing: [-0.2, 0, 1], hand: { curl: 0.12, spread: 0.3, thumb: 0.55, cup: 0.4, splay: 0.05 }, anim: 'knee' },
   // head-space (face) presets — target relative to the head centre
   whisper: { space: 'head', t: [0.095, -0.15, 0.115], pole: [0.8, -1, 0.0], palm: [-0.62, 0.0, 0.78], fing: [-0.1, 1, 0.08], hand: { curl: 0.14, spread: 0.1, thumb: 0.35, cup: 0.7 } },
-  teehee: { space: 'head', t: [0.042, -0.166, 0.15], pole: [0.8, -1, 0.1], palm: [-0.5, -0.15, -0.85], fing: [-0.45, 0.88, 0.15], hand: { curl: 0.5, spread: 0.06, thumb: 0.25, cup: 0.4 } },
+  teehee: { space: 'head', t: [0.036, -0.192, 0.163], pole: [0.8, -1, 0.1], palm: [-0.32, -0.12, -0.94], fing: [-0.3, 0.94, 0.14], hand: { curl: 0.4, spread: 0.08, thumb: 0.15, cup: 0.5 } },
   cover_mouth: { space: 'head', t: [0.04, -0.19, 0.15], pole: [0.8, -1, 0.1], palm: [-0.1, 0, -1], fing: [-0.4, 0.92, 0.0], hand: { curl: 0.18, spread: 0.08, thumb: 0.3, cup: 0.45 } },
   chin: { space: 'head', t: [0.03, -0.30, 0.09], pole: [0.8, -1, 0.2], palm: [0.1, -0.3, -1], fing: [-0.2, 0.7, 0.6], hand: { curl: 0.75, spread: 0.05, thumb: 0.5 } },
   wipe_eye: { space: 'head', t: [0.09, -0.10, 0.115], pole: [0.8, -1, 0.2], palm: [-0.4, -0.2, -1], fing: [-0.35, 0.8, 0.2], hand: { curl: 0.85, point: 0, thumb: 0.2 } },

@@ -302,7 +302,7 @@ function voidPose(t, S, st) {
     const fw = V3(Math.sin(vy), 0, Math.cos(vy)), rt = V3(-Math.cos(vy), 0, Math.sin(vy));      // its forward / its RIGHT (toward Jesus)
     const ch = vChest();
     const f = Math.sin(clamp((t - S.humorW - 0.05) / 0.5) * Math.PI * 2);                        // two little flaps
-    const tg = ch.clone().addScaledVector(fw, 0.38).addScaledVector(rt, -0.12 + 0.07 * f).add(V3(0, 0.12 - 0.05 * Math.abs(f), 0));
+    const tg = ch.clone().addScaledVector(fw, 0.42).addScaledVector(rt, -0.04 + 0.07 * f).add(V3(0, -0.02 - 0.05 * Math.abs(f), 0));
     P.armL = { preset: 'belly', target: tg, reach: flap, palm: rt.clone().addScaledVector(fw, 0.4).normalize(), fingers: V3(0, 1, 0).addScaledVector(rt, 0.4 * f).normalize(),
       hand: { curl: 0.15, spread: 0.2, cup: 0.3 } };
   }

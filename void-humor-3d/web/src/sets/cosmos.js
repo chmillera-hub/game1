@@ -1,20 +1,25 @@
 // SET 'COSMOS' (SETS.COSMOS) — the universe the Void shows Fear (bonus-scene climax). Full doc: docs/sets/cosmos.md.
 //
-//   const cos = await app.set('COSMOS');  // { scene, group, update(t, opts), attach(scene), blendLook(), anchors, props, look }
+//   const cos = await app.set('COSMOS');
+//     // { scene, group, update(t, opts), attach(scene), dissolve(target, opts), hostFade(reveal), blendLook(), anchors, props, look }
 //   standalone:       st.scene = cos.scene; cos.attach(cos.scene); cos.update(t, { reveal: 1 });
-//   inside BACKROOM:  cos.attach(br.scene)   (every frame BEFORE update — a group has ONE parent, like characters)
-//                     br.update(t, { cosmos: smooth(reveal / 0.8) });   // the room fades its own walls/props
-//                     cos.update(t, { reveal, center, source: voidChest, radius: 9 });
+//   inside BACKROOM:  setup: cos.dissolve(br.props.room); cos.dissolve([br.props.bulb.parent, br.props.bulb2.parent], { opaque: true });
+//                     cos.attach(br.scene)   (every frame BEFORE update — a group has ONE parent, like characters)
+//                     br.update(t, { cosmos: cos.hostFade(reveal), shafts: 1 - smooth(reveal / .6), lights: { bulb, bulb2 } });
+//                     cos.update(t, { reveal, center, source: voidRig.anchor('chest'), radius: 9 });   // AFTER br.update
 //
 // Contents (all a pure function of t + opts; deterministic seeded layout; no per-frame allocation of geometry):
 //   - SKY SHELL: an inside-out ellipsoid around the characters. Its colour is looked up by CAMERA ray direction (the
 //     sky sits at infinity: no parallax, no swimming) in a nebula cube map baked once on the GPU (half float, smooth
 //     domain-warped fbm cloud complexes — violet/magenta, teal/blue, rose, a gold-cored warm cloud — separated by deep
-//     dark space, dust lanes, faint galactic band). It is depth-tested against the host scene, so anything farther
+//     dark space, dust lanes with gold rims, faint galactic band). It is depth-tested against the host scene, so anything farther
 //     than the shell is covered: walls dissolve as the reveal opens the sky outward from the source (the Void),
 //     first into deep starry space, then nebulae bloom open behind that front with a soft unfurling light.
-//   - FLOOR VEIL: in a host room the floor beyond r0 fades into the same sky + a procedural star field (seamless with
-//     the shell); standalone, a soft light pool marks where the characters stand on "glass over the universe".
+//   - FLOOR VEIL: in a host room the floor beyond r0 fades into the same sky (the SAME reveal look as the shell, so the
+//     floor/wall junction never shows a seam) + a procedural star field; a light pool + soft contact core under the pair.
+//   - ISLAND: a disc of dark "glass over the universe" just below the floor plane (faint mirror of the sky): invisible
+//     under a host floor, it is the ground whenever there is none (standalone, or a host that hides its floor).
+//   - HOST DISSOLVE: cos.dissolve() patches host materials so walls / props / cords open with the same front as the sky.
 //   - STARS: 3 parallax layers of point sprites — far (~2600, on the shell at infinity, denser along the band), mid
 //     (520, world shell between characters and sky), near (72, metres around the source: 26 KINDLE one by one).
 //     Gaussian cores >= 3.5 px (no sub-pixel shimmer), few bright stars with 4-point glints, gentle per-star twinkle.
@@ -22,7 +27,7 @@
 //   - 5 SPIRAL GALAXIES (4 baked, mipmapped variants): gold bulges, blue/violet/teal arms, rose knots, dust lanes;
 //     inclined discs at infinity, each slowly spinning; they drift in during the last half of the reveal.
 //   - BITS OF MEANING: 9 tiny glowing glyphs (heart, sun, music note, house, handprint, pencil) orbiting the source.
-//   - LIGHTS: a violet/teal hemisphere + a warm starlight key from the hero galaxy (intensity x reveal).
+//   - LIGHTS: a violet/teal hemisphere + a warm starlight key from above the hero galaxy (intensity x reveal).
 import * as THREE from 'three';
 import { CTX, EYE_LIGHT } from '../core/context.js';
 import { rng, clamp, lerp, smooth } from '../core/util.js';
@@ -31,16 +36,20 @@ const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const nrm = (x, y, z) => V3(x, y, z).normalize();
 const col = (hex) => new THREE.Color(hex);
+// [x,y,z] | THREE.Vector3 (e.g. a rig anchor) -> [x,y,z]
+const arr3 = (v, def) => (!v ? def : v.isVector3 ? [v.x, v.y, v.z] : v);
 
 // ------------------------------------------------------------------------------------------------ layout (sky space)
 // Convention: camera usually at +Z looking toward -Z at the characters, so "behind the characters" is -Z.
 const SKY_AXIS = nrm(0.18, 1, 0.12);            // slow drift rotation axis of the whole sky
 const SKY_RATE = 0.0045;                        // rad/s at drift 1 (about 8° per 30 s)
 const SKY_SWING = 0.14;                         // max drift away from the designed layout (rad, ~8°)
-const KEY_DIR = nrm(0.30, 0.62, -0.72);         // hero galaxy direction = starlight key light
+const HERO_DIR = nrm(0.214, 0.469, -0.857);     // hero galaxy direction (az +14°, el 28°: fills the top half of the
+                                                // gentle looking-up hero shot, upper-left of the pair)
+const KEY_DIR = nrm(0.30, 0.62, -0.72);         // warm starlight key light (from just above the hero galaxy)
 // galaxies: dir (sky space), angular half-size (tan), inclination (rad), position angle, spin rad/s, tint, bake variant
 const GALAXIES = [
-  { dir: KEY_DIR, size: 0.24, incl: 0.62, pa: 0.5, spin: 0.022, tint: 0xffffff, v: 0, delay: 0.0 },
+  { dir: HERO_DIR, size: 0.24, incl: 0.62, pa: 0.5, spin: 0.022, tint: 0xffffff, v: 0, delay: 0.0 },
   { dir: nrm(-0.113, 0.375, -0.92), size: 0.10, incl: 1.0, pa: -0.8, spin: -0.03, tint: 0xf4fbff, v: 1, delay: 0.12 },
   { dir: nrm(0.88, 0.16, 0.05), size: 0.13, incl: 1.28, pa: 2.2, spin: 0.028, tint: 0xfff0f4, v: 2, delay: 0.22 },
   { dir: nrm(-0.22, 0.96, 0.12), size: 0.19, incl: 0.30, pa: 1.1, spin: 0.018, tint: 0xffffff, v: 3, delay: 0.3 },
@@ -54,6 +63,9 @@ const PUFFS = [
   { dir: nrm(-0.30, 0.38, 1.0), d: 0.78, s: 3.8, c: 0x6a7dff, a: 0.11, ch: 3 },
   { dir: nrm(0.80, 0.40, 0.45), d: 0.76, s: 3.4, c: 0xff7fb0, a: 0.10, ch: 1 },
 ];
+// EYE_LIGHT blending: fixed base (= the engine defaults in core/context.js) and the cosmos targets
+const EYE_BASE = { dir: nrm(0.4, 0.6, 0.7), key: new THREE.Color(1.0, 0.95, 0.88), amb: new THREE.Color(0.55, 0.55, 0.62) };
+const EYE_KEY = col(0xf2eaff), EYE_AMB = col(0x5a5a8a);
 const GLYPHS = ['heart', 'sun', 'note', 'house', 'hand', 'pencil'];
 const GLYPH_COLS = [0xff8fb8, 0xffd27a, 0x7fe8e0, 0xffc890, 0xffb0a0, 0xffe08a];
 
@@ -98,6 +110,64 @@ vec3 cosmosBase(vec3 d){
 vec4 cosmosSky(samplerCube tex, vec3 d){ return texture(tex, d); }
 `;
 
+// The reveal look shared by the sky shell AND the floor veil, so both surfaces agree exactly where they meet (a view
+// ray that just misses the floor and one that just hits it get the same colour): deep space opening behind the front,
+// nebulae blooming behind a second front (brighter at its leading edge), the soft unfurling light, the fringe glow.
+const REVEAL = /* glsl */`
+uniform float uRevA, uBloomA, uBloomR, uFringe;
+uniform vec3 uBloomC1, uBloomC2, uBloomC3, uFringeA, uFringeB;
+// returns premultiplied colour (rgb) + coverage (a) for camera ray rd (world), d (sky space), sky sample s
+vec4 cosmosReveal(vec3 rd, float hd, vec3 d, vec4 s, float neb){
+  if (uFront > 500.0) return vec4(cosmosBase(d) + s.rgb * neb, 1.0);    // fully revealed: no masking work
+  float an = cosmosAng(rd, hd), jit = (s.a - 0.5) * uSoft * 1.8;
+  float m = uRevA * cosmosMaskA(an, jit, uFront);                       // walls dissolve into deep space ...
+  float mn = cosmosMaskA(an, jit * 1.4, uFrontN);                       // ... then the nebulae bloom open behind it
+  float bl = mn * (1.0 - mn) * 4.0;
+  vec3 c = cosmosBase(d) * m + s.rgb * neb * mn * (1.0 + 0.6 * bl * uFringe);
+  float x = an / uBloomR;                                               // soft cloudy light unfurling from the source
+  float g = uBloomA * exp(-x * x) * (0.3 + 1.1 * s.a * s.a) * m;
+  c += mix(mix(uBloomC1, uBloomC2, smoothstep(0.35, 0.65, s.a)), uBloomC3, smoothstep(0.3, 1.0, x)) * g;
+  float fr = m * (1.0 - m) * 4.0; fr *= fr;
+  c += mix(uFringeA, uFringeB, s.a) * fr * uFringe;
+  return vec4(c, m);
+}
+`;
+
+// cos.dissolve(): patch for host materials (walls, props, cords) so they open with the SAME front as the sky behind
+// them. alpha mode (transparent materials): alpha x (1 - mask) + a faint fringe glow; cut mode (opaque clones):
+// discard where the front has passed. uCosDis is a live gate (0 whenever this cosmos is not drawing this frame).
+const DIS_VS_HEAD = /* glsl */`
+${COMMON}
+uniform float uCosDis;
+varying vec3 vCosRd; varying float vCosHD;
+`;
+const DIS_VS_BODY = /* glsl */`
+vCosRd = mvPosition.xyz * mat3(viewMatrix);                 // world-space ray from the camera (view -> world rotation)
+vCosHD = cosmosHalfDiag(projectionMatrix);
+if (uCosDis > 0.0 && uFront > 500.0) gl_Position = vec4(0.0, 0.0, 2.0, 1.0);   // fully dissolved: no fragments at all
+`;
+const DIS_FS_HEAD = /* glsl */`
+${COMMON}
+uniform float uCosDis, uFringe; uniform vec3 uFringeA, uFringeB;
+uniform samplerCube uSky; uniform mat3 uSkyRot;
+varying vec3 vCosRd; varying float vCosHD;
+`;
+const DIS_FS_BODY = /* glsl */`
+if (uCosDis > 0.0) {
+  vec3 cRd = normalize(vCosRd);
+  float cSa = texture(uSky, cRd * uSkyRot).a;
+  float cK = uCosDis * cosmosMaskA(cosmosAng(cRd, vCosHD), (cSa - 0.5) * uSoft * 1.8, uFront);
+#ifdef COSMOS_DIS_CUT
+  if (cK > 0.5) discard;
+#else
+  float cFr = cK * (1.0 - cK) * 4.0;
+  gl_FragColor.rgb += mix(uFringeA, uFringeB, cSa) * (cFr * cFr * 5.0 * uFringe);
+  gl_FragColor.a *= 1.0 - cK;
+  if (gl_FragColor.a < 0.002) discard;
+#endif
+}
+`;
+
 const QUAD_VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 
 // Nebula sky map (equirect, rgb = nebula + band light (linear HDR), a = smooth edge noise for the reveal front).
@@ -116,6 +186,14 @@ vec3 cplx(vec3 d, vec3 dir, float rad, float n, float m, vec3 c1, vec3 c2, vec3 
   float core = env(d, dir, rad * 0.38) * dens * dens;
   return (c * (0.035 + dens) + hot * core * 0.9) * e * amp;
 }
+// warm complex: a saturated amber-gold heart (survives ACES as gold, not salmon) inside rose/peach edges
+vec3 warm(vec3 d, vec3 dir, float rad, float n, float lo, float hi, vec3 core, vec3 edge, float amp){
+  float e = env(d, dir, rad);
+  float dens = smoothstep(lo, hi, n);
+  vec3 c = mix(edge, core, env(d, dir, rad * 0.55));
+  float hot = env(d, dir, rad * 0.34) * (0.35 + 0.65 * dens);
+  return (c * (0.04 + dens) + core * hot * 0.55) * e * amp;
+}
 void main(){
   vec3 d = normalize(vDir);
   vec3 w = vec3(fbm(d * 1.25 + vec3(1.7, 9.2, 3.1), 4), fbm(d * 1.25 + vec3(8.3, 2.8, 5.4), 4), fbm(d * 1.25 + vec3(4.1, 6.6, 0.7), 4)) - 0.5;
@@ -133,10 +211,12 @@ void main(){
   c += cplx(dq, vec3(-0.25, 0.62, -0.95), 0.62, n1, m1, VIO, MAG, mix(WHITE, ROSE, 0.4), 0.42, 0.80, 0.75);
   // B: teal complex, left
   c += cplx(dq, vec3(-0.95, 0.45, -0.30), 0.55, n2, m1, TEAL, BLUE, vec3(0.6, 1.0, 0.95), 0.40, 0.80, 0.85);
-  // C: warm gold-peach glow beside the hero galaxy (slightly offset so the galaxy sits on darker sky)
-  c += cplx(dq, vec3(-0.05, 0.94, -0.30), 0.30, n3, n3, MAG, ROSE, vec3(1.0, 0.72, 0.42), 0.42, 0.80, 0.65);
-  // W: small warm luminous cloud (gold core, rose edges) right of / above the Void in the default front view
-  c += cplx(dq, vec3(0.30, 0.36, -0.88), 0.22, n3, n1, ROSE, vec3(1.0, 0.52, 0.28), vec3(1.0, 0.60, 0.20), 0.34, 0.74, 0.62);
+  // C: warm gold glow beside the hero galaxy (slightly offset so the galaxy sits on darker sky), magenta-rose edges
+  vec3 AMBER = vec3(1.0, 0.56, 0.12), CREAM = vec3(1.0, 0.78, 0.42);
+  c += warm(dq, vec3(-0.05, 0.94, -0.30), 0.30, n3, 0.42, 0.80, mix(AMBER, CREAM, 0.15), mix(MAG, ROSE, 0.6), 0.5);
+  // W: small warm luminous cloud (amber-gold heart, rose/peach edges) right of / above the Void in the front view,
+  // under the hero galaxy in the looking-up view: the warm counterpoint to the cool sky
+  c += warm(dq, vec3(0.0, 0.27, -0.96), 0.22, n3, 0.32, 0.74, AMBER, mix(ROSE, PEACH, 0.35), 0.62);
   // D: rose complex, right / low
   c += cplx(dq, vec3(0.98, 0.12, -0.05), 0.50, n1, n2, ROSE, MAG, vec3(1.0, 0.68, 0.40), 0.42, 0.80, 0.7);
   // E: blue-teal behind the camera
@@ -149,8 +229,13 @@ void main(){
   c += cplx(dq, vec3(0.35, 0.02, -1.0), 0.42, n2, m1, BLUE, TEAL, vec3(0.6, 0.85, 1.0), 0.46, 0.88, 0.45);
   // filaments (fine light threads on cloud edges) and dark dust lanes
   c *= 1.0 + 0.6 * pow(rid, 6.0);
-  float dust = smoothstep(0.52, 0.78, fbm(q * 3.6 + 51.0, 4));
+  float dl = fbm(q * 3.6 + 51.0, 4);
+  float dust = smoothstep(0.52, 0.78, dl);
   c *= 1.0 - 0.62 * dust;
+  // gold rim light along the dust-lane edges near the warm clouds
+  float rim = smoothstep(0.40, 0.50, dl) * (1.0 - smoothstep(0.50, 0.62, dl));
+  float wz = env(dq, vec3(0.0, 0.27, -0.96), 0.42) + 0.7 * env(dq, vec3(-0.05, 0.94, -0.30), 0.45);
+  c += mix(AMBER, CREAM, 0.4) * rim * wz * (0.25 + 0.75 * smoothstep(0.35, 0.7, n3)) * 0.16;
   // faint galactic band (tilted great circle)
   vec3 nb = normalize(vec3(-0.55, 0.35, 0.75));
   float bd = dot(d, nb) + (n2 - 0.5) * 0.12;
@@ -229,41 +314,55 @@ void main(){
 }`;
 const DOME_FS = /* glsl */`
 ${COMMON}
+${REVEAL}
 uniform samplerCube uSky; uniform mat3 uSkyRot;
-uniform float uIntensity, uNebula, uFringe, uAlpha, uBloomA, uBloomR;
-uniform vec3 uFringeA, uFringeB, uBloomC1, uBloomC2, uBloomC3;
+uniform float uIntensity, uNebula;
 varying vec3 vWorld; varying float vHD;
 void main(){
   vec3 rd = normalize(vWorld - cameraPosition);
   vec3 d = rd * uSkyRot;                 // world -> sky space (uSkyRot is sky -> world)
-  vec4 s = cosmosSky(uSky, d);
-  vec3 c;
-  float m = uAlpha;
-  if (uFront > 500.0) c = cosmosBase(d) + s.rgb * uNebula;  // fully revealed: no masking work
-  else {
-    float an = cosmosAng(rd, vHD);
-    float jit = (s.a - 0.5) * uSoft * 1.8;
-    m *= cosmosMaskA(an, jit, uFront);                         // walls dissolve into deep space ...
-    float mn = cosmosMaskA(an, jit * 1.4, uFrontN);            // ... then the nebulae bloom open behind that front
-    float bl = mn * (1.0 - mn) * 4.0;
-    c = cosmosBase(d) * m + s.rgb * uNebula * mn * (1.0 + 0.6 * bl * uFringe);
-    // reveal bloom: soft cloudy light unfurling outward from behind the source
-    float x = an / uBloomR;
-    float g = uBloomA * exp(-x * x) * (0.3 + 1.1 * s.a * s.a) * m;
-    c += mix(mix(uBloomC1, uBloomC2, smoothstep(0.35, 0.65, s.a)), uBloomC3, smoothstep(0.3, 1.0, x)) * g;
-    float fr = m * (1.0 - m) * 4.0; fr *= fr;
-    c += mix(uFringeA, uFringeB, s.a) * fr * uFringe;
-  }
-  gl_FragColor = vec4(c * uIntensity, m);
+  vec4 r = cosmosReveal(rd, vHD, d, cosmosSky(uSky, d), uNebula);
+#ifdef COSMOS_BLEND
+  if (r.a < 0.004) discard;      // not yet revealed here: no colour AND no depth (host far glows stay until the front)
+#endif
+  gl_FragColor = vec4(r.rgb * uIntensity, r.a);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 
-// --- floor veil (sky continuation over a host floor + light pool)
-const FLOOR_FS = /* glsl */`
+// --- island underlay: a disc of dark "glass over the universe" just BELOW the floor plane. Depth-tested, so it is
+// invisible wherever a host floor exists and only shows when there is none (standalone, or a host that hides its
+// floor): the characters always stand on something. Faint mirror of the sky above (fresnel) + a lilac sheen.
+const ISLAND_FS = /* glsl */`
 ${COMMON}
 uniform samplerCube uSky; uniform mat3 uSkyRot;
-uniform float uIntensity, uNebula, uR0, uR1, uInner, uCover, uGlow, uStars;
+uniform float uIntensity, uNebula, uR0, uR1, uIslA, uIslRefl;
+uniform vec3 uCenter, uIslC, uIslSheen;
+varying vec3 vWorld; varying float vHD;
+void main(){
+  vec3 rd = normalize(vWorld - cameraPosition);
+  float r = length(vWorld.xz - uCenter.xz);
+  float m = 1.0;
+  vec3 rr = vec3(rd.x, -rd.y, rd.z);                      // mirror ray (the sky above, reflected)
+  vec3 d = rr * uSkyRot;
+  vec4 s = cosmosSky(uSky, d);
+  if (uFront < 500.0) m = cosmosMaskA(cosmosAng(rd, vHD), (s.a - 0.5) * uSoft * 1.8, uFront);
+  float fres = 0.05 + 0.95 * pow(1.0 - clamp(-rd.y, 0.0, 1.0), 4.0);
+  vec3 refl = (cosmosBase(d) * 2.0 + s.rgb * uNebula) * (0.12 + 0.55 * fres) * uIslRefl;
+  float k = exp(-r * r / (uR0 * uR0 * 0.6));
+  vec3 c = uIslC + refl + uIslSheen * k;
+  float a = uIslA * m * (1.0 - smoothstep(uR0 * 0.8, uR1, r));
+  gl_FragColor = vec4(c * a * uIntensity, a);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`;
+
+// --- floor veil (sky continuation over a host floor + light pool + contact core)
+const FLOOR_FS = /* glsl */`
+${COMMON}
+${REVEAL}
+uniform samplerCube uSky; uniform mat3 uSkyRot;
+uniform float uIntensity, uNebula, uR0, uR1, uInner, uCover, uGlow, uStars, uContact, uRc;
 // procedural star field by direction (continues the far star layer over the host floor, which hides the points)
 float hs13(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 cosmosStars(vec3 d, float pa){
@@ -281,19 +380,18 @@ varying vec3 vWorld; varying float vHD;
 void main(){
   vec3 rd = normalize(vWorld - cameraPosition);
   vec3 d = rd * uSkyRot;
-  vec4 s = cosmosSky(uSky, d);
-  float m = 1.0, mn = 1.0;
-  if (uFront < 500.0) {
-    float an = cosmosAng(rd, vHD), jit = (s.a - 0.5) * uSoft * 1.8;
-    m = cosmosMaskA(an, jit, uFront); mn = cosmosMaskA(an, jit * 1.4, uFrontN);
-  }
-  vec3 sky = (cosmosBase(d) + s.rgb * uNebula * mn) * uIntensity;
-  vec2 dx = vWorld.xz - uCenter.xz; float r = length(dx);
-  float cov = mix(uInner, 1.0, smoothstep(uR0, uR1, r)) * uCover * m;
-  sky += cosmosStars(d, length(fwidth(rd))) * uIntensity * uStars;
-  float pool = exp(-r * r / (uR0 * uR0 * 0.25)) * 0.22 + exp(-r * r / (uR0 * uR0 * 1.2)) * 0.08;
-  vec3 g = mix(uGlowA, uGlowB, clamp(r / uR0, 0.0, 1.0)) * pool * uGlow * m;
-  gl_FragColor = vec4(sky * cov + g, cov);
+  vec4 sk = cosmosReveal(rd, vHD, d, cosmosSky(uSky, d), uNebula);   // identical to the shell along this ray
+  float m = sk.a;
+  float r = length(vWorld.xz - uCenter.xz);
+  float rad = mix(uInner, 1.0, smoothstep(uR0, uR1, r)) * uCover;
+  vec3 sky = (sk.rgb + cosmosStars(d, length(fwidth(rd))) * uStars * m) * uIntensity;
+  // light pool: a bright soft core where the characters stand + a wide faint skirt
+  float pool = exp(-r * r / (uR0 * uR0 * 0.16)) * 0.3 + exp(-r * r / (uR0 * uR0 * 0.6)) * 0.14 + exp(-r * r / (uR0 * uR0 * 2.0)) * 0.05;
+  vec3 g = mix(uGlowA, uGlowB, smoothstep(0.0, 1.2, r / uR0)) * pool * uGlow * m;
+  // contact core: a soft darkening of whatever is under it (premultiplied: coverage with no colour)
+  float ct = uContact * exp(-r * r / (uRc * uRc)) * m;
+  float a = m * rad;
+  gl_FragColor = vec4(sky * rad + g, a + ct * (1.0 - a));
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
@@ -541,32 +639,59 @@ class CosmosSet {
       uSkyRot: { value: new THREE.Matrix3() }, uTime: { value: 0 },
     };
     const U = this.U;
+    // reveal look (shell + floor veil + host dissolve share these objects)
+    this.RU = { uRevA: { value: 1 }, uBloomA: { value: 0 }, uBloomR: { value: 1 }, uFringe: { value: 1 },
+      uBloomC1: { value: col(0x9a6cff) }, uBloomC2: { value: col(0xff7fb8) }, uBloomC3: { value: col(0x3fd8d0) },
+      uFringeA: { value: col(0x9a7cff).multiplyScalar(0.07) }, uFringeB: { value: col(0x6fe0e8).multiplyScalar(0.05) } };
+    const RU = this.RU;
+    const premul = { blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+      blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor };
 
-    // sky shell
-    this.domeU = { ...U, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uFringe: { value: 1 },
-      uAlpha: { value: 1 }, uBloomA: { value: 0 }, uBloomR: { value: 1 }, uBloomC1: { value: col(0x9a6cff) }, uBloomC2: { value: col(0xff7fb8) },
-      uBloomC3: { value: col(0x3fd8d0) }, uFringeA: { value: col(0x9a7cff).multiplyScalar(0.07) }, uFringeB: { value: col(0x6fe0e8).multiplyScalar(0.05) } };
-    this.dome = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 40), new THREE.ShaderMaterial({
-      uniforms: this.domeU, vertexShader: DOME_VS, fragmentShader: DOME_FS, side: THREE.BackSide, transparent: true,
-      depthWrite: false, blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
-      blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-    }));
+    // sky shell. It writes depth (at the shell), so host TRANSPARENT things farther than the shell (BACKROOM's own far
+    // backdrop stars / nebula sprites / screen glow) are hidden behind the cosmos instead of floating over it.
+    this.domeU = { ...U, ...RU, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 } };
+    // two programs: blended (while revealing; first among transparents) and solid (reveal 1: an opaque pass drawn
+    // after the host's opaque objects, no blending, no discard — ~0.03 s cheaper on SwiftShader, identical pixels)
+    this.domeMatB = new THREE.ShaderMaterial({ uniforms: this.domeU, vertexShader: DOME_VS, fragmentShader: DOME_FS, side: THREE.BackSide,
+      transparent: true, depthWrite: true, defines: { COSMOS_BLEND: 1 }, ...premul });
+    this.domeMatS = new THREE.ShaderMaterial({ uniforms: this.domeU, vertexShader: DOME_VS, fragmentShader: DOME_FS, side: THREE.BackSide,
+      transparent: false, depthWrite: true, blending: THREE.NoBlending });
+    this.dome = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 40), this.domeMatB);
     this.dome.frustumCulled = false; this.dome.renderOrder = -40;
     this.group.add(this.dome);
 
-    // floor veil
-    this.floorU = { ...U, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uR0: { value: 2.2 },
-      uR1: { value: 5.5 }, uInner: { value: 0 }, uCover: { value: 1 }, uGlow: { value: 0.5 }, uCenter: { value: V3() },
-      uGlowA: { value: col(0x8f7cff).multiplyScalar(0.55) }, uGlowB: { value: col(0x35c8d8).multiplyScalar(0.35) }, uStars: { value: 1 } };
+    // island underlay (below the floor plane; only visible where there is no host floor)
     const fg = new THREE.CircleGeometry(1, 96); fg.rotateX(-Math.PI / 2);
+    this.islandU = { ...U, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uR0: { value: 2.2 },
+      uR1: { value: 5.5 }, uIslA: { value: 1 }, uIslRefl: { value: 1 }, uCenter: { value: V3() },
+      uIslC: { value: col(0x2a2048) }, uIslSheen: { value: col(0xb49cff).multiplyScalar(0.05) } };
+    this.island = new THREE.Mesh(fg, new THREE.ShaderMaterial({
+      uniforms: this.islandU, vertexShader: DOME_VS, fragmentShader: ISLAND_FS, transparent: true, depthWrite: false, ...premul,
+    }));
+    this.island.frustumCulled = false; this.island.renderOrder = -37;
+    this.group.add(this.island);
+
+    // floor veil
+    this.floorU = { ...U, ...RU, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uR0: { value: 2.2 },
+      uR1: { value: 5.5 }, uInner: { value: 0 }, uCover: { value: 1 }, uGlow: { value: 0.5 }, uCenter: this.islandU.uCenter,
+      uGlowA: { value: col(0x8f7cff).multiplyScalar(0.55) }, uGlowB: { value: col(0x35c8d8).multiplyScalar(0.35) }, uStars: { value: 1 },
+      uContact: { value: 0 }, uRc: { value: 1.2 } };
     this.floor = new THREE.Mesh(fg, new THREE.ShaderMaterial({
-      uniforms: this.floorU, vertexShader: DOME_VS, fragmentShader: FLOOR_FS, transparent: true, depthWrite: false,
-      blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
-      blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
+      uniforms: this.floorU, vertexShader: DOME_VS, fragmentShader: FLOOR_FS, transparent: true, depthWrite: false, ...premul,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
     }));
     this.floor.frustumCulled = false; this.floor.renderOrder = -35;
     this.group.add(this.floor);
+
+    // host dissolve (cos.dissolve): shared uniforms + a LIVE gate. The gate is non-zero only while THIS cosmos is drawn
+    // in the scene being rendered and was updated for this frame (see attach()), so patched host materials behave
+    // exactly as before in every other scene / frame that renders the host without the cosmos.
+    const self = this;
+    this._live = false; this._renderScene = null; this._disW = 0;
+    this.disU = { uSrc: U.uSrc, uDomeC: U.uDomeC, uDomeR: U.uDomeR, uFront: U.uFront, uFrontN: U.uFrontN, uSoft: U.uSoft,
+      uSkyRot: U.uSkyRot, uSky: { value: this.skyTex }, uFringe: RU.uFringe, uFringeA: RU.uFringeA, uFringeB: RU.uFringeB,
+      uCosDis: { get value() { return self._disGate(); }, set value(v) { /* read-only (driven by update) */ } } };
+    this._disClones = new WeakMap();
 
     // stars
     const starMat = (mode, spike) => new THREE.ShaderMaterial({
@@ -623,11 +748,79 @@ class CosmosSet {
     this.look = { bloom: 0.7, bloomRadius: 0.62, bloomThreshold: 0.72, vignette: 0.3, sat: 1.08, warm: 0.0,
       lift: [0.004, 0.003, 0.012], exposure: 1.05 };
     this.anchors = { center: V3(), source: V3(), domeCenter: V3(), hero: V3(), galaxies: GALAXIES.map(() => V3()), nebula: V3(), up: V3() };
-    this.props = { dome: this.dome, floor: this.floor, far: this.far.pts, mid: this.mid.pts, near: this.near.pts, puffs: this.puffs.mesh,
-      galaxies: this.gals.map((g) => g.m), glyphs: this.glyphs.mesh, hemi: this.hemi, key: this.key, skyTex: this.skyTex };
+    this.props = { dome: this.dome, floor: this.floor, island: this.island, far: this.far.pts, mid: this.mid.pts, near: this.near.pts,
+      puffs: this.puffs.mesh, galaxies: this.gals.map((g) => g.m), glyphs: this.glyphs.mesh, hemi: this.hemi, key: this.key, skyTex: this.skyTex };
     this._q = new THREE.Quaternion(); this._m4 = new THREE.Matrix4();
-    this.update = this.update.bind(this); this.attach = this.attach.bind(this); this.blendLook = this.blendLook.bind(this);
+    for (const k of ['update', 'attach', 'blendLook', 'dissolve', 'hostFade']) this[k] = this[k].bind(this);
     this.update(0, { eyeLight: 0 });
+  }
+
+  // dissolve gate (read by the patched host shaders at uniform-upload time, i.e. inside renderer.render)
+  _disGate() {
+    return this._disW > 0 && this._live && this.group.visible && this.group.parent !== null && this.group.parent === this._renderScene ? this._disW : 0;
+  }
+
+  /** Host fade value for a host that fades its own room by a 0..1 param (BACKROOM `cosmos`): its walls/props/lights
+   *  follow the reveal, but it is CAPPED at .97 so the host never reaches its hard toggles (BACKROOM hides its bulbs at
+   *  .98 and its whole room group, floor included, at .999) — the host floor stays and the floor veil makes the island. */
+  hostFade(reveal) { return 0.97 * smooth(clamp(reveal / 0.8)); }
+
+  /**
+   * Make host objects open with the SAME front as the sky (walls, pipes, boxes, cords dissolve outward from the source as
+   * seen by the current camera, instead of cross-fading uniformly). target: Object3D | Material | array of them.
+   * Transparent materials are patched IN PLACE (alpha x (1 - mask), faint fringe glow at the edge). Opaque materials
+   * are skipped unless opts.opaque: then each mesh gets a patched CLONE that is cut (discarded) behind the front (the
+   * original, possibly shared material is untouched). A material's `userData.twin` (BACKROOM's transparent fade twins)
+   * is patched too, so one call at setup is enough. Idempotent (call once or every frame). The patch is inert (gate 0)
+   * whenever this cosmos is not drawn in the scene being rendered, and at reveal 1 patched geometry emits no fragments.
+   */
+  dissolve(target, opts = {}) {
+    const list = Array.isArray(target) ? target : [target];
+    const doMat = (m, ob, i) => {
+      if (!m || m.isShaderMaterial || m.isSpriteMaterial || m.isPointsMaterial || m.isLineBasicMaterial) return m;
+      if (m.userData.twin) this._patch(m.userData.twin, false);
+      if (m.userData.cosmosDis) return m;
+      if (m.transparent) { this._patch(m, false); return m; }
+      if (!opts.opaque || !ob) return m;
+      let c = this._disClones.get(m);
+      if (!c) {
+        c = m.clone();
+        c.onBeforeCompile = m.onBeforeCompile; c.customProgramCacheKey = m.customProgramCacheKey;   // keep any existing patch
+        this._patch(c, true);
+        this._disClones.set(m, c);
+      }
+      return c;
+    };
+    for (const t of list) {
+      if (!t) continue;
+      if (t.isMaterial) { doMat(t, null); continue; }
+      t.traverse((ob) => {
+        if (!ob.isMesh || !ob.material) return;
+        if (Array.isArray(ob.material)) ob.material = ob.material.map((m) => doMat(m, ob));
+        else ob.material = doMat(ob.material, ob);
+      });
+    }
+    return this;
+  }
+
+  _patch(m, cut) {
+    if (m.userData.cosmosDis) return;
+    m.userData.cosmosDis = cut ? 'cut' : 'alpha';
+    const P = THREE.Material.prototype;
+    const prev = m.onBeforeCompile !== P.onBeforeCompile ? m.onBeforeCompile : null;
+    const prevKey = m.customProgramCacheKey !== P.customProgramCacheKey ? m.customProgramCacheKey : null;
+    const key0 = prev ? prev.toString() : '';
+    const DU = this.disU;
+    m.onBeforeCompile = function (sh, r) {
+      if (prev) prev.call(this, sh, r);
+      Object.assign(sh.uniforms, DU);
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\n' + DIS_VS_HEAD)
+        .replace('#include <project_vertex>', '#include <project_vertex>\n' + DIS_VS_BODY);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + (cut ? '#define COSMOS_DIS_CUT\n' : '') + DIS_FS_HEAD)
+        .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n' + DIS_FS_BODY);
+    };
+    m.customProgramCacheKey = function () { return (prevKey ? prevKey.call(this) : key0) + '|cosmosDis:' + (cut ? 'cut' : 'alpha'); };
+    m.needsUpdate = true;
   }
 
   // ---- star generation (deterministic)
@@ -693,8 +886,28 @@ class CosmosSet {
     return { pos, col: cl, misc };
   }
 
-  /** Attach the cosmos group to a host scene (call every frame BEFORE update(); idempotent). */
-  attach(scene) { if (this.group.parent !== scene) scene.add(this.group); return this; }
+  /**
+   * Attach the cosmos group to a host scene (call every frame BEFORE update(); idempotent). The first attach to a scene
+   * chains its onBeforeRender/onAfterRender: the group is drawn only in a render that follows an update() (a frame of
+   * another scene that renders the same host without updating the cosmos does not show stale cosmos state), and the
+   * dissolve gate knows which scene is being rendered.
+   */
+  attach(scene) {
+    if (this.group.parent !== scene) scene.add(this.group);
+    if (!scene.userData.cosmosHooked) {
+      scene.userData.cosmosHooked = true;
+      const self = this, prevB = scene.onBeforeRender, prevA = scene.onAfterRender;
+      scene.onBeforeRender = function (...a) {
+        if (self.group.parent === scene) { self._renderScene = scene; if (!self._live) self.group.visible = false; }
+        return prevB.apply(this, a);
+      };
+      scene.onAfterRender = function (...a) {
+        if (self.group.parent === scene) { self._live = false; self._renderScene = null; }
+        return prevA.apply(this, a);
+      };
+    }
+    return this;
+  }
 
   /** Post look blended from a host look (e.g. BACKROOM's) toward the cosmos look by w (0..1). */
   blendLook(base = {}, w = 1) {
@@ -711,8 +924,8 @@ class CosmosSet {
    *  reveal 0..1        0 = nothing; .015–.29 near stars kindle around `source`; .12–~.75 walls dissolve into deep space
    *                     outward from the source (camera-relative); .14–.72 a soft light unfurls behind the source;
    *                     .24–~.85 nebulae bloom open; .5–1 galaxies drift in; .62–1 glyphs. 1 = everything (cheapest).
-   *  center [x,y,z]     floor point the cosmos surrounds (the characters' spot). Default [0,0,0].
-   *  source [x,y,z]     where the reveal starts (the Void's chest). Default center + [0,1.6,0].
+   *  center [x,y,z]     floor point the cosmos surrounds (the characters' spot). Default [0,0,0]. (Vector3 ok)
+   *  source [x,y,z]     where the reveal starts (the Void's chest anchor). Default center + [0,1.6,0]. (Vector3 ok)
    *  radius (m)         horizontal radius of the sky shell (default 7.5): geometry farther than the shell is covered.
    *  height (m)         vertical semi-axis of the shell (default 0.87·radius). Shell centre = center + [0, lift, 0].
    *  lift (m)           shell centre height above `center` (default 1.5).
@@ -722,21 +935,28 @@ class CosmosSet {
    *  stars, nebula, galaxies, glyphs, puffs   per-element multipliers (default 1; 0 hides + skips the draw).
    *  bloom, fringe      mid-reveal unfurling light / dissolve-front glow (default 1).
    *  light              cosmic key (+ hemi standalone) multiplier (default 1). hemi: also add the hemi in a host.
-   *  floor { cover, inner, r0, r1, glow }    cover: sky over the host floor beyond r0..r1 (default 1 in a host, 0 standalone);
-   *                     inner: sky tint inside r0; glow: light pool under the characters (default .35 host / 1 standalone).
-   *  eyeLight 0..1      blend EYE_LIGHT toward the cosmos key (default 1 standalone, 0 in a host).
+   *  floor { cover, inner, r0, r1, glow, contact, rc, island, islandR, reflect }
+   *                     cover: sky over the host floor beyond r0..r1 (default 1 host / 0 standalone; r0 1.8 / 2.2, r1 4.4 / 5.5);
+   *                     inner: sky tint inside r0; glow: light pool (default .6 host / 1 standalone); contact: soft dark
+   *                     core of radius rc (1.25 m) under `center` (default .28 / .3); island: alpha of the glass island
+   *                     under the floor plane (1 host — only seen if the host floor is gone — / .6 standalone), radius
+   *                     islandR (default r1 host / 3.6 standalone), reflect: its sky-mirror strength (1).
+   *  dissolve 0..1      strength of the host dissolve (cos.dissolve-patched materials) (default 1).
+   *  eyeLight 0..1      blend EYE_LIGHT toward the cosmos key (default 1 standalone, 0 in a host). Set from a fixed base
+   *                     (standalone: engine defaults; host: what the host set this frame — call after the host's update).
    *  standalone         force standalone/host defaults (default: group.parent === this.scene).
    *  blendShell         keep the shell blended at reveal 1 (default false: opaque pass, same pixels, cheaper).
    */
   update(t, opts = {}) {
     const standalone = opts.standalone ?? (this.group.parent === this.scene);
     const reveal = clamp(opts.reveal ?? 1);
-    const c = opts.center || [0, 0, 0];
+    const c = arr3(opts.center, [0, 0, 0]);
     const radius = opts.radius ?? 7.5, height = opts.height ?? radius * 0.87, lift = opts.lift ?? 1.5;
-    const src = opts.source || [c[0], c[1] + 1.6, c[2]];
+    const src = arr3(opts.source, [c[0], c[1] + 1.6, c[2]]);
     const clock = opts.clock ?? t * (opts.drift ?? 1);
     const I = opts.intensity ?? 1;
-    const U = this.U;
+    const U = this.U, RU = this.RU;
+    this._live = true; this.group.visible = true;      // drawn in the next render of the host (see attach())
     U.uTime.value = t;
     U.uSrc.value.set(src[0], src[1], src[2]);
     U.uDomeC.value.set(c[0], c[1] + lift, c[2]);
@@ -766,29 +986,41 @@ class CosmosSet {
 
     // shell + floor
     const D = this.domeU;
-    D.uIntensity.value = I; D.uNebula.value = opts.nebula ?? 1; D.uFringe.value = (opts.fringe ?? 1) * (front > 500 ? 0 : 1);
-    D.uAlpha.value = smooth(ub * 6);
+    D.uIntensity.value = I; D.uNebula.value = opts.nebula ?? 1; RU.uFringe.value = (opts.fringe ?? 1) * (front > 500 ? 0 : 1);
+    RU.uRevA.value = smooth(ub * 6);
+    this._disW = ub > 0 ? clamp(opts.dissolve ?? 1) : 0;   // host dissolve (cos.dissolve) follows the shell's front
     this.dome.visible = reveal > 0.11;
     // fully revealed: the shell is drawn as an OPAQUE pass after the host's opaque objects (depth-tested, no
     // blending: ~0.03 s cheaper on SwiftShader). While revealing it is a blended pass, first among transparents.
     const solid = front > 500 && !opts.blendShell;
-    const dm = this.dome.material;
-    if (dm.transparent === solid) {
-      dm.transparent = !solid; dm.blending = solid ? THREE.NoBlending : THREE.CustomBlending;
-      this.dome.renderOrder = solid ? 1e6 : -40;
-    }
+    this.dome.material = solid ? this.domeMatS : this.domeMatB;
+    this.dome.renderOrder = solid ? 1e6 : -40;
     const F = this.floorU, fo = opts.floor || {};
     F.uIntensity.value = I; F.uNebula.value = opts.nebula ?? 1; F.uStars.value = opts.stars ?? 1;
     F.uCenter.value.set(c[0], c[1], c[2]);
-    const r0 = fo.r0 ?? 2.2;
+    const r0 = fo.r0 ?? (standalone ? 2.2 : 1.5);
     const h = lift;   // shell centre above the floor plane
     const rInt = radius * Math.sqrt(Math.max(0, 1 - (h / height) ** 2));
-    F.uR0.value = Math.min(r0, rInt * 0.6); F.uR1.value = Math.min(fo.r1 ?? 5.5, rInt * 0.97);
-    F.uInner.value = fo.inner ?? 0; F.uCover.value = fo.cover ?? (standalone ? 0 : 1);
-    F.uGlow.value = (fo.glow ?? (standalone ? 1 : 0.35)) * I * smooth(reveal * 2);
+    F.uR0.value = Math.min(r0, rInt * 0.6); F.uR1.value = Math.min(fo.r1 ?? (standalone ? 5.5 : 3.8), rInt * 0.97);
+    F.uInner.value = fo.inner ?? (standalone ? 0 : 0.22); F.uCover.value = fo.cover ?? (standalone ? 0 : 1);
+    const fIn = smooth(reveal * 2);
+    F.uGlow.value = (fo.glow ?? (standalone ? 1 : 0.6)) * I * fIn;
+    F.uContact.value = clamp(fo.contact ?? (standalone ? 0.3 : 0.28)) * fIn;
+    F.uRc.value = fo.rc ?? 1.25;
     this.floor.position.set(c[0], c[1] + 0.004, c[2]);
     this.floor.scale.setScalar(F.uCover.value > 0 || F.uInner.value > 0 ? rInt * 1.02 : Math.min(rInt, F.uR0.value * 1.9));
-    this.floor.visible = reveal > 0.11;
+    // skip the veil draw entirely when it has nothing to do
+    this.floor.visible = reveal > 0.11 && (F.uCover.value > 0 || F.uInner.value > 0 || F.uGlow.value > 0 || F.uContact.value > 0);
+    // island underlay: just below the floor plane (hidden by any host floor; the ground when there is none)
+    const IS = this.islandU;
+    const islR = Math.min(fo.islandR ?? (standalone ? 3.6 : F.uR1.value), rInt * 0.97);
+    IS.uIntensity.value = I; IS.uNebula.value = opts.nebula ?? 1;
+    IS.uR0.value = Math.min(F.uR0.value, islR * 0.7); IS.uR1.value = islR;
+    IS.uIslA.value = clamp(fo.island ?? (standalone ? 0.6 : 1)) * fIn;
+    IS.uIslRefl.value = fo.reflect ?? 1;
+    this.island.position.set(c[0], c[1] - 0.012, c[2]);
+    this.island.scale.setScalar(islR * 1.02);
+    this.island.visible = reveal > 0.11 && IS.uIslA.value > 0;
 
     // stars
     const S = opts.stars ?? 1;
@@ -815,8 +1047,8 @@ class CosmosSet {
 
     // reveal bloom (stage .14 -> .72), drawn by the sky shell itself
     const bs = clamp((reveal - 0.14) / 0.58);
-    D.uBloomR.value = lerp(0.35, 2.4, 1 - Math.pow(1 - bs, 2));
-    D.uBloomA.value = bs > 0 && bs < 1 ? 0.24 * Math.pow(Math.sin(Math.PI * bs), 1.2) * (opts.bloom ?? 1) * (opts.nebula ?? 1) : 0;
+    RU.uBloomR.value = lerp(0.35, 2.4, 1 - Math.pow(1 - bs, 2));
+    RU.uBloomA.value = bs > 0 && bs < 1 ? 0.24 * Math.pow(Math.sin(Math.PI * bs), 1.2) * (opts.bloom ?? 1) * (opts.nebula ?? 1) : 0;
 
     // galaxies: spin, drift in, fade in (staggered)
     const Gm = opts.galaxies ?? 1;
@@ -860,11 +1092,16 @@ class CosmosSet {
     this.key.intensity = (standalone ? 1.25 : 0.65) * L;
     this.key.position.set(c[0] + kd.x * 10, c[1] + kd.y * 10, c[2] + kd.z * 10);
     this.key.target.position.set(c[0], c[1] + 1, c[2]);
-    const ew = opts.eyeLight ?? (standalone ? 1 : 0);
+    // EYE_LIGHT: SET from a fixed base (standalone: the engine defaults; in a host: the values the host set earlier in
+    // this same frame — call cos.update after the host's update), never accumulated across frames.
+    const ew = clamp(opts.eyeLight ?? (standalone ? 1 : 0));
     if (ew > 0) {
+      if (standalone) {
+        EYE_LIGHT.uKeyDir.value.copy(EYE_BASE.dir); EYE_LIGHT.uKeyColor.value.copy(EYE_BASE.key); EYE_LIGHT.uAmbient.value.copy(EYE_BASE.amb);
+      }
       EYE_LIGHT.uKeyDir.value.lerp(kd.clone().add(V3(0, 0, 0.8)).normalize(), ew).normalize();
-      EYE_LIGHT.uKeyColor.value.lerp(col(0xf2eaff), ew);
-      EYE_LIGHT.uAmbient.value.lerp(col(0x5a5a8a), ew);
+      EYE_LIGHT.uKeyColor.value.lerp(EYE_KEY, ew);
+      EYE_LIGHT.uAmbient.value.lerp(EYE_AMB, ew);
     }
 
     // anchors (world; galaxies seen from the shell centre)

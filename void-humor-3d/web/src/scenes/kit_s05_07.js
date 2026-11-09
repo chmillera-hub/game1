@@ -131,8 +131,8 @@ export function makeTearDrop(scene, a, b) {
       const down = mouth.clone().sub(head).normalize();
       const right = user.anchor('earL').sub(user.anchor('earR')).normalize();
       const fwd = mouth.clone().sub(head); fwd.addScaledVector(down, -fwd.dot(down)).normalize();
-      const chin = mouth.clone().addScaledVector(down, 0.045).addScaledVector(fwd, -0.006);
-      const jaw = chin.clone().addScaledVector(right, side * 0.028).addScaledVector(down, -0.02).addScaledVector(fwd, -0.012);
+      const chin = mouth.clone().addScaledVector(down, 0.068).addScaledVector(fwd, -0.012);
+      const jaw = chin.clone().addScaledVector(right, side * 0.034).addScaledVector(down, -0.03).addScaledVector(fwd, -0.01);
       let p, s = 1;
       if (t < tf) {
         const u = smooth(clamp((t - t0) / Math.max(0.05, tf - t0)));

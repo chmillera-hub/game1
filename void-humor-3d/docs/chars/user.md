@@ -18,28 +18,43 @@ terror, tears, trembling splayed hand · 45–48 scoot backward · 48–50.5 "wh
 (clutch) · 59–62 softening: hand on heart, lip tremble, glisten · 62–64 phone face-down in lap · 64–66.5 get up
 (rise path) · 66.5–69.5 storm off (stomp) · 69.5–72.5 stomp away + look back · 72.5–75.5 thumb-tap Block →
 blocked (phone insert) · 75.5–77.5 show the phone over the shoulder · 77.5–80 defend at a partner (arm target) ·
-80–83 wipe tear, push glasses up · 83–85.5 phone glow in the dark · 85.5–88 kneel + crouch.
+80–83 wipe tear, push glasses up · 83–85.5 phone glow in the dark · 85.5–88 kneel + crouch · **probes**: 88–91 phone
+cradle close-up (orbit) · 91–94 defend seen from the threat's POV, then 3/4 · 94–96.5 look back (3/4-back camera) ·
+96.5–97.5 bench: head close-up with USER · 97.5–98.5 the same frame without USER (set only).
+```bash
+node tools/render.js sheet --lab user --from 88.5 --to 96 --n 8 --cols 4 --out out/sheets/user_probe.jpg      # review probes
+```
 
 ## Look
 Young adult, gender-ambiguous-to-feminine, 1.65 m (≈1.63 to the top of the hair, cowlick a bit above). Big
-round head (×1.12 sculpted skull, round cranium, full cheeks, soft small chin), **big hazel eyes** (green outer
-iris → warm gold centre, lash lines with an outer flick, lower lashes), swept dark brows with a wide range, a
-small upturned button nose, painted mouth with a soft rosy lower lip, permanent rosy cheeks and **painted
-freckles** (cheeks + nose bridge; decal). **Round glasses**, slightly too big, thin plum-black frames, a faint
-diagonal lens glint (stronger when the phone glows) — the frames sit below the brows and never cover the eyes;
-temple arms hug the face and vanish under the hair. **Messy dark-brown bob**: one sculpted shell (side part on
-the character's LEFT, chunky flow grooves, hair falling straight from the widest point to the jaw, rolled-under
-ends) + chunky accent locks (a fringe swept to the character's right that stays above the brows, face-framing
-clumps, curtain clumps that flick out / tuck under) + a 3-lock **cowlick** at the crown that bounces. The hanging
-ends swing on the GPU (stateless). **Oversized slate-blue hoodie**: a skinned lathe body that bends between pelvis
-and chest, drapes over the thighs when sitting / running (capsule push-out), ribbed hem, kangaroo pocket (raised
-patch + slanted openings), hood down (thick rolled collar + hood lying on the back), two drawstrings with metal
-aglets that hang with gravity and bounce; oversized drop-shoulder sleeves with accordion bunching on the forearm
-and ribbed cuffs. Charcoal joggers (bunched above the cuff), **chunky white sneakers** (two-tone sole, laces,
-padded collar, slate heel tab, no logos). Soft hands (one-piece fingers, anatomically correct thumb).
-**Phone**: generic coral-cased slab with a camera bump; the screen is a canvas (no logos: plain white
-speech-bubble icon on a header, grey cards). Its cool glow lights whatever the screen faces (face, hands, hoodie)
-via a custom shading term (no extra scene light → no recompiles in any set), glints in the corneas and lenses.
+round head (×1.12 sculpted skull, round cranium, full cheeks, a soft slightly-forward little chin and a gentle
+jaw line), **big hazel eyes** (green outer iris → warm gold centre, lash lines with an outer flick, lower lashes;
+lower lids sit low and small so they don't read as eye bags), swept dark brows with a wide range, a small upturned
+button nose, painted mouth with a soft rosy lower lip, permanent rosy cheeks and **painted freckles** (cheeks below
+the lids + nose bridge; decal). **Round glasses**, slightly too big, thin plum-black frames; lens glints live on
+the lens RIM only (never veil the iris; stronger when the phone glows); frames sit below the brows and never cover
+the eyes; temple arms hug the head and dive under the hair. **Messy dark-brown bob** (matte, low brown rim that
+fades on downward normals — no pale outlines / undersides): one sculpted shell (side part on the character's LEFT,
+chunky flow grooves, an **angled** bob — longest at the front corners, shorter at the nape, roll-under at the nape
+only, a near-vertical curtain front edge tucked under face-framing clumps) + chunky accent locks (a fringe that
+grows out of the crown and is swept to the character's right, kept above the brows; face-framing / curtain clumps)
++ 5 separated messy tips (side flicks, nape flicks, one at the crown) + a 3-lock **cowlick** that bounces. The
+hanging ends swing on the GPU (stateless); `lookBack` swings the turning-side curtain back behind the cheek.
+**Oversized slate-blue hoodie**: a skinned lathe body that bends between pelvis and chest and **drapes** over the
+thighs and floor (each column walks down from the waist and is pushed out of a smooth union of the thigh capsules —
+monotonic, never folds or tears; the pocket and hem ride along; the hem's inner fold is dark), ribbed hem, kangaroo
+pocket, hood down (rolled collar + hood on the back), two drawstrings with aglets; oversized drop-shoulder sleeves
+with soft rounded accordion folds and ribbed cuffs. True-charcoal joggers (bunched above the cuff), **chunky white
+sneakers** (rubber toe cap, raised lace panel with four grey laces, two-tone sole with a slate sidewall stripe,
+small grey heel tab, no logos). Soft hands (one-piece tapered fingers, anatomically correct thumb).
+**Phone**: generic coral-cased slab (7.8 × 16.3 cm: the group is scaled ×1.1 — overlays that copy
+`user.phone.matrixWorld` inherit the scale) with a camera bump; the screen is a canvas (no logos: plain
+speech-bubble icon, grey cards), kept just under the bloom threshold so the UI keeps its contrast, plus a soft cool
+**halo** around the screen edge (fades edge-on / from behind). The default `flat` grip **cradles** it diagonally
+from below: the hand runs across the back, fingertips curl round the far long edge, the thumb rests on the near
+edge of the screen — the coral case, one long edge and a sliver of screen read in wide shots. Its cool glow lights
+whatever the screen faces via a custom shading term (no extra scene light → no recompiles in any set); on skin it
+adds a cool under-light weighted to chin / nose / cheek normals; it glints in the corneas and lenses.
 
 Rest measurements (root at the feet, facing +Z): head centre 1.43 · eyes 1.43 (z 0.16) · mouth 1.35 (z 0.15) ·
 shoulder joints ±0.17 @1.215 · chest front (0, 1.10, 0.15) · hip (pelvis) 0.835 · hands hang at ~0.76 · feet ±0.10.
@@ -58,9 +73,9 @@ shoulder joints ±0.17 @1.215 · chest front (0, 1.10, 0.15) · hip (pelvis) 0.8
 | `body.flinch` 0..1 | jolt: shoulders up, head down/back (key it over ~0.1–0.2 s; pair with face `scrunch` for 3 frames) |
 | `body.tremble` 0..1 | fine full-body tremor (torso, head, hands, cowlick) |
 | `body.pant` 0..1 | fast shallow breathing (strings bounce with it) · `breathe`, `breathRate` as usual |
-| `body.jut` −0.5..1 | head/neck forward ('what the actual—' disbelief) |
-| `body.lookBack` −1..1 | look back over the shoulder (+ = over their LEFT shoulder): hips, chest and head twist; also set `gaze` behind |
-| `walk {amount, phase, style, flail}` | styles `walk`, `run` (panicked: forward lean, high knees, pumping fists with the phone in the fist, `flail` 0..1 default 0.55 = arms going wild), `stomp` (storm off: hunched, chin down, fists, heavy flat slams with a body drop on each step, phone in fist at the side), `sneak`. **Move `pos` at `user.walkSpeed(style) × user.walkRate(style)` m/s** (stride m/cycle: walk 0.92, run 1.7, stomp 0.8, sneak 0.55; rates 0.95, 1.45, 1.0, 0.6 cyc/s) |
+| `body.jut` −0.5..1 | head/neck forward ('what the actual—' disbelief): the neck slides forward ~7 cm, chin down a touch, the face stays up — reads from 3/4 |
+| `body.lookBack` −1..1 | look back over the shoulder (+ = over their LEFT shoulder): ≈120° in all (hips 10°, chest 34°, head 75°), the head leads with a tilt; the curtain on that side swings back behind the cheek so eye / brow / mouth read. **Camera: behind them on the side they look over** (lookBack + → behind their LEFT; e.g. walking toward −Z: camera at −X/+Z, framed yaw ≈ −25…−35°). Set `gaze` to the camera / the thing they look at |
+| `walk {amount, phase, style, flail}` | styles `walk`, `run` (panicked: ~0.4 rad forward lean with the head pushed forward and jittering, long strides, big fist pumps up to shoulder height with the phone sticking out of the fist so the screen flashes in the swing, `flail` 0..1 default 0.55 = elbows winging, hands flung off the beat), `stomp` (storm off: hunched, chin down, fists, heavy flat slams with a body drop on each step, phone in fist at the side), `sneak`. **Move `pos` at `user.walkSpeed(style) × user.walkRate(style)` m/s** (stride m/cycle: walk 0.92, run 1.9, stomp 0.8, sneak 0.55; rates 0.95, 1.45, 1.0, 0.6 cyc/s) |
 | `head {yaw, pitch, roll, look, follow, talk, compensate}` | rad relative to the chest; yaw + = toward their left, pitch + = chin DOWN, roll + = toward their left shoulder. `look`/`follow` turn the head to a world point. Use `headShake()` for 'hell no' (below) |
 | `gaze` | Vector3 / [x,y,z] / Character / `'camera'` / null — the eyes (use `user.anchor('phoneScreen')` to read the phone) |
 | `face` | `'name'` · `['name', w]` · `[['a', wa], ['b', wb]]` · `{ expr: 'name', ...overrides }` · flat params (core `X()` works). Default `'idle'` |
@@ -73,14 +88,14 @@ shoulder joints ±0.17 @1.215 · chest front (0, 1.10, 0.15) · hip (pelvis) 0.8
 ### `extra` (character-specific)
 | field | meaning |
 |---|---|
-| `phone` 0..1 | screen brightness (default 0.85). 0 = dark screen. Drives the cool glow on the face/hands/hoodie |
+| `phone` 0..1 | screen brightness (default 0.85; the screen stays under the bloom threshold, the halo + thrown light carry the glow). 0 = dark screen. Drives the cool glow on the face/hands/hoodie |
 | `phoneUp` 0..1 | lifts the phone hand from its preset to "reading it" in front of the chest (screen to the face). Pair with `gaze: user.anchor('phoneScreen')` and `head.pitch ≈ 0.2` |
 | `screen` | `'feed'` (default; scrolling grey cards) · `'block'` (confirm dialog "Block Jesus?" with a red **Block** button) · `'blocked'` ("You blocked Jesus." + avatar + Unblock) · `'profile'` (profile card, bio "Would love to hear about your feelings.", red Block) · `'off'` |
 | `screenName` | name shown on block/blocked/profile screens (default `'Jesus'`) |
 | `scroll` | feed scroll offset (cards; animate it while the thumb flicks) |
 | `tap` 0..1 | thumb press (pulses; 0 = hovering 1.4 cm above the screen, 1 = touching). Setting `tap` puts the thumb on the screen |
-| `thumb` 0..1 | thumb over the screen without tapping (default 1 whenever `tap` is given) |
-| `thumbAt` [u, v] | where the thumb hovers/taps in screen coords (u right, v down). Defaults per screen: the red **Block** button on `'block'` |
+| `thumb` 0..1 | thumb moves from its rest (on the near edge of the screen) to hover over `thumbAt` (default 1 whenever `tap` is given) |
+| `thumbAt` [u, v] | where the thumb hovers/taps in screen coords (u right, v down). Defaults per screen: the LEFT end of the red **Block** button on `'block'` (the left-hand thumb comes in from the lower-left, so the "Block" label stays readable until contact) |
 | `glow` | glow multiplier (default 1) |
 | `phoneHand` | `'L'` (default) or `'R'` — the hand that holds the phone (its default arm preset becomes `hold`) |
 | `phoneVisible` | false hides the phone |
@@ -90,21 +105,28 @@ shoulder joints ±0.17 @1.215 · chest front (0, 1.10, 0.15) · hip (pelvis) 0.8
 | `hairSwing` [x,y,z] | extra displacement of the hanging bob ends (head space, metres; ~±0.02). `headShake()` returns it |
 
 ### Arms — `armL` / `armR`
-`{ preset, target, pole, palm, fingers, reach, offset, hand, grip, tremble, flap, flail, wiggle }`
+`{ preset, target, threat, pole, palm, fingers, reach, offset, hand, grip, tremble, flap, flail, wiggle }`
 - `preset`: name or weighted list `[['prop', 0.6], ['knee', 0.4]]`. Defined for the LEFT arm, mirrored.
 - `target` (world wrist target) overrides the preset; `pole` (elbow dir), `palm` (palm normal = the phone screen's
   facing when the phone is in that hand), `fingers` (finger dir) — world space. `reach` 0..1 blends from the
   default (`hold` for the phone hand, `rest` otherwise). `offset` world nudge.
 - `hand`: `{ curl, point, spread, thumb, cup, splay, grip }` overrides. `grip`: phone grip `'flat'|'fist'|'tuck'`.
-- `tremble` 0..1 (shaking hand), `flap` 0..1 (a feeble outward flap of a raised hand — key it as a pulse),
-  `flail` (run only).
+- `threat` (world point; `defend` only): the hand goes on the eye→threat line as far out as the arm allows
+  (≤ 34 cm), a little to the arm's side and below the eye line so the eyes peek past the fingers; palm to the
+  threat, fingers up and splayed. A `defend` **`target` farther than 0.62 m from the shoulder is treated as a
+  threat** (a wrist can't get there anyway); reachable targets are wrist targets as before. Without either, a
+  virtual threat ~2 m ahead and a bit above eye level is used (leaning back doesn't lift the hand over the eyes).
+  `defend` also drives the body: shoulders up, chin tucked, head turned slightly away from the raised hand.
+- `tremble` 0..1 (shaking hand), `flap` 0..1 (a small push of the raised hand toward the threat / along the palm
+  with a wrist flick — key it as a pulse), `flail` (run only).
+- Unknown preset names fall back to `rest` with a one-time `console.warn`.
 
 | preset | use |
 |---|---|
 | `rest` / `hold` | arms down · phone held at the belly, screen tilted to the face (phone-hand default) |
 | `look` | phone up reading it (same as `extra.phoneUp: 1`) |
 | `clutch` | **hug the phone flat to the sternum, screen in** (use on the phone hand) · `hug` = the other hand pressing over it |
-| `defend` | **hand UP defensively, palm out, fingers splayed** (add `tremble`; `target` = toward the threat) |
+| `defend` | **hand up between the face and the threat, elbow bent forward/down, wrist cocked back, palm out, fingers splayed** (add `tremble`; `threat` = what they're afraid of) |
 | `stop` | feeble chest-height stop palm |
 | `prop` | seated: palm flat on the ground behind the hip (the phone hand props on a fist) |
 | `knee` | seated: hand resting on the knee · `lap` = phone held in the lap (add `palm: [0,-1,0]` world for face-down) |
@@ -114,6 +136,7 @@ shoulder joints ±0.17 @1.215 · chest front (0, 1.10, 0.15) · hip (pelvis) 0.8
 | `shield` | phone held up in front of the lower face, screen out |
 | `show` | phone held up over the shoulder, screen facing back (show someone behind: "blocked") |
 | `pocket`, `hips`, `point`, `shrug`, `strings` | hand in the kangaroo pocket · on hip · point · shrug · tug the hood strings |
+| `up`, `wave`, `chin` | ENGINE.md generic presets: hand raised overhead · hand up beside the head, palm forward · knuckles under the chin |
 | `wipe`, `glasses`, `cover_mouth` | (face space) knuckle wipes a tear · index pushes the glasses up the nose · palm over the mouth |
 
 ### Face presets (`UX(name, overrides)` / `UEXPR`; all core `EXPR` names work too)
@@ -124,6 +147,14 @@ squeezed), `deadpan` (half-mast), `hellno` (narrowed, brows crushed, lips presse
 `smirk`, `suspicious`, `glare`, `gulp`, `guilt` (6-frame flicker), `soften` (wide, wet, inner brows up, lips
 parted), `tremble` (pressed trembling lips, chin crumple, wet), `dawning` ("…you?"), `notquite` (the faintest
 not-quite smile), `nervous` (clenched grimace), `storm` (angry pout), `disbelief`.
+- `terror` = whites all round the irises: upper lid retracted (lidU 1.45), **lower lid dropped** (lidL 0 + `lidDrop`),
+  pupils 0.56 (small but never lost under the catchlights), inner brows far above the outer ends. Passing `lidL > 0`
+  in an override raises the lower lid back over the iris (s02 does this) — leave it at 0 for the classic terror read.
+- `wtf` = disbelief, never anger: both brows high with inner ≥ outer (one higher via `browAsym`), eyes wide, jaw
+  hanging (mOpen 0.6) — `jawHold` keeps lip-sync on top of the dropped jaw instead of closing it between syllables.
+- USER-only face params: `lidDrop` 0..1 (drops the lower lids a further ~0.2 rad; also automatic for lidU > 1.15;
+  blinks still close fully) and `jawHold` 0..1 (lip-sync opens on top of `mOpen` instead of closing the mouth).
+- The wet line along the lower lids is a thin, soft meniscus (≤ 0.3 opacity, never brighter than white).
 
 ## Anchors (world, valid after `update`)
 `head`, `top`, `eyes`, `mouth`, `earL`, `earR`, `chest` (front), `back`, `shoulderL`, `shoulderR`, `handL`,
@@ -140,11 +171,12 @@ Exports: `UX`, `UEXPR`, `ARM`, `WALK`, `headShake`, `User`.
 - **Run crying from the Void**: `walk: {amount: 1, style: 'run', phase: t*rate}`, `face: 'sob'`, `extra: {tears: 1, phone: 0.8}`;
   look back: `body: {lookBack: 0.85}`, `gaze: voidEyes`, face → `'scream'` for ~0.5 s.
 - **Stumble + fall**: ramp run amount 1→0 over 0.2 s while `body.sit` 0→1 over ~0.75 s (`sitPath: 'fall'`, default),
-  face `gasp` mid-air → `terror`; after impact ramp `armR: {preset: 'defend', tremble: 1}`, `armL: {preset: 'prop'}`,
+  face `gasp` mid-air → `terror`; after impact ramp `armR: {preset: 'defend', threat: voidEyes, tremble: 1}`, `armL: {preset: 'prop'}`,
   `body: {shrug: 0.6, tremble: 0.6, pant: 1}`, `extra: {tears: 0.7}`.
 - **Scoot back**: `body: {sit: 1, scoot: 1, scootPhase: lt*1.6}` and move pos backward at `scootSpeed(1)*1.6` m/s.
-- **"What the actual—"**: `body: {sit: 1, jut: 1, lean: 0.2}`, `face: 'wtf'`, a `flap` pulse on the raised arm on
-  "actual", `face: 'scrunch'` (+`flinch` 0.5) on the bleep; then `glassesSlip` 1→0 with `armR: {preset: 'glasses'}`.
+- **"What the actual—"**: `body: {sit: 1, jut: 1, lean: 0.1}`, `face: 'wtf'` (the jaw hangs through the line — don't
+  set `speech: false`), a `flap` pulse (push toward the threat) on the raised arm on "actual", `face: 'scrunch'`
+  (+`flinch` 0.5) on the bleep; then `glassesSlip` 1→0 with the FREE hand `armR: {preset: 'glasses'}`.
 - **Pretend to scroll**: `extra: {phoneUp: 1, scroll: k*t, tap: pulses}`, `gaze: anchor('phoneScreen')`, `head.pitch 0.2`;
   peek up: gaze to the Void with `head.pitch` still down (eyes over the glasses).
 - **'Hell no'**: `const hs = headShake(t, T('line')+0.1)` → `head: {yaw: hs.yaw}`, `extra: {hairSwing: hs.hairSwing}`, `face: 'hellno'`.
@@ -153,10 +185,11 @@ Exports: `UX`, `UEXPR`, `ARM`, `WALK`, `headShake`, `User`.
   `armL: {preset: 'lap', palm: [0,-1,0]}`, `extra: {phone: 0}`.
 - **Hug the phone**: `armL: {preset: 'clutch'}`, `armR: {preset: 'hug'}`, `body: {shrug: 0.45, hunch: 0.4}`.
 - **Get up + storm off**: `body: {sit: 1→0, sitPath: 'rise'}` over ~1.6 s, face `storm`; then `walk: {style: 'stomp'}`.
-  Glance back: `body.lookBack` ramp 0→0.9→0 over ~1 s with face `guilt`.
-- **Block insert**: `extra: {phoneUp: 1, screen: 'block', tap: pulse, thumb: 1}` (thumb defaults to the Block button),
-  then `screen: 'blocked'`. Put the camera on `user.phone`'s +Z axis ~0.24 m out and roll it by the phone's +Y
-  (see the lab's insert segment). Lower `extra.phone` (~0.6) if the screen blooms too much in a close insert.
+  Glance back: `body.lookBack` ramp 0→0.9→0 over ~1 s with face `guilt`, camera behind them on that side.
+- **Block insert**: `extra: {phoneUp: 1, screen: 'block', tap: pulse, thumb: 0→1}` (the thumb comes off its rest and
+  lands on the left end of the Block button — the label stays readable), then `screen: 'blocked'`. Put the camera on
+  `user.phone`'s +Z axis ~0.24 m out and roll it by the phone's +Y (see the lab's insert segment). Reads at the
+  default `extra.phone` (the screen is kept under the bloom threshold; no need to lower it).
 - **Show the screen over the shoulder**: `armL: {preset: 'show'}`, `extra: {screen: 'blocked', phone: 1}`.
 
 ## Performance
@@ -168,13 +201,25 @@ don't cast shadows. The machine was heavily loaded during development (load avg 
 (set alone up to 1.03 s) — the character itself adds ≈ 0.04–0.1 s.
 
 ## Known limitations
-- Stateless: hair swing / strings / cowlick are procedural from walk phase, impact and `hairSwing`; fast turns
-  don't swish unless the scene passes `hairSwing` (use `headShake()` for shakes).
-- The hoodie hem drapes over the thighs via capsule push-out only; extreme crouches can show slight hem/leg
-  interpenetration. Sleeves and torso don't collide (arms crossing deep into the chest clip a little).
-- Phone `flat` grip: the phone lies on the palm/fingers (fingers stay behind the slab); fingertips don't wrap the
-  edges. `fist` grip (running/stomping) wraps the fingers over the screen.
-- Glasses are a rigid frame (no lens refraction); the lens glint is additive and slightly visible in darkness.
-- Seated `defend`/`prop` presets assume `sit ≈ 1`; `sitPath: 'plain'` at mid values floats the pelvis (generic).
+- Stateless: hair swing / strings / cowlick are procedural from walk phase, impact, `lookBack` and `hairSwing`; fast
+  turns don't swish unless the scene passes `hairSwing` (use `headShake()` for shakes).
+- The hoodie drape is a per-column walk over a smooth union of the two thigh capsules + the floor (no cloth sim):
+  the hem lies on the lap and slides down the sides, but the arms and torso still don't collide (arms crossing deep
+  into the chest clip a little), and in a very deep crouch the hem can just touch the shins.
+- Phone `flat` grip: the cradle is a fixed diagonal hand pose (fingers curl round the far edge, thumb on the near
+  edge); fingertips can sink a few mm into the case at extreme wrist angles. `fist` grip (running/stomping) holds the
+  phone through the fist with its top sticking out of the thumb side.
+- Glasses are a rigid frame (no refraction); the rim glints are additive (faint in darkness).
+- `defend` with a `threat` straight down the camera axis puts the hand between the lens and the face by design —
+  give the threat its real position (off-axis) or use a reachable wrist `target`.
+- Scenes s03/s04/s05 pass their own reachable `defend` wrist targets (out at the right-front, face clear) — those are
+  honoured as before; switch them to `threat: voidEyes` to get the new placement + body response.
+- An explicit `lidL > 0` in a scene's terror override (s02: 0.32) raises the lower lid over the iris again; leave it
+  at 0 (default) for whites all round.
+- Seated `prop` assumes `sit ≈ 1`; `sitPath: 'plain'` at mid values floats the pelvis (generic).
+- Keep the distinctive markers strong (slate hoodie, coral phone, cowlick); never pair the round glasses + dark bob
+  with an orange/red top (avoids drifting toward well-known bespectacled-bob cartoon characters).
 - **Core note (not changed):** `core/camera.js framed()` places the look point at `1 − screenY` from the top
-  (its doc says `screenY`, 0 = top) — the lab uses its own corrected `framed()`.
+  (its doc says `screenY`, 0 = top) — the lab uses its own corrected `framed()`. Fix in core: flip the sign of `off`
+  in both lines that use it, then re-check callers tuned to the current behaviour (scenes/marks.js already works
+  around it).

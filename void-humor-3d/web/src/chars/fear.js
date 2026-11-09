@@ -247,7 +247,7 @@ const TUFT = [
   { o: [0.006, -0.004, -0.014], d: [0.02, 1, -0.5], L: 0.088, curv: [0.15, -0.6, -0.85], r: 0.78 },
 ];
 const tuftRad = (s) => Math.max(lerp(0.0064, 0.0032, Math.pow(s, 0.7)), 0.0057 * Math.sqrt(Math.max(0, 1 - ((1 - s) / 0.12) ** 2)));
-const TUFT_SEG = 18;
+const TUFT_SEG = 16;
 // Secondary motion: spring kernels sampled on an ABSOLUTE time grid (see _secondary)
 const SPRING_N = 50, SPRING_DT = 0.016;
 function springK(tau, f, zeta) {   // second derivative of the damped spring's impulse response
@@ -258,9 +258,10 @@ const softClamp = (v, m) => m * Math.tanh(v / m);
 const smax0 = (x, w) => (x >= w ? x : x <= -w ? 0 : ((x + w) * (x + w)) / (4 * w));   // C1-smooth max(0, x)
 
 // ---------------------------------------------------------------------------------------------------------
-// Materials: MeshStandard + core enhance() (rim / glow / fizz / wrap) everywhere — no physical sheen/clearcoat.
+// Materials: the inner-being parts are MeshPhong (soft broad highlight) + core enhance() (rim / glow / fizz / wrap):
+// it reads like the physical 'being' material at Fear's scale and costs far less per pixel on SwiftShader.
 function beingLite(color, o) {
-  const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: o.roughness ?? 0.5, metalness: 0, vertexColors: !!o.vertexColors });
+  const m = new THREE.MeshPhongMaterial({ color: new THREE.Color(color), shininess: o.shininess ?? 22, specular: new THREE.Color(o.specular ?? 0x2e2a3c), vertexColors: !!o.vertexColors });
   return enhance(m, { rim: o.rim, rimColor: o.rimColor ?? color, rimPower: o.rimPower ?? 2.2, glow: o.glow, glowColor: o.glowColor ?? color,
     fizz: o.fizz ?? 0, fizzColor: o.fizzColor ?? 0xffffff, fizzScale: o.fizzScale ?? 7, fizzSpeed: o.fizzSpeed ?? 0.3, wrap: o.wrap ?? 0.3, wrapColor: o.wrapColor ?? color });
 }
@@ -292,30 +293,40 @@ function bendMaterial(mat, U) {
   return mat;
 }
 
-let _knitTex = null;
-function knitTexture() {
-  if (_knitTex) return _knitTex;
-  const S = 128, c = document.createElement('canvas'); c.width = c.height = S;
-  const g = c.getContext('2d');
-  g.fillStyle = 'rgb(196,190,184)'; g.fillRect(0, 0, S, S);
-  const cell = 32;
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
-    const cx = i * cell + cell / 2, cy = j * cell + cell / 2;
-    for (const leg of [-1, 1]) {
-      g.save(); g.translate(cx, cy + leg * 7.2); g.rotate(-leg * 0.62);
-      const gr = g.createRadialGradient(0, 0, 0, 0, 0, 13);
-      gr.addColorStop(0, 'rgb(255,255,255)'); gr.addColorStop(0.6, 'rgb(242,240,238)'); gr.addColorStop(1, 'rgb(214,210,206)');
-      g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, 13.5, 6.4, 0, 0, TAU); g.fill();
-      g.restore();
-    }
-  }
-  _knitTex = new THREE.CanvasTexture(c);
-  _knitTex.colorSpace = THREE.SRGBColorSpace; _knitTex.wrapS = _knitTex.wrapT = THREE.RepeatWrapping; _knitTex.anisotropy = 1;
-  return _knitTex;
-}
-function knitMaterial() {   // ONE material for wrap, knot and tails (uv repeats are baked into each geometry)
-  const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(C_SCARF), roughness: 0.92, metalness: 0, map: knitTexture(), bumpMap: knitTexture(), bumpScale: 1.6 });
-  return enhance(m, { rim: 0.28, rimColor: 0xffd27a, rimPower: 3.2, glow: 0.12, glowColor: C_SCARF, wrap: 0.35, wrapColor: 0xff9a40 });
+// ONE material for wrap, knot, tails and fringe (uv repeats are baked into each geometry). The knit is PROCEDURAL:
+// V-stitch chevrons + column grooves as colour and a derivative bump, faded out where a stitch gets smaller than ~2 px
+// (no shimmer). SwiftShader pays far more for texture fetches (sRGB + trilinear) than for these few ALU ops.
+function knitMaterial() {
+  const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(C_SCARF), roughness: 0.92, metalness: 0 });
+  enhance(m, { rim: 0.28, rimColor: 0xffd27a, rimPower: 3.2, glow: 0.12, glowColor: C_SCARF, wrap: 0.35, wrapColor: 0xff9a40 });
+  const prev = m.onBeforeCompile;
+  m.onBeforeCompile = (sh, r) => {
+    prev(sh, r);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vKnit;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKnit = uv;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+        varying vec2 vKnit;
+        vec3 knitPerturb(vec3 sp, vec3 sn, vec2 dh, float fd) {
+          vec3 sx = dFdx(sp), sy = dFdy(sp), r1 = cross(sy, sn), r2 = cross(sn, sx);
+          float det = dot(sx, r1) * fd;
+          return normalize(abs(det) * sn - sign(det) * (dh.x * r1 + dh.y * r2));
+        }`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        // uv unit ~ 4.4 cm along x / ~5.3 cm around y -> stitches ~1.1 cm long x ~0.75 cm wide (columns run along)
+        vec2 kq = vec2(vKnit.x * 4.0, vKnit.y * 7.0);
+        vec2 kc = fract(kq) - 0.5;
+        float kRow = fract(kq.x + abs(kc.y) * 0.9);             // chevron rows: the 'V' legs of each stitch
+        float kRidge = pow(sin(3.14159 * kRow), 0.7);
+        float kCol = smoothstep(0.0, 0.2, abs(kc.y)) * (1.0 - 0.35 * smoothstep(0.38, 0.5, abs(kc.y)));
+        float kH = kRidge * kCol;
+        float kAA = clamp((0.6 - max(fwidth(kq.x), fwidth(kq.y))) / 0.3, 0.0, 1.0);   // fade below ~3 px per stitch
+        diffuseColor.rgb *= mix(0.9, 0.79 + 0.25 * kH, kAA);`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        normal = knitPerturb(-vViewPosition, normal, vec2(dFdx(kH), dFdy(kH)) * 0.0025 * kAA, faceDirection);`);
+  };
+  const key = m.customProgramCacheKey.bind(m);
+  m.customProgramCacheKey = () => key() + 'fearKnit';
+  return m;
 }
 // add a constant (u along, v around) uv attribute to a core SweepTube, scaled by the repeat counts
 function tubeUV(tube, repU, repV) {
@@ -471,7 +482,7 @@ export class Fear extends Character {
   }
 
   _buildBody() {
-    const NA = 56, NV = 46, C = V3(0, 0.27, 0);
+    const NA = 50, NV = 40, C = V3(0, 0.27, 0);
     const pos = [], nor = [], idx = [];
     this.surfPts = [];
     for (let j = 0; j <= NV; j++) {
@@ -511,9 +522,24 @@ export class Fear extends Character {
         profile: [0.8, 1, 0.8, 0.4] },
       mouth: { v: MOUTH_V, halfW: HW0, line: '#4a2460', lineW: HW0 * 0.17, interior: '#2a1030', interior2: '#5a2148', tongue: '#d77a9e', teeth: '#f7f2ff',
         lipTintRGB: '200,120,190', blushColor: '255,130,190', blushX: 0.088, blushY: 0.04, drawExtra: (g, p) => this._drawCheeks(g, p) },
-      decal: { uMin: -0.9, uMax: 0.9, vMin: -0.68, vMax: 0.1, size: [512, 384] },
+      decal: { uMin: -0.76, uMax: 0.76, vMin: -0.66, vMax: 0.0, size: [512, 352],
+        material: new THREE.MeshLambertMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }) },
     });
     for (const eye of this.face.eyes) for (const c of eye.up.children) if (c.geometry && c.geometry.type === 'ConeGeometry') c.visible = false;
+    // triangle budget (SwiftShader pays per triangle): the eyeball only needs its front cap (it rotates <= ~0.8 rad and
+    // only ~0.85 rad around the front is outside the head); lids at a lower tessellation (the lash line hides the edge)
+    for (const eye of this.face.eyes) {
+      const r = EYE.r, cap = new THREE.SphereGeometry(r, 30, 13, 0, TAU, 0, 1.85); cap.rotateX(Math.PI / 2);
+      eye.ball.geometry.dispose(); eye.ball.geometry = cap;
+      const ru = r * 1.04, rl = r * 1.035;
+      eye.up.geometry.dispose(); eye.up.geometry = new THREE.SphereGeometry(ru, 28, 10, 0, TAU, 0, Math.PI / 2);
+      eye.lo.geometry.dispose(); eye.lo.geometry = new THREE.SphereGeometry(rl, 28, 9, 0, TAU, Math.PI / 2, Math.PI / 2);
+    }
+    // purity: core Face skips the decal redraw when its 3-decimal key is unchanged, so the canvas could keep a
+    // previous frame's (slightly different) values. Draw from the rounded values = a pure function of the key.
+    const DK = ['mOpen', 'mWide', 'mRound', 'mSmile', 'mAsym', 'mTeethU', 'mTeethL', 'mClench', 'mPress', 'mTongue', 'mPout', 'blush', 'tearL', 'tearR', 'close', 'mShift'];
+    const draw = this.face._drawDecal.bind(this.face);
+    this.face._drawDecal = (p, t) => { const q = { ...p }; for (const k2 of DK) q[k2] = +(q[k2] || 0).toFixed(3); for (const k2 of ['squeeze', 'squeezeL', 'squeezeR']) if (q[k2] != null) q[k2] = +(+q[k2]).toFixed(2); draw(q, t); };
     this.scleraLin = new THREE.Color(C_SCLERA);
     this._cheekKey = '';
     // tear meniscus along each lower lid (wet, welling eyes)
@@ -551,7 +577,7 @@ export class Fear extends Character {
     const top = headSurface(0, Math.PI / 2 - 0.08);
     this.topP = top.p.clone();
     this.tuft = TUFT.map((s) => {
-      const tube = new SweepTube({ material: this.tuftMat, segments: TUFT_SEG, radial: 8, capRings: 3 });
+      const tube = new SweepTube({ material: this.tuftMat, segments: TUFT_SEG, radial: 6, capRings: 3 });
       tubeColor(tube, (u) => 1 + 1.3 * smoothstep(0.8, 0.97, u));   // glowing bulb tip
       this.headGroup.add(tube.mesh);
       const base = this.topP.clone().add(V3(...s.o)).addScaledVector(top.n, -0.006);
@@ -573,8 +599,8 @@ export class Fear extends Character {
   _buildScarf() {
     // wrap: 1.28 turns. Starts under the knot (front-left), goes round the back (sagging at the back-right), passes
     // the front, and the last quarter turn rides up over the first pass on Fear's left (an overlapping loop).
-    this.wrap = new SweepTube({ material: this.knitMat, segments: 96, radial: 12, capRings: 2, castShadow: true });
-    tubeUV(this.wrap, 40, 4); this.bodyG.add(this.wrap.mesh);
+    this.wrap = new SweepTube({ material: this.knitMat, segments: 80, radial: 10, capRings: 2 });
+    tubeUV(this.wrap, 40, 3.4); this.bodyG.add(this.wrap.mesh);   // ~1.75 m long, ~0.18 m round
     const KA = 0.62;                                  // knot angle (from +Z toward +X = its left)
     this.knotA = KA;
     const pts = [], ups = [];
@@ -597,8 +623,8 @@ export class Fear extends Character {
     const kr = rayHit(V3(0, SCARF_Y - 0.012, 0), kd, 0.4);
     this.knotP = V3(0, SCARF_Y - 0.014, 0).addScaledVector(kd, kr + 0.03);
     this.knotN = kd;
-    const kg = new THREE.SphereGeometry(1, 20, 14);
-    const kuv = kg.attributes.uv; for (let i = 0; i < kuv.count; i++) kuv.setXY(i, kuv.getX(i) * 7, kuv.getY(i) * 4);
+    const kg = new THREE.SphereGeometry(1, 14, 10);
+    const kuv = kg.attributes.uv; for (let i = 0; i < kuv.count; i++) kuv.setXY(i, kuv.getX(i) * 6, kuv.getY(i) * 2.4);
     this.knot = new THREE.Mesh(kg, this.knitMat);
     this.knot.scale.set(0.042, 0.044, 0.031);
     this.bodyG.add(this.knot);
@@ -608,13 +634,13 @@ export class Fear extends Character {
       { L: 0.235, off: -0.016, w: 1.0, rad: 0.027, lat: V3(-0.25, 0, 0.05), spread: 0.35 },
       { L: 0.15, off: 0.02, w: 0.85, rad: 0.022, lat: V3(0.85, 0, -0.35), spread: 0.75 },
     ].map((T, i) => {
-      const tube = new SweepTube({ material: this.knitMat, segments: 14, radial: 10, capRings: 2 });
-      tubeUV(tube, i ? 9 : 14, 2); this.bodyG.add(tube.mesh);
+      const tube = new SweepTube({ material: this.knitMat, segments: 12, radial: 8, capRings: 2 });
+      tubeUV(tube, T.L * 22.9, 2.3); this.bodyG.add(tube.mesh);
       const fr = new THREE.Group(); this.bodyG.add(fr);
       const parts = [];
       const nf = i ? 4 : 5;
       for (let k = 0; k < nf; k++) {
-        const c = new THREE.CapsuleGeometry(0.0034, 0.026 + 0.008 * hash1(k * 7 + i), 2, 5);
+        const c = new THREE.CapsuleGeometry(0.0034, 0.026 + 0.008 * hash1(k * 7 + i), 1, 4);
         c.rotateZ((k - (nf - 1) / 2) * 0.07); c.translate((k - (nf - 1) / 2) * 0.0088 * (T.rad / 0.025), -0.016, 0);
         parts.push(c);
       }
@@ -627,7 +653,13 @@ export class Fear extends Character {
     this.arms = {};
     for (const side of ['L', 'R']) {
       const hand = new Hand({ size: HAND, fingers: 3, side, material: this.limbMat, thick: 1.25, fingerLen: 1.05 });
-      const tube = new SweepTube({ material: this.limbMat, segments: 16, radial: 8 });
+      hand.root.traverse((m) => {   // the hand is a few cm on screen: re-tessellate its parts (core uses 10-20 segments)
+        if (!m.isMesh) return;
+        const g = m.geometry, pr = g.parameters;
+        if (g.type === 'CapsuleGeometry') { m.geometry = new THREE.CapsuleGeometry(pr.radius, pr.length, 2, 6); g.dispose(); }
+        else if (g.type === 'SphereGeometry') { m.geometry = new THREE.SphereGeometry(pr.radius, 12, 8); g.dispose(); }
+      });
+      const tube = new SweepTube({ material: this.limbMat, segments: 14, radial: 7, capRings: 3 });
       const group = new THREE.Group(); group.add(tube.mesh, hand.root);
       this.root.add(group);
       const palmL = HAND * 0.46, palmT = HAND * 0.16 * 1.25;
@@ -636,15 +668,15 @@ export class Fear extends Character {
     }
     this.legs = {};
     for (const side of ['L', 'R']) {
-      const tube = new SweepTube({ material: this.limbMat, segments: 12, radial: 8, capRings: 2 });
+      const tube = new SweepTube({ material: this.limbMat, segments: 10, radial: 7, capRings: 2 });
       this.root.add(tube.mesh);
-      const knee = new THREE.Mesh(new THREE.SphereGeometry(0.0225, 14, 10), this.limbMat);
+      const knee = new THREE.Mesh(new THREE.SphereGeometry(0.0225, 10, 7), this.limbMat);
       this.root.add(knee);
       const foot = new THREE.Group(); this.root.add(foot);
-      const fm = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), this.limbMat);
+      const fm = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), this.limbMat);
       fm.scale.set(0.04, 0.028, 0.056); fm.position.set(0, -0.006, 0.02);
       foot.add(fm);
-      const ank = new THREE.Mesh(new THREE.SphereGeometry(0.0175, 12, 8), this.limbMat); foot.add(ank);
+      const ank = new THREE.Mesh(new THREE.SphereGeometry(0.0175, 8, 6), this.limbMat); foot.add(ank);
       this.legs[side] = { tube, knee, foot };
     }
   }
@@ -819,6 +851,8 @@ export class Fear extends Character {
     const sqL = clamp(fp.squeezeL ?? fp.squeeze ?? 0), sqR = clamp(fp.squeezeR ?? fp.squeeze ?? 0);
     const ck = sqL.toFixed(2) + sqR.toFixed(2) + (fp.blush || 0).toFixed(3);
     if (ck !== this._cheekKey) { this._cheekKey = ck; this.face._lastKey = ''; }   // force a decal redraw (cheek lines)
+    // squeeze flattens the eye BEFORE Face places the catchlights (they read the eye's world matrix): stays pure
+    this.face.eyes.forEach((eye) => { const sq = smooth(eye.sx > 0 ? sqL : sqR); eye.inner.scale.set(1 - 0.05 * sq, 1 - 0.12 * sq, 1 - 0.19 * sq); });
     const gaze = gazePoint(P.gaze, CTX.camera);
     this.face.update(t, fp, { gaze, speech: this.speech(t, P), blinkAt: P.blinkAt });
     this._eyes(fp, sqL, sqR);
@@ -887,7 +921,6 @@ export class Fear extends Character {
       const roll = lerp(eye.upRoll.rotation.z, eye.upRoll.rotation.z * 0.5, closed) + eye.sx * 0.26 * sq * closed;
       eye.upRoll.rotation.z = roll;
       eye.loRoll.rotation.z = lerp(eye.loRoll.rotation.z, roll, closed);
-      eye.inner.scale.set(1 - 0.05 * sq, 1 - 0.12 * sq, 1 - 0.19 * sq);
       const C = this.creases[i];
       const o = smoothstep(0.15, 0.8, sq) * closed;
       C.g.visible = o > 0.02; C.mat.opacity = 0.92 * o;

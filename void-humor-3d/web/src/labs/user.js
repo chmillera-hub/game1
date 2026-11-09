@@ -220,7 +220,7 @@ S('wipe tear, push glasses up, glare', 3, (lt, s) => {
   const U = s.user;
   const w = ramp(lt, 0.2, 0.5) * (1 - ramp(lt, 1.1, 1.4)), g = ramp(lt, 1.5, 1.8) * (1 - ramp(lt, 2.4, 2.7));
   U.update(s.t, { body: { sit: 1 }, face: lt < 1.4 ? 'tremble' : 'glare', gaze: 'camera',
-    armR: { preset: w > 0.01 ? 'wipe' : 'knee', reach: w > 0.01 ? w : 1 }, armL: g > 0.01 ? { preset: 'glasses', reach: g } : { preset: 'lap' },
+    armR: w > 0.01 ? { preset: 'wipe', reach: w } : g > 0.01 ? { preset: 'glasses', reach: g } : { preset: 'knee' }, armL: { preset: 'lap' },
     extra: { glassesSlip: lt < 1.6 ? 1 : 1 - ramp(lt, 1.6, 1.8), tears: 0.4 * (1 - ramp(lt, 0.4, 1.0)), phone: 0.6 } });
   return { shot: framed([0, 0.85, 0.2], { dist: 1.5, yaw: 10, pitch: 4, fov: 30, screenY: 0.4, drift: 0 }) };
 });
@@ -253,7 +253,7 @@ S('defend: from the threat POV, then 3/4', 3, (lt, s) => {
     armR: { preset: 'defend', threat: B.eye, tremble: 0.6 }, armL: { preset: 'clutch' }, extra: { tears: 0.5 } });
   if (lt < 1.5) { const e = U.anchor('eyes'); const c = B.eye.clone().lerp(e, 0.15); return { shot: { pos: c.toArray(), look: e.toArray(), fov: 24, drift: 0 } }; }
   const e = U.anchor('eyes');
-  return { shot: framed([e.x, e.y - 0.15, e.z], { dist: 1.9, yaw: -20, pitch: 6, fov: 32, screenY: 0.42, drift: 0 }) };
+  return { shot: framed([e.x, e.y - 0.2, e.z], { dist: 2.5, yaw: -25, pitch: 8, fov: 32, screenY: 0.4, drift: 0 }) };
 });
 S('look back (3/4-back camera, close)', 2.5, (lt, s) => {
   const U = s.user, rate = U.walkRate('stomp');
@@ -326,6 +326,9 @@ export async function update(t, app, s) {
   app.camera.updateMatrixWorld(true);
   sg.fn(tt - sg.t0, s, app);
   for (const [l, b] of s.lights) l.intensity = b * s.dim;
+  // the eyeball shader is lit by EYE_LIGHT, not the scene lights: dim it with them
+  if (!s.eyeK) s.eyeK = [EYE_LIGHT.uKeyColor.value.clone(), EYE_LIGHT.uAmbient.value.clone()];
+  EYE_LIGHT.uKeyColor.value.copy(s.eyeK[0]).multiplyScalar(s.dim); EYE_LIGHT.uAmbient.value.copy(s.eyeK[1]).multiplyScalar(Math.max(0.25, s.dim));
   s.sky.visible = s.dim >= 1; s.scene.background = s.dim >= 1 ? null : s.darkBg || (s.darkBg = new THREE.Color(0x141a2c));
   s.look.exposure = s.dim < 1 ? 1.15 : 1.0;
   const txt = `${sg.name}   [${sg.t0.toFixed(1)}–${sg.t1.toFixed(1)}s]`;

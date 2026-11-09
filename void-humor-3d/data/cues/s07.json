@@ -1,0 +1,22 @@
+{
+ "_note": "s07 the_void_whispers — cues matched to web/src/scenes/s07.js: the Void's bend and cupped hand, a pizzicato button as the side-eye parks and again when the iris tracks the user's one-inch scoot, the ECU twinkle, the scoot, the fake-scroll thumb taps (fading as the user shrinks), Jesus's pat on its sleeve, his hand on its velvet, and the unbend.",
+ "sfx": [
+  {"t": "s07b01+0.0", "name": "cloth_rustle", "gain_db": -6, "pan": 0.2},
+  {"t": "s07b01+0.35", "name": "cloth_rustle", "gain_db": -11, "pan": 0.1, "variant": 2},
+  {"t": "s07b04+0.2", "name": "twinkle", "gain_db": -8, "pan": 0.0},
+  {"t": "s07b05+0.44", "name": "cloth_rustle", "gain_db": -12, "pan": -0.3, "variant": 3},
+  {"t": "s07b05+1.22", "name": "phone_tap", "gain_db": -6, "pan": -0.3},
+  {"t": "s07b05+1.53", "name": "phone_tap", "gain_db": -7, "pan": -0.3},
+  {"t": "s07b05+1.85", "name": "phone_tap", "gain_db": -8, "pan": -0.3},
+  {"t": "s07b06+0.12", "name": "phone_tap", "gain_db": -12, "pan": -0.4},
+  {"t": "s07b06+0.73", "name": "phone_tap", "gain_db": -13, "pan": -0.4},
+  {"t": "s07b06+1.36", "name": "phone_tap", "gain_db": -14, "pan": -0.4},
+  {"t": "s07b06+1.64", "name": "pat_pat", "gain_db": -9, "pan": 0.0},
+  {"t": "s07b09+0.80", "name": "cloth_rustle", "gain_db": -13, "pan": 0.05, "variant": 1},
+  {"t": "s07b11+0.15", "name": "cloth_rustle", "gain_db": -8, "pan": 0.25, "variant": 2}
+ ],
+ "hits": [
+  {"t": "s07b02+1.35", "kind": "pluck"},
+  {"t": "s07b05+0.50", "kind": "pluck"}
+ ]
+}
