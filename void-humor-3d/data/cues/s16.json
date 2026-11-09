@@ -1,17 +1,19 @@
 {
   "sfx": [
     {"t": "s16.start", "name": "wind_soft", "until": "s16.end", "gain_db": -9, "pan": 0.0},
-    {"t": "s16.start+0.3", "name": "footsteps_soft", "until": "s16b01+0.85", "gain_db": -11, "pan": -0.1},
-    {"t": "s16b01+0.9", "name": "cloth_rustle", "gain_db": -6, "pan": -0.05},
-    {"t": "s16b01+1.69", "name": "cloth_rustle", "gain_db": -8, "pan": 0.0, "rate": 1.2},
-    {"t": "s16b01+2.05", "name": "cloth_rustle", "gain_db": -9, "pan": 0.05, "rate": 0.8},
-    {"t": "s16b01+2.8", "name": "footsteps_soft", "until": "s16b11-0.1", "gain_db": -9, "pan": 0.0},
+    {"t": "s16.start+0.1", "name": "cloth_rustle", "gain_db": -9, "pan": 0.05},
+    {"t": "s16.start+0.1", "name": "footsteps_soft", "until": "s16b01+0.95", "gain_db": -11, "pan": -0.05},
+    {"t": "s16b01+0.88", "name": "cloth_rustle", "gain_db": -6, "pan": -0.05},
+    {"t": "s16b01+1.67", "name": "cloth_rustle", "gain_db": -8, "pan": 0.0, "rate": 1.2},
+    {"t": "s16b01+1.85", "name": "cloth_rustle", "gain_db": -9, "pan": 0.05, "rate": 0.8},
+    {"t": "s16b01+2.64", "name": "footsteps_soft", "until": "s16b04+0.2", "gain_db": -10, "pan": 0.0},
     {"t": "s16b05+0.07", "name": "star_pop", "gain_db": -3, "pan": 0.05},
     {"t": "s16b06+0.1", "name": "twinkle", "gain_db": -7, "pan": 0.05},
-    {"t": "s16b06+0.53", "name": "pat_pat", "gain_db": -8, "pan": -0.05, "rate": 0.9},
+    {"t": "s16b06+0.58", "name": "pat_pat", "gain_db": -8, "pan": -0.05, "rate": 0.9},
+    {"t": "s16b06.end-0.05", "name": "footsteps_soft", "until": "s16b11-0.12", "gain_db": -11, "pan": 0.0},
     {"t": "s16b11", "name": "footsteps_soft", "until": "s16b13.end", "gain_db": -24, "pan": 0.0},
     {"t": "s16b12+0.5", "name": "twinkle", "gain_db": -10, "pan": 0.0},
-    {"t": "s16b08+1.37", "name": "phone_tap", "gain_db": -17, "pan": -0.05}
+    {"t": "s16b08+1.33", "name": "phone_tap", "gain_db": -17, "pan": -0.05}
   ],
   "hits": [
     {"t": "s16b05+0.07", "kind": "ping"}

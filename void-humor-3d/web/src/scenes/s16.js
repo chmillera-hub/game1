@@ -385,9 +385,10 @@ export default {
       switch (shot) {
         case 'TWO': {   // front two-shot (camera down the path, the low sun behind it), a slow push on the squeeze/grin
           const m = pathPose(set, S0, 0);
-          const D = lerp(5.4, 4.3, ramp(t, tArm - 0.2, tWalk - 0.1));
-          const P = add(m.pos, [m.dir[0] * D + m.left[0] * 1.9, 1.5, m.dir[2] * D + m.left[2] * 1.9]);
-          s = aimXY(P, add(m.pos, [m.dir[0] * 0.3 + m.left[0] * 0.25, 1.82, m.dir[2] * 0.3 + m.left[2] * 0.25]), 362, 350, 42, { drift: 0.1 });
+          const D = lerp(5.6, 4.7, ramp(t, tArm - 0.2, tWalk - 0.1));
+          const P = add(m.pos, [m.dir[0] * D + m.left[0] * 2.1, 1.5, m.dir[2] * D + m.left[2] * 2.1]);
+          const fJe = add(fJ.pos, [0, 1.56, 0]), fVe = add(fV.pos, [fJ.left[0] * 0.3, 2.02, fJ.left[2] * 0.3]);   // the formation faces
+          s = aimXY(P, lerpA(fJe, fVe, 0.5), 372, 345, 44, { drift: 0.1 });
           break;
         }
         case 'BACK': {  // wide from behind down the path: the pair right of the sun, the hill at left, the galaxy above

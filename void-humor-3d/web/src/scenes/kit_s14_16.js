@@ -94,14 +94,15 @@ function notifCanvas() {
 }
 /**
  * The small plain phone Jesus keeps tucked in his sash. Returns { group, update(jesus, o) }:
- *   o.show 0..1 (visible), o.glow 0..1 (screen light), o.hand 'R'|'L', o.slide (m along the fingers), o.tilt (rad)
+ *   o.show 0..1 (visible), o.glow 0..1 (screen light), o.hand 'R'|'L', o.slide (m along the fingers), o.tilt (rad),
+ *   o.up (world dir: the phone's top points that way — a real grip, the fingers across its back round the far edge)
  * The phone sits on the palm side of the hand (screen = palm normal, long axis = fingers), so a scene poses the arm
  * (palm toward his eyes, fingers up) and the phone follows exactly.
  */
 export function makeJesusPhone() {
   const group = new THREE.Group(); group.name = 'jesusPhone';
   const PW = 0.064, PH = 0.132, PT = 0.009;
-  const body = new THREE.Mesh(new THREE.BoxGeometry(PW, PH, PT, 2, 2, 1), new THREE.MeshStandardMaterial({ color: 0x8a7a6c, roughness: 0.55, metalness: 0.05 }));
+  const body = new THREE.Mesh(new THREE.BoxGeometry(PW, PH, PT, 2, 2, 1), new THREE.MeshStandardMaterial({ color: 0x3e4452, roughness: 0.5, metalness: 0.1 }));
   // round the box a little (pull the corner vertices in)
   { const p = body.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i); if (Math.abs(x) > PW * 0.49 && Math.abs(y) > PH * 0.49) { p.setX(i, x * 0.93); p.setY(i, y * 0.985); } } }
   const tex = notifCanvas();
@@ -127,6 +128,7 @@ export function makeJesusPhone() {
       // screen faces the palm-normal side; long axis along the fingers (tilted by o.tilt about the palm normal)
       z.copy(back).negate();
       y.copy(fd).addScaledVector(z, -fd.dot(z)).normalize();
+      if (o.up) { const u = toV(o.up); y.copy(u).addScaledVector(z, -u.dot(z)).normalize(); }   // stand it upright (fingers across its back)
       if (o.tilt) y.applyAxisAngle(z, o.tilt);
       x.crossVectors(y, z).normalize();
       const c = pc.clone().addScaledVector(z, 0.013 + PT * 0.5).addScaledVector(y, o.slide ?? 0.026);

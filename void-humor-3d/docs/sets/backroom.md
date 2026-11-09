@@ -163,7 +163,28 @@ debris (normal blending, no sparkle); the corner bulb swings on its cord (decayi
 - Fear's low POV up at the Void: camera at Fear's eye height (0.55) just behind/beside it, fov 50.
 
 ## Performance
-PERF_PLACEHOLDER
+- `update()` ≈ 0.15–0.19 ms CPU (measured under load). 69–88 draw calls per frame including the shadow pass and post
+  (was 102–110), ~80–100k triangles rendered including the shadow pass. One 1024² shadow map (the far key).
+- Same-page interleaved A/B (one page holds this set, the PREVIOUS version of the set and `facetest`; 30 rounds, every view
+  rendered once per round, trimmed mean; load avg 3–4): `facetest` 0.584 s, empty scene through the same pipeline 0.450 s
+  (0.77×), backroom **wide 0.699 (1.20×) · corner 0.678 (1.16×) · crash 0.674 (1.15×) · cosmos 0.744 (1.27×)**; the
+  previous version in the same page 0.725 / 0.697 / 0.693 / 0.735. Other runs put the new set 3–11 % ahead of the old one in
+  every view. With `facetest` ≈ 0.48 s on an idle machine that is **≈ 0.55–0.57 s/frame** (cosmos ≈ 0.6).
+- Where the rest goes (corner view, "hide one thing" A/B): the floor ≈ 40 % of the set's own cost (about half of it shading:
+  vertex-lit, 4-tap shadow; the other half plain fill), the props + cage ≈ 30 %, walls ≈ 7 %, the shadow pass ≈ 6 %,
+  all transparents ≈ 3 %. The fixed pipeline (MSAA HDR target, bloom, grade, readback) alone is ~0.77× `facetest`, which
+  is why a full-frame lit room cannot reach 1.0× `facetest` (a head on a flat background) without baking its lighting.
+- What was done for speed: the floor is a Lambert base with **vertex-lit** scene lights on a 0.4 m grid (only the shadow-casting
+  far key stays per pixel, with a 4-tap bilinear PCF instead of three's 16-tap kernel and a tight Blinn sheen); the three
+  wall planes are vertex-lit too (0.4 m grid); floor texture without anisotropy / trilinear, plaster without mips; the floor
+  is drawn after the other opaques (early-z skips what walls/props hide); the 70 m sky dome is drawn only when it shows
+  something (camera looking toward +Z or up, or during the cosmos); shafts are 16-sided and frustum-culled; small props
+  don't cast the key's shadow and buckets/rags don't receive it (contact shadows instead); each prop's rigid parts are
+  merged into one vertex-coloured mesh (buckets, wringer, mop, brooms, sprays, sign panels + feet); room materials are
+  opaque (a transparent twin is swapped in only while `cosmos` > 0); walls stop at 5.6 m; the corner bulb's pool is a
+  per-pixel fake glow (no 4th light) that also wraps the props.
+- Frames are pure functions of `(t, opts)`: verified byte-identical renders out of order (crash and cosmos frames, before and
+  after a cutaway frame).
 
 ## Known limitations
 - The crash is a hand-tuned deterministic choreography (analytic bounces), not physics: props don't collide with
@@ -177,4 +198,10 @@ PERF_PLACEHOLDER
   the corner medium the magician and the sign hide part of the puddle.
 - Galvanized metal picks up the corner bulb through the fake glow; for close-ups the real light (`lights.cornerLight`)
   adds proper per-light glints.
-- Cutaway hiding relies on `set.scene.onBeforeRender`; a scene that overwrites it without chaining loses the cutaway.
+- Cutaway hiding (and the conditional sky dome) relies on `set.scene.onBeforeRender`; a scene that overwrites it without
+  chaining loses both.
+- Walls and floor are lit per vertex on a 0.4 m grid: a light a scene puts within ~0.3 m of a wall or the floor (a glowing
+  prop dragged along the boards) shows a soft diamond pattern; keep such lights a little off the surfaces (the far key's
+  shadow, the corner pool, the puddle and the cosmos dissolve are per pixel).
+- Default `look.bloomThreshold` is 0.8 (was 0.72) so the brass highlights don't flare next to Fear's eyes; scenes that set
+  their own look are unaffected.

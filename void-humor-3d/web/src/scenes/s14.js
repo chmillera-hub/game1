@@ -15,7 +15,7 @@ import { VX } from '../chars/void.js';
 import { UX } from '../chars/user.js';
 import { EDGE, todAt, voidSkyAt, sy, lookFor } from './marks.js';
 import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse,
-  V3, toV, ramp, bump, pathPose, pathS, rollFor, aim, makeJesusPhone, glowSprite, fblend, hideDuring } from './kit_s14_16.js';
+  V3, toV, ramp, bump, pathPose, pathS, rollFor, aim, aimXY, makeJesusPhone, glowSprite, fblend, hideDuring } from './kit_s14_16.js';
 
 const M = EDGE.M;
 const KP = M.K.p, KY = M.K.yaw;
@@ -33,11 +33,11 @@ export default {
     own(fx.mesh, 's14');
     const gal = makeLittleGalaxy();
     const phone = makeJesusPhone(); own(phone.group, 's14');
-    const ding = glowSprite(0xffe2b0, 0.16); own(ding, 's14');
+    const ding = glowSprite(0xffe2b0, 0.2); own(ding, 's14');
     // path stations (metres along the EDGE path from pathStart): the user's seat, the crest of the rise
     const sU = pathS(set, POS.USEAT), sRise = pathS(set, EDGE.RISE_WORLD);
     // the phone insert's camera sits at the user's chest: cheat the hoodie drawstrings out of the lens for that shot
-    const insW = [T('s14b03') - 0.1, T('s14b03.end') - 1.25];
+    const insW = [T('s14b03') - 0.1, Math.max(T('s14b03') + 1.67, T('s14b03.end') - 0.95)];
     if (user.strings) for (const sg of user.strings) { hideDuring(sg.tb.mesh, [insW]); hideDuring(sg.ag, [insW]); }
     return { scene: set.scene, set, jesus, vd, user, fx, gal, phone, ding, sU, sRise, look: lookFor('s14', set.look) };
   },
@@ -65,7 +65,7 @@ export default {
     const tShow0 = cutD + 0.12, tShow1 = B5 + 0.35;                // phone held up over the shoulder, screen back
     const tDing = B5 + 0.14;                                       // the cheerful ding from the sash
     const tVoidE = W('s14b06', 'void', { alt: ['void,'], end: true, frac: 0.42 });
-    const tCrest = tVoidE - 0.08, tLook0 = tCrest + 0.1, tLook1 = tLook0 + 0.42, tOver = tLook1 + 0.02;
+    const tCrest = tVoidE - 0.2, tLook0 = tVoidE + 0.08, tLook1 = tLook0 + 0.36, tOver = tLook1 + 0.02;
     // Jesus
     const tPat1 = tDing + 0.3, tPat2 = tPat1 + 0.22, tPull0 = tPat2 + 0.16, tPull1 = tPull0 + 0.38;
     const cutR = tVoidE + 0.05, cutJ3 = Math.max(cutR + 0.6, tToo6 + 0.3);   // the glance-back cutaway, inside b06
@@ -83,7 +83,7 @@ export default {
     const speed = (x) => {
       if (x < tGo || (x > tCrest && x < tOver)) return 0;
       let v = vC * ramp(x, tGo, tGo + 0.35);
-      v *= 1 - 0.7 * ramp(x, tHover - 0.45, tHover - 0.05) * (1 - ramp(x, tStab2 + 0.2, tStab2 + 0.6));
+      v *= 1 - 0.75 * ramp(x, tHover - 0.45, tHover - 0.05) * (1 - ramp(x, cutD - 0.05, cutD + 0.4));   // slows right down while blocking
       if (x <= tCrest) v *= 1 - ramp(x, tCrest - 0.5, tCrest);
       else v = vC * 0.85 * ramp(x, tOver, tOver + 0.3);
       return v;
@@ -123,7 +123,7 @@ export default {
           [tDing - 0.02, Fsquint], [tDing + 0.12, Fding, 'out'],                      // DING: brows up
           [tPat1, Fding], [tPat1 + 0.3, Fcur, 'inOut'],
           [tPull1, Fcur], [tPull1 + 0.25, Fread, 'inOut'],
-          [B6 + 0.6, Fread], [tVoid6 - 0.1, Fclimb, 'inOut'], [tVoid6 + 0.12, Foh2, 'out'],   // brows climb, a small round 'oh'
+          [B6 + 0.4, Fread], [tVoid6 - 0.32, Fclimb, 'inOut'], [tVoid6 - 0.06, Foh2, 'out'],   // brows climb, a small round 'oh'
           [tToo6 - 0.2, Foh2], [tToo6 + 0.1, Fwince, 'out'],                          // "too ^intensely": the wince-smile
           [tTuck0 + 0.2, Fwince], [tSmooth0 + 0.12, Fdign, 'inOut'], [tExhale - 0.02, Fdign], [tExhale + 0.14, Fexh, 'out'],
         ]);
@@ -155,7 +155,8 @@ export default {
       // ---- arms: from s13's open palms -> hands settle on the thigh/knee; the aborted little reach ("wait—")
       const settle = ramp(t, tRise0 + 0.2, tPiv1 + 0.4);
       const wait = pulse(t, tPiv0 + 0.05, tGo + 0.95, 0.25, 0.45);
-      const armL = { preset: [['knee_rest', 0.65 + 0.35 * settle], ['open', 0.35 * (1 - settle) + 1e-3]], hand: { splay: 0.05, cup: 0.4 } };
+      const armL = { preset: [['knee_rest', 0.65 + 0.35 * settle], ['open', 0.35 * (1 - settle) + 1e-3]], hand: { splay: 0.05, cup: 0.4, curl: 0.12 + 0.3 * ramp(t, tDing, tDing + 0.6) },
+      palm: ramp(t, tPiv1, tPiv1 + 0.8) > 0.5 ? [0, -1, 0.15] : undefined };          // (relaxed on the knee, palm down)
       let armR = { preset: [['open', Math.max(1e-3, 1 - settle)], ['rest', Math.max(1e-3, settle)]], hand: { splay: 0.06, cup: 0.4 } };
       if (wait > 0.001) armR = { preset: [['open', Math.max(1e-3, (1 - settle) * (1 - wait))], ['rest', Math.max(1e-3, settle * (1 - wait))], ['offer', wait * 0.6 + 1e-3]], hand: { curl: 0.08, spread: 0.32, splay: 0.08, thumb: 0.55, cup: 0.2 } };
       // the ding: pat-pat on the sash (right hand flat on the chest), pull the phone out and hold it up
@@ -170,22 +171,31 @@ export default {
         if (pass && chest) {
           const fw = SV(...FWD_K);
           if (toChest + back > 0.001) armR.offset = [fw[0] * patOff, 0.01 + patOff * 0.2, fw[2] * patOff];
-          // smoothing the sash: the flat hand slides down the band toward the right hip, twice
-          if (back > 0.001 && t > tSmooth0) {
+          // smoothing the sash: the flat hand slides DOWN along the band (from his left chest toward his right hip), twice
+          if (back > 0.001 && t > tSmooth0 - 0.05) {
             const u = clamp((t - tSmooth0) / (tSmooth1 - tSmooth0));
-            const sl = Math.sin(Math.PI * Math.min(1, u * 2) ) * (u < 0.5 ? 1 : 0) + Math.sin(Math.PI * Math.max(0, u * 2 - 1)) * (u >= 0.5 ? 0.6 : 0);
-            const rt = SV(-Math.cos(KY), 0, Math.sin(KY));               // his right (stage-local -> world)
-            armR.offset = [rt[0] * 0.05 * sl + fw[0] * 0.01, -0.07 * sl, rt[2] * 0.05 * sl + fw[2] * 0.01];
+            const st1 = smooth(clamp(u / 0.55)), st2 = smooth(clamp((u - 0.55) / 0.45));
+            const rt = SV(-Math.cos(KY), 0, Math.sin(KY)), lf = [-rt[0], 0, -rt[2]];
+            const c = arr(chest);
+            const A = add(c, [lf[0] * 0.075 + fw[0] * 0.02, 0.07, lf[2] * 0.075 + fw[2] * 0.02]);
+            const B = add(c, [-lf[0] * 0.085 + fw[0] * 0.03, -0.17, -lf[2] * 0.085 + fw[2] * 0.03]);
+            const A2 = lerpA(A, B, 0.3);
+            const lift = 0.025 * Math.sin(Math.PI * clamp((u - 0.5) / 0.1));               // off the cloth between strokes
+            const P = u < 0.55 ? lerpA(A, B, st1) : lerpA(lerpA(B, A2, smooth(clamp((u - 0.55) / 0.08))), B, st2);
+            const dir = toV(B).sub(toV(A)).normalize();
+            armR = { preset: 'heart', target: add(P, [fw[0] * lift, 0, fw[2] * lift]), at: 'palm', reach: back,
+              palm: [-fw[0], 0.05, -fw[2]], fingers: dir.toArray(), hand: { curl: 0.04, spread: 0.06, thumb: 0.3, cup: 0.05 } };
           }
         }
         if (hold > 0.001 && pass && jHead) {
           // holding the phone up the way people do: palm toward his eyes, ~30 cm out, a little below eye level
           const fw = SV(...FWD_K), rt = SV(-Math.cos(KY), 0, Math.sin(KY));
-          const P = add(arr(jHead), [fw[0] * 0.3 + rt[0] * 0.05, -0.33, fw[2] * 0.3 + rt[2] * 0.05]);
+          const P = add(arr(jHead), [fw[0] * 0.3 + rt[0] * 0.02, -0.25, fw[2] * 0.3 + rt[2] * 0.02]);
           const pn = toV(arr(jHead)).sub(toV(P)).normalize();
-          const fu = V3(rt[0] * 0.12, 1, rt[2] * 0.12).addScaledVector(pn, -pn.y).normalize();
+          const lf = V3(-rt[0], 0.15, -rt[2]);                                     // fingers across the phone's back (to his left)
+          const fu = lf.addScaledVector(pn, -lf.dot(pn)).normalize();
           const hand = jesus.anchor('handR');
-          armR = { preset: [['heart', Math.max(1e-3, 1 - hold)], ['offer', Math.max(1e-3, hold)]], hand: { curl: 0.04, spread: 0.02, thumb: 0.55, cup: 0.0, splay: 0.04 },
+          armR = { preset: [['heart', Math.max(1e-3, 1 - hold)], ['offer', Math.max(1e-3, hold)]], hand: { curl: shot === 'JINS' ? 0.12 : 0.55, spread: 0.0, thumb: 0.15, cup: shot === 'JINS' ? 0.05 : 0.3, splay: 0.0 },   // (the insert cheats the fingers behind the phone)
             target: hand ? arr(toV(arr(hand)).lerp(toV(P), hold)) : P, at: 'palm', palm: pn.toArray(), fingers: fu.toArray() };
         }
       }
@@ -218,7 +228,9 @@ export default {
       const pv = ramp(t, tPiv0, tPiv1, (u) => { const s = smooth(u); return s + 0.06 * Math.sin(Math.PI * s) * (u > 0.7 ? 1 : 0); });
       const yaw = lerp(yU, yPath, pv) + 0.55 * lookBackW(t);
       const sit = 1 - ramp(t, tRise0, tRise1);
-      const pos = t < tGo ? POS.USEAT : uWalk.pos;
+      // over the crest: the far side drops away (from the low long lens the legs, then the body sink behind the rise)
+      const sink = 0.75 * ramp(t, tOver + 0.02, tOver + 0.34, (u) => u * u);
+      const pos = t < tGo ? POS.USEAT : [uWalk.pos[0], uWalk.pos[1] - sink, uWalk.pos[2]];
       // ---- face
       const Fnope = UX([['hellno', 0.45], ['deadpan', 0.55]], { wet: 0.5 });
       const Fstorm = UX('storm', { wet: 0.4 });
@@ -236,12 +248,17 @@ export default {
       const read = ramp(t, tGo - 0.2, tGo + 0.3);
       const lookBack = lookBackW(t);
       // ---- arms / phone
-      const phoneUp = read * (1 - ramp(t, tShow0 - 0.2, tShow0 + 0.1)) * (1 - 0.5 * pulse(t, B3 - 0.35, B3e - 1.1, 0.25, 0.25)) + ramp(t, tShow1 + 0.2, tShow1 + 0.6) * (1 - lookBack);
+      const phoneUp = read * (1 - ramp(t, tShow0 - 0.2, tShow0 + 0.1)) * (1 - 0.5 * pulse(t, B3 - 0.35, cutD + 0.3, 0.25, 0.25)) + ramp(t, tShow1 + 0.2, tShow1 + 0.6) * (1 - lookBack);
       const show = ramp(t, tShow0, tShow0 + 0.35, (u) => 1 - Math.pow(1 - u, 3)) * (1 - ramp(t, tShow1, tShow1 + 0.35));
       const screen = t < tStab1 + 0.02 ? (t < B2 - 0.3 ? 'feed' : 'profile') : 'blocked';
       const tap = Math.max(bump(t, tStab1 - 0.04, 0.12), 0.85 * bump(t, tStab2 - 0.04, 0.12), 0.55 * bump(t, tInt + 0.1, 0.12), 0.5 * bump(t, tWay + 0.25, 0.1));
-      const hov = clamp(ramp(t, tHover - 0.25, tHover) * (1 - ramp(t, tStab2 + 0.08, tStab2 + 0.3)));
-      const thumbAt = [0.5 + 0.006 * Math.sin(t * 47) * hov, (screen === 'blocked' ? 0.6 : 0.645) + 0.005 * Math.sin(t * 39 + 1) * hov];
+      const hov = clamp(ramp(t, tHover - 0.25, tHover) * (1 - ramp(t, cutD + 0.05, cutD + 0.3)));
+      // hover trembling just BELOW the Block button (the label reads), each stab lands on its lower-left edge; then the
+      // thumb drops clear to the bottom corner so "You blocked Jesus." reads
+      const stabbing = Math.max(bump(t, tStab1 - 0.09, 0.2), bump(t, tStab2 - 0.09, 0.2));
+      const clear = ramp(t, tStab2 + 0.05, tStab2 + 0.22);
+      const trem = 1 - clear;
+      const thumbAt = [lerp(lerp(0.42, 0.36, stabbing), 0.26, clear) + 0.006 * Math.sin(t * 47) * hov * trem, lerp(lerp(0.86, 0.69, stabbing), 0.97, clear) + 0.005 * Math.sin(t * 39 + 1) * hov * trem];
       let armL = sit > 0.4 ? { preset: 'hold' } : { preset: 'hold' };
       if (show > 0.001) armL = { preset: [['hold', Math.max(1e-3, 1 - show)], ['show', Math.max(1e-3, show)]] };
       // right hand: pushes off the ground (prop) during the scramble, swipes the backside twice, then stomps
@@ -305,19 +322,19 @@ export default {
         case 'OVER': {   // over Jesus's RIGHT shoulder, looking down the path after the user
           const fw = SV(...FWD_K), rt = SV(-Math.cos(KY), 0, Math.sin(KY));
           const head = SW(...JEYE);
-          const p = add(head, [-fw[0] * 1.55 + rt[0] * 0.3, 0.32, -fw[2] * 1.55 + rt[2] * 0.3]);
+          const p = add(head, [-fw[0] * 1.45 + rt[0] * 0.42, 0.2, -fw[2] * 1.45 + rt[2] * 0.42]);
           const tgt = add(uWalk.pos, [0, 1.1, 0]);
           const L = lerpA(add(head, [fw[0] * 4, 0.1, fw[2] * 4]), tgt, 0.6);
-          s = aim(p, L, 520, 38, { drift: 0.12 });
+          s = aimXY(p, L, 430, 520, 40, { drift: 0.12 });
           break;
         }
         case 'JST': s = EDGE.shot(JEYE, { dist: 1.5, yaw: -30, pitch: -10, fov: 34, screenY: sy(390), drift: 0.15 }); break;
         case 'RISE': {   // long lens over Jesus's shoulder toward the sun: the user tiny on the crest of the rise
           const fw = SV(...FWD_K), rt = SV(-Math.cos(KY), 0, Math.sin(KY));
           const head = SW(...JEYE);
-          const p = add(head, [-fw[0] * 0.95 + rt[0] * 0.2, 0.06, -fw[2] * 0.95 + rt[2] * 0.2]);
+          const p = add(head, [-fw[0] * 0.9 + rt[0] * 0.3, -0.42, -fw[2] * 0.9 + rt[2] * 0.3]);
           const R = set.pathAt(sRise).pos;
-          s = aim(p, [R[0], R[1] + 1.0, R[2]], 500, 23, { drift: 0.06 });
+          s = aimXY(p, [R[0], R[1] + 0.9, R[2]], 400, 560, 21, { drift: 0.05 });
           break;
         }
         default: s = EDGE.cam('MASTER');
@@ -335,7 +352,7 @@ export default {
         const look = ph.clone().addScaledVector(up, -0.012);
         applyShot(app.camera, { pos: cp.toArray(), look: look.toArray(), fov: 50, drift: 0, roll: rollFor(cp, look, up) }, t, 14);
       } else if (shot === 'JINS') {
-        const P = phone.update(jesus, { show: 1, glow: 1 });
+        const P = phone.update(jesus, { show: 1, glow: 1, up: [0, 1, 0], slide: 0 });
         if (P) {
           const card = P.center.clone().addScaledVector(P.up, -0.004);
           const cp = card.clone().addScaledVector(P.normal, 0.235).addScaledVector(P.up, -0.012);
@@ -354,14 +371,14 @@ export default {
     solve(t, [[vd, vPose], [user, uPose], [jesus, jPose]], cam);
     // Jesus's phone: tucked in the sash until he pulls it out; back in at the tuck
     const showPh = t >= tPull0 + 0.06 && t < tTuck1 - 0.04;
-    phone.update(jesus, { show: showPh ? 1 : 0, glow: 1 });
+    phone.update(jesus, { show: showPh ? 1 : 0, glow: 1, up: [0, 1, 0], slide: 0 });
     insertCam();
 
     // the ding: a warm little glint at the sash
     const dg = bump(t, tDing - 0.02, 0.45);
     const ch = jesus.anchor('chest');
     ding.material.opacity = 0.55 * dg;
-    if (ch) ding.position.copy(ch).add(V3(0, -0.05, 0));
+    if (ch) { const fwd = SV(...FWD_K), rtw = SV(-Math.cos(KY), 0, Math.sin(KY)); ding.position.copy(ch).add(V3(rtw[0] * 0.09 + fwd[0] * 0.06, -0.12, rtw[2] * 0.09 + fwd[2] * 0.06)); }
     ding.visible = dg > 0.001;
 
     fx.begin();
