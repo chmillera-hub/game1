@@ -1,0 +1,264 @@
+{
+ "sfx": [
+  {
+   "t": "s02",
+   "name": "wind_soft",
+   "until": "s02.end",
+   "gain_db": 0,
+   "pan": 0
+  },
+  {
+   "t": "s02b01+0.250",
+   "name": "footsteps_run",
+   "until": "s02b01+0.400",
+   "gain_db": -20.0,
+   "pan": 0.9
+  },
+  {
+   "t": "s02b01+0.620",
+   "name": "footsteps_run",
+   "until": "s02b01+0.770",
+   "gain_db": -18.8,
+   "pan": 0.87
+  },
+  {
+   "t": "s02b01+0.990",
+   "name": "footsteps_run",
+   "until": "s02b01+1.140",
+   "gain_db": -17.6,
+   "pan": 0.84
+  },
+  {
+   "t": "s02b01+1.360",
+   "name": "footsteps_run",
+   "until": "s02b01+1.510",
+   "gain_db": -16.5,
+   "pan": 0.82
+  },
+  {
+   "t": "s02b01+1.730",
+   "name": "footsteps_run",
+   "until": "s02b01+1.880",
+   "gain_db": -15.3,
+   "pan": 0.79
+  },
+  {
+   "t": "s02b01+2.100",
+   "name": "footsteps_run",
+   "until": "s02b01+2.250",
+   "gain_db": -14.1,
+   "pan": 0.76
+  },
+  {
+   "t": "s02b01+2.470",
+   "name": "footsteps_run",
+   "until": "s02b01+2.620",
+   "gain_db": -12.9,
+   "pan": 0.73
+  },
+  {
+   "t": "s02b01+2.840",
+   "name": "footsteps_run",
+   "until": "s02b01+2.990",
+   "gain_db": -11.7,
+   "pan": 0.71
+  },
+  {
+   "t": "s02b01+3.210",
+   "name": "footsteps_run",
+   "until": "s02b01+3.360",
+   "gain_db": -10.6,
+   "pan": 0.68
+  },
+  {
+   "t": "s02b01+3.580",
+   "name": "footsteps_run",
+   "until": "s02b01+3.730",
+   "gain_db": -9.4,
+   "pan": 0.65
+  },
+  {
+   "t": "s02b01+3.950",
+   "name": "footsteps_run",
+   "until": "s02b01+4.100",
+   "gain_db": -8.2,
+   "pan": 0.62
+  },
+  {
+   "t": "s02b01+4.320",
+   "name": "footsteps_run",
+   "until": "s02b01+4.470",
+   "gain_db": -7.0,
+   "pan": 0.6
+  },
+  {
+   "t": "s02b01+4.690",
+   "name": "footsteps_run",
+   "until": "s02b01+4.840",
+   "gain_db": -5.8,
+   "pan": 0.57
+  },
+  {
+   "t": "s02b02",
+   "name": "sparkle_appear",
+   "gain_db": 0,
+   "pan": 0
+  },
+  {
+   "t": "s02b02+0.326",
+   "name": "footsteps_soft",
+   "until": "s02b02+0.826",
+   "gain_db": -3,
+   "pan": 0
+  },
+  {
+   "t": "s02b02+1.233",
+   "name": "footsteps_soft",
+   "until": "s02b02+1.733",
+   "gain_db": -3,
+   "pan": 0
+  },
+  {
+   "t": "s02b03+0.333",
+   "name": "footsteps_run",
+   "until": "s02b03+0.483",
+   "gain_db": -1,
+   "pan": 0.35
+  },
+  {
+   "t": "s02b03+0.750",
+   "name": "footsteps_run",
+   "until": "s02b03+0.900",
+   "gain_db": -1,
+   "pan": 0.35
+  },
+  {
+   "t": "s02b04+0.050",
+   "name": "whoosh",
+   "gain_db": -9,
+   "pan": 0.25
+  },
+  {
+   "t": "s02b04+0.600",
+   "name": "thud_sit",
+   "gain_db": 0,
+   "pan": 0.1
+  },
+  {
+   "t": "s02b04+0.900",
+   "name": "cloth_rustle",
+   "gain_db": -2,
+   "pan": 0.1
+  },
+  {
+   "t": "s02b04+1.420",
+   "name": "cloth_rustle",
+   "gain_db": -5,
+   "pan": 0.05
+  },
+  {
+   "t": "s02b04+1.730",
+   "name": "cloth_rustle",
+   "gain_db": -5,
+   "pan": 0.05
+  },
+  {
+   "t": "s02b04+1.980",
+   "name": "pat_pat",
+   "gain_db": -10,
+   "pan": -0.1
+  },
+  {
+   "t": "s02b05-2.290",
+   "name": "footsteps_stomp",
+   "until": "s02b05-1.870",
+   "gain_db": -11.0,
+   "pan": 0.55
+  },
+  {
+   "t": "s02b05-1.813",
+   "name": "footsteps_stomp",
+   "until": "s02b05-1.393",
+   "gain_db": -8.5,
+   "pan": 0.55
+  },
+  {
+   "t": "s02b05-1.337",
+   "name": "footsteps_stomp",
+   "until": "s02b05-0.917",
+   "gain_db": -6.0,
+   "pan": 0.55
+  },
+  {
+   "t": "s02b05-0.861",
+   "name": "footsteps_stomp",
+   "until": "s02b05-0.441",
+   "gain_db": -3.5,
+   "pan": 0.55
+  },
+  {
+   "t": "s02b05-0.385",
+   "name": "footsteps_stomp",
+   "until": "s02b05+0.035",
+   "gain_db": -1.0,
+   "pan": 0.55
+  },
+  {
+   "t": "s02b05+0.091",
+   "name": "footsteps_stomp",
+   "until": "s02b05+0.511",
+   "gain_db": -4,
+   "pan": 0.0
+  },
+  {
+   "t": "s02b05+0.740",
+   "name": "footsteps_stomp",
+   "until": "s02b05+1.160",
+   "gain_db": -5,
+   "pan": 0.0
+  },
+  {
+   "t": "s02b05+1.460",
+   "name": "footsteps_stomp",
+   "until": "s02b05+1.880",
+   "gain_db": -11,
+   "pan": 0.0
+  },
+  {
+   "t": "s02b07+0.575",
+   "name": "footsteps_soft",
+   "until": "s02b07+1.075",
+   "gain_db": -2,
+   "pan": -0.1
+  },
+  {
+   "t": "s02b07+1.075",
+   "name": "footsteps_soft",
+   "until": "s02b07+1.575",
+   "gain_db": -2,
+   "pan": -0.1
+  },
+  {
+   "t": "s02b07+0.600",
+   "name": "cloth_rustle",
+   "gain_db": -9,
+   "pan": 0.2
+  }
+ ],
+ "hits": [
+  {
+   "t": "s02b01.end+0.05",
+   "kind": "stop",
+   "len": 1.1,
+   "stab": false
+  },
+  {
+   "t": "s02b03+0.04",
+   "kind": "sting"
+  },
+  {
+   "t": "s02b04+1.980",
+   "kind": "pluck"
+  }
+ ]
+}

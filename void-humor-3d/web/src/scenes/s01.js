@@ -173,11 +173,11 @@ export default {
       fov = c.fov;
     } else {
       const s = SPD * (t - tC());
-      uL = add2([2.3, -4.75], D, s);
-      vL = add2(uL, [0.5, -2.0]);
+      uL = add2([2.38, -5.35], D, s);
+      vL = add2(uL, [1.0, -2.05]);
       const c = EDGE.CAM.CHASELOW, sc = 0.78 * s;
       camPos = [c.pos[0] + D[0] * sc, c.pos[1], c.pos[2] + D[1] * sc];
-      camLook = [c.look[0] + D[0] * sc, c.look[1], c.look[2] + D[1] * sc];
+      camLook = [c.look[0] + 0.55 + D[0] * sc, c.look[1] + 0.12, c.look[2] + D[1] * sc];
       fov = c.fov;
     }
     const uW = G(set, uL[0], uL[1]), vW = G(set, vL[0], vL[1]);
@@ -255,7 +255,7 @@ export default {
         head: { pitch: 0.05, yaw: 0.04 },
         gaze: userEyes,
         face: vface,
-        armL: { preset: 'wave', from: 'rest', mix: 0.58 + 0.06 * bright, hand: { spread: 0.5 + 0.2 * wig, curl: 0.12 + 0.28 * Math.max(0, wig), thumb: 0.6 } },
+        armL: { preset: 'wave', from: 'rest', mix: 0.58 + 0.06 * bright, offset: shotC ? WD(-0.75, 0.25).multiplyScalar(0.45).toArray() : undefined, hand: { spread: 0.5 + 0.2 * wig, curl: 0.12 + 0.28 * Math.max(0, wig), thumb: 0.6 } },
         armR: { preset: 'rest', offset: WD(0.2, 0.25).multiplyScalar(0.25).toArray(), hand: { curl: 0.75, thumb: 0.85, cup: 0.5, spread: 0.05 } },
         extra: { hem: 0.5, eyeGlow: 1 + 0.4 * bright, motes: 1.4, rim: 1.1 },
         blinkAt: shotC ? [tVoidWord() + 0.72] : [2.15],

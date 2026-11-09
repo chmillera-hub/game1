@@ -102,7 +102,7 @@ const R_LG = 0.15;                                     // "dinner plate": 0.3 m 
 export const LITTLE_GALAXY = {
   bounce: [0.4, 0, -0.2],                              // first (and only) bounce on the grass
   hop: [0.18, 0, 0.02],                                // lands on its edge after the hop and starts rolling
-  rest: [-0.66, 0, 0.92],                              // lies flat against the user's right sneaker (seated at U)
+  rest: [-0.7, 0, 1.0],                                // lies flat against the user's right sneaker (seated at U)
   fromDefault: [0.62, 1.7, -0.62],                     // the Void's mouth at the cough (s04 passes the real one)
   radius: R_LG,
 };
@@ -243,8 +243,8 @@ export function makeLittleGalaxy() {
   halo.scale.setScalar(0.62); halo.renderOrder = 6;
   group.add(disc, halo);
   scopeVisible(group, 's04', 's14.end');
-  return {
-    group, disc, halo,
+  const api = {
+    group, disc, halo, from: null,
     update(t, opts = {}) {
       const s = littleGalaxyAt(t, opts);
       if (!s) { disc.material.opacity = 0; halo.material.opacity = 0; group.position.set(0, -50, 0); return null; }
@@ -256,4 +256,77 @@ export function makeLittleGalaxy() {
       return s;
     },
   };
+  // self-updating from the frame time (CTX.t) every time it is rendered, so any scene that shares the set shows it in
+  // the right state without calling update() (pure: the state is a function of t only)
+  const base = THREE.Object3D.prototype.updateMatrixWorld;
+  group.updateMatrixWorld = function (force) { api.update(CTX.t, { from: api.from }); return base.call(this, force); };
+  return api;
+}
+
+/**
+ * The shared little galaxy of a set (created once per set, added to set.scene): every Part One scene from s04 to s14
+ * can call ensureLittleGalaxy(set) in setup() and it appears at the user's sneaker by itself (no per-frame call needed).
+ */
+export function ensureLittleGalaxy(set) {
+  if (!set.__littleGalaxy) { set.__littleGalaxy = makeLittleGalaxy(); set.scene.add(set.__littleGalaxy.group); }
+  return set.__littleGalaxy;
+}
+
+// ------------------------------------------------------------------------------------------------ camera fitter
+/**
+ * fitShot(pts, fov, pos0, look0, opts) -> { pos, look, fov, drift, err }: a camera (vertical fov) that puts world
+ * points on target pixels. pts: [[Vector3|[x,y,z], px, py, weight?]]. Deterministic coordinate descent; pos is pulled
+ * toward pos0 (posReg) and kept within [yMin, yMax]. Run it in setup() on reference anchors (never per frame).
+ */
+export function fitShot(pts, fov, pos0, look0, { posReg = 0.02, yMin = -99, yMax = 99, drift = 0.2 } = {}) {
+  const cam = new THREE.PerspectiveCamera(fov, 720 / 1280, 0.05, 400);
+  const P = [...toV(pos0).toArray(), ...toV(look0).toArray()];
+  const PT = pts.map(([w, x, y, wt]) => [toV(w), x, y, wt ?? 1]);
+  const p0 = toV(pos0);
+  const v = new THREE.Vector3();
+  const cost = (q) => {
+    cam.position.set(q[0], q[1], q[2]); cam.up.set(0, 1, 0); cam.lookAt(q[3], q[4], q[5]); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
+    let e = 0;
+    for (const [w, x, y, wt] of PT) {
+      v.copy(w).project(cam);
+      if (v.z > 1) { e += 1e7; continue; }
+      e += wt * (((v.x * 0.5 + 0.5) * 720 - x) ** 2 + ((1 - (v.y * 0.5 + 0.5)) * 1280 - y) ** 2);
+    }
+    e += posReg * 1e4 * ((q[0] - p0.x) ** 2 + (q[1] - p0.y) ** 2 + (q[2] - p0.z) ** 2);
+    if (q[1] < yMin) e += 1e7 * (yMin - q[1]) ** 2;
+    if (q[1] > yMax) e += 1e7 * (q[1] - yMax) ** 2;
+    return e;
+  };
+  let best = cost(P), step = 0.4;
+  for (let it = 0; it < 500 && step > 0.001; it++) {
+    let improved = false;
+    for (let i = 0; i < 6; i++) for (const d of [step, -step]) {
+      const q = P.slice(); q[i] += d; const c = cost(q);
+      if (c < best) { best = c; P.splice(0, 6, ...q); improved = true; }
+    }
+    if (!improved) step *= 0.6;
+  }
+  return { pos: P.slice(0, 3), look: P.slice(3, 6), fov, drift, err: Math.sqrt(best / Math.max(1, PT.length)) };
+}
+
+// ------------------------------------------------------------------------------------------------ face blending
+/** lerp two flat face-param objects (numbers blend; others switch at w = 0.5) */
+export function fmix(a, b, w) {
+  if (w <= 0) return a; if (w >= 1) return b;
+  const o = { ...a };
+  for (const kk in b) o[kk] = (typeof a[kk] === 'number' && typeof b[kk] === 'number') ? a[kk] + (b[kk] - a[kk]) * w : (w < 0.5 ? (a[kk] ?? b[kk]) : b[kk]);
+  return o;
+}
+/**
+ * faceSeq(t, [[tStart, () => face, xfade?], ...]): the face of the current segment, cross-faded from the previous
+ * segment over `xfade` s (default 0.22) after each boundary (eased), so expression changes never pop. xfade 0 = a cut.
+ */
+export function faceSeq(t, segs) {
+  let i = 0;
+  for (let j = 0; j < segs.length; j++) if (t >= T(segs[j][0])) i = j;
+  const cur = segs[i][1]();
+  if (i === 0) return cur;
+  const xf = segs[i][2] ?? 0.22;
+  const u = xf > 0 ? smooth((t - T(segs[i][0])) / xf) : 1;
+  return u >= 1 ? cur : fmix(segs[i - 1][1](), cur, u);
 }

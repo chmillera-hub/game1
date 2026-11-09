@@ -17,7 +17,7 @@ import { VX } from '../chars/void.js';
 import { JX } from '../chars/jesus.js';
 import { UX } from '../chars/user.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, fitShot, mixShot, W, WY, faceYaw, MARKS as M, jesusStep, starSprite } from './armour_shared.js';
-import { voidArmour, moteState, galaxyFloor, userSeated, sceneLook, moteFreezeT } from './armour_common.js';
+import { voidArmour, moteState, galaxyFloor, userSeated, sceneLook, computeMote } from './armour_common.js';
 
 let S = null;   // static points/shots (computed once in setup; pure data afterwards)
 
@@ -32,11 +32,9 @@ export default {
     st.mote = starSprite(0xfff2d0, 0.2); set.scene.add(st.mote);
     st.floorGal = galaxyFloor(st.fx); set.scene.add(st.floorGal.mesh);
     S = st.S = computeStatics(st);
-    console.log('s08 statics', JSON.stringify({ uE: S.uEyes.toArray(), vE: S.vEyes.toArray(), jE: S.jEyesJV.toArray(), jM: S.jEyesJM.toArray(), hand: S.uHandR.toArray(), mote: S.MOTE.p.toArray().map((v) => +v.toFixed(2)), low: S.LOWUP_A.pos.map((v) => +v.toFixed(2)), jmed: S.JMED_A.pos.map((v) => +v.toFixed(2)), errJ: S.JMED_A.err.toFixed(1) }));
     return st;
   },
   async update(t, app, st) {
-    globalThis.__dbg = true;
     const { set, jesus, vd, user } = st;
     st.scene.add(jesus.root, vd.root, user.root, st.fx.mesh, st.mote, st.floorGal.mesh);
     jesus.root.visible = vd.root.visible = user.root.visible = true;
@@ -57,7 +55,6 @@ export default {
     st.mote.visible = ms.a > 0.01;
     st.mote.position.copy(ms.p); st.mote.material.opacity = ms.a; st.mote.scale.setScalar(0.2 * ms.s);
     st.floorGal.update(t);
-    if (globalThis.__dbg) console.log('mote px', t.toFixed(2), JSON.stringify(px(app.camera, ms.p)), ms.a.toFixed(2), JSON.stringify(ms.p.toArray().map((v) => +v.toFixed(2))));
     st.look = sceneLook('s08', set.look, t);
   },
 };
@@ -82,12 +79,7 @@ function computeStatics(st) {
   // the Void at V
   vd.update(t0, voidArmour(t0, { gaze: out.uEyes }));
   out.vEyes = vd.anchor('eyes'); out.vHead = vd.anchor('head');
-  // the frozen mote: shoulderL at the freeze + (0.15, 0.35, 0.10) (STAGING §1.6)
-  const tf = moteFreezeT();
-  vd.update(tf, voidArmour(tf, { gaze: out.uEyes }));
-  // (STAGING's world offset put it inside the hood's side bulge: push it out along the Void's left + a little forward)
-  const vy = WY(M.V), vl = V3(Math.cos(vy), 0, -Math.sin(vy)), vf = V3(Math.sin(vy), 0, Math.cos(vy));
-  out.MOTE = { p: vd.anchor('shoulderL').addScaledVector(vl, -0.1).addScaledVector(vf, 0.75).add(V3(0, 0.34, 0)), tf };
+  out.MOTE = computeMote(vd, out.uEyes);
   // ---- cameras
   const uE = out.uEyes, vE = out.vEyes, jE = out.jEyesJV, jM = out.jEyesJM;
   const towardPair = vE.clone().sub(uE).setY(0).normalize();
@@ -102,8 +94,8 @@ function computeStatics(st) {
   // behind-right of him; dollies 0.46 m with his step so the framing holds (numbers from a projection scan)
   const sD = jesusStep(T('s08b02')), yD = jesusYawAt(T('s08b02'));
   out.jEyesD = jEye(sD.pos, yD);
-  out.JMED_A = fitShot([[out.jEyesD, 280, 450], [vE, 570, 165, 0.05]], 33, EDGE.W(-2.06, 1.25, 2.0), out.jEyesD, { free: [0, 0, 0] });
-  out.JMED_B = fitShot([[jM, 285, 445], [vE, 640, 210, 0.05]], 33, EDGE.W(-2.0, 1.3, 2.5), jM, { free: [0, 0, 0] });
+  out.JMED_A = fitShot([[out.jEyesD, 280, 470], [vE, 570, 200, 0.08]], 38, EDGE.W(-2.06, 1.25, 2.0), out.jEyesD, { free: [0, 0, 0] });
+  out.JMED_B = fitShot([[jM, 285, 465], [vE, 640, 230, 0.08]], 38, EDGE.W(-2.0, 1.3, 2.5), jM, { free: [0, 0, 0] });
   // VOID_CU (b04)
   out.VCU_A = EDGE.shot(EDGE.L(vE), { dist: 3.8, yaw: -38, pitch: -4, fov: 33, screenY: sy(350) });
   out.VCU_B = EDGE.shot(EDGE.L(vE), { dist: 3.45, yaw: -37, pitch: -5, fov: 33, screenY: sy(345) });
@@ -206,7 +198,7 @@ function jesusPose(t) {
   const vs = pulse(t, b3 + 0.05, 0.28, 0.35, 0.4);
   const tiltQ = ramp(t, b5 - 0.1, b5 + 0.45);
   const head = {
-    look: headLook, follow: (0.5 + 0.42 * smooth((elevOf(headLook, st.pos) - 0.15) / 0.35)) * (1 - 0.45 * vs),
+    look: headLook, follow: (0.5 + 0.25 * smooth((elevOf(headLook, st.pos) - 0.15) / 0.35)) * (1 - 0.45 * vs),
     yaw: 0.28 * vs, roll: 0.07 * vs + 0.1 * tiltQ - 0.03 * pulse(t, mom, 0.08, 0.1, 0.3),
     pitch: 0.12 * throat - 0.05 * hereGoes,
   };

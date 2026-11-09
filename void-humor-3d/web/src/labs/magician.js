@@ -56,7 +56,7 @@ for (const [name, e] of EX) {
   S('expr: ' + name, 1, (lt, s) => {
     const pose = { face: e.face, body: e.body, armL: e.armL, armR: e.armR, head: e.head, gaze: e.gaze ? V(...e.gaze) : 'camera', extra: { ...(e.extra || {}) } };
     pose.speech = e.talk ? talkSample(s.t, e.talk) : false;
-    if (e.lick) pose.extra.lick = clamp((lt - 0.05) / 0.9);
+    if (e.lick) pose.extra.lick = clamp(0.25 + 0.85 * lt);   // the sheet samples mid-segment: show the sweep at the far corner
     return { pose, ...CLOSE() };
   });
 }
@@ -188,6 +188,16 @@ S('ta-da flourish / hand on hip', 2.5, (lt, s) => {
   return { pose: { face: 'gloat', gaze: 'camera', armL: { preset: 'hips', reach: a }, armR: { preset: 'present', reach: a }, extra: { dagger: false }, head: { roll: -0.1 * a } },
     shot: framed([0, 1.15, 0], { dist: 3.4, yaw: 20, pitch: 3, fov: 32, screenY: 0.44, drift: 0 }) };
 });
+// ---------------------------------------------------------------------------------- detail sheets (review aids)
+const PRESETS = ['rest', 'hang', 'hips', 'behind', 'crossed', 'steeple', 'rub', 'creep', 'claw', 'edge', 'dagger_ready', 'dagger_low',
+  'dagger_stab', 'pouch', 'pour', 'present', 'shrug', 'up', 'wave', 'point', 'pocket', 'clutch_chest', 'clutch_back', 'cover_mouth', 'shush', 'whisper', 'chin'];
+for (const pr of PRESETS) {
+  S('preset: ' + pr, 0.5, (lt, s) => {
+    const prop = /dagger/.test(pr), pouch = pr === 'pouch' || pr === 'pour';
+    return { pose: { face: 'sly', gaze: 'camera', armL: { preset: pr }, armR: { preset: pr }, extra: { dagger: prop, pouch, dust: pr === 'pour' ? 0.6 : 0, motes: 0 } },
+      shot: framed([0, 1.3, 0.1], { dist: 2.5, yaw: 25, pitch: 4, fov: 32, screenY: 0.5, drift: 0 }) };
+  });
+}
 export const DURATION = T0;
 export const SEGMENTS = seg.map((x) => [x.t0, x.t1, x.name]);
 
@@ -267,7 +277,14 @@ export async function update(t, app, s) {
   if (r.close) {
     s.mag.update(t, r.pose || {});
     const h = s.mag.anchor('head'), c = r.close;
-    r.shot = framed([h.x, h.y - 0.02, h.z], { dist: c.dist, yaw: c.yaw, pitch: 2, fov: 30, screenY: c.screenY, drift: 0 });
+    r.shot = framed([h.x, h.y - 0.02, h.z], { dist: c.dist, yaw: c.yaw, pitch: c.pitch ?? 2, fov: 30, screenY: c.screenY, drift: 0 });
+  }
+  // debug camera override for detail renders (set from the test driver; never set in normal renders)
+  const dbg = globalThis.__MAGCAM;
+  if (dbg) {
+    s.mag.update(t, r.pose || {});
+    const a = dbg.anchor ? s.mag.anchor(dbg.anchor) : V(...dbg.look);
+    r.shot = framed(a.toArray(), { dist: dbg.dist ?? 0.6, yaw: dbg.yaw ?? 0, pitch: dbg.pitch ?? 0, fov: dbg.fov ?? 30, screenY: 0.5, drift: 0 });
   }
   applyShot(app.camera, r.shot, t);
   app.camera.updateMatrixWorld(true);

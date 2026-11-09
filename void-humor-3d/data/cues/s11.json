@@ -1,0 +1,12 @@
+{
+  "sfx": [
+    {"t": "s11b04+0.62", "name": "cloth_rustle", "gain_db": -12, "pan": 0.0},
+    {"t": "s11b04+1.10", "name": "nebula_swell", "gain_db": -9, "pan": 0.45}
+  ],
+  "hits": [
+    {"t": "s11b01.end+0.14", "kind": "pluck"},
+    {"t": "s11b01.end+0.55", "kind": "pluck"},
+    {"t": "s11b01.end+0.97", "kind": "ping"},
+    {"t": "s11b03+0.19", "kind": "pluck"}
+  ]
+}

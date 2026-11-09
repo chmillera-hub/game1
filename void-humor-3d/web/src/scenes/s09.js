@@ -17,7 +17,7 @@ import { EDGE, todAt, voidSkyAt, galaxyAt, galaxySpin, sy } from './marks.js';
 import { JX } from '../chars/jesus.js';
 import { UX, headShake } from '../chars/user.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, fitShot, mixShot, W, WY, faceYaw, MARKS as M, starSprite } from './armour_shared.js';
-import { voidArmour, moteState, galaxyFloor, userSeated, userPos, sceneLook, moteFreezeT, scaryT } from './armour_common.js';
+import { voidArmour, moteState, galaxyFloor, userSeated, sceneLook, computeMote, scaryT } from './armour_common.js';
 
 let S = null;
 
@@ -71,25 +71,21 @@ function statics(st) {
   out.uEyes = user.anchor('eyes'); out.uHandR = user.anchor('handR');
   vd.update(t0, voidArmour(t0, { gaze: out.uEyes }));
   out.vEyes = vd.anchor('eyes');
-  // the frozen mote (same construction as s08)
-  const tf = moteFreezeT();
-  vd.update(tf, voidArmour(tf, { gaze: out.uEyes }));
-  const vy = WY(M.V), vl = V3(Math.cos(vy), 0, -Math.sin(vy)), vf = V3(Math.sin(vy), 0, Math.cos(vy));
-  out.MOTE = { p: vd.anchor('shoulderL').addScaledVector(vl, -0.1).addScaledVector(vf, 0.75).add(V3(0, 0.34, 0)), tf };
+  out.MOTE = computeMote(vd, out.uEyes);                         // same point as s08
   // cameras
   out.UCU_A = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.6, yaw: 124, pitch: 3, fov: 33, screenY: sy(430), drift: 0.25 });
   out.UCU_B = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.42, yaw: 122, pitch: 3, fov: 33, screenY: sy(425), drift: 0.25 });
   out.MASTER = EDGE.cam('MASTER', { drift: 0.25 });
   // b04: push in to the symmetrical three-shot (Jesus dead centre, the two scowls at the diagonal corners)
   const jEnd = V3(jm[0] + Math.sin(jYawEnd()) * 0.14, 1.55, jm[2] + Math.cos(jYawEnd()) * 0.14);
-  out.MASTER2 = fitShot([[jEnd, 360, 470], [out.vEyes, 590, 255, 0.7], [out.uEyes, 130, 760, 0.5]], 34, out.MASTER.pos, out.MASTER.look, { posReg: 0.02, drift: 0.15 });
+  out.MASTER2 = fitShot([[jEnd, 360, 455], [out.vEyes, 575, 250, 0.7], [out.uEyes, 160, 740, 0.8]], 38, out.MASTER.pos, out.MASTER.look, { posReg: 0.02, drift: 0.15 });
   return out;
 }
 
 // ------------------------------------------------------------------------------------------------ camera
 function shotAt(t) {
   const cut = T('s09b03') - 0.08;
-  if (t < cut) return { ...mixShot(S.UCU_A, S.UCU_B, ramp(t, T('s09'), cut, 'inOut')), sunShift: 0.08, sunGlow: 0.7 };
+  if (t < cut) return { ...mixShot(S.UCU_A, S.UCU_B, ramp(t, T('s09'), cut, 'inOut')), sunShift: -0.12, sunGlow: 0.6 };
   return mixShot(S.MASTER, S.MASTER2, ramp(t, T('s09b03') + 1.0, T('s09.end'), 'inOut'));
 }
 
@@ -141,7 +137,8 @@ function userPose(t) {
     [b1 + 1.2, UX('disbelief', { mOpen: 0.22, lidU: 0.9 })],                  // mouth opens...
     [b1 + 1.38, UX('suspicious', { mOpen: 0.0, mPress: 0.6 })],               // ...closes
     [b2 - 0.08, UX('hellno', { mPress: 0.6, lidU: 0.7 })],                     // jaw sets
-    [b2 + 0.35, UX('hellno')],
+    [b2 + 0.04, UX('hellno', { mPress: 0.15 })],                               // (lips free for the words)
+    [b2 + 0.4, UX('hellno', { mPress: 0.2 })],
     [b2 + 0.62, UX('hellno', { mPress: 1, mPout: 0.3 })],                      // lips pressed tight after
     [b3 - 0.05, UX('glare', { mPress: 0.3, lidU: 0.72 })],
     [that, UX('glare', { mPress: 0.2, lidU: 0.85, browIn: -0.6 })],

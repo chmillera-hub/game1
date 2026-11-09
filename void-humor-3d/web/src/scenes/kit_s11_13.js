@@ -5,6 +5,7 @@ import { T } from '../core/timeline.js';
 import { CTX } from '../core/context.js';
 import { CELL } from '../core/particles.js';
 import { EDGE, galaxyAt, galaxySpin } from './marks.js';
+import { makeLittleGalaxy as mkLittleGalaxy } from './edgeprops.js';
 
 // ------------------------------------------------------------------------------------------- word timings
 // W('s13b08', 'you') -> absolute time of that word (from data/lines.json, relative to the beat start), so a
@@ -30,6 +31,8 @@ export function W(beat, word, { end = false, occ = 0, frac = 0.5, alt = [] } = {
 const M = EDGE.M;
 export const POS = Object.fromEntries(Object.entries(M).map(([k, m]) => [k, EDGE.W(m.p)]));
 export const YAW = Object.fromEntries(Object.entries(M).map(([k, m]) => [k, EDGE.Y(m.yaw)]));
+// the user's seat: U minus the 5 cm scoot back on "thing" (s09b03), kept through s10+ (armour_common.userPos)
+POS.USEAT = [POS.U[0] - Math.sin(YAW.U) * 0.05, 0, POS.U[2] - Math.cos(YAW.U) * 0.05];
 /** stage-local point -> world array */
 export const SW = (x, y, z) => EDGE.W(x, y, z);
 /** a world point `dist` m from a stage-local origin along a LOCAL facing yaw + offsets (for gaze directions) */
@@ -65,38 +68,12 @@ export function drawSkyGalaxy(ps, t) {
   const g = galaxyAt(t);
   if (g) ps.add(g, EDGE.GALAXY.size, 0xd8c0ff, 0.9, galaxySpin(t), CELL.galaxy);
 }
-let _galTex = null;
-function galaxyTexture() {
-  if (_galTex) return _galTex;
-  const S = 128, c = document.createElement('canvas'); c.width = S; c.height = S;
-  const g = c.getContext('2d'); g.translate(S / 2, S / 2);
-  const gr = g.createRadialGradient(0, 0, 0, 0, 0, 60);
-  gr.addColorStop(0, 'rgba(255,245,255,0.95)'); gr.addColorStop(0.18, 'rgba(230,200,255,0.55)'); gr.addColorStop(0.55, 'rgba(170,140,255,0.14)'); gr.addColorStop(1, 'rgba(120,90,220,0)');
-  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 62, 0, 7); g.fill();
-  g.strokeStyle = 'rgba(235,215,255,0.7)'; g.lineCap = 'round';
-  for (let a = 0; a < 2; a++) {
-    g.beginPath();
-    for (let i = 0; i < 60; i++) { const th = a * Math.PI + i * 0.11, r = 4 + i * 0.85; const x = Math.cos(th) * r, y = Math.sin(th) * r; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    g.lineWidth = 6; g.stroke();
-  }
-  g.fillStyle = 'rgba(255,255,255,1)'; g.beginPath(); g.arc(0, 0, 7, 0, 7); g.fill();
-  _galTex = new THREE.CanvasTexture(c); _galTex.colorSpace = THREE.SRGBColorSpace;
-  return _galTex;
-}
-/** flat little galaxy decal on the ground at stage (-0.85, 0.02, 0.85) (STAGING §1.6) */
+/** the little galaxy lying flat by the user's sneaker: the SHARED prop of edgeprops.js (same rest spot / look as
+ *  s04-s10; it scopes itself to [s04, s14.end)). Returns its group with userData.update(t). */
 export function makeLittleGalaxy() {
-  const m = new THREE.Mesh(new THREE.CircleGeometry(0.15, 32), new THREE.MeshBasicMaterial({
-    map: galaxyTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, color: 0xd8c4ff,
-  }));
-  m.rotation.order = 'YXZ';
-  m.renderOrder = 4;
-  const p = EDGE.W(-0.85, 0.02, 0.85);
-  m.position.set(p[0], 0.022, p[2]);
-  m.userData.update = (t) => {
-    m.rotation.set(-Math.PI / 2, 0, 0); m.rotateZ(t * 0.35);
-    m.material.opacity = 0.75 + 0.15 * Math.sin(t * 2.3);
-  };
-  return own(m);
+  const lg = mkLittleGalaxy();
+  lg.group.userData.update = (t) => lg.update(t);
+  return lg.group;
 }
 
 // ------------------------------------------------------------------------------------------- two-pass solve

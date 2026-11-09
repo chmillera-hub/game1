@@ -6,11 +6,12 @@
 import * as THREE from 'three';
 import { Character, gazePoint } from '../core/character.js';
 import { Face, FACE_DEFAULTS, ellipsoidSurface } from '../core/face.js';
-import { SweepTube, Limb, Hand, orientYZ } from '../core/limbs.js';
+import { SweepTube, Limb, orientYZ } from '../core/limbs.js';
 import { glowSprite, contactShadow, GLOBAL } from '../core/materials.js';
 import { Particles, CELL } from '../core/particles.js';
 import { CTX, EYE_LIGHT } from '../core/context.js';
 import { clamp, lerp, smooth, noise1, fbm1, hash1, ease } from '../core/util.js';
+import { VoidHand, Cuff } from './void_parts.js';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -26,14 +27,16 @@ const SZ = 0.9;                // body depth / width
 const NECK_Y = 1.66, HEAD_UP = 0.5, HEAD_FWD = 0.1;     // hood centre at rest ≈ (0, 2.16, 0.12)
 const CHEST_Y = 1.05, SHOULDER_Y = 1.42, HIP_Y = 0.4;
 const FR = [0.62, 0.58, 0.33], FC = [0, -0.05, 0.05];     // face-field ellipsoid (head-local)
-const HOOD = { rx: 0.82, ry: 0.79, rz: 0.8, phi0: 1.0, roll: 0.085, tilt: 0.08, peak: 0.22 };
+const HOOD = { rx: 0.82, ry: 0.79, rz: 0.8, phi0: 1.0, roll: 0.09, tilt: 0.08, peak: 0.3 };
 // shoulder capelet profile [radius, height]: from inside the hood, over the shoulders, scalloped hem, lip tucked in
-const CAPE = [[0.3, 1.86], [0.52, 1.72], [0.72, 1.58], [0.87, 1.46], [0.975, 1.35], [1.035, 1.26], [1.06, 1.19], [1.04, 1.155], [0.995, 1.165], [0.955, 1.21]];
+const CAPE = [[0.3, 1.88], [0.55, 1.79], [0.76, 1.655], [0.9, 1.505], [0.985, 1.37], [1.035, 1.265], [1.06, 1.19], [1.04, 1.155], [0.995, 1.165], [0.955, 1.21]];
 const NCR = 22, CAPE_LIP = [[-0.025, -0.035], [-0.07, -0.03], [-0.11, 0.015]];   // lip offsets [dr, dy] from the hem
 const ARM_L1 = 0.64, ARM_L2 = 0.6, HAND = 0.44;
-const ARM_R = [0.25, 0.22, 0.2, 0.225, 0.27];
-const LEG_LEN = 0.42, FOOT = [0.2, 0.14, 0.27], LEG_R = [0.25, 0.235, 0.2];
+const ARM_R = [0.235, 0.215, 0.19, 0.165, 0.15];          // sleeve tube shoulder -> wrist (the cuff flares over the end)
+const LEG_LEN = 0.42, FOOT = [0.215, 0.165, 0.25], LEG_R = [0.29, 0.275, 0.25];
+const KICK_LEN = 0.66;                                     // hip -> ankle of the kicking leg at full extension
 const MOUTH_V = -0.44;
+const DECAL_UV = [-0.8, 0.8, -1.2, 0.05], DECAL_K = 1.7;  // face decal extent (u0, u1, v0, v1) and its colour gain
 // profile [radius, height] from the underside centre, round the hem lip, up to the neck (inside the hood)
 const PROFILE = [[0.0, 0.34], [0.42, 0.31], [0.76, 0.23], [0.93, 0.15], [1.0, 0.11], [1.05, 0.18], [1.09, 0.38],
   [1.1, 0.62], [1.06, 0.9], [0.96, 1.15], [0.8, 1.37], [0.61, 1.54], [0.41, 1.68], [0.2, 1.8], [0.0, 1.86]];
@@ -54,7 +57,10 @@ export const ARM = {
   rest: { p: [1.2, -0.33, 0.25], fingers: [0.15, -1, 0.15], palm: [-1, 0, 0.12], pole: [0.7, 0, -1], hand: { curl: 0.32, spread: 0.12, thumb: 0.25, cup: 0.25 } },
   hips: { p: [1.16, -0.12, 0.1], fingers: [-0.3, -0.5, 1], palm: [-1, 0.2, 0], pole: [0.6, 0.3, -1], hand: { curl: 0.95, thumb: 0.1 } },
   belly: { p: [0.42, -0.23, 0.99], fingers: [-0.85, -0.4, 0.2], palm: [-0.15, 0.05, -1], pole: [1, -0.5, 0.1], hand: { curl: 0.25, spread: 0.35, cup: 0.45, thumb: 0.55 } },
-  crossed: { p: [-0.5, 0.24, 0.9], pR: [-0.44, 0.1, 0.84], fingers: [-0.7, 0.3, -0.65], palm: [0.1, -0.4, -0.9], pole: [1, -0.9, 0.35], hand: { curl: 0.7, spread: 0.05, thumb: 0.15, cup: 0.4 } },
+  // folded arms: shoulders roll forward, lower (left) forearm on the belly, right forearm stacked over it in front;
+  // each hand tucks past the centre toward the other elbow (pR / fingersR... = the right arm's own values)
+  crossed: { p: [-0.36, -0.06, 0.98], pR: [-0.34, 0.11, 1.04], fingers: [-0.55, -0.2, -0.8], fingersR: [-0.5, -0.35, -0.8], palm: [0.6, -0.2, -0.8], palmR: [0.55, -0.5, -0.65],
+    pole: [0.75, -1, 0.45], shFwd: 0.3, stretch: 1.4, hs: 0.85, hand: { curl: 0.82, spread: 0.02, thumb: 0.1, cup: 0.5 } },
   up: { p: [0.8, 1.5, 0.35], fingers: [0.15, 1, 0.1], palm: [0, 0, 1], pole: [1, 0, -0.4], hand: { curl: 0.08, spread: 0.45, thumb: 0.65 } },
   shrug: { p: [1.15, 0.0, 0.66], fingers: [0.55, 0.2, 0.8], palm: [0.15, 1, 0.1], pole: [0.8, -1, -0.4], hand: { curl: 0.12, spread: 0.45, thumb: 0.85, cup: 0.15 } },
   wave: { p: [1.08, 1.0, 0.45], fingers: [0.1, 1, 0.1], palm: [0, 0, 1], pole: [1, -0.6, -0.4], hand: { curl: 0.05, spread: 0.5, thumb: 0.7 } },
@@ -65,21 +71,23 @@ export const ARM = {
   whisper: { head: true, p: [0.5, -0.42, 0.56], fingers: [-0.1, 1, 0.3], palm: [-1, 0, 0.2], pole: [1, -1, 0], hand: { curl: 0.35, cup: 0.9, spread: 0.06, thumb: 0.15 } },
   cover_mouth: { head: true, p: [0.24, -0.58, 0.68], fingers: [-0.75, 0.6, 0], palm: [0, 0, -1], pole: [1, -1, 0], hand: { curl: 0.15, cup: 0.4 } },
   chin: { head: true, p: [0.16, -0.86, 0.5], fingers: [-0.25, 1, 0.3], palm: [0, 0.2, -1], pole: [1, -1, 0.2], hand: { curl: 0.75, thumb: 0.3 } },
-  pat: { like: 'rest', palm: [0, -1, 0], hand: { curl: 0.12, cup: 0.35, spread: 0.2, thumb: 0.3 } },
-  around: { like: 'rest', palm: [0, -0.6, -0.8], pole: [0.25, -0.15, -1], hand: { curl: 0.35, cup: 0.6, spread: 0.12 } },
-  tip: { like: 'rest', palm: [0, -1, 0.2], hand: { point: 1, thumb: 0.25 } },
-  reach: { like: 'rest', hand: { curl: 0.1, spread: 0.3, thumb: 0.5 } },
+  // target-driven contact shapes: `target` (or `on` + `at`) is where the PALM CENTRE goes (tip: the index fingertip)
+  pat: { like: 'rest', at: 'palm', palm: [0, -1, -0.1], fingers: [0.1, -0.45, 1], pole: [1, -0.4, -0.6], hand: { curl: 0.1, cup: 0.42, spread: 0.16, thumb: 0.35 } },
+  around: { like: 'rest', at: 'palm', palm: [-0.1, -1, -0.15], fingers: [0.15, -0.55, 1], pole: [0.25, 0.85, -1], hand: { curl: 0.24, cup: 0.6, spread: 0.12, thumb: 0.4 } },
+  tip: { like: 'rest', at: 'tip', palm: [0, -1, 0.2], hand: { point: 1, thumb: 0.25 } },
+  reach: { like: 'rest', at: 'palm', palm: [0, -0.4, 1], fingers: [0, 0.3, 1], hand: { curl: 0.1, spread: 0.3, thumb: 0.5 } },
 };
 
 // ---------------------------------------------------------------------------------------------------------
 // Void expression presets (Face params tuned for this face: no teeth, starlight lids, nebula brows).
-// `puff` (0..1) is a Void extra that may ride inside face params.
+// Void-only params that may ride inside face params: `puff` (0..1 huff cheeks), `mDroop` (0..1 corners droop while
+// the centre still smiles: sad smile), `mWavy` (0..1 squiggly uneasy mouth line: awkward).
 export const VOID_EXPR = {
   neutral: { lidU: 0.96, lidL: 0.12, browIn: 0.06 },
   calm: { lidU: 0.84, lidL: 0.25, mSmile: 0.14, browIn: 0.14, browOut: -0.05 },
   listen: { lidU: 1.08, lidL: 0.05, browIn: 0.4, browOut: 0.1, browAsym: 0.3, mPress: 0.25, mSmile: 0.05 },
   curious: { lidU: 1.12, browIn: 0.45, browOut: 0.35, browAsym: 0.45, mRound: 0.3, mOpen: 0.06 },
-  gentle: { mSmile: 0.62, lidL: 0.5, lidU: 0.84, browIn: 0.32, browOut: 0.02, lidSad: 0.12, blush: 0.25 },
+  gentle: { mSmile: 0.56, lidL: 0.24, lidU: 0.95, browIn: 0.6, browOut: -0.04, lidSad: 0.06, blush: 0.28, wet: 0.5 },
   happy: { mSmile: 0.9, mOpen: 0.14, mWide: 0.2, lidL: 0.68, lidU: 0.82, browIn: 0.28, browOut: 0.32, blush: 0.3 },
   laugh: { mSmile: 1, mOpen: 0.95, mWide: 0.85, lidL: 1, lidU: 0.42, browIn: 0.55, browOut: 0.8, blush: 0.35, saccade: 0 },
   giggle: { mSmile: 1, mOpen: 0.3, mWide: 0.25, lidL: 0.95, lidU: 0.5, browIn: 0.5, browOut: 0.22, blush: 0.35 },
@@ -88,7 +96,7 @@ export const VOID_EXPR = {
   scowl: { lidAngry: 1.35, lidU: 0.66, lidL: 0.42, browIn: -1, browSq: 1, browOut: 0.3, mSmile: -0.8, mPress: 0.55, mWide: 0.2, mOpen: 0.03 },
   annoyed: { lidU: 0.55, lidL: 0.18, browIn: -0.3, browSq: 0.45, mPress: 0.6, mSmile: -0.35, mAsym: 0.25 },
   huff: { lidAngry: 0.7, lidU: 0.5, lidL: 0.5, browIn: -0.75, browSq: 0.85, browOut: 0.25, mPress: 0.8, mPout: 0.9, mSmile: -0.3, puff: 1 },
-  sadSmile: { mSmile: 0.38, browIn: 1.0, browOut: -0.4, lidSad: 0.7, lidU: 0.76, lidL: 0.38, wet: 0.5 },
+  sadSmile: { mSmile: 0.34, mDroop: 0.5, browIn: 1.1, browOut: -0.35, browSq: 0.12, lidSad: 0.32, lidU: 0.93, lidL: 0.16, wet: 0.85 },
   sad: { mSmile: -0.75, mPout: 0.2, browIn: 1.05, browOut: -0.45, browSq: 0.2, lidSad: 0.75, lidU: 0.66 },
   innocent: { lidU: 1.16, lidL: 0.06, browIn: 0.65, browOut: 0.6, mSmile: 0.28, mPress: 0.35, mRound: 0.12, gazePitch: 0.2, gazeYaw: 0.28, saccade: 0.3 },
   surprised: { lidU: 1.42, browIn: 0.85, browOut: 0.95, mOpen: 0.5, mRound: 0.6, pupil: 0.8 },
@@ -96,31 +104,32 @@ export const VOID_EXPR = {
   proud: { mSmile: 0.66, lidU: 0.8, lidL: 0.45, browIn: 0.2, browOut: 0.4, browAsym: 0.22, blush: 0.35 },
   peripheral: { lidU: 0.8, lidL: 0.34, browIn: -0.12, browSq: 0.28, mPress: 0.3, mSmile: 0.12, gazeYaw: -0.66, saccade: 0 },
   determined: { lidAngry: 0.8, lidU: 0.62, lidL: 0.48, browIn: -0.55, browSq: 0.7, mPress: 0.75, mSmile: -0.12 },
-  smug: { lidU: 0.6, lidL: 0.4, mSmile: 0.55, mAsym: 0.55, browAsym: 0.45, browSq: 0.1 },
-  tender: { mSmile: 0.45, lidU: 0.82, lidL: 0.4, lidSad: 0.2, browIn: 0.5, browOut: -0.05, blush: 0.3 },
-  awkward: { mSmile: 0.18, mWide: 0.65, mPress: 0.75, mAsym: 0.28, browIn: 0.75, browOut: 0.55, lidU: 1.12, saccade: 1 },
+  smug: { lidU: 0.66, lidL: 0.4, lidAsym: -0.34, mSmile: 0.42, mAsym: 1.0, mShift: 0.3, browAsym: 0.6, browSq: 0.12 },
+  tender: { mSmile: 0.45, lidU: 0.9, lidL: 0.3, lidSad: 0.1, browIn: 0.55, browOut: -0.05, blush: 0.3, wet: 0.4 },
+  awkward: { mSmile: 0.04, mWide: 0.8, mWavy: 1, mPress: 0.3, mAsym: 0.12, browIn: 0.9, browOut: 0.3, browAsym: 0.15, lidU: 1.12, lidSad: 0.12, saccade: 1 },
   flinch: { lidU: 1.35, lidL: 0.1, browIn: 0.9, browOut: 0.5, browSq: 0.3, mOpen: 0.22, mRound: 0.35, mSmile: -0.3, pupil: 0.75 },
   hopeful: { lidU: 1.1, browIn: 0.55, browOut: 0.25, mSmile: 0.35, lidL: 0.15, wet: 0.3 },
 };
 
 /**
- * Whisper bend preset: side = +1 leans toward its LEFT (+X), -1 toward its right; depth scales the bend
- * (≈0.6 -> mouth ~1.95 m, 1.0 -> ~1.7 m, 1.3 -> ~1.5 m). Returns { body, head, armL|armR } to merge into a pose.
+ * Whisper bend preset: side = +1 leans toward its LEFT (+X), -1 toward its right; depth scales the bend.
+ * Mouth height (yaw 0, measured): depth 0 -> 1.85 m, 0.6 -> 1.77, 1.0 -> 1.69, 1.2 -> ~1.58, 1.35 -> ~1.51 (above 1 the
+ * knees fold, the body tips further and the hood nods down). Returns { body, head, armL|armR } to merge into a pose.
  * Pair with v.solvePos(t, pose, 'whisper', listenerEar) to put the Void's mouth right at someone's ear.
  */
 export function whisperPose(side = 1, depth = 1, amount = 1) {
-  const k = amount, d = depth;
+  const k = amount, d = depth, dd = Math.max(0, d - 1);
   const arm = { preset: 'whisper', from: 'rest', mix: clamp(amount * 1.4 - 0.2) };
   return {
-    body: { lean: 0.5 * d * k, crouch: 0.16 * d * k, tilt: 0.2 * side * k, twist: 0.12 * side * k },
-    head: { yaw: 0.32 * side * k, pitch: -(0.1 + 0.42 * d) * k, roll: 0.16 * side * k },
+    body: { lean: (0.5 * d + 0.3 * dd) * k, crouch: (0.16 * d + 1.1 * dd) * k, tilt: (0.2 + 0.1 * dd) * side * k, twist: 0.12 * side * k },
+    head: { yaw: 0.32 * side * k, pitch: (-(0.1 + 0.42 * d) + 0.75 * dd) * k, roll: 0.16 * side * k },
     ...(side > 0 ? { armL: arm } : { armR: arm }),
   };
 }
 
 /** VX('scowl', { mOpen: 0.1 }) -> full flat face params for the Void (array form [[name, w], ...] blends). */
 export function VX(name, over = {}) {
-  const base = { ...FACE_DEFAULTS, puff: 0, mTeethU: 0, mTeethL: 0, mTongue: 0 };
+  const base = { ...FACE_DEFAULTS, puff: 0, mDroop: 0, mWavy: 0, mTeethU: 0, mTeethL: 0, mTongue: 0 };
   if (typeof name === 'string') Object.assign(base, VOID_EXPR[name] || {});
   else for (const [nm, w] of name) for (const [key, val] of Object.entries(VOID_EXPR[nm] || {})) base[key] += (val - (FACE_DEFAULTS[key] ?? 0)) * w;
   return Object.assign(base, over);
@@ -153,14 +162,25 @@ float vd_stars(vec3 q, float thr, float rad, float t){
   float d = length(f - (0.2 + 0.6 * h));
   float tw = 0.65 + 0.35 * sin(t * (0.6 + 1.2 * h.x) + h.y * 40.0);
   return on * smoothstep(rad, 0.0, d) * tw;
+}
+// fabric stars: varied size & brightness (mostly faint, a rare brighter "hero"); returns (brightness, tint 0..1)
+vec2 vd_starsV(vec3 q, float thr, float rad, float t){
+  vec3 c = floor(q), f = fract(q);
+  vec3 h = vd_h3(c);
+  float on = step(thr, vd_h1(c + 17.31));
+  float d = length(f - (0.2 + 0.6 * h));
+  float r = rad * (0.6 + 0.8 * h.y);
+  float b = 0.28 + 0.72 * h.z * h.z * h.z + 1.6 * step(0.975, h.x);
+  float tw = 0.7 + 0.3 * sin(t * (0.5 + 1.0 * h.x) + h.y * 40.0);
+  return vec2(on * smoothstep(r, 0.0, d) * b * tw, h.y);
 }`;
 
 // Velvet: MeshStandard + fake key-lit violet sheen + stars inside the fabric (parallax in root space) +
 // violet->teal fresnel rim (HDR, bloom-friendly) + faint nebula shimmer. `U` uniforms are shared by all parts.
 function velvetMaterial(U) {
-  // MeshStandard (not Physical: SwiftShader cost) + a cheap key-light-aware velvet sheen in the emissive block.
-  // (no core enhance(): its fizz fbm costs a lot on SwiftShader even when disabled; glow/wrap are inlined below)
-  const m = new THREE.MeshStandardMaterial({ color: 0x191338, roughness: 0.85, metalness: 0 });
+  // MeshLambert (per-pixel diffuse only: velvet has no real specular, and GGX is the expensive part on SwiftShader)
+  // + a cheap key-light-aware velvet sheen, rim, nebula and fabric stars in the emissive block.
+  const m = new THREE.MeshLambertMaterial({ color: 0x1b143c });
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U, { uKeyColor: EYE_LIGHT.uKeyColor, uTime: GLOBAL.uTime });
     sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
@@ -177,9 +197,9 @@ function velvetMaterial(U) {
       ${VGLSL}`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       {
-        vec3 lp = vLp, vdir = vVd;
         vec3 nn = normalize(normal);
-        float fr = 1.0 - clamp(dot(nn, normalize(vViewPosition)), 0.0, 1.0);
+        float nv = clamp(dot(nn, normalize(vViewPosition)), 0.0, 1.0);
+        float fr = 1.0 - nv;
         float frs = fr * sqrt(fr), fr2 = fr * fr;
         float shm = vShm;
         totalEmissiveRadiance += diffuseColor.rgb * 0.05 + vec3(0.29, 0.196, 0.75) * (0.16 * frs);   // glow + wrap
@@ -190,28 +210,42 @@ function velvetMaterial(U) {
         vec3 rc = mix(uRimA, uRimB, clamp(smoothstep(0.5, 0.97, fr) * 0.75 + 0.35 * smoothstep(0.42, 0.72, shm), 0.0, 1.0));
         totalEmissiveRadiance += rc * rim;
         float cz = 1.0 + 3.0 * uCosmos;
-        float st = vd_stars((lp + vdir * 0.16) * 5.4 + vec3(0.0, uTime * 0.025, 0.0), 0.42, 0.13, uTime);
-        totalEmissiveRadiance += mix(uStarA, uStarB, smoothstep(0.35, 0.7, shm)) * st * uStars * cz * (1.0 - 0.55 * fr);
+        // faint stars drifting INSIDE the fabric (parallax), tinted violet/teal, fading out toward the silhouette
+        vec2 st = vd_starsV((vLp + vVd * 0.16) * 5.4 + vec3(0.0, uTime * 0.025, 0.0), 0.42, 0.12, uTime);
+        totalEmissiveRadiance += mix(uStarA, uStarB, st.y) * (st.x * uStars * cz * smoothstep(0.08, 0.6, nv));
         float neb = smoothstep(0.55, 0.85, shm);
         totalEmissiveRadiance += mix(vec3(0.22, 0.08, 0.48), vec3(0.04, 0.32, 0.42), shm) * neb * uNeb * cz;
       }`);
   };
-  m.customProgramCacheKey = () => 'voidVelvet4';
+  m.customProgramCacheKey = () => 'voidVelvet5';
   return m;
 }
 
 // Face darkness (face field, hood lining, eyelids): unlit deep cosmos; pattern computed in head space from the
-// direction around the face centre, so lids and field match exactly. Darkens toward the hood edge.
-const FACE_VS = /* glsl */`uniform mat4 uHeadInv; uniform vec3 uC; uniform float uTime;
+// direction around the face centre. Darkens toward the hood edge. The LID variant (eyelids + canthus caps) first
+// projects each point along the view ray onto the face ellipsoid and samples the face decal (blush, puff glows)
+// there, so lids show exactly what the field behind them would: blinks read as the darkness itself closing.
+const FACE_VS = /* glsl */`uniform mat4 uHeadInv; uniform vec3 uC, uR; uniform float uTime;
 varying vec3 vLp; varying vec2 vN;
 ${VGLSL}
 void main(){ vec4 w = modelMatrix * vec4(position, 1.0);
-  vLp = (uHeadInv * w).xyz;
-  vec3 d = normalize(vLp - uC);
+  vec3 lp = (uHeadInv * w).xyz;
+#ifdef LID
+  vec3 cam = (uHeadInv * vec4(cameraPosition, 1.0)).xyz;
+  vec3 rd = normalize(lp - cam);
+  vec3 o = (cam - uC) / uR, dd = rd / uR;
+  float A = dot(dd, dd), B = dot(o, dd), Cq = dot(o, o) - 1.0, disc = B * B - A * Cq;
+  if (disc > 0.0) lp = cam + rd * ((-B - sqrt(disc)) / A);
+#endif
+  vLp = lp;
+  vec3 d = normalize(lp - uC);
   vN = vec2(vd_n(d * 2.6 + vec3(0.0, uTime * 0.03, uTime * 0.02)), vd_n(d * 4.6 + vec3(5.2, -uTime * 0.025, 1.3)));
   gl_Position = projectionMatrix * viewMatrix * w; }`;
 const FACE_FS = /* glsl */`
-uniform mat4 uHeadInv; uniform vec3 uC; uniform vec2 uOpen; uniform float uTime, uCosmos, uBright;
+uniform mat4 uHeadInv; uniform vec3 uC, uR; uniform vec2 uOpen, uHalo; uniform vec4 uEyeP; uniform float uTime, uCosmos, uBright, uHoodGlow;
+#ifdef LID
+uniform sampler2D uDecal; uniform vec4 uDecalUV; uniform float uDecalK;
+#endif
 varying vec3 vLp; varying vec2 vN;
 ${VGLSL}
 void main(){
@@ -226,6 +260,15 @@ void main(){
   col += mix(vec3(0.8, 0.74, 1.0), vec3(0.6, 0.95, 1.0), n2) * st * 0.36 * cz * uBright;
   float e = length(lp.xy / uOpen);
   col *= mix(1.0, 0.05, smoothstep(0.32, 0.95, e));
+  // soft starlight halos around the eyes + a faint violet glow in the hood (analytic: no big additive sprites)
+  vec2 dl = lp.xy - uEyeP.xy, dr = lp.xy - uEyeP.zw, dc = lp.xy - vec2(0.0, -0.05);
+  col += vec3(0.38, 0.75, 1.0) * (uHalo.x * exp(-dot(dl, dl) / 0.0225) + uHalo.y * exp(-dot(dr, dr) / 0.0225));
+  col += vec3(0.16, 0.08, 1.0) * uHoodGlow * exp(-dot(dc, dc) / 0.07);
+#ifdef LID
+  vec3 q = (lp - uC) / uR;
+  vec2 uv = vec2((atan(q.x, q.z) - uDecalUV.x) / (uDecalUV.y - uDecalUV.x), (asin(clamp(q.y, -1.0, 1.0)) - uDecalUV.z) / (uDecalUV.w - uDecalUV.z));
+  if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) { vec4 dc = texture2D(uDecal, uv); col = mix(col, dc.rgb * uDecalK, dc.a); }
+#endif
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -234,12 +277,12 @@ void main(){
 // Nebula wisp glow (brows, foot pads): additive, soft fresnel edge, violet (centre) -> teal (outer) along |x|.
 const WISP_VS = /* glsl */`varying vec3 vN; varying vec3 vV; varying vec3 vP;
 void main(){ vP = position; vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = -mv.xyz; gl_Position = projectionMatrix * mv; }`;
-const WISP_FS = /* glsl */`uniform vec3 uA, uB; uniform float uI, uSoft, uTime, uX0, uX1;
+const WISP_FS = /* glsl */`uniform vec3 uA, uB; uniform float uI, uSoft, uTime, uX0, uX1, uShim;
 varying vec3 vN; varying vec3 vV; varying vec3 vP;
 void main(){
   float f = pow(clamp(abs(dot(normalize(vN), normalize(vV))), 0.0, 1.0), uSoft);
   vec3 c = mix(uA, uB, smoothstep(uX0, uX1, abs(vP.x)));
-  float sh = 0.82 + 0.18 * sin(vP.x * 60.0 - uTime * 1.6) * sin(vP.y * 45.0 + uTime * 1.1);
+  float sh = 1.0 + uShim * (-0.18 + 0.18 * sin(vP.x * 60.0 - uTime * 1.6) * sin(vP.y * 45.0 + uTime * 1.1));
   gl_FragColor = vec4(c * uI * f * sh, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -247,7 +290,7 @@ void main(){
 function wispMaterial(o) {
   return new THREE.ShaderMaterial({
     uniforms: { uA: { value: new THREE.Color(o.a ?? 0x9a6cff) }, uB: { value: new THREE.Color(o.b ?? 0x52e0f0) }, uI: { value: o.i ?? 2 },
-      uSoft: { value: o.soft ?? 1.2 }, uTime: GLOBAL.uTime, uX0: { value: o.x0 ?? 0.08 }, uX1: { value: o.x1 ?? 0.3 } },
+      uSoft: { value: o.soft ?? 1.2 }, uTime: GLOBAL.uTime, uX0: { value: o.x0 ?? 0.08 }, uX1: { value: o.x1 ?? 0.3 }, uShim: { value: o.shim ?? 1 } },
     vertexShader: WISP_VS, fragmentShader: WISP_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
 }
@@ -255,47 +298,57 @@ function wispMaterial(o) {
 // ---------------------------------------------------------------------------------------------------------
 // Geometry builders
 function hoodGeometry(H) {
-  // Lathe around +Z (the face axis). Each column psi gets its own profile so the opening is an arch (taller at
-  // the top, a soft point like a hood's brim) rather than a porthole. Rows: outer shell (back pole -> opening
-  // edge), rolled brim, then the lining going back into the dark (lining = material group 1).
-  const NO = 28, NRL = 9, LIN = [[-0.004, -0.05], [-0.018, -0.15], [-0.036, -0.29], [-0.06, -0.45], [-0.09, -0.62]];
-  const NS = 56, NP = NO + 1 + NRL + LIN.length;
+  // Lathe around +Z (the face axis). Each column psi gets its own profile, so the opening is a soft shield shape
+  // (tall arch at the top, a slight off-centre V at the chin) rather than a porthole, and its edge is a deep cowl
+  // in profile: brim forward over the brow, sides set back, chin edge drawn forward and down. The rolled brim is
+  // thick at the top and thin at the sides. A teardrop peak droops at the top-back. Rows: outer shell (back pole ->
+  // opening edge), rolled brim, then the lining going back into the dark (lining = material group 1).
+  const NO = 28, NRL = 9, LIN = [[-0.004, -0.05], [-0.018, -0.15], [-0.036, -0.29], [-0.06, -0.45], [-0.09, -0.62], [-0.14, -0.8], [-0.21, -0.98]];
+  const NS = 64, NP = NO + 1 + NRL + LIN.length;
+  const parts = (psi) => {
+    const up = Math.sin(psi), cs = Math.cos(psi);
+    const vb = Math.max(0, -Math.sin(psi - 0.1));                          // V notch, a touch off-centre
+    return { top: Math.max(0, up), bot: Math.max(0, -up), cs2: cs * cs, vb };
+  };
   const profFor = (psi) => {
-    const up = Math.sin(psi);
-    const phi0 = H.phi0 + 0.1 * Math.pow(Math.max(0, up), 2.5) - 0.03 * Math.pow(Math.max(0, -up), 2);
+    const { top, bot, cs2, vb } = parts(psi);
+    const phi0 = H.phi0 + 0.1 * top ** 2.5 + 0.035 * cs2 - 0.035 * bot ** 2 + 0.07 * vb ** 10;
     const prof = [];
     for (let i = 0; i <= NO; i++) { const phi = Math.PI - (Math.PI - phi0) * (i / NO); prof.push([Math.sin(phi), Math.cos(phi), i < NO ? 1 : 0]); }
-    const e = prof[prof.length - 1], rr = H.roll * (1 + 0.25 * Math.max(0, up));
-    for (let i = 1; i <= NRL; i++) { const a = Math.PI * i / NRL; prof.push([e[0] - rr + rr * Math.cos(a), e[1] + rr * 1.2 * Math.sin(a), 0]); }
+    const e = prof[prof.length - 1], rr = H.roll * (0.82 + 0.6 * top ** 1.5 - 0.12 * cs2 + 0.12 * bot);
+    for (let i = 1; i <= NRL; i++) { const a = Math.PI * i / NRL; prof.push([e[0] - rr + rr * Math.cos(a), e[1] + rr * 1.25 * Math.sin(a), 0]); }
     const l0 = prof[prof.length - 1];
     for (const [dr, dz] of LIN) prof.push([l0[0] + dr, l0[1] + dz, 0]);
     return prof;
   };
   const pos = new Float32Array(NP * (NS + 1) * 3);
-  const peak = new THREE.Vector3(0, 0.8, -0.6).normalize();
+  const peak = new THREE.Vector3(0, 0.66, -0.75).normalize();
   const c = Math.cos(H.tilt), s = Math.sin(H.tilt);
   const d = new THREE.Vector3();
+  const rim = [];
   for (let j = 0; j <= NS; j++) {
     const psi = -Math.PI / 2 + TAU * j / NS;
-    const prof = profFor(psi);
+    const prof = profFor(psi), { top, bot, cs2 } = parts(psi);
     for (let i = 0; i < NP; i++) {
       const [r, z, outer] = prof[i];
       let x = r * Math.cos(psi) * H.rx, y = r * Math.sin(psi) * H.ry, zz = z * H.rz;
-      if (i >= NO - 8) {   // the brim overhangs at the top (shades the eyes like a real hood); the chin edge recedes
-        const k = i >= NO ? 1 : (i - (NO - 8)) / 8, up2 = Math.pow(Math.max(0, Math.sin(psi)), 2), dn2 = Math.pow(Math.max(0, -Math.sin(psi)), 2);
-        zz += (0.17 * up2 - 0.07 * dn2) * k; y -= 0.04 * k * up2;
+      if (i >= NO - 9) {   // cowl edge: brim overhangs at the top, sides set back, chin edge forward and down
+        const k = i >= NO ? 1 : smooth((i - (NO - 9)) / 9);
+        zz += (0.19 * top * top - 0.07 * cs2 + 0.12 * bot * bot) * k;
+        y -= (0.05 * top * top + 0.07 * bot * bot) * k;
       }
       if (outer) {
-        // soft rounded peak at the top-back that droops backward (reads as a hood from behind/side)
+        // teardrop: a soft rounded peak at the top-back that droops backward (reads as a hood from behind / side)
         d.set(x / H.rx, y / H.ry, zz / H.rz).normalize();
         const w = Math.pow(Math.max(0, d.dot(peak)), 3);
-        x *= 1 - 0.22 * w; y += w * H.peak; zz -= w * w * H.peak * 1.1;
+        x *= 1 - 0.3 * w; y += w * H.peak; zz -= w * w * H.peak * 1.3;
         x *= 1 + 0.03 * Math.abs(d.x);
-        // the bottom-back of the hood flattens onto the shoulders
-        if (d.y < 0) { const b = Math.pow(-d.y, 2) * Math.max(0, -d.z + 0.3); y *= 1 - 0.12 * b; }
+        // the bottom-back of the hood drapes down onto the shoulders (tucks under the collar roll)
+        if (d.y < 0) { const b = Math.pow(-d.y, 2) * Math.max(0, -d.z + 0.3); y *= 1 + 0.06 * b; x *= 1 + 0.06 * b; zz *= 1 + 0.05 * b; }
       }
       const y2 = y * c - zz * s, z2 = y * s + zz * c;
       pos.set([x, y2, z2], (i * (NS + 1) + j) * 3);
+      if (i === NO + Math.floor(NRL / 2)) rim[j] = new THREE.Vector3(x, y2, z2);
     }
   }
   const nLin = NO + 1 + Math.ceil(NRL * 0.55);   // inner half of the brim roll is already in the dark
@@ -311,6 +364,8 @@ function hoodGeometry(H) {
   g.addGroup((nLin - 1) * NS * 6, (NP - nLin) * NS * 6, 1);
   g.computeVertexNormals();
   seamFix(g, NP, NS + 1);
+  // rim(psi): head-local point on the crest of the rolled brim (for the overlap fold)
+  g.userData.rim = (psi) => { let f = ((psi + Math.PI / 2) / TAU) * NS; f = ((f % NS) + NS) % NS; const j = Math.floor(f), u = f - j; return rim[j].clone().lerp(rim[j + 1], u); };
   return g;
 }
 
@@ -350,15 +405,17 @@ export class Void extends Character {
       uRootInv: { value: new THREE.Matrix4() }, uStars: { value: 1.0 }, uCosmos: { value: 0 }, uNeb: { value: 0.07 },
       uRimK: { value: 1.0 }, uRimP: { value: 2.7 }, uSheen: { value: 0.5 }, uKeyView: { value: new THREE.Vector3(0, 0, 1) }, uSheenC: { value: new THREE.Color(0.42, 0.2, 1.0) },
       uRimA: { value: new THREE.Color(0.55, 0.2, 1.25) }, uRimB: { value: new THREE.Color(0.12, 0.72, 0.95) },
-      uStarA: { value: new THREE.Color(0.95, 0.88, 1.3) }, uStarB: { value: new THREE.Color(0.65, 1.1, 1.2) },
+      uStarA: { value: new THREE.Color(0.62, 0.46, 0.95) }, uStarB: { value: new THREE.Color(0.36, 0.7, 0.78) },
     };
     this.velvet = velvetMaterial(this.U);
-    this.FU = { uHeadInv: { value: new THREE.Matrix4() }, uC: { value: new THREE.Vector3(...FC) }, uOpen: { value: new THREE.Vector2(0.6, 0.57) },
-      uTime: GLOBAL.uTime, uCosmos: this.U.uCosmos, uBright: { value: 1 } };
+    this.FU = { uHeadInv: { value: new THREE.Matrix4() }, uC: { value: new THREE.Vector3(...FC) }, uR: { value: new THREE.Vector3(...FR) }, uOpen: { value: new THREE.Vector2(0.6, 0.57) },
+      uTime: GLOBAL.uTime, uCosmos: this.U.uCosmos, uBright: { value: 1 }, uHalo: { value: new THREE.Vector2() }, uEyeP: { value: new THREE.Vector4() }, uHoodGlow: { value: 0.1 } };
     this.faceMat = new THREE.ShaderMaterial({ uniforms: this.FU, vertexShader: FACE_VS, fragmentShader: FACE_FS });
+    this.lidMat = new THREE.ShaderMaterial({ uniforms: { ...this.FU, uDecal: { value: null }, uDecalUV: { value: new THREE.Vector4(...DECAL_UV) }, uDecalK: { value: DECAL_K } },
+      vertexShader: FACE_VS, fragmentShader: FACE_FS, defines: { LID: 1 } });
     this.browMat = wispMaterial({ a: 0xa070ff, b: 0x5ae6f2, i: 1.7, soft: 1.1 });
     this.browHaloMat = wispMaterial({ a: 0x7a4cff, b: 0x30c8e0, i: 0.75, soft: 2.2 });
-    this.padMat = wispMaterial({ a: 0x8a60ff, b: 0x4ad8ee, i: 0.8, soft: 1.2, x0: 0.0, x1: 0.12 });
+    this.padMat = wispMaterial({ a: 0x9a70ff, b: 0x4ad8ee, i: 0.9, soft: 0.8, x0: 0.0, x1: 0.9, shim: 0 });
     this.F = { ax: new Float32Array(FK), ay: new Float32Array(FK), az: new Float32Array(FK), px: new Float32Array(FK), py: new Float32Array(FK), pz: new Float32Array(FK) };
     this.tipMat = new THREE.Matrix4();
     this._rootQInv = new THREE.Quaternion();
@@ -372,6 +429,19 @@ export class Void extends Character {
     const kv = this.U.uKeyView.value;
     const obr = (r, sc, cam) => { kv.copy(EYE_LIGHT.uKeyDir.value).transformDirection(cam.matrixWorldInverse); };
     this.root.traverse((o) => { if (o.isMesh && (o.material === this.velvet || (Array.isArray(o.material) && o.material.includes(this.velvet)))) o.onBeforeRender = obr; });
+    // perf (SwiftShader is fill-bound): only the body + hood cast shadows, and the parts that usually sit IN FRONT of
+    // the big velvet body draw first so early-z rejects the body pixels they cover
+    const opaque = (o) => o.isMesh && !(Array.isArray(o.material) ? o.material.some((m) => m.transparent) : o.material.transparent);
+    this.root.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    this.body.castShadow = true; this.hood.castShadow = true;
+    this.headGroup.traverse((o) => { if (opaque(o)) o.renderOrder = -3; });
+    this.hood.renderOrder = -2;
+    for (const sd of ['L', 'R']) {
+      this.arms[sd].group.traverse((o) => { if (opaque(o)) o.renderOrder = -2; });
+      this.legs[sd].mesh.renderOrder = -1;
+      this.feet[sd].group.traverse((o) => { if (opaque(o)) o.renderOrder = -1; });
+    }
+    this.cape.renderOrder = -1;
     this.update(0, {});
   }
 
@@ -389,6 +459,8 @@ export class Void extends Character {
         wLow: under ? smooth((r - 0.3) / 0.55) : smooth((1.05 - y) / 0.9),
         edge: under ? 0.6 * smooth((r - 0.7) / 0.25) : g(0.13, 0.08),
         wBelly: under ? 0 : g(0.75, 0.4), wChest: g(1.12, 0.4), wMid: g(0.88, 0.6), wSh: g(1.46, 0.2), wTop: under ? 0 : smooth((y - 1.32) / 0.35),
+        // hem "curtain" lift profile: 1 at the hem, easing to 0 by ~1.25 m (monotonic: rows compress, never fold)
+        fC: under ? smooth((r - 0.25) / 0.7) : 0.5 + 0.5 * Math.cos(Math.PI * clamp((y - 0.1) / 1.15)),
       };
     });
     const outer = this.rows.filter((rw) => !rw.under);
@@ -443,7 +515,7 @@ export class Void extends Character {
     g.setIndex(idx);
     this.capeGeo = g;
     this.cape = new THREE.Mesh(g, this.velvet);
-    this.cape.frustumCulled = false; this.cape.castShadow = true;
+    this.cape.frustumCulled = false;
     this.root.add(this.cape);
   }
 
@@ -491,17 +563,27 @@ export class Void extends Character {
     this.hood = new THREE.Mesh(hoodGeometry(HOOD), [this.velvet, this.faceMat]);
     this.hood.castShadow = true;
     this.headGroup.add(this.hood);
+    // the cowl's one asymmetric overlap: the left side of the opening folds over the right at the chin
+    { const rim = this.hood.geometry.userData.rim, P0 = -Math.PI / 2;
+      const pts = [[1.3, 0.0, 0.0], [0.8, 0.06, -0.04], [0.3, 0.1, -0.09], [-0.2, 0.08, -0.1], [-0.6, 0.0, -0.06]]
+        .map(([da, dz, dy]) => rim(P0 + da).add(V3(0, dy, dz)));
+      this.fold = new SweepTube({ material: this.velvet, segments: 20, radial: 12, capRings: 3 });
+      this.fold.update(pts, [0.035, 0.075, 0.09, 0.07, 0.03], { up: V3(0, -0.45, 1), flatten: 0.45 });
+      this.headGroup.add(this.fold.mesh); }
+    // soft fabric roll where the hood meets the capelet (back & sides only, tapering out before the face)
+    this.collar = new SweepTube({ material: this.velvet, segments: 24, radial: 12, capRings: 3 });
+    this.root.add(this.collar.mesh);
     const surface = ellipsoidSurface(FR, FC);
     this.surface = surface;
     this.faceField = new THREE.Mesh(surfaceGeometry(surface, -1.5, 1.5, -1.4, 1.35, 36, 32), this.faceMat);
     this.headGroup.add(this.faceField);
-    const decalMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, color: new THREE.Color(1.7, 1.7, 1.7) });
+    const decalMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, color: new THREE.Color(DECAL_K, DECAL_K, DECAL_K) });
     const self = this;
     this.face = new Face({
       head: this.headGroup, surface, seed: 23,
       eyes: { u: 0.37, v: 0.1, radius: 0.172, sink: 0.5, splay: 0.07, scale: [1, 1.1, 0.95], glow: 0.9,
         sclera: 0xdfe9ff, iris: 0x16288e, iris2: 0x1fa8c6, limbal: 0x050a30, pupilColor: 0x010208, irisR: 0.7, pupilR: 0.33,
-        lidMaterial: this.faceMat, lash: 0, lowerLash: 0, catchlight: 0.8, lidGapU: 1.04, lidGapL: 1.04,
+        lidMaterial: this.lidMat, lash: 0, lowerLash: 0, catchlight: 0.8, lidGapU: 1.04, lidGapL: 1.04,
         upOpen: 0.74, upWide: 1.05, lowRelaxed: -0.8, lowRaised: 0.26, maxYaw: 0.72, maxPitch: 0.56 },
       brows: { material: this.browMat, thickness: 0.036, lift: 0.016, inner: [0.14, 0.43], mid: [0.36, 0.54], outer: [0.6, 0.45], range: 0.17, flatten: 0.25, profile: [0.5, 1.0, 0.85, 0.32] },
       mouth: {
@@ -509,18 +591,18 @@ export class Void extends Character {
         blushX: 0.32, blushY: 0.08, teeth: 'rgba(0,0,0,0)', animated: true,
         drawExtra: (g, p, t) => self._drawExtra(g, p, t),
       },
-      decal: { uMin: -0.8, uMax: 0.8, vMin: -1.2, vMax: 0.05, size: [384, 320], lift: 0.004, material: decalMat },
+      decal: { uMin: DECAL_UV[0], uMax: DECAL_UV[1], vMin: DECAL_UV[2], vMax: DECAL_UV[3], size: [384, 320], lift: 0.004, material: decalMat },
     });
-    // soft starlight halos around the eyes + a faint glow in the hood
-    this.halos = this.face.eyes.map((ey) => {
-      const s = glowSprite(0x9fe2ff, 0.78, 0.3);
-      s.position.copy(ey.group.position).add(V3(0, 0, 0.26));
-      s.renderOrder = 6;
-      this.headGroup.add(s);
-      return s;
-    });
-    this.hoodGlow = glowSprite(0x6a48ff, 1.25, 0.1);
-    this.hoodGlow.position.set(0, -0.05, 0.28); this.headGroup.add(this.hoodGlow);
+    // lids see the face decal (blush / puff glows), and two "canthus" caps per eye (same darkness) tuck the eye
+    // corners in as the lids close, so happy / closed eyes are tapered arcs of light with no white wedges
+    this.lidMat.uniforms.uDecal.value = this.face.decal.tex;
+    this.canthi = this.face.eyes.map((ey) => [1, -1].map((cx) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), this.lidMat);
+      ey.inner.add(m);
+      return { m, cx };
+    }));
+    // eye halos + hood glow are analytic terms in the face shader (uHalo / uHoodGlow); eye centres in head space:
+    this.FU.uEyeP.value.set(this.face.eyes[0].group.position.x, this.face.eyes[0].group.position.y, this.face.eyes[1].group.position.x, this.face.eyes[1].group.position.y);
     // brow halos (wider, fainter copies of the brow wisps)
     this.browHalo = this.face.brows.map(() => { const tb = new SweepTube({ material: this.browHaloMat, segments: 14, radial: 8, capRings: 3 }); this.headGroup.add(tb.mesh); return tb; });
     // head-space anchors
@@ -537,28 +619,35 @@ export class Void extends Character {
 
   _buildLimbs() {
     this.arms = {}; this.legs = {}; this.feet = {};
+    this.liningMat = new THREE.MeshBasicMaterial({ color: 0x07051a });
     for (const side of ['L', 'R']) {
       const s = side === 'L' ? 1 : -1;
-      const hand = new Hand({ size: HAND, fingers: 3, side, material: this.velvet, thick: 1.9, fingerLen: 0.95, castShadow: true });
-      const limb = new Limb({ material: this.velvet, upper: ARM_L1, lower: ARM_L2, radius: ARM_R, segments: 18, radial: 14, hand, soft: 0.35, castShadow: true });
-      // chunkier fingers & thumb (gentle, plush hands)
-      for (const f of [...hand.fingers, hand.thumb]) for (const sg of f.segs) sg.children[0].scale.set(1.3, 1, 1.3);
+      const hand = new VoidHand({ size: HAND, side, material: this.velvet });
+      const limb = new Limb({ material: this.velvet, upper: ARM_L1, lower: ARM_L2, radius: ARM_R, segments: 16, radial: 14, hand, soft: 0.35 });
       this.root.add(limb.group);
       this.arms[side] = limb;
-      limb.merged = mergedHand(hand, this.velvet, limb.group);
-      limb.group.add(limb.merged.mesh);
-      const palmL = HAND * 0.46, palmT = HAND * 0.16 * 1.9;
-      this.addAnchor('hand' + side, hand.root, [0, palmL * 0.55, -palmT * 0.9]);
-      const leg = new SweepTube({ material: this.velvet, segments: 10, radial: 14, capRings: 4, castShadow: true });
+      limb.merged = { mesh: hand.mesh, update() {} };     // (compat: the hand already is one merged mesh)
+      limb.cuff = new Cuff(this.velvet, this.liningMat);
+      limb.group.add(limb.cuff.mesh);
+      this.addAnchor('hand' + side, hand.root, hand.palmCentre.toArray());
+      const leg = new SweepTube({ material: this.velvet, segments: 10, radial: 14, capRings: 4 });
       this.root.add(leg.mesh);
       this.legs[side] = leg;
       const foot = new THREE.Group(); this.root.add(foot);
-      const fm = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 18), this.velvet);
-      fm.scale.set(FOOT[0], FOOT[1], FOOT[2]); fm.position.set(0, 0, 0.02); fm.castShadow = true;
+      const fm = new THREE.Mesh(new THREE.SphereGeometry(1, 26, 16), this.velvet);
+      fm.scale.set(FOOT[0], FOOT[1], FOOT[2]); fm.position.set(0, 0, 0.02);
       foot.add(fm);
-      const pad = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10, 0, TAU, Math.PI * 0.55, Math.PI * 0.45), this.padMat);
-      pad.scale.set(FOOT[0] * 0.78, FOOT[1] * 0.98, FOOT[2] * 0.8); pad.position.set(0, 0.004, 0.02);
-      foot.add(pad);
+      // soft glowing sole pad (+ three toe beans) — reads when the sole faces camera (kicks, sitting)
+      // soft glowing sole pad + three toe beans, merged into ONE mesh (reads when the sole faces camera: kicks, sitting)
+      const pg = new THREE.SphereGeometry(1, 20, 10, 0, TAU, Math.PI * 0.55, Math.PI * 0.45);
+      pg.scale(FOOT[0] * 0.68, FOOT[1] * 1.05, FOOT[2] * 0.62); pg.translate(0, 0, -0.03);
+      const parts = [pg];
+      for (const tx of [-1, 0, 1]) {
+        const x = tx * 0.095, z = 0.155 - 0.02 * Math.abs(tx);
+        const y = -FOOT[1] * Math.sqrt(Math.max(0, 1 - (x / FOOT[0]) ** 2 - ((z - 0.02) / FOOT[2]) ** 2));
+        const tg = new THREE.SphereGeometry(0.042, 10, 8); tg.translate(x, y + 0.012, z); parts.push(tg);
+      }
+      foot.add(new THREE.Mesh(mergeGeos(parts), this.padMat));
       this.feet[side] = { group: foot, s };
     }
   }
@@ -614,7 +703,8 @@ export class Void extends Character {
     const round = clamp(m.round), wide = clamp(m.wide, -1, 1), press = clamp(m.press), pout = clamp(m.pout);
     const smile = clamp(m.smile + trem * 4, -1, 1), asym = clamp(m.asym, -1, 1), shift = (m.shift || 0) * HW * 0.4;
     const w = HW * (1 + 0.34 * wide) * (1 - 0.48 * round * clamp(open * 3 + 0.3)) * (1 - 0.18 * press) * (1 - 0.45 * pout);
-    const yR = (smile * 0.5 - asym * 0.3) * HW, yL = (smile * 0.5 + asym * 0.3) * HW;   // corner heights (R = -x)
+    const droop = clamp(m.droop || 0), wavy = clamp(m.wavy || 0);
+    const yR = (smile * 0.5 - asym * 0.42) * HW, yL = (smile * 0.5 + asym * 0.42) * HW;   // corner heights (R = -x)
     const xr = -w + shift, xl = w + shift, cm = (yR + yL) / 2;
     const h = HW * 1.75 * open + round * HW * 0.45 * Math.min(1, open * 4);
     const A = m.vis;
@@ -632,9 +722,28 @@ export class Void extends Character {
         g.strokeStyle = line(A); g.lineWidth = HW * 0.05; g.stroke();
         g.strokeStyle = line(A * 0.5); g.lineWidth = HW * 0.025;
         for (const k of [-1, 0, 1]) { g.beginPath(); g.moveTo(shift + k * rx * 0.45, mid + ry * 1.25); g.lineTo(shift + k * rx * 0.5, mid + ry * 1.7); g.stroke(); g.beginPath(); g.moveTo(shift + k * rx * 0.45, mid - ry * 1.25); g.lineTo(shift + k * rx * 0.5, mid - ry * 1.7); g.stroke(); }
+      } else if (wavy > 0.05) {
+        // uneasy squiggle (awkward): a wobbling wave line across a wide mouth
+        const amp = HW * 0.075 * wavy, ph = t * 2.2;
+        g.beginPath();
+        for (let i = 0; i <= 28; i++) {
+          const u = i / 28, x = lerp(xr, xl, u), env = Math.sin(Math.PI * u);
+          const y = lerp(yR, yL, u) + sag * 0.4 * env + amp * Math.sin(u * Math.PI * 5 + ph) * (0.35 + 0.65 * env);
+          i ? g.lineTo(x, y) : g.moveTo(x, y);
+        }
+        g.strokeStyle = line(A * 0.3); g.lineWidth = HW * 0.15; g.stroke();
+        g.strokeStyle = line(A); g.lineWidth = HW * 0.055; g.stroke();
       } else {
         lens(); g.strokeStyle = line(A * 0.3); g.lineWidth = HW * 0.12; g.stroke();
         g.fillStyle = line(A); g.fill();
+      }
+      if (droop > 0.05 && pout <= 0.25) {   // sad smile: the corners turn down in little soft hooks
+        for (const [x, y, sx] of [[xr, yR, -1], [xl, yL, 1]]) {
+          g.beginPath(); g.moveTo(x - sx * HW * 0.02, y);
+          g.quadraticCurveTo(x + sx * HW * 0.1, y + HW * 0.01, x + sx * HW * 0.15, y - HW * 0.17 * droop);
+          g.strokeStyle = line(A * 0.3); g.lineWidth = HW * 0.11; g.stroke();
+          g.strokeStyle = line(A * 0.95); g.lineWidth = HW * 0.045; g.stroke();
+        }
       }
     } else {
       // open: upper edge nearly flat on a laugh (soft U on a smile), lower edge a full round bowl; 'round' -> O
@@ -730,8 +839,8 @@ export class Void extends Character {
         + (D.sit * 0.14 + D.kneel * 0.1) * row.wHem + D.laughB * 0.035 * row.wBelly;
       for (let a = 0; a <= NA; a++) {
         const col = this.cols[a];
-        const lift = this.hemLift[a] * (row.wLow * 0.35 + row.wHem * 0.65);
-        let rho = row.r * (radMul + row.wHem * 0.016 * col.fold + row.wBelly * 0.05 * Math.max(0, col.c) * (1 + D.laughB)) * (1 + lift * 0.3);
+        const lift = this.hemLift[a] * row.fC;
+        let rho = row.r * (radMul + row.wHem * 0.016 * col.fold + row.wBelly * 0.05 * Math.max(0, col.c) * (1 + D.laughB)) * (1 + lift * 0.22);
         if (row.wTop > 0 && col.c > 0) rho *= 1 - 0.5 * row.wTop * Math.pow(col.c, 1.5);
         const ly = row.edge * 0.022 * col.scallop + lift + D.shrug * 0.11 * row.wSh + D.frontHem * row.wHem * Math.max(0, col.c);
         const lx = rho * col.s, lz = rho * col.c * SZ;
@@ -749,7 +858,7 @@ export class Void extends Character {
   }
 
   // ---------------------------------------------------------------- arms
-  _presetSolve(name, s, D, A) {
+  _presetSolve(name, s, D) {
     const pr = ARM[name] || ARM.rest;
     const base = pr.like ? ARM[pr.like] : pr;
     const mir = (v) => (v ? V3(v[0] * s, v[1], v[2]) : null);
@@ -763,62 +872,117 @@ export class Void extends Character {
       p.y += D.breath * 0.012;
       if (name === 'belly') { p.y += D.laughB * 0.06; p.z += D.laughB * 0.03; }
       if (name === 'rest' || pr.like === 'rest') {
-        p.addScaledVector(V3(s * 0.25, 0.42, 0.42), D.kP);                 // flail for balance during a kick
+        p.addScaledVector(V3(s * 0.35, 0.3, 0.05), D.kP);                  // arms out for balance during a kick
         p.y += 0.03 * fbm1(D.t * 0.3, 40 + s);
       }
       tgt = this._xf(CHEST_Y, p.x, p.y, p.z);
-      fd = base.fingers ? this._xd(CHEST_Y, mir(base.fingers)) : null;
-      pn = base.palm ? this._xd(CHEST_Y, mir(base.palm)) : null;
-      pole = this._xd(CHEST_Y, mir(base.pole || [1, 0, -0.5]));
+      fd = base.fingers ? this._xd(CHEST_Y, mir(s < 0 && base.fingersR ? base.fingersR : base.fingers)) : null;
+      pn = base.palm ? this._xd(CHEST_Y, mir(s < 0 && base.palmR ? base.palmR : base.palm)) : null;
+      pole = this._xd(CHEST_Y, mir((s < 0 && base.poleR) || base.pole || [1, 0, -0.5]));
     }
-    if (pr !== base) {
-      if (pr.palm) pn = this._xd(CHEST_Y, mir(pr.palm));
-      if (pr.pole) pole = this._xd(CHEST_Y, mir(pr.pole));
-      fd = pr.fingers ? this._xd(CHEST_Y, mir(pr.fingers)) : (A && A.target ? null : fd);
+    // the target-driven shape (pat / around / tip / reach): its own dirs, used as the target end of `reach`
+    const shape = pr !== base ? {
+      fd: pr.fingers ? this._xd(CHEST_Y, mir(pr.fingers)) : null, pn: pr.palm ? this._xd(CHEST_Y, mir(pr.palm)) : pn,
+      pole: pr.pole ? this._xd(CHEST_Y, mir(pr.pole)) : pole } : null;
+    return { tgt, fd, pn, pole, shape, at: pr.at || 'wrist', shFwd: base.shFwd || 0, stretch: base.stretch || 1.2, hs: base.hs || 1, hand: { ...(base.hand || {}), ...(pr !== base ? pr.hand || {} : {}) } };
+  }
+
+  /**
+   * Contact frame on a partner (any Character with shoulderL/R + head anchors) for `pat` / `around` (WORLD space):
+   * { tgt: palm-centre point, pn: palm normal (into them), fd: finger direction, pole: elbow hint }.
+   * pat: palm flat on top of the NEAR shoulder (or `spot`), fingers over its front, away from the head.
+   * around: forearm draped behind the neck, palm down on the FAR shoulder, fingers over its front.
+   */
+  _contact(kind, on, spot, s) {
+    const up = V3(0, 1, 0);
+    const fwd = V3(0, 0, 1).applyQuaternion(on.root.getWorldQuaternion(new THREE.Quaternion())); fwd.y = 0; fwd.normalize();
+    const SL = on.anchor('shoulderL'), SR = on.anchor('shoulderR');
+    if (!SL || !SR) return null;
+    const mySh = this.root.localToWorld(this._xf(SHOULDER_Y, s * 0.64, 0, 0.03));
+    let which = spot;
+    if (!which) {
+      const near = SL.distanceTo(mySh) < SR.distanceTo(mySh) ? 'shoulderL' : 'shoulderR';
+      which = kind === 'around' ? (near === 'shoulderL' ? 'shoulderR' : 'shoulderL') : near;
     }
-    return { tgt, fd, pn, pole, hand: { ...(base.hand || {}), ...(pr !== base ? pr.hand || {} : {}) } };
+    const P = on.anchor(which);
+    if (!P) return null;
+    const O = which === 'shoulderL' ? SR : which === 'shoulderR' ? SL : on.anchor('head') || P;
+    const out = P.clone().sub(O); out.y = 0;
+    if (out.lengthSq() < 1e-6) out.copy(mySh).sub(P).setY(0);
+    out.normalize();
+    const side = mySh.clone().sub(P).setY(0).normalize();     // from the contact toward me
+    if (kind === 'around') {
+      return { tgt: P.clone().addScaledVector(up, 0.025).addScaledVector(fwd, -0.02),
+        pn: up.clone().multiplyScalar(-0.95).addScaledVector(out, -0.2).normalize(),
+        fd: fwd.clone().multiplyScalar(0.62).addScaledVector(out, 0.4).addScaledVector(up, -0.6).normalize(),
+        pole: fwd.clone().multiplyScalar(-1).addScaledVector(up, 0.85).addScaledVector(side, 0.25).normalize() };
+    }
+    return { tgt: P.clone().addScaledVector(up, 0.02),
+      pn: up.clone().multiplyScalar(-0.95).addScaledVector(out, -0.22).normalize(),
+      fd: fwd.clone().multiplyScalar(0.72).addScaledVector(out, 0.42).addScaledVector(up, -0.5).normalize(),
+      pole: side.clone().multiplyScalar(0.6).addScaledVector(up, -0.65).addScaledVector(fwd, -0.4).normalize() };
   }
 
   _arm(side, A, D, t) {
     const s = side === 'L' ? 1 : -1;
-    const limb = this.arms[side];
-    const sh = this._xf(SHOULDER_Y, s * 0.64, -0.02 + D.shrug * 0.16 + D.breath * 0.006, 0.03);
+    const limb = this.arms[side], hand = limb.hand;
     const name = A.preset || 'rest';
-    let S = this._presetSolve(name, s, D, A);
+    let S = this._presetSolve(name, s, D);
     if (A.from && (A.mix ?? 1) < 1) {   // blend from another preset
-      const F0 = this._presetSolve(A.from, s, D, null), w = clamp(A.mix ?? 1);
+      const F0 = this._presetSolve(A.from, s, D), w = clamp(A.mix ?? 1);
       const lv = (a, b) => (a && b ? a.clone().lerp(b, w).normalize() : (w < 0.5 ? a : b));
-      S = { tgt: F0.tgt.clone().lerp(S.tgt, w), fd: lv(F0.fd, S.fd), pn: lv(F0.pn, S.pn), pole: lv(F0.pole, S.pole), hand: mixHand(F0.hand, S.hand, w) };
+      S = { ...S, tgt: F0.tgt.clone().lerp(S.tgt, w), fd: lv(F0.fd, S.fd), pn: lv(F0.pn, S.pn), pole: lv(F0.pole, S.pole), hand: mixHand(F0.hand, S.hand, w),
+        shFwd: lerp(F0.shFwd, S.shFwd, w), stretch: lerp(F0.stretch, S.stretch, w), hs: lerp(F0.hs, S.hs, w) };
     }
+    // arm root (hidden under the capelet); some presets roll the shoulder forward around the round body
+    const sh = this._xf(SHOULDER_Y, s * (0.64 - 0.06 * S.shFwd), -0.02 + D.shrug * 0.16 + D.breath * 0.006 - 0.05 * S.shFwd, 0.03 + S.shFwd);
     let { tgt, fd, pn, pole } = S;
-    if (A.target) {
-      const tw = this.root.worldToLocal(toV(A.target));
-      tgt = tgt.clone().lerp(tw, clamp(A.reach ?? 1));
-    }
-    if (A.offset) tgt.add(this._wd(A.offset).multiplyScalar(toV(A.offset).length()));
-    if (A.pole) pole = this._wd(A.pole);
-    if (A.palm) pn = this._wd(A.palm);
-    if (A.fingers) fd = this._wd(A.fingers);
-    if (A.pat) tgt.y += 0.075 * A.pat * Math.max(0, Math.sin((t - (A.patPhase ?? 0)) * TAU * (A.patRate ?? 2.2)));
-    if (A.tip || name === 'tip') {    // target is where the index fingertip goes
-      const dir = (fd ? fd.clone() : tgt.clone().sub(sh)).normalize();
-      tgt.addScaledVector(dir, -HAND * 0.97);
-      fd = dir;
-    }
-    const L = ARM_L1 + ARM_L2, f = clamp(tgt.distanceTo(sh) / (L * 0.97), 1, 1.2);   // a little rubber stretch
-    limb.l1 = ARM_L1 * f; limb.l2 = ARM_L2 * f;
-    limb.update(sh, tgt, pole, { palmNormal: pn, fingerDir: fd, radius: ARM_R.map((r) => r / Math.sqrt(f)) });
     const hp = { ...S.hand, ...(A.hand || {}) };
     hp.curl = (hp.curl ?? 0.15) + 0.04 * fbm1(t * 0.5, 60 + s);
-    limb.hand.pose(hp);
-    limb.merged.update();
+    hand.pose(hp);
+    const k = A.handScale ?? (A.on ? 0.72 : S.hs);
+    hand.root.scale.setScalar(k);
+    const C = A.on ? this._contact(name, A.on, A.spot, s) : null;
+    const tw = A.target ? toV(A.target) : C ? C.tgt : null;
+    if (tw) {
+      const r = clamp(A.reach ?? 1), sp = S.shape || S;
+      const tl = this.root.worldToLocal(tw.clone());
+      const pnT = A.palm ? this._wd(A.palm) : C ? this._wd(C.pn) : (sp.pn || V3(0, -1, 0));
+      const fdT = A.fingers ? this._wd(A.fingers) : C ? this._wd(C.fd) : (sp.fd || tl.clone().sub(sh).normalize());
+      const poleT = A.pole ? this._wd(A.pole) : C ? this._wd(C.pole) : sp.pole;
+      if (A.pat) {   // pats: the palm lifts off along its normal and comes back down, `patRate` per second
+        const ph = (((t - (A.patPhase ?? 0)) * (A.patRate ?? 2.2)) % 1 + 1) % 1;
+        tl.addScaledVector(pnT, -0.075 * A.pat * Math.pow(Math.sin(Math.PI * ph), 2));
+      }
+      const at = A.at || (A.tip ? 'tip' : S.at);
+      if (at === 'palm' || at === 'tip') {   // anchor the palm centre / index fingertip (not the wrist) on the target
+        const L = at === 'tip' ? hand.indexTip : hand.palmCentre;
+        const y = fdT.clone().normalize(), x = V3().crossVectors(y, pnT.clone().negate()).normalize(), z = V3().crossVectors(x, y);
+        tl.addScaledVector(x, -L.x * k).addScaledVector(y, -L.y * k).addScaledVector(z, -L.z * k);
+      }
+      tgt = tgt.clone().lerp(tl, r);
+      fd = fd ? fd.clone().lerp(fdT, r).normalize() : fdT;
+      pn = pn ? pn.clone().lerp(pnT, r).normalize() : pnT;
+      pole = pole.clone().lerp(poleT, r).normalize();
+    } else {
+      if (A.pole) pole = this._wd(A.pole);
+      if (A.palm) pn = this._wd(A.palm);
+      if (A.fingers) fd = this._wd(A.fingers);
+    }
+    if (A.offset) tgt.add(this._wd(A.offset).multiplyScalar(toV(A.offset).length()));
+    const L = ARM_L1 + ARM_L2, f = clamp(tgt.distanceTo(sh) / (L * 0.97), 1, S.stretch);   // a little rubber stretch
+    limb.l1 = ARM_L1 * f; limb.l2 = ARM_L2 * f;
+    limb.update(sh, tgt, pole, { palmNormal: pn, fingerDir: fd, radius: ARM_R.map((r) => r / Math.sqrt(f)) });
+    // flared sleeve cuff around the wrist, hanging a little toward the ground
+    const fa = limb.end.clone().sub(limb.mid).normalize();
+    limb.cuff.update(limb.end, fa, pn || V3(0, -1, 0), this._wd([0, -1, 0]), lerp(1, k, 0.6));
   }
 
   // ---------------------------------------------------------------- legs & feet
   _legs(D, E) {
     const out = {};
     for (const side of ['L', 'R']) {
-      const s = side === 'L' ? 1 : -1, isK = s === D.kS;
+      const s = side === 'L' ? 1 : -1, isK = s === D.kS && (D.kP > 0 || D.kM > 0);
       let fx = s * 0.4, fy = 0, fz = 0.56;
       const up = V3(0, 1, 0), fwd = V3(s * 0.14, 0, 1);
       if (D.wa > 0) {
@@ -834,52 +998,72 @@ export class Void extends Character {
       fz = lerp(fz, -0.2, D.kneel); fy = lerp(fy, 0.02, D.kneel); up.lerp(V3(0, 0.15, -1), D.kneel); fwd.lerp(V3(0, 1, 0.1), D.kneel);
       fx += s * 0.06 * D.crouch;
       fx += s * 0.02 * D.hemOpen;
-      if (isK) {
-        fz = lerp(fz, 0.66, D.kM); fy = lerp(fy, 0.34, D.kM);            // chamber (wind-up)
-        const kt = D.kickT;
-        const ke = D.kP;
-        fx = lerp(fx, kt.x, ke); fy = lerp(fy, kt.y, ke); fz = lerp(fz, kt.z, ke);
-        up.lerp(V3(0, 0.25, 1), clamp(ke * 1.3)); fwd.lerp(V3(0, -1, 0.15), clamp(ke * 1.3));
-      } else if (D.kP > 0) { fz += 0.06 * D.kP; fx += s * 0.04 * D.kP; }
+      if (!isK && D.kP > 0) { fz += 0.06 * D.kP; fx += s * 0.04 * D.kP; }
       up.normalize(); fwd.normalize();
-      const centre = V3(fx, fy, fz).addScaledVector(up, FOOT[1] * 0.95 * (isK ? 1 + 0.3 * clamp(D.kP) : 1));
-      const ankle = centre.clone().addScaledVector(up, 0.08).addScaledVector(fwd, -0.08);
-      const hip = this._xf(HIP_Y + (isK ? 0.1 * D.kP : 0), s * 0.34, 0, 0.24 - (isK ? 0.45 * D.kP : 0));
+      let centre = V3(fx, fy, fz).addScaledVector(up, FOOT[1] * 0.95);
+      let ankle = centre.clone().addScaledVector(up, 0.08).addScaledVector(fwd, -0.08);
+      let hip = this._xf(HIP_Y, s * 0.34, 0, 0.24);
+      let fsc = 1;
+      if (isK) {
+        // wind-up: the knee comes up in front (chamber); kick: the hip slides back under the lifted back hem and the
+        // short fat leg shoots straight back-and-up (height comes from the body tipping forward, not a long leg)
+        const kM = D.kM, kP = clamp(D.kP, 0, 1.25), kE = smooth(clamp(kP));
+        const chamber = V3(fx, lerp(fy, 0.3, kM), lerp(fz, 0.7, kM)).addScaledVector(up, FOOT[1] * 0.95);
+        hip.lerp(this._xf(0.34, s * 0.38, 0, -0.55), kE);
+        const dB = this._xd(0.34, [s * 0.38, 0.2, -1]);                 // back, out to its side, a touch up (body frame)
+        let dir = dB.clone();
+        if (D.kickT) {                                                    // aim at a target, inside a cone around dB
+          const dt = D.kickT.clone().sub(hip).normalize();
+          dir = dB.clone().lerp(dt, clamp(0.85 - 0.6 * Math.max(0, 0.5 - dt.dot(dB)))).normalize();
+        }
+        const len = KICK_LEN * (0.82 + 0.18 * kP) - FOOT[1];
+        const kCentre = hip.clone().addScaledVector(dir, len + FOOT[1] * 0.9);
+        const kUp = dir.clone().negate();                                   // the sole (pad) faces the target
+        const kFwd = V3(0, 1, 0).addScaledVector(kUp, -kUp.y).normalize(); // toes up
+        centre = chamber.lerp(kCentre, kE);
+        up.lerp(kUp, clamp(kE * 1.2)).normalize(); fwd.lerp(kFwd, clamp(kE * 1.2)).normalize();
+        ankle = centre.clone().addScaledVector(up, lerp(0.08, FOOT[1] * 0.9, kE)).addScaledVector(fwd, -0.08 * (1 - kE));
+        fx = centre.x; fy = centre.y - FOOT[1]; fz = centre.z;
+        fsc = 1 + 0.18 * clamp((kP - 0.9) / 0.2) * (1 - clamp((kP - 1.1) / 0.15)) + 0.06 * kE;   // swells on impact
+      }
       const d = ankle.clone().sub(hip), L = d.length(), mid = hip.clone().lerp(ankle, 0.5);
       let knee = mid;
-      if (L < LEG_LEN) {
-        const hk = Math.sqrt(Math.max(0, (LEG_LEN / 2) ** 2 - (L / 2) ** 2));
+      const LL = isK ? Math.max(LEG_LEN, L * 1.02) : LEG_LEN;
+      if (L < LL) {
+        const hk = Math.sqrt(Math.max(0, (LL / 2) ** 2 - (L / 2) ** 2));
         const pole = isK && D.kP > 0.2 ? V3(0, -1, 0.2) : V3(s * 0.45, 0, 1);
         pole.addScaledVector(d, -pole.dot(d) / (L * L)).normalize();
         knee = mid.clone().addScaledVector(pole, hk);
       }
-      const rs = clamp(Math.sqrt(LEG_LEN / Math.max(L, LEG_LEN)), 0.9, 1) * (isK ? 1 + 0.1 * D.kP : 1);
-      this.legs[side].update([hip, knee, ankle], LEG_R.map((r) => r * rs), {});
+      const rs = clamp(Math.sqrt(LEG_LEN / Math.max(L, LEG_LEN)), 0.88, 1);
+      this.legs[side].update([hip, knee, ankle], isK ? [LEG_R[0] * 1.04, LEG_R[1], LEG_R[2]] : LEG_R.map((r) => r * rs), {});
       const fg = this.feet[side].group;
       fg.position.copy(centre);
       orientYZ(fg, up, fwd);
-      fg.scale.setScalar(isK ? 1 + 0.3 * clamp(D.kP) : 1);
-      out[side] = { sole: V3(fx, fy, fz), centre, up, fwd };
+      fg.scale.setScalar(fsc);
+      out[side] = { sole: V3(fx, fy, fz), centre, up, fwd, isK };
     }
     return out;
   }
 
+  /** Per-column hem lift amplitudes (m): a smooth "curtain" opening over the feet / the kicking leg. */
   _hemLifts(D, feet) {
     const H = this.hemLift;
     const bumps = [];
     for (const side of ['L', 'R']) {
       const f = feet[side];
-      const amt = clamp((f.centre.z - 0.62) * 0.8 + (f.sole.y) * 1.25, 0, 0.5);
-      if (amt > 0.001 && !(side === (D.kS > 0 ? 'L' : 'R') && D.kP > 0.05)) bumps.push([Math.atan2(f.centre.x, f.centre.z), amt, 0.5]);
+      if (f.isK) continue;
+      const amt = clamp((f.centre.z - 0.62) * 0.7 + f.sole.y * 1.1, 0, 0.32);
+      if (amt > 0.001) bumps.push([Math.atan2(f.centre.x, f.centre.z), amt, 0.55]);
     }
-    if (D.kP > 0) bumps.push([Math.atan2(D.kS * 0.3, -1), D.kP * 0.6, 0.85]);
-    if (D.kM > 0) bumps.push([Math.atan2(D.kS * 0.38, 1), D.kM * 0.22, 0.5]);
+    if (D.kP > 0) bumps.push([Math.atan2(D.kS * 0.45, -0.6), 0.56 * smooth(clamp(D.kP)), 1.0]);
+    if (D.kM > 0) bumps.push([Math.atan2(D.kS * 0.38, 0.9), D.kM * 0.24, 0.7]);
     if (D.sit > 0) bumps.push([0, D.sit * 0.2, 0.9]);
     for (let a = 0; a <= NA; a++) {
       const th = this.cols[a].th;
       let v = D.hemOpen * 0.3;
       for (const [c, amt, w] of bumps) { let dt = th - c; dt = Math.atan2(Math.sin(dt), Math.cos(dt)); v += amt * Math.exp(-((dt / w) ** 2)); }
-      H[a] = v;
+      H[a] = Math.min(v, 0.6);
     }
   }
 
@@ -900,7 +1084,7 @@ export class Void extends Character {
     const c1 = Math.cos(ph * TAU), s1 = Math.sin(ph * TAU), c2 = Math.cos(ph * 2 * TAU);
     const lr = laugh > 0 ? Math.pow(0.5 + 0.5 * Math.sin(t * TAU * 3.3), 1.5) : 0;      // "HA-HA-HA" belly rhythm
     const shake = laugh * 0.022 * noise1(t * 9, sd + 5);
-    const kickT = E.kickTarget ? this.root.worldToLocal(toV(E.kickTarget)) : V3(kS * 0.22, 1.3, -1.5);
+    const kickT = E.kickTarget ? this.root.worldToLocal(toV(E.kickTarget)) : null;
     const D = {
       t, breath: br, crouch, sit, kneel, shrug, wa, ph, st, c1, kP, kM, kS, kickT,
       lean: (B.lean ?? 0) + slump * 0.16 - recoil * 0.22 + wa * st.lean - laugh * 0.1 + kP * 0.1 - kM * 0.05,
@@ -910,7 +1094,7 @@ export class Void extends Character {
       sy: (1 - 0.2 * crouch - 0.05 * sit - 0.04 * kneel) * (1 + 0.005 * br) * (1 - 0.035 * laugh * lr) * (1 + (B.stretch ?? 0)) * (1 + 0.04 * puff),
       base: -(0.09 * crouch + 0.38 * sit + 0.3 * kneel) + (B.bounce ?? 0) - wa * st.bob * c2 + laugh * 0.03 * lr + (wa * (W.style === 'run' ? 1 : 0) * 0.03 * Math.abs(s1)),
       sway: wa * st.sway * s1, shiftZ: -recoil * 0.12, pivotZ: 0.55,
-      tip: kP * 0.36 - kM * 0.05 + (B.pitch ?? 0) + recoil * -0.06,
+      tip: kP * (0.42 + 0.16 * (kickT ? clamp((kickT.y - 1.1) / 0.6) : 0)) - kM * 0.05 + (B.pitch ?? 0) + recoil * -0.06,
       swell: (B.swell ?? 0) + puff * 0.6,
       laughB: laugh * lr, armSwing: wa * st.arm,
       hemOpen: clamp(E.hem ?? 0), frontHem: 0.06 + 0.04 * sit, capeLift: 0.04 * laugh * lr + 0.05 * kP,
@@ -940,12 +1124,18 @@ export class Void extends Character {
     const sq = (Hd.squash ?? 0) + 0.05 * laugh * lr - 0.04 * clamp((fIn.lidU ?? 1) - 1.2);
     this.headGroup.scale.set((1 + 0.1 * puff) * (1 + sq), (1 + 0.04 * puff) * (1 - sq), (1 + 0.07 * puff) * (1 + sq * 0.5));
     this.headGroup.updateMatrixWorld(true);
+    { const pts = [], M = this._frameMat(NECK_Y, _m4);
+      for (let i = 0; i <= 8; i++) {
+        const th = lerp(1.05, TAU - 1.05, i / 8), R = 0.66 + 0.03 * Math.cos(3 * th);
+        pts.push(V3(R * Math.sin(th), -0.035 + 0.02 * Math.sin(2.5 * th + 0.4) + shrug * 0.09 + 0.004 * br, R * Math.cos(th) * 0.9 - 0.02).applyMatrix4(M));
+      }
+      this.collar.update(pts, (u) => 0.02 + 0.09 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.25, up: this._xd(NECK_Y, [0, 1, 0]) }); }
 
     // ---- face
     const fp = { ...FACE_DEFAULTS, ...fIn };
     // mouth params (painted by _paintMouth); lip-sync blended here with the same rule as core Face
     const M = { open: fp.mOpen, smile: fp.mSmile, wide: fp.mWide, round: fp.mRound, press: fp.mPress, pout: fp.mPout, asym: fp.mAsym,
-      shift: fp.mShift, close: 0, tremble: fp.mTremble, blush: fp.blush, puff };
+      shift: fp.mShift, close: 0, tremble: fp.mTremble, blush: fp.blush, puff, droop: clamp(fIn.mDroop ?? 0), wavy: clamp(fIn.mWavy ?? 0) };
     if (fp.mClench > 0) { M.press = Math.max(M.press, fp.mClench * 0.7); M.wide += fp.mClench * 0.4; M.open *= 1 - 0.7 * fp.mClench; }
     const sp = this.speech(t, P);
     if (sp && fp.talk > 0) {
@@ -957,28 +1147,39 @@ export class Void extends Character {
     }
     M.open *= 1 - 0.22 * laugh * (1 - lr);          // the laugh mouth pumps with each "HA"
     if (puff > 0) { M.open *= 1 - puff; M.press = Math.max(M.press, 0.7 * puff); M.pout = Math.max(M.pout, puff); M.wide = lerp(M.wide, -0.6, puff); }
-    M.vis = clamp(0.1 + 1.5 * Math.abs(M.smile) + 4 * M.open + 0.8 * M.press + 0.8 * M.pout + 0.7 * Math.abs(M.asym) + (E.mouthGlow ?? 0));
+    M.vis = clamp(0.1 + 1.5 * Math.abs(M.smile) + 4 * M.open + 0.8 * M.press + 0.8 * M.pout + 0.7 * Math.abs(M.asym) + 0.6 * M.wavy + 0.5 * M.droop + (E.mouthGlow ?? 0));
     M.vis = 0.14 + 0.86 * M.vis;
     this._mouth = M;
-    const fcore = { ...fp, mOpen: 0, mSmile: 0, mWide: 0, mRound: 0, mPress: 0, mPout: 0, mAsym: 0, mClench: 0, mTremble: 0, mTeethU: 0, mTeethL: 0, blush: 0, talk: 0 };
+    // The core mouth stays invisible and CONSTANT (zeros), so the core decal never redraws on its own; the Void's
+    // painted mouth (drawExtra) is redrawn exactly when this collision-free digest of its quantized inputs changes.
+    // The cosmos interior (twinkling stars, turning galaxy) animates at 12 Hz: the quantized time is in the digest,
+    // so the canvas uploads at most 12x per second and is still a pure function of t (no modulo, no hashing).
+    const fcore = { ...fp, mOpen: 0, mSmile: 0, mWide: 0, mRound: 0, mPress: 0, mPout: 0, mAsym: 0, mClench: 0, mTremble: 0, mTeethU: 0, mTeethL: 0, mShift: 0, blush: 0, talk: 0 };
     this.face.cfg.mouth.line = 'rgba(0,0,0,0)';
-    // the core decal redraws only when its key changes: feed it a digest of the painted mouth via mShift (the core
-    // mouth is fully transparent, so mShift has no visual effect there); twinkle frames only while the mouth is open
-    // The painted interior (twinkling stars, turning galaxy) animates at 12 Hz: the quantized time is part of the
-    // digest, so the canvas is redrawn/uploaded at most 12x per second (still a pure function of t).
-    const live = M.open * (1 - M.close) > 0.03 || M.tremble > 0;
-    M.tq = live ? Math.floor(t * 12) / 12 : 0;
-    fcore.mShift = M.open * 1.01 + M.smile * 7.3 + M.wide * 13.1 + M.round * 17.9 + M.press * 23.3 + M.pout * 29.7 + M.asym * 31.1
-      + M.vis * 37.9 + M.puff * 41.3 + M.blush * 43.7 + M.close * 47.9 + M.tremble * 53.1 + (M.shift || 0) * 59.3 + (M.tq % 100) * 61.7;
     this.face.cfg.mouth.animated = false;
+    const live = M.open * (1 - M.close) > 0.03 || M.tremble > 0 || M.wavy > 0.01;
+    M.tq = live ? Math.floor(t * 12) / 12 : 0;
+    const digest = [M.open, M.smile, M.wide, M.round, M.press, M.pout, M.asym, M.shift || 0, M.close, M.tremble, M.vis, M.puff, M.blush, M.droop, M.wavy]
+      .map((v) => v.toFixed(3)).join(',') + '|' + M.tq.toFixed(4);
+    if (digest !== this._mouthDigest) { this._mouthDigest = digest; this.face._lastKey = null; }   // force one core decal redraw
     this.face.update(t, fcore, { gaze, speech: null, blinkAt: P.blinkAt });
     const eyeGlow = (E.eyeGlow ?? 1) * (1 + 0.15 * cosmos);
     this.face.eyes.forEach((ey, i) => {
       ey.mat.uniforms.uGlow.value = 0.9 * eyeGlow;
-      const open = clamp(((-ey.up.rotation.x) - (-ey.lo.rotation.x)) / 1.45);
-      this.halos[i].material.opacity = (0.03 + 0.1 * open) * eyeGlow;
+      const up = -ey.up.rotation.x, low = -ey.lo.rotation.x, r = ey.r;
+      const open = clamp((up - low) / 1.45);
+      this.FU.uHalo.value.setComponent(i, (0.03 + 0.1 * open) * eyeGlow * 1.6);
+      // canthus caps: grow over the eye corners as the lids close / squint (tapered arcs, no white corner wedges)
+      const c = 1 - smooth((open - 0.08) / 0.42);
+      const tm = (ey.upRoll.rotation.z + ey.loRoll.rotation.z) / 2, mid = (up + low) / 2;
+      for (const { m, cx } of this.canthi[i]) {
+        m.visible = c > 0.02;
+        const kk = lerp(0.2, 1, c);
+        m.scale.set(r * 0.44 * kk, r * 0.36 * kk, r * 0.44 * kk);
+        m.position.set(cx * r * (0.96 + 0.12 * (1 - c)), cx * r * Math.sin(tm) + r * 0.3 * Math.sin(mid), r * 0.3);
+      }
     });
-    this.hoodGlow.material.opacity = 0.08 + 0.12 * cosmos;
+    this.FU.uHoodGlow.value = (0.08 + 0.12 * cosmos) * 1.2;
     this.face.brows.forEach((b, i) => {
       const pts = b.tube.curve.points.map((p) => p.clone());
       this.browHalo[i].update(pts, [0.04, 0.078, 0.07, 0.03], { flatten: 0.15 });
@@ -1036,16 +1237,31 @@ export class Void extends Character {
       size: [0.03, 0.06], color: [0xc9b8ff, 0x9fe9ff, 0xffffff], fade: [0.25, 0.5], cell: CELL.star, twinkle: true, wobble: 0.05, grow: 0.5 };
     if (ma > 0) fx.stream({ ...base, seed: 91, rate: 1.4, alpha: 0.8 * ma });
     if (cosmos > 0.01) fx.stream({ ...base, seed: 92, rate: 10, alpha: 0.9 * cosmos, size: [0.035, 0.08], vel: [0, 0.22, 0], life: 3.0 });
-    // coughed-up stars & little spiral galaxies from the mouth (E.cough = { t0, t1, rate?, speed? })
+    // coughed-up stars & spiral galaxies from the mouth. Default = a few BIG readable puffs on each "HA" (the laugh's
+    // 3.3 Hz belly rhythm) flung out & up clear of the hood, plus a light sprinkle (E.cough: see docs/chars/void.md)
     const C = E.cough;
     if (C) {
       const m = this.root.worldToLocal(this.anchor('mouth')), dir = this._wd(this.mouthDir());
-      const sp = C.speed ?? 2.3;
-      m.addScaledVector(dir, 0.12);
-      fx.stream({ t, seed: C.seed ?? 77, t0: C.t0, t1: C.t1, rate: C.rate ?? 10, life: C.life ?? 2.0, origin: m.toArray(),
-        vel: [dir.x * sp, dir.y * sp + 0.45, dir.z * sp], spread: [0.4, 0.3, 0.4], gravity: [0, -0.45, 0], drag: 0.35,
-        size: [0.035, 0.09], grow: 1.6, color: [0xffffff, 0xd8c8ff, 0x9feaff, 0xffd6f0], alpha: 1, fade: [0.05, 0.4],
-        cell: (r) => (r() < 0.3 ? CELL.galaxy : r() < 0.15 ? CELL.nebula : CELL.star), spin: 2.5, twinkle: true });
+      const fwdB = C.forward ?? 1, sp = (C.speed ?? 2.4) * fwdB, upV = C.up ?? 1.1, spr = C.spread ?? 1;
+      const sz = C.size ?? 1, gShare = C.galaxy ?? 0.4, life = C.life ?? 2.2, seed = C.seed ?? 77;
+      m.addScaledVector(dir, 0.28);
+      const cols = [0xffffff, 0xd8c8ff, 0x9feaff, 0xffd6f0];
+      const common = { t, life, origin: m.toArray(), vel: [dir.x * sp, dir.y * sp + upV, dir.z * sp], gravity: [0, -0.5, 0], drag: 0.45,
+        color: cols, fade: [0.06, 0.45], spin: 1.6, twinkle: true };
+      // big puffs: one per "HA" peak inside [t0, t1]
+      const per = C.puffs ?? 3, rate = C.haRate ?? 3.3;
+      const n0 = Math.ceil((Math.max(C.t0, t - life * 1.3) * rate) - 0.25), n1 = Math.floor((Math.min(C.t1, t) * rate) - 0.25);
+      for (let n = n0; n <= n1; n++) {
+        const at = (n + 0.25) / rate;
+        if (at < C.t0 || at > C.t1) continue;
+        const gN = Math.round(per * gShare + (hash1(seed + n * 13) - 0.5) * 0.9 * Math.min(1, per * gShare));
+        const sprd = [0.55 * spr, 0.35 * spr, 0.55 * spr];
+        if (gN > 0) fx.burst({ ...common, seed: seed * 31 + n, at, count: gN, jitter: 0.05, spread: sprd, size: [0.15 * sz, 0.21 * sz], grow: 1.2, cell: CELL.galaxy, spin: 1.2 });
+        if (per - gN > 0) fx.burst({ ...common, seed: seed * 37 + n, at, count: per - gN, jitter: 0.07, spread: sprd, size: [0.07 * sz, 0.12 * sz], grow: 1.3, cell: CELL.star });
+      }
+      // + a light sprinkle of small stars
+      fx.stream({ ...common, seed, t0: C.t0, t1: C.t1, rate: C.rate ?? 4, spread: [0.45 * spr, 0.3 * spr, 0.45 * spr],
+        size: [0.035 * sz, 0.07 * sz], grow: 1.3, life: life * 0.8, cell: (r) => (r() < 0.15 ? CELL.nebula : CELL.star) });
     }
     fx.end();
   }
@@ -1063,6 +1279,25 @@ export class Void extends Character {
     return Object.assign(pos, { err });
   }
 
+  /**
+   * Whisper helper: finds the whisperPose depth whose 'whisper' point is at `ear` height, then the ground position
+   * that puts it on `ear`. pose = the rest of the pose (yaw, face...; its body/head are merged under the bend).
+   * Returns { pos, depth, err, pose } (pose = the merged pose incl. pos). Leaves the rig posed there.
+   */
+  solveWhisper(t, pose, ear, side = 1, { amount = 1, lo = 0, hi = 1.5 } = {}) {
+    const E = toV(ear);
+    const mk = (d) => { const W = whisperPose(side, d, amount); return { ...pose, ...W, body: { ...(pose.body || {}), ...W.body }, head: { ...(pose.head || {}), ...W.head } }; };
+    let a = lo, b = hi;
+    for (let i = 0; i < 8; i++) {
+      const m = (a + b) / 2;
+      this.update(t, { ...mk(m), pos: [0, 0, 0] });
+      if (this.anchor('whisper').y > E.y) a = m; else b = m;
+    }
+    const depth = (a + b) / 2, p = mk(depth);
+    const pos = this.solvePos(t, p, 'whisper', E);
+    return { pos: [pos[0], 0, pos[2]], depth, err: pos.err, pose: { ...p, pos: [pos[0], 0, pos[2]] } };
+  }
+
   anchor(name) {
     if (name === 'mouthDir') return this.mouthDir();
     if (name === 'whisper') return super.anchor('mouth').addScaledVector(this.mouthDir(), 0.16);
@@ -1072,50 +1307,13 @@ export class Void extends Character {
   mouthDir() { return super.anchor('mouthOut').sub(super.anchor('mouth')).normalize(); }
 }
 
-/**
- * Merge all meshes of a core Hand into ONE mesh rebuilt per frame from the (hidden) original parts' transforms:
- * same look, 1 draw call instead of ~12 (SwiftShader draw calls are expensive). `space` = the parent of the result.
- */
-function mergedHand(hand, material, space) {
-  const parts = [];
-  hand.root.traverse((o) => { if (o.isMesh) parts.push(o); });
-  let nv = 0, ni = 0;
-  for (const m of parts) { nv += m.geometry.attributes.position.count; ni += m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count; }
-  const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), idx = new Uint32Array(ni);
-  let vo = 0, io = 0;
-  const info = parts.map((m) => {
-    const g = m.geometry, n = g.attributes.position.count;
-    if (g.index) for (let i = 0; i < g.index.count; i++) idx[io++] = g.index.array[i] + vo;
-    else for (let i = 0; i < n; i++) idx[io++] = i + vo;
-    const r = { m, P: g.attributes.position.array, N: g.attributes.normal.array, off: vo, n };
-    vo += n; m.visible = false;
-    return r;
-  });
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
-  geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3).setUsage(THREE.DynamicDrawUsage));
-  geo.setIndex(new THREE.BufferAttribute(idx, 1));
-  const mesh = new THREE.Mesh(geo, material);
-  mesh.frustumCulled = false; mesh.castShadow = true;
-  const M = new THREE.Matrix4(), inv = new THREE.Matrix4(), NM = new THREE.Matrix3();
-  const update = () => {
-    space.updateWorldMatrix(true, false);
-    inv.copy(space.matrixWorld).invert();
-    hand.root.updateMatrixWorld(true);
-    for (const r of info) {
-      M.multiplyMatrices(inv, r.m.matrixWorld); NM.getNormalMatrix(M);
-      const e = M.elements, ne = NM.elements;
-      for (let i = 0; i < r.n; i++) {
-        const x = r.P[i * 3], y = r.P[i * 3 + 1], z = r.P[i * 3 + 2], k = (r.off + i) * 3;
-        pos[k] = e[0] * x + e[4] * y + e[8] * z + e[12]; pos[k + 1] = e[1] * x + e[5] * y + e[9] * z + e[13]; pos[k + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
-        const a = r.N[i * 3], b = r.N[i * 3 + 1], c = r.N[i * 3 + 2];
-        let nx = ne[0] * a + ne[3] * b + ne[6] * c, ny = ne[1] * a + ne[4] * b + ne[7] * c, nz = ne[2] * a + ne[5] * b + ne[8] * c;
-        const l = Math.hypot(nx, ny, nz) || 1; nrm[k] = nx / l; nrm[k + 1] = ny / l; nrm[k + 2] = nz / l;
-      }
-    }
-    geo.attributes.position.needsUpdate = true; geo.attributes.normal.needsUpdate = true;
-  };
-  return { mesh, update };
+function mergeGeos(list) {   // tiny non-indexed-safe merge (position/normal/index only)
+  let nv = 0, ni = 0; for (const g of list) { nv += g.attributes.position.count; ni += g.index.count; }
+  const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), idx = []; let o = 0;
+  for (const g of list) { pos.set(g.attributes.position.array, o * 3); nrm.set(g.attributes.normal.array, o * 3); for (const k of g.index.array) idx.push(k + o); o += g.attributes.position.count; }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nrm, 3)); out.setIndex(idx);
+  return out;
 }
 
 function mixHand(a, b, w) {

@@ -1,0 +1,6 @@
+{"sfx": [
+  {"t": "s09b03+0.6", "name": "cloth_rustle", "gain_db": -5, "pan": -0.3},
+  {"t": "s09b03+1.08", "name": "cloth_rustle", "gain_db": -3, "pan": -0.3, "variant": 2},
+  {"t": "s09b03+1.36", "name": "star_pop", "gain_db": -10, "pan": 0.35}
+ ],
+ "hits": []}

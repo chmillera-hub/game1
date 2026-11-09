@@ -8,18 +8,19 @@ import { applyShot, shotAt } from '../core/camera.js';
 import { clamp, lerp, smooth, fbm1, noise1 } from '../core/util.js';
 import { Particles, CELL } from '../core/particles.js';
 import { EDGE, todAt, voidSkyAt, lookFor, sy, px } from './marks.js';
-const DEBUG = true;
+const DEBUG = false;
 import { VX } from '../chars/void.js';
 import { JX } from '../chars/jesus.js';
 import { UX, headShake } from '../chars/user.js';
-import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, scopeVisible, voidSurface } from './edgeprops.js';
+import { V3, toV, loadWords, wordT, pulse, ramp, wobble, gazeSched, scopeVisible, voidSurface, faceSeq, fmix } from './edgeprops.js';
 
 const M = EDGE.M;
 const W = (p) => EDGE.W(p);
 const L3 = (x, y, z) => V3(...EDGE.W(x, y, z));      // local -> world Vector3
+const WDIR = (x, z) => { const a = EDGE.W(x, 0, z), o = EDGE.W(0, 0, 0); return V3(a[0] - o[0], 0, a[2] - o[2]); };
 const JWALK0 = [-0.1, 0, 0.4];                         // s02 -> s03 continuity: Jesus mid-walk here at the cut
 const JSTRIDE = 1.05, JRATE = 0.85;
-const JYAW = 0.45;                                     // Jesus's local facing at JV in s03 (open to the camera, the Void on his left)                    // Jesus 'walk' (metres per cycle, cycles/s) — phase = t * rate in s02
+const JYAW = 0.45, JYAW_W = -0.05, JYAW_6 = 0.2;                                     // Jesus's local facing at JV in s03 (open to the camera, the Void on his left)                    // Jesus 'walk' (metres per cycle, cycles/s) — phase = t * rate in s02
 
 // ---------------------------------------------------------------------------------------------------------- timing
 function times() {
@@ -53,19 +54,20 @@ function jesusWalk(t, S) {
 
 // ---------------------------------------------------------------------------------------------------------- cameras
 function cams(S, R) {
-  const two = EDGE.shot([0.45, 1.75, -0.9], { dist: 5.7, yaw: -5, pitch: 3, fov: 44, screenY: sy(420), drift: 0.3 });
-  const twoIn = EDGE.shot([0.45, 1.75, -0.9], { dist: 5.3, yaw: -5, pitch: 3, fov: 44, screenY: sy(420), drift: 0.3 });
-  const userCU = EDGE.shot(EDGE.L(R.userEyes), { dist: 1.5, yaw: 118, pitch: 3, fov: 33, screenY: sy(420), drift: 0.25 });
-  const userCU2 = EDGE.shot(EDGE.L(R.userEyes), { dist: 1.38, yaw: 118, pitch: 3, fov: 33, screenY: sy(420), drift: 0.25 });
+  // b01: low follow from behind Jesus as he walks right up to the towering Void (it grows in frame, reacts to him)
+  const two = EDGE.at([-1.0, 1.15, 3.1], [0.45, 1.42, -1.0], 50, { drift: 0.3 });
+  const twoIn = EDGE.at([-0.5, 1.18, 2.15], [0.48, 1.45, -1.0], 50, { drift: 0.3 });
+  const userCU = EDGE.shot(EDGE.L(R.userEyes), { dist: 1.5, yaw: 112, pitch: 3, fov: 33, screenY: sy(420), drift: 0.25 });
+  const userCU2 = EDGE.shot(EDGE.L(R.userEyes), { dist: 1.38, yaw: 112, pitch: 3, fov: 33, screenY: sy(420), drift: 0.25 });
   const tight = EDGE.shot([0.45, 1.62, -0.85], { dist: 3.6, yaw: -15, pitch: 3, fov: 44, screenY: sy(450), drift: 0.3 });
   const whisper = EDGE.shot([0.36, 1.62, -0.6], { dist: 3.3, yaw: 2, pitch: 2, fov: 33, screenY: sy(410), drift: 0.25 });
-  const cuLook = EDGE.L(R.voidEyesBent); cuLook[0] -= 0.3; cuLook[1] -= 0.06; cuLook[2] += 0.02;
-  const voidCU = EDGE.shot(cuLook, { dist: 3.4, yaw: -6, pitch: -3, fov: 33, screenY: sy(390), drift: 0.2 });
-  const voidCU2 = EDGE.shot(cuLook, { dist: 3.1, yaw: -6, pitch: -3, fov: 33, screenY: sy(380), drift: 0.2 });
+  const cuLook = EDGE.L(R.voidEyesBent); cuLook[0] -= 0.2; cuLook[1] -= 0.08; cuLook[2] += 0.02;
+  const voidCU = EDGE.shot(cuLook, { dist: 3.9, yaw: -6, pitch: -3, fov: 33, screenY: sy(390), drift: 0.2 });
+  const voidCU2 = EDGE.shot(cuLook, { dist: 3.55, yaw: -6, pitch: -3, fov: 33, screenY: sy(380), drift: 0.2 });
   const ots = EDGE.cam('OTS', { drift: 0.3 });
   return [
-    [S.s, two], [S.b02 - 0.04, twoIn, 'linear'],
-    [S.b02 - 0.04 + 1e-3, userCU], [S.b03 - 0.06, userCU2, 'linear'],
+    [S.s, two], [S.arrive + 0.15, twoIn, 'out'],
+    [S.b02 - 0.04, twoIn], [S.b02 - 0.04 + 1e-3, userCU], [S.b03 - 0.06, userCU2, 'linear'],
     [S.b03 - 0.06 + 1e-3, tight], [S.b04 + 0.1, tight],
     [S.b05 - 0.02, whisper, 'inOut'],
     [S.b05 - 0.02 + 1e-3, voidCU], [S.b06 + 0.05, voidCU2, 'linear'],
@@ -88,11 +90,14 @@ export default {
     user.update(t0, userBase(t0));
     vd.update(t0, { pos: W(M.V.p), yaw: EDGE.Y(M.V.yaw), ...listenBend(1) });
     const R = { userEyes: user.anchor('eyes'), userShoulderR: user.anchor('shoulderR'), voidEyesBent: vd.anchor('eyes') };
+    // Jesus's walk is s02's own walk function (exact continuity across the cut); fallback: our straight walk
+    let walkS02 = null;
+    try { walkS02 = (await import('./s02.js')).jesusWalkS02 || null; } catch (e) { walkS02 = null; }
     vd.update(t0, { pos: W(M.V.p), yaw: EDGE.Y(M.V.yaw) });
     R.voidEyes = vd.anchor('eyes'); R.voidMouth = vd.anchor('mouth');
     jesus.update(t0, { pos: W(M.JV.p), yaw: EDGE.Y(M.JV.yaw) });
     R.jesusEyes = jesus.anchor('eyes'); R.jesusMouth = jesus.anchor('mouth');
-    return { scene: set.scene, set, jesus, vd, user, fx, R, look: lookFor('s03', set.look) };
+    return { scene: set.scene, set, jesus, vd, user, fx, R, walkS02, look: lookFor('s03', set.look) };
   },
 
   async update(t, app, st) {
@@ -138,16 +143,16 @@ export default {
 // the raised RIGHT hand: palm out toward the Void at shoulder/chin height, forward of the face (never across it)
 function defendTarget(st) {
   const sh = st.R.userShoulderR;                         // setup reference (pure: never read a rig's previous frame)
-  const toV = V3(...W(M.V.p)).setY(1.6).sub(sh).normalize();
-  return sh.clone().addScaledVector(toV, 0.36).add(V3(0, 0.12, 0));
+  const a = EDGE.Y(M.U.yaw) - 0.95;                      // out to their right-front: the face stays clear in USER_CU
+  return sh.clone().add(V3(Math.sin(a) * 0.3, 0.2, Math.cos(a) * 0.3));
 }
 function userBase(t) {
   return {
     pos: W(M.U.p), yaw: EDGE.Y(M.U.yaw),
-    body: { sit: 1, shrug: 0.5, tremble: 0.45, pant: 0.6, hunch: 0.25 },
+    body: { sit: 1, shrug: 0.55, tremble: 0.45, pant: 0.7, hunch: 0.25, recoil: 0.1 },
     face: UX('terror', { mOpen: 0.28, pupil: 0.55 }),
-    armR: { preset: 'defend', tremble: 0.7 }, armL: { preset: 'prop' },
-    extra: { phone: 0.85, tears: 0.45, glisten: 0.6 },
+    armR: { preset: 'defend', tremble: 0.7 }, armL: { preset: 'clutch' },          // s02 hands over: phone clutched, RIGHT hand up
+    extra: { phone: 0.85, tears: 0.5, glisten: 0.6 },
   };
 }
 
@@ -171,11 +176,14 @@ function userPose(t, S, st) {
   // the face: terror softened into an urgent whisper-yell during the line (lip-sync rides on top)
   const yell = ramp(t, S.b02 - 0.15, S.b02 + 0.1) * (1 - ramp(t, S.b03 - 0.1, S.b03 + 0.4));
   P.face = UX([['terror', 1 - 0.55 * yell], ['worried', 0.55 * yell]], { browIn: 1.0, browSq: 0.5, mWide: 0.4 + 0.5 * pulse(t, S.voidW2 - 0.05, 0.1, 0.18, 0.25), pupil: 0.55 });
-  P.armR = { preset: 'defend', tremble: 0.7, flap: pulse(t, S.sirW + 0.02, 0.14, 0.04, 0.22), target: defendTarget(st), reach: 1 };
+  const toVoid = V3(...W(M.V.p)).setY(1.8).sub(st.R.userShoulderR).normalize();
+  P.armR = { preset: 'defend', tremble: 0.7, flap: pulse(t, S.sirW + 0.02, 0.14, 0.04, 0.22), target: defendTarget(st), reach: 1, palm: toVoid.toArray() };
   // b03..: watching the arm go around (mouth falls open); b06: phone up as a shield, one slow blink
   const shield = ramp(t, S.b06 + 0.35, S.b06 + 0.85, 'out');
-  if (shield > 0) P.armL = { preset: [['prop', 1 - shield], ['shield', shield]] };
-  P.blinkAt = [S.b02 + 1.35, S.iW - 0.3];
+  if (shield > 0) P.armL = { preset: [['clutch', 1 - shield], ['shield', shield]] };
+  P.blinkAt = [S.b02 + 1.32, S.iW - 0.3];
+  P.face.autoBlink = t > S.b02 - 0.3 && t < S.b03 ? 0 : 1;          // a held, wide stare through the line (one scripted blink)
+  P.face.lidU = Math.max(P.face.lidU, 1.3 * yell + P.face.lidU * (1 - yell));
   if (t > S.b03) P.face.mOpen = Math.max(P.face.mOpen, 0.32 * ramp(t, S.contact, S.contact + 0.3));
   return P;
 }
@@ -190,11 +198,11 @@ function listenBend(a, d = 1) {
   };
 }
 /** the point on the front-right rim of the hood that Jesus whispers into (world) */
-export function hoodRimR(vd) { return vd.headGroup.localToWorld(V3(-0.6, -0.05, 0.5)); }
+export function hoodRimR(vd) { return vd.headGroup.localToWorld(V3(-0.52, -0.1, 0.6)); }
 
 function voidPose(t, S, st) {
   const { jesus } = st;
-  const P = { pos: W(M.V.p), yaw: EDGE.Y(M.V.yaw), body: {}, head: {}, extra: { stars: 1 } };
+  const P = { pos: W(M.V.p), yaw: EDGE.Y(M.V.yaw + 0.1 * (1 - ramp(t, S.arrive - 0.3, S.arrive + 0.2))), body: {}, head: {}, extra: { stars: 1 } };
   const jE = jesus.anchor('eyes');
   // ---- body: knotted hands -> recoil on his arrival -> freeze/shrug at the arm -> listening bend -> clamp + quiver
   const recoil = k(t, [[S.arrive - 0.32, 0], [S.arrive - 0.05, 0.34, 'out'], [S.arrive + 0.35, 0.24], [S.b03, 0.18], [S.contact, 0.12], [S.b04 + 0.2, 0]]);
@@ -211,10 +219,10 @@ function voidPose(t, S, st) {
   const chest = vd => vd;
   // hands knotted at its middle, a little toward its LEFT (Jesus stands at its front-right: keep the right hand off him)
   const vdd = st.vd;
-  const knot = (side) => {
+  const knot = (side) => {         // = s02's knot (belly + 8 cm out to its side), floats up 4 cm at the arm
     const lift = 0.04 * pulse(t, S.contact + 0.05, 0.22, 0.2, 0.35);
-    const tgt = voidSurface(vdd, 0.9 - 0.12 * bendA + lift, side === 'L' ? 0.45 : 0.15, 0.1);
-    return { preset: 'belly', target: tgt, reach: 1, hand: { curl: 0.55, spread: 0.05, cup: 0.5 } };
+    const o = WDIR(side === 'L' ? -0.35 : 0.35, 0.3).multiplyScalar(0.18);
+    return { preset: 'belly', offset: [o.x, lift + 1e-4, o.z], hand: { curl: 0.8, spread: 0.02, cup: 0.6, thumb: 0.5 } };
   };
   P.armR = knot('R');
   const clamp1 = ramp(t, S.b06 - 0.02, S.b06 + 0.22, 'out');
@@ -224,8 +232,8 @@ function voidPose(t, S, st) {
   P.extra.stars = 1 + 0.6 * quiver;
   // ---- face
   const b5 = S.b05;
-  let face;
-  if (t < S.b04) {
+  const facePre = () => {
+    let face;
     // round, uncertain eyes on the approaching stranger -> wide-eyed small 'o' recoil -> frozen at the arm
     const surpr = pulse(t, S.arrive - 0.25, 0.18, 0.9, 0.9);
     face = VX([['hopeful', 1 - surpr], ['surprised', surpr]], {});
@@ -237,7 +245,10 @@ function voidPose(t, S, st) {
       for (const kk in f2) if (typeof f2[kk] === 'number') face[kk] = lerp(face[kk], f2[kk], fz);
     }
     face.saccade = 0.3;
-  } else {
+    return face;
+  };
+  const facePost = () => {
+    let face;
     // the staged read of the joke (screenplay s03b05 timings) — listening -> skeptical brow -> really? -> smile behind the eyes
     const lis = VX('listen', { mPress: 0.3, mSmile: 0.02, lidU: 0.98, browAsym: 0.1, saccade: 0 });
     face = { ...lis };
@@ -264,7 +275,9 @@ function voidPose(t, S, st) {
     face.tearL = 0.25 * held; face.tearR = 0.25 * held;
     face.lidU = lerp(face.lidU, 0.24 + 0.04 * Math.sin(t * 2 * Math.PI * 3.1), held);
     face.autoBlink = arcs > 0.5 ? 0 : 1;
-  }
+    return face;
+  };
+  const face = faceSeq(t, [[S.s, facePre], [S.b04 + 0.1, facePost, 0.45]]);
   P.face = face;
   // ---- gaze: on Jesus walking in; at the arm (down to his hand) / his face / the arm; then unfocused listening; to him
   const hand = () => jesus.anchor('handL');
@@ -289,10 +302,14 @@ function jesusPose(t, S, st, vd) {
   const { user, jesus } = st;
   const P = { body: {}, head: {}, armL: { preset: 'rest' }, armR: { preset: 'rest' } };
   // ---- the walk in (continues s02's walk), little hop on the last step, landing on "void"
-  const w = jesusWalk(t, S);
+  let w = jesusWalk(t, S), yawWalk = Math.atan2(w.dir.x, w.dir.z);    // world yaw along travel (back to camera)
+  if (st.walkS02) {
+    const q = st.walkS02(t);
+    w = { pos: V3(...EDGE.W(q.pos[0], 0, q.pos[1])), phase: q.phase, amount: q.amt };
+    yawWalk = EDGE.Y(q.yaw);
+  }
   P.pos = w.pos.toArray();
-  const yawWalk = Math.atan2(w.dir.x, w.dir.z);                 // world yaw along travel (back to camera)
-  const yawMark = EDGE.Y(JYAW);                                   // cheated open to camera: the Void at his left
+  const yawMark = EDGE.Y(k(t, [[S.whispW - 0.1, JYAW], [S.whispW + 0.55, JYAW_W, 'inOut'], [S.b06 + 0.2, JYAW_W], [S.b06 + 0.9, JYAW_6, 'inOut']]));
   // turn toward the Void during the hop (decreasing local yaw: he swings round to his left first)
   let dy = yawMark - yawWalk; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
   const turn = ramp(t, S.arrive - 0.5, S.arrive + 0.15, 'inOut');
@@ -347,29 +364,33 @@ function jesusPose(t, S, st, vd) {
     P.body.recoil = 0.05 * heels;
   }
   P.head.pitch = (P.head.pitch || 0) + 0.11 * pulse(t, S.theoriesW + 0.35, 0.16, 0.05, 0.3);
-  // ---- face
-  let face;
-  if (t < S.b03) {
+  // ---- face (segments cross-fade: no pops)
+  const fWalk = () => {
     const beam = ramp(t, S.arrive - 0.2, S.arrive + 0.25);
-    face = JX([['kind', 1 - beam], ['beam', beam]], {});
-    face.browIn += 0.25 * beam; face.browOut += 0.3 * beam;
-  } else if (t < S.whispW) {
-    face = JX('beam', { mOpen: 0.12 });
+    const f = JX([['kind', 1 - beam], ['beam', beam]], {});
+    f.browIn += 0.25 * beam; f.browOut += 0.3 * beam;
+    return f;
+  };
+  const fArm = () => {                     // hey, buddy: wide smile, eyebrow bounce after the pat
+    const f = JX('beam', { mOpen: 0.12 });
     const bounce = pulse(t, S.itW + 0.18, 0.08, 0.05, 0.18);
-    face.browIn += 0.45 * bounce; face.browOut += 0.55 * bounce;
-  } else if (t < S.b06) {
-    face = JX('whisper');
+    f.browIn += 0.45 * bounce; f.browOut += 0.55 * bounce;
+    return f;
+  };
+  const fWhisper = () => {
+    const f = JX('whisper');
     const hops = pulse(t, S.whispW + 0.55, 0.07, 0.05, 0.12) + pulse(t, S.earW + 0.05, 0.07, 0.05, 0.12) + pulse(t, S.b05 + 1.7, 0.07, 0.05, 0.14);
-    face.browIn += 0.4 * hops; face.browOut += 0.45 * hops;
+    f.browIn += 0.4 * hops; f.browOut += 0.45 * hops;
     // between phrases he presses his lips to keep from laughing at his own joke (whisper audio dip ~ +1.5 s)
     const press = pulse(t, S.b05 + 1.42, 0.06, 0.12, 0.12) + pulse(t, S.b05 + 3.3, 0.06, 0.2, 0.2);
-    face.mPress = 0.25 + 0.6 * press; face.talk = 0.9 * (1 - press);
+    f.mPress = 0.25 + 0.6 * press; f.talk = 0.9 * (1 - press);
     // mouthing a silent "psst" before the whisper audio
-    if (t < S.b05) { face.mOpen = 0.04 + 0.08 * Math.max(0, Math.sin((t - S.earW) * 2 * Math.PI * 3.2)) * ramp(t, S.earW, S.earW + 0.2); face.mRound = 0.5; }
-    face.saccade = 0.2;
-  } else {
-    face = JX([['innocent', 0.8], ['pressed', 0.5]], { browIn: 0.55, browOut: 0.55, mSmile: 0.35 });
-  }
+    if (t < S.b05) { f.mOpen = 0.04 + 0.08 * Math.max(0, Math.sin((t - S.earW) * 2 * Math.PI * 3.2)) * ramp(t, S.earW, S.earW + 0.2); f.mRound = 0.5; }
+    f.saccade = 0.2;
+    return f;
+  };
+  const fInnocent = () => JX([['innocent', 0.8], ['pressed', 0.5]], { browIn: 0.55, browOut: 0.55, mSmile: 0.35 });
+  const face = faceSeq(t, [[S.s, fWalk], [S.b03, fArm, 0.3], [S.whispW, fWhisper, 0.3], [S.b06 + 0.1, fInnocent, 0.35]]);
   P.face = face;
   P.blinkAt = [S.arrive + 0.45, S.itW + 0.5, S.b06 + 0.6, S.theoriesW + 0.15];
   // one tiny shoulder shake mid-whisper (keeping his own laugh in)

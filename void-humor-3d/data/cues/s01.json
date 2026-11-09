@@ -1,0 +1,267 @@
+{
+ "sfx": [
+  {
+   "t": "s01",
+   "name": "wind_soft",
+   "until": "s01.end",
+   "gain_db": -2,
+   "pan": 0
+  },
+  {
+   "t": "s01+0.242",
+   "name": "footsteps_run",
+   "until": "s01+0.392",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+0.621",
+   "name": "footsteps_run",
+   "until": "s01+0.771",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+1.000",
+   "name": "footsteps_run",
+   "until": "s01+1.150",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+1.379",
+   "name": "footsteps_run",
+   "until": "s01+1.529",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+1.758",
+   "name": "footsteps_run",
+   "until": "s01+1.908",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+2.136",
+   "name": "footsteps_run",
+   "until": "s01+2.286",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+2.515",
+   "name": "footsteps_run",
+   "until": "s01+2.665",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+2.894",
+   "name": "footsteps_run",
+   "until": "s01+3.044",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+3.273",
+   "name": "footsteps_run",
+   "until": "s01+3.423",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+3.652",
+   "name": "footsteps_run",
+   "until": "s01+3.802",
+   "gain_db": -3,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+4.030",
+   "name": "footsteps_run",
+   "until": "s01+4.180",
+   "gain_db": -6,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+4.409",
+   "name": "footsteps_run",
+   "until": "s01+4.559",
+   "gain_db": -6,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+4.788",
+   "name": "footsteps_run",
+   "until": "s01+4.938",
+   "gain_db": -6,
+   "pan": -0.25
+  },
+  {
+   "t": "s01+5.167",
+   "name": "footsteps_run",
+   "until": "s01+5.317",
+   "gain_db": -3,
+   "pan": -0.15
+  },
+  {
+   "t": "s01+5.545",
+   "name": "footsteps_run",
+   "until": "s01+5.695",
+   "gain_db": -3,
+   "pan": -0.15
+  },
+  {
+   "t": "s01+5.924",
+   "name": "footsteps_run",
+   "until": "s01+6.074",
+   "gain_db": -3,
+   "pan": -0.15
+  },
+  {
+   "t": "s01+6.303",
+   "name": "footsteps_run",
+   "until": "s01+6.453",
+   "gain_db": -3,
+   "pan": -0.15
+  },
+  {
+   "t": "s01+6.682",
+   "name": "footsteps_run",
+   "until": "s01+6.832",
+   "gain_db": -3,
+   "pan": -0.15
+  },
+  {
+   "t": "s01+7.061",
+   "name": "footsteps_run",
+   "until": "s01+7.211",
+   "gain_db": -3,
+   "pan": -0.15
+  },
+  {
+   "t": "s01+0.360",
+   "name": "footsteps_stomp",
+   "until": "s01+0.780",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+0.760",
+   "name": "footsteps_stomp",
+   "until": "s01+1.180",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+1.160",
+   "name": "footsteps_stomp",
+   "until": "s01+1.580",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+1.560",
+   "name": "footsteps_stomp",
+   "until": "s01+1.980",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+1.960",
+   "name": "footsteps_stomp",
+   "until": "s01+2.380",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+2.360",
+   "name": "footsteps_stomp",
+   "until": "s01+2.780",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+2.760",
+   "name": "footsteps_stomp",
+   "until": "s01+3.180",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+3.160",
+   "name": "footsteps_stomp",
+   "until": "s01+3.580",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+3.560",
+   "name": "footsteps_stomp",
+   "until": "s01+3.980",
+   "gain_db": -10,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+5.160",
+   "name": "footsteps_stomp",
+   "until": "s01+5.580",
+   "gain_db": -4,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+5.560",
+   "name": "footsteps_stomp",
+   "until": "s01+5.980",
+   "gain_db": -4,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+5.960",
+   "name": "footsteps_stomp",
+   "until": "s01+6.380",
+   "gain_db": -4,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+6.360",
+   "name": "footsteps_stomp",
+   "until": "s01+6.780",
+   "gain_db": -4,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+6.760",
+   "name": "footsteps_stomp",
+   "until": "s01+7.180",
+   "gain_db": -4,
+   "pan": 0.35
+  },
+  {
+   "t": "s01+7.160",
+   "name": "footsteps_stomp",
+   "until": "s01+7.580",
+   "gain_db": -4,
+   "pan": 0.35
+  },
+  {
+   "t": "s01b02+1.200",
+   "name": "phone_tap",
+   "gain_db": -2,
+   "pan": 0.05
+  },
+  {
+   "t": "s01b02+2.060",
+   "name": "phone_tap",
+   "gain_db": -2,
+   "pan": 0.05
+  }
+ ],
+ "hits": [
+  {
+   "t": "s01b03+1.690",
+   "kind": "pluck"
+  }
+ ]
+}

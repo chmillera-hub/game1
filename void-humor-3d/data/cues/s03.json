@@ -1,0 +1,20 @@
+{
+  "_note": "s03 the_whisper — cues matched to web/src/scenes/s03.js (Jesus's footfalls follow s02's walk phase; hop lands on 'void').",
+  "sfx": [
+    {"t": "s03b01+0.126", "name": "footsteps_soft", "until": "s03b01+0.45", "gain_db": -2, "pan": -0.3},
+    {"t": "s03b01+0.626", "name": "footsteps_soft", "until": "s03b01+0.95", "gain_db": -2, "pan": -0.3},
+    {"t": "s03b01+1.134", "name": "footsteps_soft", "until": "s03b01+1.45", "gain_db": -3, "pan": -0.3},
+    {"t": "s03b01+1.58", "name": "footsteps_soft", "until": "s03b01+1.9", "gain_db": 0, "pan": -0.3},
+    {"t": "s03b01+1.60", "name": "cloth_rustle", "gain_db": -6, "pan": -0.3},
+    {"t": "s03b01+1.68", "name": "star_pop", "gain_db": -9, "pan": 0.45},
+    {"t": "s03b03+0.40", "name": "cloth_rustle", "gain_db": -3, "pan": -0.15},
+    {"t": "s03b03+1.04", "name": "pat_pat", "gain_db": -4, "pan": -0.1},
+    {"t": "s03b04+0.30", "name": "cloth_rustle", "gain_db": -4, "pan": 0.2},
+    {"t": "s03b05+3.20", "name": "twinkle", "gain_db": -3, "pan": 0.1},
+    {"t": "s03b06+0.02", "name": "cloth_rustle", "gain_db": -6, "pan": 0.35}
+  ],
+  "hits": [
+    {"t": "s03b01+1.58", "kind": "pluck"},
+    {"t": "s03b05+3.20", "kind": "ping"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "sfx": [
+    {"t": "s13.start+0.16", "name": "footsteps_soft", "gain_db": -11, "pan": 0.1},
+    {"t": "s13b01+0.55", "name": "cloth_rustle", "gain_db": -6, "pan": 0.05},
+    {"t": "s13b10+0.78", "name": "phone_tap", "gain_db": -14, "pan": -0.2},
+    {"t": "s13b14+0.62", "name": "twinkle", "gain_db": -10, "pan": 0.15},
+    {"t": "s13b16+1.22", "name": "phone_tap", "gain_db": -14, "pan": -0.2},
+    {"t": "s13b17+0.30", "name": "cloth_rustle", "gain_db": -4, "pan": -0.1},
+    {"t": "s13b17+0.36", "name": "whoosh", "gain_db": -12, "pan": -0.1}
+  ],
+  "hits": [
+    {"t": "s13b16", "kind": "stop", "until": "s13.end", "stab": false},
+    {"t": "s13b17+0.62", "kind": "pluck"}
+  ]
+}

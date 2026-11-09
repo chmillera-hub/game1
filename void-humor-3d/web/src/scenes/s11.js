@@ -137,7 +137,7 @@ export default {
     const uPose = (pass) => {
       const ph = pass ? user.anchor('phoneScreen') : null;
       return {
-        pos: POS.U, yaw: YAW.U,
+        pos: POS.USEAT, yaw: YAW.U,
         body: { sit: 1, sitPath: 'plain', hunch: 0.32, breathe: 1 },
         head: { pitch: 0.3, yaw: -0.08, roll: -0.04 },
         armL: { preset: 'crossed' }, armR: { preset: 'crossed' },

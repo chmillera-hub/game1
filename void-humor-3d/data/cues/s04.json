@@ -1,0 +1,28 @@
+{
+  "_note": "s04 cosmic_laughter — cues matched to web/src/scenes/s04.js (star births, slaps, stamp, coughs, the little galaxy's pop/bounce/stop, the big galaxy launch, Jesus's back pats).",
+  "sfx": [
+    {"t": "s04b02+0.10", "name": "star_pop", "gain_db": -2, "pan": 0.35},
+    {"t": "s04b03+0.30", "name": "star_pop", "gain_db": -4, "pan": 0.3},
+    {"t": "s04b03+0.75", "name": "star_pop", "gain_db": -4, "pan": 0.45},
+    {"t": "s04b03+0.95", "name": "twinkle", "gain_db": -8, "pan": 0.4},
+    {"t": "s04b04+0.04", "name": "rumble_low", "gain_db": -2, "pan": 0.2},
+    {"t": "s04b05+1.27", "name": "pat_pat", "gain_db": -3, "pan": 0.45},
+    {"t": "s04b05+2.26", "name": "footsteps_stomp", "until": "s04b05+2.62", "gain_db": -2, "pan": 0.1},
+    {"t": "s04b08+0.04", "name": "star_pop", "gain_db": -3, "pan": 0.0},
+    {"t": "s04b08+0.37", "name": "star_pop", "gain_db": -2, "pan": 0.05},
+    {"t": "s04b07+1.15", "name": "twinkle", "gain_db": -5, "pan": 0.0},
+    {"t": "s04b10+0.04", "name": "star_pop", "gain_db": -7, "pan": 0.2},
+    {"t": "s04b10+0.39", "name": "galaxy_whirl", "gain_db": -2, "pan": 0.1},
+    {"t": "s04b10+0.73", "name": "star_pop", "gain_db": -10, "pan": -0.1},
+    {"t": "s04b11+0.32", "name": "galaxy_whirl", "gain_db": 0, "pan": 0.0},
+    {"t": "s04b11+0.476", "name": "pat_pat", "gain_db": -4, "pan": 0.15},
+    {"t": "s04b11+1.43", "name": "pat_pat", "gain_db": -5, "pan": 0.15},
+    {"t": "s04b13+0.78", "name": "twinkle", "gain_db": -4, "pan": 0.3},
+    {"t": "s04b13+1.40", "name": "twinkle", "gain_db": -8, "pan": 0.3}
+  ],
+  "hits": [
+    {"t": "s04b02+0.10", "kind": "ping"},
+    {"t": "s04b04+0.06", "kind": "sting"},
+    {"t": "s04b11+0.32", "kind": "swell", "len": 2.0}
+  ]
+}

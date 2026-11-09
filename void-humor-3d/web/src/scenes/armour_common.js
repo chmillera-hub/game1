@@ -36,8 +36,7 @@ export function voidArmour(t, { gaze = null } = {}) {
   const antic = pulse(t, cr - 0.18, 0.18, 0.04, 0.3);                     // shoulders rise as the arms lift
   const whump = wobble(t, land, 2.4, 6.5) * ramp(t, land, land + 0.03);  // velvet water-balloon settle
   const inhale = ramp(t, sc - 0.12, sc + 0.25, 'out');                    // the breath it then holds
-  const slip = pulse(t, scary + 0.1, 0.08, 0.25, 0.25);                   // the mask slip (s09)
-  const deflate = pulse(t, scary + 0.12, 0.18, 0.2, 0.9);
+    const deflate = pulse(t, scary + 0.2, 0.18, 0.2, 0.9);
   const held = inhale * (1 - ramp(t, scary + 0.1, scary + 0.4)) + 0.6 * ramp(t, scary + 0.55, scary + 0.9);
   const body = {
     shrug: 0.22 * antic + 0.05 * inhale - 0.12 * deflate,
@@ -67,21 +66,32 @@ export function voidArmour(t, { gaze = null } = {}) {
     [sc + 0.8, F('scowl', { lidU: 0.64, browIn: -0.72, browInL: -0.7, browInR: -0.7 })],                  // the tell: inner tips up a hair
     [imp - 0.02, F('scowl', { lidU: 0.64, browIn: -0.72 })],
     [imp + 0.22, F('scowl', { lidAngry: 1.5, lidU: 0.56, browIn: -0.95, mSmile: -0.9, mPress: 0.65 })],  // deeper on "important"
-    [scary - 0.02, F('scowl', { lidAngry: 1.5, lidU: 0.56, browIn: -0.9, mSmile: -0.9, mPress: 0.65 })],
-    [scary + 0.12, F('flinch', { lidU: 1.18, browIn: 0.85, browOut: 0.25, mSmile: -0.05, mOpen: 0.13, mRound: 0.15, mPress: 0, pupil: 0.85, wet: 0.5, saccade: 0 })], // unhinged: hurt
-    [scary + 0.44, F('flinch', { lidU: 1.14, browIn: 0.8, browOut: 0.2, mSmile: -0.05, mOpen: 0.11, mRound: 0.15, mPress: 0, pupil: 0.85, wet: 0.5, saccade: 0 })],
-    [scary + 0.56, F('scowl', { lidAngry: 1.65, lidU: 0.5, browIn: -1.15, mSmile: -1.0, mPress: 0.8 })],  // clamped back on, harder
-    [scary + 0.9, F('scowl', { lidAngry: 1.55, lidU: 0.55, browIn: -1.0, mSmile: -0.95, mPress: 0.75, browInL: -0.85 })],
+    [scary + 0.16, F('scowl', { lidAngry: 1.5, lidU: 0.56, browIn: -0.9, mSmile: -0.9, mPress: 0.65 })],
+    [scary + 0.24, F('sad', { lidU: 1.12, lidSad: 0.55, lidAngry: 0, browIn: 1.1, browOut: -0.35, browSq: 0.25, mSmile: -0.3, mOpen: 0.1, mRound: 0.55, mWide: -0.25, mPress: 0, mPout: 0, pupil: 0.9, wet: 0.7, saccade: 0 })], // unhinged: hurt
+    [scary + 0.5, F('sad', { lidU: 1.08, lidSad: 0.55, lidAngry: 0, browIn: 1.0, browOut: -0.3, browSq: 0.2, mSmile: -0.3, mOpen: 0.09, mRound: 0.5, mWide: -0.25, mPress: 0, mPout: 0, pupil: 0.9, wet: 0.7, saccade: 0 })],
+    [scary + 0.62, F('scowl', { lidAngry: 1.65, lidU: 0.5, browIn: -1.15, mSmile: -1.0, mPress: 0.8 })],  // clamped back on, harder
+    [scary + 0.95, F('scowl', { lidAngry: 1.55, lidU: 0.55, browIn: -1.0, mSmile: -0.95, mPress: 0.75, browInL: -0.85 })],
   ];
   const face = k(t, keys);
   face.autoBlink = t > sc && t < scary + 2.5 ? 0 : 1;                     // the held stare: no idle blinks
+  face.blink = Math.max(face.blink || 0, pulse(t, scary + 0.0, 0.035, 0.02, 0.045), pulse(t, scary + 0.1, 0.035, 0.02, 0.05));   // two fast blinks
   face.saccade = t > sc ? 0.15 : 0.6;
-  void slip;
-  const blinkAt = [b1 + 0.22, scary + 0.0, scary + 0.13];
+  const blinkAt = [b1 + 0.22];
   return { pos: W(M.V), yaw: WY(M.V), body, head, armL, armR, face, gaze, blinkAt, extra: { motes: t > sc && t < scary ? 0.4 : 1 } };
 }
 
 // ------------------------------------------------------------------------------------------------ the frozen mote
+/**
+ * The mote's frozen WORLD point (STAGING §1.6), shared by s08 and s09: it rose off the Void's left shoulder; the
+ * STAGING offset (0.15, 0.35, 0.10) lands inside the hood's side bulge (invisible), so it hangs just in front of the
+ * left shoulder instead (in frame in LOWUP, the Jesus medium, OTS and MASTER). Poses the (shared) Void rig once.
+ */
+export function computeMote(vd, gaze) {
+  const tf = moteFreezeT();
+  vd.update(tf, voidArmour(tf, { gaze }));
+  const vy = WY(M.V), vl = V3(Math.cos(vy), 0, -Math.sin(vy)), vf = V3(Math.sin(vy), 0, Math.cos(vy));
+  return { p: vd.anchor('shoulderL').addScaledVector(vl, -0.1).addScaledVector(vf, 0.75).add(V3(0, 0.34, 0)), tf };
+}
 /** { p: Vector3, a: alpha 0..1, s: scale mult } — rises off the shoulder, stops dead at the breath hold, falls on "scary". */
 export function moteState(t, MOTE) {
   const tf = MOTE.tf, rise = 0.15, tb = tf - 2.2;

@@ -800,6 +800,7 @@ class User extends Character {
     }
     const locksMesh = new THREE.Mesh(mergeGeometries(geos), this.hairMat);
     this.headG.add(locksMesh);
+    this.hairLocks = locksMesh;
     // cowlick (dynamic: bounces)
     this.cowlick = [0, 1, 2].map((i) => {
       const tb = new SweepTube({ material: this.hairMat, segments: 10, radial: 8, capRings: 2 });
@@ -1011,6 +1012,70 @@ class User extends Character {
       return { s, tb, ag };
     });
   }
+  // ------------------------------------------------------------------ hood UP, cinched tight (extra.hood 0..1)
+  // Added for s13b17 "Nope." (and the s14 / s16 continuity): 0 = hood down (default — nothing is built or changed),
+  // 0 -> 0.6 the hood flips up over the head from the back, 0.6 -> 1 the opening cinches tight round the face
+  // (puckered rim, the cowlick pokes out of the top). Built lazily on first use; a pure function of the pose.
+  _buildHoodUp() {
+    const NA = 40, NR = 15;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(NA * NR * 3), 3));
+    const idx = [];
+    for (let j = 0; j < NA; j++) for (let r = 0; r < NR - 1; r++) {
+      const a = j * NR + r, b = ((j + 1) % NA) * NR + r;
+      idx.push(a, a + 1, b, b, a + 1, b + 1);
+    }
+    g.setIndex(idx);
+    this.hoodUp = new THREE.Group();
+    this.hoodUpShell = new THREE.Mesh(g, this.sleeveMat); this.hoodUpShell.castShadow = true;
+    this.hoodUpRim = new SweepTube({ material: this.sleeveMat, segments: NA * 2, radial: 8, capRings: 0 });
+    this.hoodUp.add(this.hoodUpShell, this.hoodUpRim.mesh);
+    this.hoodUp.userData.N = [NA, NR];
+    this.headG.add(this.hoodUp);
+  }
+  _updateHoodUp(E) {
+    const h = clamp(E.hood ?? 0);
+    this._hoodK = h;
+    const hairOn = (v) => { if (this.hairShell) this.hairShell.visible = v; if (this.hairLocks) this.hairLocks.visible = v; };
+    if (h <= 0.001) { if (this.hoodUp) { this.hoodUp.visible = false; hairOn(true); } if (this.hoodG) this.hoodG.visible = true; return; }
+    if (!this.hoodUp) this._buildHoodUp();
+    const up = smooth(h / 0.6), cinch = smooth((h - 0.55) / 0.45);
+    this.hoodUp.visible = up > 0.02;
+    hairOn(up < 0.97 || cinch < 0.5);                                                      // the bob is squashed inside (the cowlick pokes out)
+    if (this.hoodG) this.hoodG.visible = up < 0.35;
+    const [NA, NR] = this.hoodUp.userData.N;
+    const P = this.hoodUpShell.geometry.attributes.position;
+    const Rx = 0.198, Ry = 0.215, Rz = 0.205, C = V(0, -0.025, -0.012), tilt = 0.17;
+    const ca = Math.cos(tilt), sa = Math.sin(tilt);
+    const A = lerp(1.15, 0.6, cinch), Bv = lerp(1.08, 0.55, cinch);            // opening half-angles (rad)
+    const rim = [], d = V(), p = V();
+    for (let j = 0; j < NA; j++) {
+      const ph = (j / NA) * Math.PI * 2;
+      const th0 = 1 / Math.sqrt((Math.cos(ph) / A) ** 2 + (Math.sin(ph) / Bv) ** 2);
+      for (let r = 0; r < NR; r++) {
+        const s = r / (NR - 1), th = th0 + (Math.PI - 0.02 - th0) * Math.pow(s, 0.85);
+        const x = Math.sin(th) * Math.cos(ph), y0 = Math.sin(th) * Math.sin(ph), z0 = Math.cos(th);
+        d.set(x, y0 * ca - z0 * sa, y0 * sa + z0 * ca);                    // tilt the face axis down a touch
+        const rr = 1 / Math.sqrt((d.x / Rx) ** 2 + (d.y / Ry) ** 2 + (d.z / Rz) ** 2);
+        const pucker = 1 + 0.03 * cinch * Math.sin(ph * 10) * (1 - s) * (1 - s);
+        p.copy(d).multiplyScalar(rr * pucker).add(C);
+        if (p.y < -0.13) {                                                   // gathers into the collar round the neck
+          const w = smoothstep(-0.13, -0.29, p.y);
+          p.x *= lerp(1, 0.62, w); p.z = lerp(p.z, -0.02 + (p.z + 0.02) * 0.62, w); p.y = Math.max(p.y, -0.29);
+        }
+        P.setXYZ(j * NR + r, p.x, p.y, p.z);
+        if (r === 0) rim.push(p.clone().addScaledVector(d, 0.006));
+      }
+    }
+    P.needsUpdate = true;
+    this.hoodUpShell.geometry.computeVertexNormals();
+    rim.push(rim[0].clone());
+    this.hoodUpRim.update(rim, (s) => 0.014 + 0.005 * cinch * (0.5 + 0.5 * Math.sin(s * Math.PI * 2 * 10)));
+    // flips up from the back of the neck
+    this.hoodUp.position.set(0, -0.2 * (1 - up), -0.06 * (1 - up));
+    this.hoodUp.rotation.set(-1.9 * (1 - up), 0, 0);
+    this.hoodUp.scale.setScalar(lerp(0.9, 1, up));
+  }
   _updateStrings(t, ctx) {
     const { amt, ph, ST, br, shrug } = ctx;
     const Mc = this.Mc;
@@ -1023,7 +1088,7 @@ class User extends Character {
       const pts = [];
       let p = V(s * 0.032, yb - 0.006 + shrug * 0.03, 0.098);
       pts.push(p.clone());
-      const L = [0.05, 0.055, 0.055, 0.05];
+      const L = [0.05, 0.055, 0.055, 0.05].map((x) => x * (1 + 0.75 * (this._hoodK || 0)));   // cinched hood: strings pulled long
       for (let k = 0; k < L.length; k++) {
         const d = down.clone().add(V(s * 0.06 + sw * 0.25 * (k + 1) / 4, 0, 0.12 + Math.abs(sw) * 0.15)).normalize();
         p = p.clone().addScaledVector(d, L[k]);
@@ -1632,6 +1697,7 @@ class User extends Character {
     // ---- hoodie body, hood strings
     this._updateTorso({ shrug, br, caps });
     this.hoodG.position.y = shrug * 0.03;
+    this._updateHoodUp(E);
     this._updateStrings(t, { amt, ph, ST, br, shrug });
     this._updateTears(t, tears, run);
     // ---- contact shadow / rim

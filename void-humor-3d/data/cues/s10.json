@@ -1,0 +1,11 @@
+{"sfx": [
+  {"t": "s10b03+0.05", "name": "whoosh", "gain_db": -7, "pan": 0.0},
+  {"t": "s10b03+0.75", "name": "whoosh", "gain_db": -4, "pan": -0.1, "variant": 2},
+  {"t": "s10b04+0.42", "name": "footsteps_stomp", "until": "s10b04+1.62", "gain_db": -2, "pan": 0.3},
+  {"t": "s10b05+0.44", "name": "thud_sit", "gain_db": 0, "pan": 0.3},
+  {"t": "s10b06+1.46", "name": "twinkle", "gain_db": -12, "pan": 0.0},
+  {"t": "s10b07+0.8", "name": "phone_tap", "gain_db": -6, "pan": -0.1}
+ ],
+ "hits": [
+  {"t": "s10b05+0.44", "kind": "stop", "len": 0.9}
+ ]}

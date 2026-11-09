@@ -116,7 +116,7 @@ export default {
 
     // ---------------------------------------------------------------- USER (off to the side, arms crossed, phone)
     const uPose = (pass) => ({
-      pos: POS.U, yaw: YAW.U,
+      pos: POS.USEAT, yaw: YAW.U,
       body: { sit: 1, sitPath: 'plain', hunch: 0.3 },
       head: { pitch: 0.28, yaw: -0.08 },
       armL: { preset: 'crossed' }, armR: { preset: 'crossed' },
@@ -141,7 +141,7 @@ export default {
         shot = EDGE.shot(lk, { dist: k(t, [['s12b02', 2.75], [B2 + 1.5, 2.15, 'inOut'], ['s12b02.end', 2.05, 'inOut']]), yaw: CAMB_YAW, pitch: 4, fov: 33,
           screenY: sy(k(t, [['s12b02', 400], [B2 + 1.5, 380, 'inOut']])), drift: 0.15 });
       } else {
-        shot = EDGE.shot([JEYE_JS[0] - 0.1, JEYE_JS[1], JEYE_JS[2] - 0.1], { dist: k(t, [['s12b03', 1.34], ['s12b03.end', 1.24, 'inOut']]), yaw: 135, pitch: 3, fov: 33, screenY: sy(390), drift: 0.12 });
+        shot = EDGE.shot([JEYE_JS[0] - 0.03, JEYE_JS[1], JEYE_JS[2] - 0.03], { dist: k(t, [['s12b03', 1.8], ['s12b03.end', 1.68, 'inOut']]), yaw: 137, pitch: 3, fov: 33, screenY: sy(400), drift: 0.12 });
       }
       applyShot(app.camera, shot, t, 12);
     };

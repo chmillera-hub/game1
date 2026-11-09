@@ -8,10 +8,10 @@
 // extra.dizzy (spinning swirl irises + circling stars), extra.lick (long grey-violet tongue across the upper lip).
 // Pose API, anchors, tips: docs/chars/magician.md.  Lab: src/labs/magician.js.  Pure function of (t, pose).
 import * as THREE from 'three';
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Character, gazePoint } from '../core/character.js';
 import { Face, EXPR, FACE_DEFAULTS } from '../core/face.js';
-import { SweepTube, solveIK2, Hand, orientYZ } from '../core/limbs.js';
+import { SweepTube, solveIK2, orientYZ } from '../core/limbs.js';
 import { enhance, contactShadow } from '../core/materials.js';
 import { Particles, CELL } from '../core/particles.js';
 import { CTX } from '../core/context.js';
@@ -29,13 +29,17 @@ function pw(K, a, col = 1) { // piecewise-linear lookup in rows [[x, y1, y2, ...
   return K[K.length - 1][col];
 }
 const qE = (x, y, z, o = 'YXZ') => new THREE.Quaternion().setFromEuler(_e1.set(x, y, z, o));
+// PURITY: three's Curve caches its arc-length table until `needsUpdate` is set, and core SweepTube.update() rewrites
+// curve.points without invalidating it -> getPointAt() would use lengths from whichever frame was rendered first.
+// Every tube update in this rig goes through sweep(), which invalidates the cache first.
+function sweep(tube, pts, rad, opts) { tube.curve.needsUpdate = true; return tube.update(pts, rad, opts); }
 
 // ---------------------------------------------------------------------------------------------------------
 // Palette (desaturated grey-blue gloom)
 const C = {
-  face: 0xb3b9c6, socket: 0x7c8296, coat: 0x4a5266, lapel: 0x30364a, shirt: 0xc3c7d0, cravat: 0x7f8494,
+  face: 0xb3b9c6, socket: 0x666b80, coat: 0x4a5266, lapel: 0x30364a, shirt: 0xc3c7d0, cravat: 0x7f8494,
   glove: 0xcfd0d0, stripeA: 0x8b909e, hat: 0x353b4b, band: 0x1d2029, shoe: 0x262932, hair: 0x3c4050,
-  velvet: 0x4d3d5c, blade: 0xa9b2c4, tongue: 0x9a84ae, cold: 0x9fb9ea,
+  velvet: 0x4d3d5c, blade: 0xa9b2c4, tongue: 0x8c7f98, cold: 0x9fb9ea,
 };
 // Proportions (metres). Root at the feet, facing +Z, +X = the magician's LEFT.
 const HIP_Y = 1.035, HIP_X = 0.078, THIGH = 0.475, SHIN = 0.465, ANKLE_Y = 0.062;
@@ -61,12 +65,18 @@ function headPoint(u, v, out = V()) {
   y -= 0.016 * chin; z += 0.017 * chin;
   const back = Math.max(0, -cu) * smoothstep(-0.3, 0.8, v);
   z *= 1 + 0.07 * back; x *= 1 + 0.03 * back;                           // fuller cranium
-  const hollow = Math.exp(-(((au - 0.78) / 0.28) ** 2) - (((v + 0.4) / 0.2) ** 2)) * front;
-  const ck = Math.exp(-(((au - 0.74) / 0.22) ** 2) - (((v + 0.06) / 0.12) ** 2)) * front;
-  const es = Math.exp(-(((au - EYE_U) / 0.17) ** 2) - (((v - EYE_V) / 0.14) ** 2));
-  const br = Math.exp(-(((au - 0.4) / 0.32) ** 2) - (((v - 0.37) / 0.09) ** 2)) * front;
-  const mb = Math.exp(-((u / 0.55) ** 2) - (((v - MOUTH_V) / 0.2) ** 2)) * front;
-  const k = 1 - 0.075 * hollow + 0.05 * ck - 0.05 * es + 0.03 * br + 0.035 * mb;
+  // gaunt sculpt (front half): sharp cheekbones over sunken cheeks, temple hollows, deep eye sockets under a brow
+  // ridge, a lean jaw corner and a small muzzle so the thin grin sits proud of the hollows
+  const g2 = (a, a0, sa, b, b0, sb) => Math.exp(-(((a - a0) / sa) ** 2) - (((b - b0) / sb) ** 2));
+  const hollow = g2(au, 0.72, 0.28, v, -0.42, 0.17) * front;            // sunken cheeks (front)
+  const suck = g2(au, 1.12, 0.36, v, -0.46, 0.2);                       // ... carried round to the silhouette
+  const ck = g2(au, 0.82, 0.24, v, -0.1, 0.075) * front;                // sharp cheekbones
+  const temple = g2(au, 1.08, 0.2, v, 0.3, 0.16);
+  const es = g2(au, EYE_U, 0.18, v, EYE_V, 0.14);
+  const br = g2(au, 0.4, 0.34, v, 0.33, 0.075) * front;
+  const mb = g2(u, 0, 0.42, v, MOUTH_V + 0.02, 0.17) * front;
+  const jaw = g2(au, 0.98, 0.2, v, -0.8, 0.13);
+  const k = 1 - 0.115 * hollow - 0.07 * suck + 0.085 * ck - 0.055 * temple - 0.085 * es + 0.05 * br + 0.05 * mb + 0.04 * jaw;
   return out.set(x * k, y * k, z * k);
 }
 const _hu = V(), _hv = V(), _hw = V();
@@ -158,9 +168,9 @@ export const ARM = {
   creep: { sp: 'chest', t: [0.2, 0.42, 0.3], pole: [1, -0.3, -0.4], palm: [0, -1, 0.1], fing: [0.1, -0.55, 1], hand: { curl: 0.42, spread: 0.45, thumb: 0.3 }, anim: 'wiggle' },
   claw: { sp: 'chest', t: [0.24, 0.42, 0.32], pole: [1, -0.2, -0.4], palm: [0, -0.2, 1], fing: [0.15, 1, 0.1], hand: { curl: 0.55, spread: 0.55, thumb: 0.4 }, anim: 'wiggle' },
   edge: { sp: 'chest', t: [0.22, 0.38, 0.36], pole: [1, -0.4, -0.3], palm: [0, 0, 1], fing: [0, 1, 0.1], hand: { curl: 0.2, spread: 0.25, thumb: 0.35 }, anim: 'tap' },
-  dagger_ready: { sp: 'chest', t: [0.17, 0.6, 0.14], pole: [1, -0.6, -0.3], palm: [1, 0, 0.35], fing: [0.15, 0.2, 1], hand: { grip: 1, curl: 0.6 } },
-  dagger_low: { sp: 'chest', t: [0.17, 0.12, 0.3], pole: [1, 0, -0.5], palm: [0.2, 1, 0], fing: [0, -0.3, 1], hand: { grip: 1, curl: 0.6 } },
-  dagger_stab: { sp: 'chest', t: [0.06, 0.32, 0.6], pole: [1, -0.3, -0.5], palm: [0, 1, 0], fing: [0, -0.5, 1], hand: { grip: 1, curl: 0.6 } },
+  dagger_ready: { sp: 'chest', t: [0.17, 0.6, 0.16], pole: [1, -0.6, -0.3], palm: [-1, 0, 0.3], fing: [0.1, 0.3, 1], hand: { grip: 1 } },
+  dagger_low: { sp: 'chest', t: [0.16, 0.12, 0.3], pole: [1, 0, -0.5], palm: [-1, 0, 0.1], fing: [0, -0.55, 0.85], hand: { grip: 1 } },
+  dagger_stab: { sp: 'chest', t: [0.07, 0.3, 0.6], pole: [1, -0.3, -0.5], palm: [-1, 0, 0], fing: [0, -0.75, 0.65], hand: { grip: 1 } },
   pouch: { sp: 'chest', t: [0.17, 0.27, 0.32], pole: [1, -0.4, -0.4], palm: [-0.3, -0.6, 0.6], fing: [0, 0.3, 1], hand: { curl: 0.72, thumb: 0.7, cup: 0.3 } },
   pour: { sp: 'chest', t: [0.12, 0.33, 0.52], pole: [1, -0.3, -0.5], palm: [-0.4, -0.7, 0.4], fing: [-0.1, 0.1, 1], hand: { curl: 0.72, thumb: 0.7, cup: 0.3 } },
   present: { sp: 'chest', t: [0.52, 0.32, 0.2], pole: [0.4, -1, -0.4], palm: [0, 1, 0.25], fing: [1, 0.35, 0.3], hand: { curl: 0.05, spread: 0.55, thumb: 0.8, splay: 0.3 } },
@@ -173,10 +183,11 @@ export const ARM = {
   cover_mouth: { sp: 'head', t: [0.065, -0.1, 0.13], pole: [1, -0.8, 0], palm: [0, 0, -1], fing: [-0.9, 0.35, 0.05], hand: { curl: 0.22, spread: 0.1, thumb: 0.35, cup: 0.4 } },
   shush: { sp: 'head', t: [0.02, -0.21, 0.13], pole: [1, -0.8, -0.2], palm: [-0.2, 0, -1], fing: [-0.05, 1, 0.1], hand: { point: 1, thumb: 0.25, curl: 0.85 } },
   whisper: { sp: 'head', t: [0.1, -0.15, 0.1], pole: [1, -0.8, -0.2], palm: [-1, 0, 0.35], fing: [0.05, 1, 0.25], hand: { curl: 0.2, spread: 0.05, thumb: 0.3, cup: 0.55 } },
+  pocket: { sp: 'hip', t: [0.128, -0.015, 0.035], pole: [0.6, 0, -1], palm: [-1, 0, 0.1], fing: [-0.15, -1, 0.25], hand: { curl: 0.15, spread: 0.05, thumb: 0.15 } },
   chin: { sp: 'head', t: [0.03, -0.22, 0.05], pole: [1, -0.9, 0], palm: [-0.4, 0.2, -0.6], fing: [-0.3, 0.55, 0.75], hand: { curl: 0.55, thumb: 0.5, point: 0.3 }, anim: 'stroke' },
 };
-const HAND_KEYS = ['curl', 'point', 'spread', 'thumb', 'cup', 'splay', 'grip', 'tap'];
-const HAND_DEF = { curl: 0.2, point: 0, spread: 0.15, thumb: 0.3, cup: 0.1, splay: 0, grip: 0, tap: 0 };
+const HAND_KEYS = ['curl', 'point', 'spread', 'thumb', 'cup', 'splay', 'grip', 'pinch', 'tap'];
+const HAND_DEF = { curl: 0.2, point: 0, spread: 0.15, thumb: 0.3, cup: 0.1, splay: 0, grip: 0, pinch: 0, tap: 0 };
 
 // Gaits. stride = metres per full cycle (body speed = stride * rate m/s), stance = stance fraction of a cycle.
 export const GAIT = {
@@ -268,6 +279,200 @@ function deformSphere(wS, hS, fn, ring = false) {
 }
 const se = (c, n) => Math.sign(c) * Math.pow(Math.abs(c), 2 / n);   // superellipse
 
+// ---------------------------------------------------------------------------------------------------------
+// GloveHand — the magician's own glove (replaces core Hand for this rig): ONE skinned mesh per hand (palm, four
+// long tapered fingers with fat roots + webbing, opposable thumb with a thenar pad, flared gauntlet cuff), so
+// joints bend smoothly instead of reading as separate capsules, and a hand costs 1 draw call instead of 15.
+// Same interface as core Hand: root (wrist at origin, fingers +Y, palm faces -Z), aim(fingerDir, palmNormal),
+// pose({ curl, point, spread, thumb, cup, splay, grip, pinch, perFinger }).
+// Correct chirality: the thumb sits on the INDEX side (right hand: thumb at -X local; left hand: +X).
+const _gh = V(), _pv = V();
+const GL = {
+  FX: [0.0272, 0.0092, -0.0090, -0.0262], FY: [0.0835, 0.0868, 0.0848, 0.0785],     // knuckles (x * thumb side)
+  LEN: [[0.046, 0.034, 0.028], [0.050, 0.037, 0.029], [0.048, 0.035, 0.028], [0.038, 0.027, 0.024]],
+  RAD: [0.0104, 0.0108, 0.0103, 0.0094],                                                 // finger root radii
+  LAT: [1.5, 0.5, -0.5, -1.5],
+  FIST: [[1.36, 1.62, 1.05], [1.4, 1.66, 1.0], [1.44, 1.64, 0.98], [1.5, 1.6, 0.95]],  // grip: fingertips close on the palm
+};
+function thumbDir(th, a, b) { return V(th * Math.sin(a) * Math.cos(b), Math.cos(a) * Math.cos(b), -Math.sin(b)); }
+function thumbQuat(th, a, b, out = new THREE.Quaternion()) {
+  const d = thumbDir(th, a, b), m = V(-th, -0.1, -0.75);
+  m.addScaledVector(d, -m.dot(d)).normalize();
+  const x = V().crossVectors(d, m).normalize(), z = V().crossVectors(x, d).normalize();
+  return out.setFromRotationMatrix(_m1.makeBasis(x, d, z));
+}
+class GloveHand {
+  constructor({ side = 'R', material, cuffMaterial, castShadow = false } = {}) {
+    this.side = side; this.size = HAND_SIZE;
+    const th = this.th = side === 'R' ? -1 : 1;
+    this.root = new THREE.Group();
+    const bones = [];
+    const bone = (parent, p) => { const b = new THREE.Bone(); b.position.copy(p); b.rotation.order = 'ZXY'; (parent || this.root).add(b); bones.push(b); return b; };
+    const palmB = bone(null, V());
+    const BI = (b) => bones.indexOf(b);
+    const parts = [];
+    // tube part builder: rings = [{ c, X, Z, rx, rz, w: [[bone, weight], ...] }], closed with caps (pole vertices)
+    const tube = (rings, R, capStart = true, capEnd = true) => {
+      const pos = [], si = [], sw = [], idx = [];
+      const pushV = (p, w) => {
+        pos.push(p.x, p.y, p.z);
+        const ww = w.filter((e) => e[1] > 1e-4).slice(0, 4); let s = 0; for (const e of ww) s += e[1];
+        for (let k = 0; k < 4; k++) { si.push(ww[k] ? BI(ww[k][0]) : 0); sw.push(ww[k] ? ww[k][1] / s : 0); }
+      };
+      for (const r of rings) for (let j = 0; j < R; j++) {
+        const a = (j / R) * TAU;
+        pushV(r.c.clone().addScaledVector(r.X, Math.cos(a) * r.rx).addScaledVector(r.Z, Math.sin(a) * r.rz), r.w);
+      }
+      for (let i = 0; i < rings.length - 1; i++) for (let j = 0; j < R; j++) {
+        const a = i * R + j, b = i * R + (j + 1) % R, c = a + R, d = b + R; idx.push(a, c, b, b, c, d);
+      }
+      if (capStart) { const r = rings[0], n = V().crossVectors(r.Z, r.X).normalize(); const p0 = pos.length / 3; pushV(r.c.clone().addScaledVector(n, -0.0005), r.w); for (let j = 0; j < R; j++) idx.push(p0, j, (j + 1) % R); }
+      if (capEnd) { const L = rings.length - 1, r = rings[L], p0 = pos.length / 3; pushV(r.c, r.w); for (let j = 0; j < R; j++) idx.push(p0, L * R + (j + 1) % R, L * R + j); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+      g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+      g.setIndex(idx); parts.push(g);
+    };
+    const bl = (y, j, h) => smooth((y - (j - h)) / (2 * h));
+    const X0 = V(1, 0, 0), Z0 = V(0, 0, 1);
+    // ---- fingers
+    this.fingers = [];
+    for (let i = 0; i < 4; i++) {
+      const [l0, l1, l2] = GL.LEN[i], r0 = GL.RAD[i], base = V(th * GL.FX[i], GL.FY[i], 0.0015);
+      const b0 = bone(palmB, base), b1 = bone(b0, V(0, l0, 0)), b2 = bone(b1, V(0, l1, 0));
+      this.fingers.push({ b: [b0, b1, b2], lat: GL.LAT[i], len: [l0, l1, l2] });
+      const L = l0 + l1 + l2, rings = [];
+      const ys = [-0.02, -0.012, -0.005, 0.002, 0.01, l0 * 0.55, l0 - 0.005, l0, l0 + 0.005, l0 + l1 * 0.5, l0 + l1 - 0.004, l0 + l1, l0 + l1 + 0.004, l0 + l1 + l2 * 0.5, L - r0 * 0.75];
+      const rad = (y) => {
+        let r = lerp(r0 * 1.12, r0 * 0.68, smoothstep(0, L, y));                      // fat root, thin tip
+        r *= 1 + 0.06 * Math.exp(-(((y - l0) / 0.006) ** 2)) + 0.05 * Math.exp(-(((y - l0 - l1) / 0.005) ** 2)); // soft knuckles
+        return r;
+      };
+      for (const y of ys) {
+        const a0 = bl(y, 0.003, 0.009), a1 = bl(y, l0, 0.0065), a2 = bl(y, l0 + l1, 0.0055);
+        rings.push({ c: base.clone().add(V(0, y, 0)), X: X0, Z: Z0, rx: rad(y), rz: rad(y) * 0.86,
+          w: [[palmB, 1 - a0], [b0, a0 * (1 - a1)], [b1, a0 * a1 * (1 - a2)], [b2, a0 * a1 * a2]] });
+      }
+      const rt = rad(L) * 0.9;     // rounded fingertip
+      for (let k = 1; k <= 3; k++) { const an = (k / 4) * Math.PI / 2; rings.push({ c: base.clone().add(V(0, L - r0 * 0.75 + Math.sin(an) * rt, 0)), X: X0, Z: Z0, rx: Math.cos(an) * rt, rz: Math.cos(an) * rt * 0.86, w: [[b2, 1]] }); }
+      tube(rings, 10, false, true);
+      this.fingers[i].tip = V(0, l2 + rt * 0.2, -rt * 0.5);
+    }
+    // ---- thumb (metacarpal inside a thenar pad, proximal + distal phalanx)
+    this.TB = V(th * 0.0205, 0.017, -0.0045); this.TA = [0.62, 0.38];
+    const tq0 = thumbQuat(th, ...this.TA), d0 = thumbDir(th, ...this.TA);
+    const tX = V(1, 0, 0).applyQuaternion(tq0), tZ = V(0, 0, 1).applyQuaternion(tq0);
+    const tm = bone(palmB, this.TB); tm.quaternion.copy(tq0);
+    const LM = 0.033, LP = 0.03, LD = 0.025;
+    const tp = bone(tm, V(0, LM, 0)), td = bone(tp, V(0, LP, 0));
+    this.thumb = { b: [tm, tp, td], tip: V(0, LD, -0.004) };
+    {
+      const rings = [], Lt = LM + LP + LD;
+      const ys = [-0.006, 0.004, 0.014, 0.024, LM - 0.004, LM + 0.003, LM + LP * 0.5, LM + LP - 0.004, LM + LP + 0.003, LM + LP + LD * 0.5, Lt - 0.008];
+      const rad = (y) => lerp(0.0142, 0.0092, smoothstep(0, LM + 0.006, y)) * (1 - 0.18 * smoothstep(LM + LP, Lt, y)) * (1 + 0.05 * Math.exp(-(((y - LM - LP) / 0.005) ** 2)));
+      for (const y of ys) {
+        const a0 = bl(y, 0.012, 0.012), a1 = bl(y, LM, 0.006), a2 = bl(y, LM + LP, 0.005);
+        rings.push({ c: this.TB.clone().addScaledVector(d0, y), X: tX, Z: tZ, rx: rad(y) * 0.92, rz: rad(y),
+          w: [[palmB, 1 - a0], [tm, a0 * (1 - a1)], [tp, a1 * (1 - a2)], [td, a2]] });
+      }
+      const rt = rad(Lt) * 0.95;
+      for (let k = 1; k <= 3; k++) { const an = (k / 4) * Math.PI / 2; rings.push({ c: this.TB.clone().addScaledVector(d0, Lt - 0.008 + Math.sin(an) * rt), X: tX, Z: tZ, rx: Math.cos(an) * rt * 0.92, rz: Math.cos(an) * rt, w: [[td, 1]] }); }
+      tube(rings, 10, true, true);
+    }
+    // ---- palm: rounded slab, domed back, knuckle edge weighted toward the finger roots (bends with a fist)
+    {
+      const NA = 22, NY = 12, rings = [];
+      for (let k = 0; k <= NY; k++) {
+        const s = k / NY, y = lerp(-0.006, 0.093, s);
+        const top = smoothstep(0.072, 0.093, y);
+        const hx = lerp(0.0245, 0.0355, smoothstep(-0.004, 0.06, y)) * (1 - 0.35 * top * top);
+        const hz = 0.0128 * (1 - 0.55 * top * top);
+        // per-ring we need per-vertex weights -> build vertex-wise via a custom ring list
+        rings.push({ y, hx, hz });
+      }
+      const pos = [], si = [], sw = [], idx = [];
+      for (const r of rings) for (let j = 0; j < NA; j++) {
+        const a = (j / NA) * TAU, ca = Math.cos(a), sa = Math.sin(a);
+        const x = r.hx * se(ca, 3.2), back = sa > 0;
+        let z = (back ? r.hz * 1.08 : r.hz * 0.92) * se(sa, back ? 2.4 : 3.4);
+        // thenar pad: palm side, thumb side, low
+        const then = (!back ? 1 : 0.3) * smoothstep(0, 1, (th * x) / r.hx) * (1 - smoothstep(0.02, 0.06, r.y));
+        z -= 0.006 * then * Math.abs(sa);
+        pos.push(x, r.y, z);
+        // weights: knuckle band follows the nearest finger's proximal bone
+        let fi = 0, best = 1e9; for (let i = 0; i < 4; i++) { const dd = Math.abs(x - th * GL.FX[i]); if (dd < best) { best = dd; fi = i; } }
+        const kw = 0.55 * smoothstep(0.068, 0.09, r.y), tw = 0.5 * then;
+        const ww = [[0, 1 - kw - tw], [BI(this.fingers[fi].b[0]), kw], [BI(tm), tw]];
+        for (let k = 0; k < 4; k++) { si.push(ww[k] ? ww[k][0] : 0); sw.push(ww[k] ? Math.max(0, ww[k][1]) : 0); }
+      }
+      for (let i = 0; i < rings.length - 1; i++) for (let j = 0; j < NA; j++) { const a = i * NA + j, b = i * NA + (j + 1) % NA, c = a + NA, d = b + NA; idx.push(a, c, b, b, c, d); }
+      const p0 = pos.length / 3; pos.push(0, 0.094, 0); si.push(0, 0, 0, 0); sw.push(1, 0, 0, 0);
+      const L = rings.length - 1; for (let j = 0; j < NA; j++) idx.push(p0, L * NA + (j + 1) % NA, L * NA + j);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+      g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+      g.setIndex(idx); parts.push(g);
+    }
+    // ---- gauntlet cuff (flares into the sleeve, closed at the far end)
+    {
+      const rings = [];
+      for (const [y, rx, rz] of [[0.006, 0.0262, 0.0158], [-0.004, 0.0272, 0.0178], [-0.016, 0.0292, 0.022], [-0.03, 0.0318, 0.027], [-0.044, 0.0336, 0.0305], [-0.05, 0.0338, 0.031]])
+        rings.push({ c: V(0, y, 0.0005), X: X0, Z: Z0, rx, rz, w: [[palmB, 1]] });
+      rings.reverse(); rings.push({ c: V(0, 0.0065, 0.0005), X: X0, Z: Z0, rx: 0.019, rz: 0.0105, w: [[palmB, 1]] });   // inward lip closes the top
+      tube(rings, 18, true, false);
+    }
+    const geo = mergeGeometries(parts);
+    geo.computeVertexNormals();
+    this.mesh = new THREE.SkinnedMesh(geo, material);
+    this.mesh.frustumCulled = false; this.mesh.castShadow = castShadow;
+    this.root.add(this.mesh);
+    this.root.updateMatrixWorld(true);
+    this.mesh.bind(new THREE.Skeleton(bones), new THREE.Matrix4());
+    // shirt cuff: a closed (lathe) ring, so no open-cylinder backfaces
+    if (cuffMaterial) {
+      const prof = [[0.0335, -0.012], [0.037, -0.011], [0.0385, -0.004], [0.0385, 0.004], [0.037, 0.011], [0.0335, 0.012], [0.0335, -0.012]].map(([r, y]) => new THREE.Vector2(r, y));
+      const sc = new THREE.Mesh(new THREE.LatheGeometry(prof, 20), cuffMaterial);
+      sc.position.y = -0.052; sc.scale.set(1, 1, 0.92); this.root.add(sc); this.shirtCuff = sc;
+    }
+    // grip frame: the dagger handle axis (local X) sits in the crease inside the curled fingers
+    this.grip = new THREE.Object3D(); this.grip.position.set(th * 0.002, 0.066, -0.0275); this.root.add(this.grip);
+    this.pose({});
+  }
+  aim(fingerDir, palmNormal) { return orientYZ(this.root, fingerDir, _gh.copy(palmNormal).multiplyScalar(-1)); }
+  pose({ curl = 0.2, point = 0, spread = 0.15, thumb = 0.3, cup = 0.1, splay = 0, grip = 0, pinch = 0, perFinger = null } = {}) {
+    const th = this.th;
+    grip = clamp(grip); pinch = clamp(pinch) * (1 - grip);
+    this.fingers.forEach((f, i) => {
+      let c = perFinger ? perFinger[i] : curl;
+      c = lerp(c, i === 0 ? 0 : 1, clamp(point));
+      let b0 = c * 1.42 + cup * 0.22 - splay * 0.32, b1 = c * 1.6 + cup * 0.3 - splay * 0.1, b2 = c * 1.02 + cup * 0.2 - splay * 0.06;
+      if (pinch > 0) { const P = [[0.62, 0.55, 0.32], [0.72, 0.62, 0.3], [1.3, 1.5, 0.9], [1.35, 1.5, 0.9]][i]; b0 = lerp(b0, P[0], pinch); b1 = lerp(b1, P[1], pinch); b2 = lerp(b2, P[2], pinch); }
+      const G = GL.FIST[i];
+      b0 = lerp(b0, G[0], grip); b1 = lerp(b1, G[1], grip); b2 = lerp(b2, G[2], grip);
+      const sp = -th * f.lat * 0.15 * (spread + 0.7 * splay) * (1 - grip) * (1 - 0.6 * pinch);
+      f.b[0].rotation.set(-b0, 0, sp); f.b[1].rotation.set(-b1, 0, 0); f.b[2].rotation.set(-Math.max(-0.25, b2), 0, 0);
+    });
+    // thumb: abduction a (0 = along the index .. 1.15 = out), opposition b (toward the palm), flexion of both phalanges
+    const tOut = clamp(thumb);
+    let a = lerp(0.3, 1.12, tOut) + 0.15 * splay, b = 0.22 + 0.3 * cup + 0.25 * curl * (1 - tOut);
+    let f1 = 0.12 + 0.45 * curl * (1 - tOut) - 0.2 * splay, f2 = 0.1 + 0.5 * curl * (1 - tOut) - 0.25 * splay;
+    a = lerp(a, -0.06, grip); b = lerp(b, 0.8, grip); f1 = lerp(f1, 0.3, grip); f2 = lerp(f2, 0.6, grip);
+    a = lerp(a, 0.5, pinch); b = lerp(b, 0.9, pinch); f1 = lerp(f1, 0.3, pinch); f2 = lerp(f2, 0.25, pinch);
+    thumbQuat(th, a, b, this.thumb.b[0].quaternion);
+    this.thumb.b[1].rotation.set(f1, 0, 0); this.thumb.b[2].rotation.set(f2, 0, 0);
+    return this;
+  }
+  /** fingertip world positions (call after the hand's world matrix is current): i = 0..3 fingers, 'thumb' */
+  tipWorld(i, out = V()) {
+    const f = i === 'thumb' ? this.thumb : this.fingers[i];
+    const b = f.b[2]; b.updateWorldMatrix(true, false);
+    return out.copy(f.tip).applyMatrix4(b.matrixWorld);
+  }
+}
+
+
 // chest coat profile (chest-local): [h, rx, rzFront, rzBack, zCentre]
 const CHEST = [
   [-0.07, 0.098, 0.082, 0.086, 0.0], [0.02, 0.103, 0.086, 0.09, 0.0], [0.12, 0.122, 0.094, 0.1, -0.006],
@@ -316,10 +521,11 @@ class Magician extends Character {
     this.shoeMat = gloom(C.shoe, { roughness: 0.3,  clearcoat: 0.8, ccRough: 0.25, sheen: 0.2, rim: 0.5 });
     this.hairMat = gloom(C.hair, { roughness: 0.45, sheen: 0.8, sheenColor: 0x9aa6c8, rim: 0.4 });
     this.velvetMat = gloom(C.velvet, { physical: true, roughness: 0.9, sheen: 1, sheenColor: 0xa992cc, sheenRoughness: 0.35, rim: 0.55, rimColor: 0xb7a6e6 });
-    this.bladeMat = gloom(C.blade, { physical: true, roughness: 0.22, metalness: 0.55, clearcoat: 1, ccRough: 0.1, sheen: 0, rim: 0.9, rimColor: 0xd8e6ff, glow: 0.08, fizz: 0 });
+    this.bladeMat = gloom(C.blade, { roughness: 0.24, metalness: 0.6, rim: 0.9, rimColor: 0xd8e6ff, glow: 0.1, fizz: 0 }); this.bladeMat.vertexColors = true;
     this.darkMat = gloom(0x23252e, { roughness: 0.5, rim: 0.3, fizz: 0 });
-    this.tongueMat = new THREE.MeshPhysicalMaterial({ color: C.tongue, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 });
-    enhance(this.tongueMat, { rim: 0.5, rimColor: 0xd9b8ff, glow: 0.08, wrap: 0.4, wrapColor: 0xc06090 });
+    this.tongueMat = new THREE.MeshPhysicalMaterial({ color: C.tongue, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.12 });
+    enhance(this.tongueMat, { rim: 0.45, rimColor: 0xc9c0e0, glow: 0.06, wrap: 0.35, wrapColor: 0x9a86aa });
+    this.droolMat = new THREE.MeshStandardMaterial({ color: 0xe4ebf4, roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.62, emissive: 0x3a4250 });
     this._rims = [this.faceMat, this.skinMat, this.coatMat, this.coat2Mat, this.lapelMat, this.shirtMat, this.cravatMat, this.gloveMat, this.trouserMat, this.hatMat, this.shoeMat, this.hairMat, this.velvetMat]
       .map((m) => [m, m.userData.uniforms.uRim.value]);
   }
@@ -357,20 +563,22 @@ class Magician extends Character {
     }, true);
     const hips = new THREE.Mesh(hipGeo, this.trouserMat); hips.castShadow = true;
     this.pelvisG.add(hips);
-    // shirt front + lapels + buttons
-    const sph = (mat, p, s, r = [0, 0, 0], parent = this.chestG, seg = [20, 14]) => {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(1, seg[0], seg[1]), mat);
-      m.position.set(...p); m.scale.set(...s); m.rotation.set(...r); parent.add(m); return m;
+    // shirt front, lapels, buttons, cravat (an ascot: puffed knot + one droopy fold + a pale pin) — merged per material
+    const gs = (p, sc, r = [0, 0, 0], seg = [20, 14]) => {
+      const g = new THREE.SphereGeometry(1, seg[0], seg[1]); g.deleteAttribute('uv');
+      return g.applyMatrix4(new THREE.Matrix4().compose(V(...p), new THREE.Quaternion().setFromEuler(new THREE.Euler(...r)), V(...sc)));
     };
-    sph(this.shirtMat, [0, 0.3, 0.068], [0.056, 0.12, 0.026]);
-    for (const s of [1, -1]) {
-      sph(this.lapelMat, [s * 0.064, 0.27, 0.074], [0.03, 0.15, 0.013], [0.12, s * 0.5, -s * 0.32]);
-      sph(this.darkMat, [s * 0.026, 0.035, 0.092], [0.009, 0.009, 0.006], [0, 0, 0], this.chestG, [10, 8]);
-    }
-    // cravat: puffed knot + two drooping lobes + a pale pin
-    sph(this.cravatMat, [0, 0.395, 0.085], [0.027, 0.021, 0.018]);
-    for (const s of [1, -1]) sph(this.cravatMat, [s * 0.014, 0.352, 0.092], [0.017, 0.036, 0.01], [0.3, 0, s * 0.32]);
-    sph(this.shirtMat, [0.004, 0.398, 0.104], [0.0055, 0.0055, 0.0055], [0, 0, 0], this.chestG, [8, 6]);
+    const fold = deformSphere(18, 14, (a, s2, out) => {        // teardrop fold, wider and flatter at the bottom
+      const r = Math.sin(Math.PI * s2) * (0.55 + 0.45 * (1 - s2));
+      out.set(Math.sin(a) * r * 0.026, lerp(-0.05, 0.012, s2), Math.cos(a) * r * 0.012 + 0.004 * Math.sin(Math.PI * s2));
+    });
+    fold.deleteAttribute('normal'); fold.translate(0, 0.392, 0.088); fold.rotateX(0.0);
+    const addM = (geos, mat) => { const m = new THREE.Mesh(mergeGeometries(geos.map((g) => (g.index ? g : g))), mat); this.chestG.add(m); return m; };
+    for (const g of [fold]) g.computeVertexNormals();
+    addM([gs([0, 0.3, 0.068], [0.056, 0.12, 0.026]), gs([0.0, 0.352, 0.104], [0.0058, 0.0058, 0.0058], [0, 0, 0], [8, 6])].map((g) => { g.computeVertexNormals(); return g; }), this.shirtMat);
+    addM([1, -1].map((k) => gs([k * 0.064, 0.27, 0.074], [0.03, 0.15, 0.013], [0.12, k * 0.5, -k * 0.32])), this.lapelMat);
+    addM([1, -1].map((k) => gs([k * 0.026, 0.035, 0.092], [0.009, 0.009, 0.006], [0, 0, 0], [10, 8])), this.darkMat);
+    addM([gs([0, 0.398, 0.086], [0.024, 0.019, 0.017]), fold], this.cravatMat);
     // high collar: a flared, open-fronted lathe, taller at the back
     const prof = [[0.064, 0], [0.07, 0.05], [0.088, 0.12], [0.112, 0.175], [0.118, 0.182]].map(([r, y]) => new THREE.Vector2(r, y));
     const cg = new THREE.LatheGeometry(prof, 36, 0.95, TAU - 1.9);
@@ -405,8 +613,8 @@ class Magician extends Character {
     this.headG.add(this.headMesh);
     // long nose (slightly hooked, narrow, bulb tip)
     const nose = new SweepTube({ material: this.skinMat, segments: 16, radial: 12, capRings: 4 });
-    nose.update([SP(0, EYE_V - 0.02, -0.006), SP(0, -0.03, 0.005), SP(0, -0.11, 0.018), SP(0, -0.17, 0.038), SP(0, -0.205, 0.056), SP(0, -0.226, 0.054)],
-      [0.0075, 0.0105, 0.0165, 0.019, 0.0125, 0.006], { up: V(1, 0, 0), flatten: 0.55 });
+    sweep(nose, [SP(0, EYE_V + 0.01, -0.006), SP(0, -0.02, 0.008), SP(0, -0.09, 0.024), SP(0, -0.135, 0.046), SP(0, -0.16, 0.06), SP(0, -0.19, 0.058)],
+      [0.0075, 0.0098, 0.0128, 0.0148, 0.0108, 0.0055], { up: V(1, 0, 0), flatten: 0.5 });
     this.headG.add(nose.mesh);
     // ears: long, flat, a bit pointy at the back
     for (const s of [1, -1]) {
@@ -440,9 +648,9 @@ class Magician extends Character {
         iris: 0xc4bb84, iris2: 0xece5b8, irisR: 0.56, pupilR: 0.17, limbal: 0x5f5b44, sclera: 0xe7e6dc, pupilColor: 0x0b0c10,
         lash: 0.55, lowerLash: 0.25, lashColor: 0x191b22, lowRaised: -0.02, upOpen: 0.5, upWide: 1.02, maxYaw: 0.62,
       },
-      brows: { color: 0x24262f, thickness: 0.0056, lift: 0.002, inner: [0.15, 0.37], mid: [0.42, 0.47], outer: [0.72, 0.37], range: 0.17, flatten: 0.5, profile: [0.8, 1.1, 0.95, 0.35] },
+      brows: { color: 0x262a38, thickness: 0.0046, lift: 0.002, inner: [0.13, 0.335], mid: [0.52, 0.425], outer: [0.79, 0.31], range: 0.17, flatten: 0.5, profile: [1.0, 1.15, 0.85, 0.28] },
       mouth: {
-        v: MOUTH_V, halfW: HW0, line: '#231d2c', lineW: HW0 * 0.12, interior: '#24182f', interior2: '#76507f', teeth: '#d8d4c0',
+        v: MOUTH_V, halfW: HW0, line: '#231d2c', lineW: HW0 * 0.095, interior: '#24182f', interior2: '#76507f', teeth: '#d8d4c0',
         tongue: '#a283b8', lipTintRGB: '86,72,104', blushColor: '150,140,190', drawExtra: (gg, p) => this._drawExtra(gg, p),
       },
       decal: { uMin: -1.2, uMax: 1.2, vMin: MOUTH_V - 0.62, vMax: EYE_V + 0.33, size: [640, 512],
@@ -467,10 +675,12 @@ class Magician extends Character {
       m.renderOrder = 3; m.visible = false; eye.ball.add(m); return m;
     });
     // tongue (3D, slides across the upper lip)
-    this.tongue = new SweepTube({ material: this.tongueMat, segments: 22, radial: 12, capRings: 4 });
+    this.tongue = new SweepTube({ material: this.tongueMat, segments: 26, radial: 12, capRings: 4 });
     this.headG.add(this.tongue.mesh);
     this.tongueCurve = new THREE.CatmullRomCurve3([V(), V(0, 1, 0), V(0, 2, 0)], false, 'centripetal');
-    this.drip = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 10, 8), this.tongueMat); this.headG.add(this.drip);
+    // drool: a clear whitish drop on a thin strand back to the lip corner / tongue tip
+    this.drip = new THREE.Mesh(new THREE.SphereGeometry(0.0042, 12, 10), this.droolMat); this.headG.add(this.drip);
+    this.strand = new SweepTube({ material: this.droolMat, segments: 8, radial: 5, capRings: 1 }); this.headG.add(this.strand.mesh);
   }
 
   // lips, moustache, sunken sockets, cheek hollows, grin creases painted into the face decal (metres around the mouth centre)
@@ -487,33 +697,26 @@ class Magician extends Character {
     g.save();
     for (const s of [-1, 1]) {
       // sunken sockets (the eyeball covers the centre -> a dark ring), slightly drooping outward
-      soft(U(s * EYE_U), Vv(EYE_V - 0.035), U(0.29), Vv(EYE_V + 0.22) - Vv(EYE_V), s * 0.15, '34,36,62', 0.82);
+      soft(U(s * EYE_U), Vv(EYE_V - 0.03), U(0.26), Vv(EYE_V + 0.2) - Vv(EYE_V), s * 0.15, '34,36,62', 0.74);
       // cheek hollow under the cheekbone
       soft(U(s * 0.76), Vv(-0.38), U(0.2), Vv(-0.2) - Vv(-0.4), s * 0.3, '46,50,80', 0.38);
     }
-    // grin creases: short soft brackets just outside the mouth corners (only when grinning)
-    const sm = smoothstep(0.3, 1, p.mSmile);
-    if (sm > 0.01) {
-      g.strokeStyle = `rgba(48,46,72,${0.42 * sm})`; g.lineWidth = 0.0017; g.lineCap = 'round';
-      for (const [s, x, y] of [[-1, xr, m.yR], [1, xl, m.yL]]) {
-        g.beginPath(); g.moveTo(x + s * HW0 * 0.02, y + HW0 * 0.5); g.quadraticCurveTo(x + s * HW0 * 0.32, y + HW0 * 0.05, x + s * HW0 * 0.12, y - HW0 * 0.42); g.stroke();
-      }
-    }
     // soft shadow under the lower lip + chin
     soft(m.shift, m.bot - HW0 * 0.38, m.w * 0.55, HW0 * 0.22, 0, '44,42,70', 0.3);
-    // pencil moustache: two thin tapered wings riding just above the upper lip, tips flicking up with the grin
+    // pencil moustache: a straight, near-horizontal pencil line just above the upper lip, split around the nose
+    // (both halves stay visible in 3/4 and under the nose's shadow), following the grin only gently; tips flick a hair.
     const lipY = (x) => { const k = clamp(Math.abs(x - m.shift) / m.w); return lerp(m.top, x < m.shift ? m.yR : m.yL, k * k); };
-    g.fillStyle = '#1b1d25';
+    const y0 = Math.max(m.top, lipY(m.shift)) + HW0 * 0.24;
+    g.fillStyle = '#1a1c26';
     for (const s of [-1, 1]) {
-      const N = 14, top = [], bot = [];
-      const x0 = m.shift + s * HW0 * 0.05, x1 = m.shift + s * Math.min(m.w * 0.62, HW0 * 0.62);
-      const y0 = Math.max(m.top, lipY(m.shift)) + HW0 * 0.34;
+      const N = 16, top = [], bot = [];
+      const x0 = m.shift + s * HW0 * 0.2, x1 = m.shift + s * Math.max(HW0 * 0.78, lerp(HW0 * 0.92, m.w * 0.9, 0.5));
       for (let i = 0; i <= N; i++) {
         const f = i / N, x = lerp(x0, x1, f);
-        const y = y0 + (lipY(x) - lipY(m.shift)) * 0.35 + HW0 * 0.04 * f + HW0 * 0.38 * Math.pow(smoothstep(0.7, 1, f), 2) * (0.7 + 0.3 * clamp(p.mSmile + 0.4));
-        const th = HW0 * (0.09 * Math.sin(Math.PI * Math.min(1, 0.12 + f * 0.95)) + 0.012);
-        const xx = x + s * HW0 * 0.06 * Math.pow(smoothstep(0.8, 1, f), 2);
-        top.push([xx, y + th]); bot.push([xx, y - th]);
+        const th = HW0 * (0.052 * (1 - Math.pow(smoothstep(0.6, 1, f), 1.3) * 0.8) * (0.8 + 0.2 * smoothstep(0, 0.12, f)) + 0.006);
+        let y = y0 + 0.25 * (lipY(x) - lipY(m.shift)) + HW0 * 0.08 * Math.pow(smoothstep(0.78, 1, f), 2) * (0.6 + 0.4 * clamp(p.mSmile + 0.5));
+        y = Math.max(y, lipY(x) + HW0 * 0.11 + th);       // never sinks into a big grin's rising corners
+        top.push([x, y + th * 1.05]); bot.push([x, y - th * 0.95]);
       }
       g.beginPath(); g.moveTo(top[0][0], top[0][1]);
       for (const [x, y] of top.slice(1)) g.lineTo(x, y);
@@ -571,11 +774,7 @@ class Magician extends Character {
     this.arms = {};
     for (const side of ['L', 'R']) {
       const sleeve = new SweepTube({ material: this.coatMat, segments: 18, radial: 12, capRings: 3, castShadow: true });
-      const hand = new Hand({ size: HAND_SIZE, fingers: 4, side, material: this.gloveMat, thick: 0.74, fingerLen: 1.32 });
-      const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.031, 0.026, 0.05, 16, 1, true), this.cuffMat);
-      cuff.position.y = 0.002; hand.root.add(cuff);
-      const shirtCuff = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.034, 0.022, 16, 1, true), this.shirtMat);
-      shirtCuff.position.y = -0.03; hand.root.add(shirtCuff);
+      const hand = new GloveHand({ side, material: this.gloveMat, cuffMaterial: this.shirtMat });
       this.root.add(sleeve.mesh, hand.root);
       this.arms[side] = { sleeve, hand, elbow: V(), wrist: V(), shoulder: V() };
     }
@@ -621,29 +820,39 @@ class Magician extends Character {
 
   // ------------------------------------------------------------------ props: wavy dagger (R), velvet pouch (L)
   _buildProps() {
-    // dagger, built along +X (blade toward the thumb side of the right hand), flat in XY
-    const dg = new THREE.Group();
-    const L = 0.2, N = 32, top = [], bot = [];
+    // wavy (kris-like) dagger, built along +X: handle centred on the origin (sits in the fist's grip frame), guard,
+    // then a wide wavy blade with a diamond cross-section; vertex colours paint a dark central fuller + bright edges
+    // so the wave reads at phone size. One merged mesh (blade + guard + pommel) + the handle.
+    const dg = new THREE.Group(), roll = new THREE.Group(); dg.add(roll);
+    const L = 0.17, N = 40, X0 = 0.042, bp = [], bc = [], bi = [];
+    const wave = (u) => 0.0085 * Math.sin(u * Math.PI * 3.0) * (1 - 0.45 * u);
+    const half = (u) => 0.021 * Math.pow(1 - u, 0.55) * (1 - 0.25 * Math.exp(-(((u - 0.02) / 0.05) ** 2))) + 0.0008;
+    const thick = (u) => 0.0032 * (1 - 0.7 * u) + 0.0006;
     for (let i = 0; i <= N; i++) {
-      const x = (i / N) * L, u = i / N;
-      const w = 0.0155 * Math.pow(1 - u, 0.6) + 0.0006, yc = 0.0058 * Math.sin(u * Math.PI * 3.2) * (1 - u * 0.5);
-      top.push([0.03 + x, yc + w]); bot.push([0.03 + x, yc - w]);
+      const u = i / N, x = X0 + u * L, yc = wave(u), w = half(u), tz = thick(u);
+      // 4 cross-section verts: top edge, front ridge, bottom edge, back ridge
+      for (const [y, z, c] of [[yc + w, 0, 1.25], [yc, tz, 0.42], [yc - w, 0, 1.25], [yc, -tz, 0.42]]) { bp.push(x, y, z); bc.push(c, c, c * 1.04); }
     }
-    const sh = new THREE.Shape();
-    sh.moveTo(top[0][0], top[0][1]);
-    for (const [x, y] of top.slice(1)) sh.lineTo(x, y);
-    for (const [x, y] of bot.reverse()) sh.lineTo(x, y);
-    sh.closePath();
-    const bgeo = new THREE.ExtrudeGeometry(sh, { depth: 0.0022, bevelEnabled: true, bevelThickness: 0.0012, bevelSize: 0.0016, bevelSegments: 1, curveSegments: 4 });
-    bgeo.translate(0, 0, -0.0011);
-    dg.add(new THREE.Mesh(bgeo, this.bladeMat));
-    const hdl = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.0095, 0.075, 12), this.darkMat); hdl.rotation.z = Math.PI / 2; hdl.position.x = -0.01; dg.add(hdl);
-    const guard = new THREE.Mesh(new THREE.CapsuleGeometry(0.0045, 0.042, 4, 8), this.bladeMat); guard.position.x = 0.029; guard.rotation.z = 0.15; dg.add(guard);
-    const pom = new THREE.Mesh(new THREE.SphereGeometry(0.011, 12, 10), this.bladeMat); pom.position.x = -0.05; dg.add(pom);
-    this.dagger = dg;
-    this.daggerTip = new THREE.Object3D(); this.daggerTip.position.set(0.03 + L, 0, 0); dg.add(this.daggerTip);
-    dg.position.set(0.0, HAND_SIZE * 0.5, -0.03); dg.rotation.set(0, 0, 0);
-    this.arms.R.hand.root.add(dg);
+    for (let i = 0; i < N; i++) for (let k = 0; k < 4; k++) {
+      const a = i * 4 + k, b = i * 4 + (k + 1) % 4, c = a + 4, d = b + 4; bi.push(a, b, c, b, d, c);
+    }
+    const tipI = bp.length / 3; bp.push(X0 + L + 0.006, wave(1), 0); bc.push(1.2, 1.2, 1.25);
+    for (let k = 0; k < 4; k++) bi.push(N * 4 + k, N * 4 + (k + 1) % 4, tipI);
+    let bladeG = new THREE.BufferGeometry();
+    bladeG.setAttribute('position', new THREE.Float32BufferAttribute(bp, 3)); bladeG.setAttribute('color', new THREE.Float32BufferAttribute(bc, 3));
+    bladeG.setIndex(bi); bladeG = bladeG.toNonIndexed(); bladeG.computeVertexNormals();
+    const colorize = (g, c) => { g.deleteAttribute('uv'); const n = g.attributes.position.count; g.setAttribute('color', new THREE.Float32BufferAttribute(new Array(n * 3).fill(c), 3)); return g.index ? g.toNonIndexed() : g; };
+    const guardG = colorize(new THREE.CapsuleGeometry(0.0055, 0.05, 4, 10), 0.9); guardG.rotateZ(0.12); guardG.translate(X0 - 0.002, 0, 0);
+    const pomG = colorize(new THREE.SphereGeometry(0.0125, 12, 10), 0.95); pomG.translate(-0.043, 0, 0);
+    const metal = mergeGeometries([bladeG, guardG, pomG]);
+    roll.add(new THREE.Mesh(metal, this.bladeMat));
+    const hg = new THREE.CylinderGeometry(0.0118, 0.0128, 0.074, 14); hg.rotateZ(Math.PI / 2);
+    roll.add(new THREE.Mesh(hg, this.darkMat));
+    this.dagger = dg; this.daggerRoll = roll;
+    this.daggerTip = new THREE.Object3D(); this.daggerTip.position.set(X0 + L + 0.006, 0, 0); roll.add(this.daggerTip);
+    // right hand: thumb (blade) side is -X of the grip frame
+    dg.rotation.set(0, Math.PI, 0);
+    this.arms.R.hand.grip.add(dg);
     // pouch: hangs from the left hand's pinch (root child, oriented by gravity)
     const pg = new THREE.Group();
     const body = new THREE.Mesh(deformSphere(24, 16, (a, s, out) => {
@@ -664,7 +873,7 @@ class Magician extends Character {
     this.pouchHole.rotation.x = -Math.PI / 2; this.pouchHole.position.y = 0.012; pg.add(this.pouchHole);
     for (const s of [1, -1]) {   // drawstring ends
       const st = new SweepTube({ material: this.cravatMat, segments: 6, radial: 5, capRings: 1 });
-      st.update([V(s * 0.014, -0.012, 0.004), V(s * 0.026, -0.03, 0.012), V(s * 0.022, -0.055, 0.016)], 0.0022);
+      sweep(st, [V(s * 0.014, -0.012, 0.004), V(s * 0.026, -0.03, 0.012), V(s * 0.022, -0.055, 0.016)], 0.0022);
       pg.add(st.mesh);
       const kn = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 8, 6), this.cravatMat); kn.position.set(s * 0.022, -0.057, 0.016); pg.add(kn);
     }
@@ -843,7 +1052,7 @@ class Magician extends Character {
     this.Mh.copy(this.headG.matrix);
     const nB = neckBase.clone().addScaledVector(nd, -0.05), nM = neckBase.clone().addScaledVector(nd, neckLen * 0.5).add(V(0, 0, -0.008).applyQuaternion(qChest));
     const nT = V(0, -0.085, -0.03).applyMatrix4(this.Mh);
-    this.neck.update([nB, nM, neckTop, nT], [0.036, 0.029, 0.027, 0.032]);
+    sweep(this.neck, [nB, nM, neckTop, nT], [0.036, 0.029, 0.027, 0.032]);
 
     // ---- face
     const fp = resolveFace(P.face);
@@ -857,6 +1066,7 @@ class Magician extends Character {
     if (wK > 0) { const pop = MX('popped'); for (const k of Object.keys(pop)) if (typeof pop[k] === 'number' && typeof fp[k] === 'number') fp[k] = lerp(fp[k], pop[k], wK); }
     const gaze = gazePoint(P.gaze, CTX.camera);
     if (dizzy > 0) { fp.saccade = 0; fp.autoBlink = (fp.autoBlink ?? 1) * (1 - dizzy); }
+    for (const b of this.face.brows || []) b.tube.curve.needsUpdate = true;   // brow tubes: see sweep()
     this.face.update(t, fp, { gaze: dizzy > 0.5 ? null : gaze, speech: tongueAmt > 0.3 ? null : sp, blinkAt: P.blinkAt });
     // popped eyes (scale up the whole eye) + dizzy swirls
     const popS = 1 + 0.32 * wK + 0.08 * clamp((fp.lidU - 1.25) / 0.17) * (1 - wK) + (E.eyePop ?? 0) * 0.35;
@@ -905,7 +1115,7 @@ class Magician extends Character {
       Lg.shoe.position.copy(ankle); Lg.shoe.quaternion.copy(qShoe);
       const sd = knee.clone().sub(Lg.hip).normalize(), ad = ankle.clone().sub(knee).normalize();
       const end = ankle.clone().addScaledVector(ad, -0.03);
-      Lg.tube.update([Lg.hip.clone().addScaledVector(sd, -0.03), Lg.hip.clone().lerp(knee, 0.5), knee, knee.clone().lerp(ankle, 0.55), end],
+      sweep(Lg.tube, [Lg.hip.clone().addScaledVector(sd, -0.03), Lg.hip.clone().lerp(knee, 0.5), knee, knee.clone().lerp(ankle, 0.55), end],
         [0.056, 0.05, 0.043, 0.037, 0.046], { up: pFwd, capEnd: false });
       this._anch['knee' + side].position.copy(knee); this._anch['foot' + side].position.copy(ankle);
     }
@@ -941,7 +1151,7 @@ class Magician extends Character {
 
   // ------------------------------------------------------------------ arm solver
   _presetToRoot(d, s, sh) {
-    const M = d.sp === 'head' ? this.Mh : d.sp === 'body' ? this.Mb : this.Mc;
+    const M = d.sp === 'head' ? this.Mh : d.sp === 'body' ? this.Mb : d.sp === 'hip' ? this.Mp : this.Mc;
     const mir = (a) => V(s * a[0], a[1], a[2]);
     const t = d.sp === 'body' ? sh.clone().add(mir(d.t).transformDirection(M).multiplyScalar(mir(d.t).length())) : mir(d.t).applyMatrix4(M);
     return { t, pole: mir(d.pole).transformDirection(M), palm: mir(d.palm).transformDirection(M), fing: mir(d.fing).transformDirection(M) };
@@ -1015,16 +1225,18 @@ class Magician extends Character {
     }
     // props force a hold
     const holdD = side === 'R' && this._daggerVis > 0.5, holdP = side === 'L' && this._pouchVis > 0.5;
-    if (holdD) { acc.hand.grip = 0.2; acc.hand.point = 0; acc.hand.curl = Math.max(acc.hand.curl, 0.95); acc.hand.thumb = 0.15; acc.hand.splay = 0; acc.hand.spread = Math.min(acc.hand.spread, 0.06); acc.hand.cup = 0; }
-    if (holdP) { acc.hand.curl = Math.max(acc.hand.curl, 0.68); acc.hand.thumb = Math.max(acc.hand.thumb, 0.65); acc.hand.point = 0; acc.hand.splay = 0; acc.hand.spread = Math.min(acc.hand.spread, 0.12); }
+    if (holdD) { acc.hand.grip = 1; acc.hand.point = 0; acc.hand.splay = 0; acc.hand.pinch = 0; }
+    if (holdP) { acc.hand.pinch = 1; acc.hand.grip = 0; acc.hand.point = 0; acc.hand.splay = 0; }
     // solve
     const pole = acc.pole.lengthSq() > 1e-8 ? acc.pole.normalize() : V(s, 0, -1);
     const { mid, end } = solveIK2(sh, acc.t, UPPER, FORE, pole);
     arm.shoulder.copy(sh); arm.elbow.copy(mid); arm.wrist.copy(end);
     const chordMid = sh.clone().lerp(end, 0.5), m2 = mid.clone().lerp(chordMid, 0.06);
     const sIn = sh.clone().add(V(-s * 0.03, 0.01, 0).transformDirection(this.Mc).multiplyScalar(0.03));
-    arm.sleeve.update([sIn, sh.clone().lerp(m2, 0.5), m2, m2.clone().lerp(end, 0.55), end.clone().addScaledVector(end.clone().sub(m2).normalize(), 0.012)],
-      [0.05, 0.045, 0.04, 0.036, 0.04]);
+    // sleeve stops short of the wrist so the shirt cuff + flared glove gauntlet show
+    const fa0 = end.clone().sub(m2).normalize();
+    sweep(arm.sleeve, [sIn, sh.clone().lerp(m2, 0.5), m2, m2.clone().lerp(end, 0.5), end.clone().addScaledVector(fa0, -0.05)],
+      [0.05, 0.045, 0.04, 0.037, 0.041]);
     const H = arm.hand;
     H.root.position.copy(end);
     let fd = acc.fing.lengthSq() > 1e-8 ? acc.fing.clone().normalize() : end.clone().sub(mid).normalize();
@@ -1046,39 +1258,63 @@ class Magician extends Character {
   }
 
   // ------------------------------------------------------------------ tongue (lick across the upper lip / lolling out)
+  // decal metres (x right = character's left, y up, around the mouth centre) + surface offset h -> head-local point
+  _dm(x, y, h) { const d = this.face.decal; return SP(x / d.rxEff, MOUTH_V + y / d.ryEff, h); }
+  _dn(x, y) { const d = this.face.decal; return headSurf(x / d.rxEff, MOUTH_V + y / d.ryEff).n; }
+
   _updateTongue(t, lick, lickOn, tOut) {
     const show = Math.max(lickOn, tOut);
     this.tongue.mesh.visible = show > 0.01;
-    this.drip.visible = false;
+    this.drip.visible = false; this.strand.mesh.visible = false;
     if (!this.tongue.mesh.visible) return;
-    const U = 0.8;
-    const a = smooth((lick - 0.1) / 0.8);
-    const su = lerp(-U, U, a) + 0.05 * Math.sin(t * 13) * lickOn;
-    const arch = 1 - (su / U) ** 2;
-    const tipV = MOUTH_V + 0.1 + 0.08 * arch + 0.03 * Math.sin(t * 17) * lickOn;
-    const sg = Math.sign(su) || 1;
-    const L = [SP(0, MOUTH_V - 0.02, -0.03), SP(su * 0.12, MOUTH_V - 0.01, 0.016), SP(su * 0.55, lerp(MOUTH_V + 0.03, tipV, 0.6), 0.032), SP(su, tipV, 0.02), SP(su + sg * 0.12, tipV + 0.08, 0.026)];
-    const sw = 0.03 * Math.sin(t * 1.9);
-    const O = [SP(0, MOUTH_V - 0.02, -0.03), SP(0.12, MOUTH_V - 0.05, 0.018), SP(0.24, MOUTH_V - 0.2, 0.034), SP(0.27 + sw, MOUTH_V - 0.36, 0.038), SP(0.25 + sw * 1.3, MOUTH_V - 0.45, 0.032)];
-    const inv = smoothstep(0.1, -0.5, V(0, 1, 0).transformDirection(this.Mh).y);       // head upside-down
-    if (inv > 0) {
-      const O2 = [SP(0, MOUTH_V - 0.02, -0.03), SP(0.2, MOUTH_V + 0.0, 0.018), SP(0.42, MOUTH_V + 0.08, 0.03), SP(0.56 + sw, MOUTH_V + 0.19, 0.034), SP(0.62 + sw * 1.3, MOUTH_V + 0.28, 0.03)];
-      O.forEach((p, i) => p.lerp(O2[i], inv));
+    const m = mouthGeom(this.face.state), w = Math.max(m.w, HW0 * 0.8);
+    const lipY = (x) => { const k = clamp(Math.abs(x - m.shift) / m.w); return lerp(m.top, x < m.shift ? m.yR : m.yL, k * k); };
+    const D = (x, y, h) => this._dm(x, y, h);
+    const midY = (m.top + m.bot) / 2;
+    // ---- LICK: the tip sweeps along the UPPER lip (over the moustache) from the right corner to the left corner,
+    // the body arching proud of the face (in front of the nose base); tip curls up at the far corner.
+    const a = smooth((lick - 0.1) / 0.78), ext = smooth(lickOn);
+    const xt = lerp(-1.02, 1.02, a) * w + 0.04 * HW0 * Math.sin(t * 14) * lickOn, sg = Math.sign(xt) || 1;
+    const curl = smoothstep(0.78, 1, a) + smoothstep(0.22, 0, a) * 0.2;
+    const yt = lipY(xt) + HW0 * (0.2 + 0.05 * Math.sin(t * 9)) + HW0 * 0.42 * curl;
+    const tipIn = V(m.shift * 0.5, m.top - HW0 * 0.15, -0.004);
+    const L = [D(m.shift, midY, -0.014), D(0.12 * xt, m.top - HW0 * 0.02, 0.016), D(0.55 * xt, lipY(0.55 * xt) + HW0 * 0.32, 0.036),
+      D(xt, yt, 0.027), D(xt + sg * HW0 * 0.16 * (0.5 + curl), yt + HW0 * (0.12 + 0.3 * curl), 0.03)];
+    const tin = D(tipIn.x, tipIn.y, tipIn.z);
+    for (let i = 1; i < 5; i++) L[i].lerp(tin.clone().lerp(L[i], i / 4), 1 - ext);
+    // ---- LOLL (tongueOut): out of the left corner, then hanging along GRAVITY (head-local), kept off the face
+    const gl = V(0, -1, 0).applyQuaternion(this.headG.getWorldQuaternion(new THREE.Quaternion()).invert());
+    const sw = 0.006 * Math.sin(t * 1.9);
+    const p1 = D(0.5 * w, m.bot * 0.65 + m.top * 0.35, 0.012), n1 = this._dn(0.5 * w, m.bot);
+    const side = V(1, 0, 0);
+    const O = [D(m.shift, midY, -0.014), D(0.2 * w, midY, 0.006), p1];
+    let q = p1.clone();
+    for (const [dl, dn, ds] of [[0.024, 0.012, 0.006], [0.03, 0.004, 0.003], [0.026, 0.002, 0.002]]) {
+      q = q.clone().addScaledVector(gl, dl).addScaledVector(n1, dn).addScaledVector(side, ds + sw); O.push(q);
     }
+    for (let i = 3; i < O.length; i++) {           // push out of the skull (radial test against headPoint)
+      const p = O[i], r = p.length(), u = Math.atan2(p.x, p.z), v = Math.asin(clamp(p.y / Math.max(r, 1e-6), -1, 1));
+      const rs = headPoint(u, v, _hw).length() + 0.009;
+      if (r < rs) p.multiplyScalar(rs / r);
+    }
+    O.splice(2, 0); // keep 6 points
+    const Lp = [L[0], L[1], L[2], L[3], L[4], L[4].clone().addScaledVector(L[4].clone().sub(L[3]).normalize(), 0.004)];
     const wt = tOut / Math.max(1e-4, lickOn + tOut);
-    const pts = L.map((p, i) => p.lerp(O[i], wt));
-    this.tongueCurve.points = pts;
-    const ext = Math.max(0.15, show);
+    const pts = Lp.map((p, i) => p.clone().lerp(O[i], wt));
+    this.tongueCurve.points = pts; this.tongueCurve.needsUpdate = true;
     const S = [];
-    for (let i = 0; i <= 8; i++) S.push(this.tongueCurve.getPoint((i / 8) * ext));
-    const up = headSurf(su * 0.4 * (1 - wt) + 0.18 * wt, MOUTH_V + 0.04).n;
-    this.tongue.update(S, (s) => (0.0135 + 0.004 * Math.sin(Math.PI * Math.min(1, s * 1.2))) * (s > 0.8 ? lerp(1, 0.62, (s - 0.8) / 0.2) : 1), { up, flatten: 0.62 });
-    // a little drool drop falls from the tongue tip near the end of the lick
-    const dr = (lick - 0.7) / 0.3;
-    if (lickOn > 0.2 && dr > 0 && dr < 1) {
-      this.drip.visible = true;
-      this.drip.position.copy(this.tongueCurve.getPoint(0.8 * ext)).add(V(0, -0.06 * dr * dr - 0.006, 0.004));
-      this.drip.scale.set(1, 1 + 0.6 * dr, 1);
+    for (let i = 0; i <= 10; i++) S.push(this.tongueCurve.getPoint(i / 10));
+    const up = this._dn(0.4 * xt * (1 - wt) + 0.3 * w * wt, m.top);
+    sweep(this.tongue, S, (s) => (0.0118 + 0.0016 * Math.sin(Math.PI * Math.min(1, s * 1.3))) * (s > 0.72 ? lerp(1, 0.58, (s - 0.72) / 0.28) : 1), { up, flatten: 0.6 });
+    // drool near the end of the lick: hangs from the far lip corner on a thin strand, sags, then thins away
+    const dr = (lick - 0.72) / 0.28;
+    if (lickOn > 0.05 && dr > 0 && dr < 1 && wt < 0.5) {
+      const anchor = D(m.w * 0.96, m.yL + HW0 * 0.06, 0.01);
+      const drop = anchor.clone().addScaledVector(gl, 0.006 + 0.05 * dr * dr).add(V(0, 0, 0.004));
+      const sc = 1 - smoothstep(0.82, 1, dr);
+      this.drip.visible = sc > 0.05; this.strand.mesh.visible = sc > 0.05;
+      this.drip.position.copy(drop); this.drip.scale.set(sc, sc * (1 + 0.5 * dr), sc);
+      sweep(this.strand, [anchor, anchor.clone().lerp(drop, 0.5).add(V(0, 0, 0.002)), drop], [0.0016, 0.0011 * (0.4 + 0.6 * sc), 0.0014 * sc + 1e-4]);
     }
   }
 
@@ -1096,7 +1332,7 @@ class Magician extends Character {
         const lie = SP(u * (1 - pop * f * 0.6), v + pop * f * 0.15, 0.003 + pop * f * (0.05 + 0.02 * k) * (1 + wob));
         pts.push(lie);
       }
-      S.update(pts, [0.0022, 0.002, 0.0018, 0.0015, 0.0012]);
+      sweep(S, pts, [0.0022, 0.002, 0.0018, 0.0015, 0.0012]);
     }
   }
 
@@ -1172,15 +1408,24 @@ class Magician extends Character {
   // ------------------------------------------------------------------ props per frame
   _updateProps(t, E, X) {
     this.dagger.visible = this._daggerVis > 0.5;
-    // dagger sits in the grip (hand-local): handle across the palm, blade out of the thumb side
-    this.dagger.position.set(0.004, HAND_SIZE * 0.47, -0.026);
-    this.dagger.rotation.set(0, 0, 0.12);
+    // the handle lies in the fist's grip frame; roll the blade about its long axis so the wavy FACE turns to the
+    // camera (a dagger seen edge-on reads as a needle). extra.daggerRoll (rad) overrides; daggerFace 0 disables.
+    if (this.dagger.visible) {
+      let ang = E.daggerRoll ?? 0;
+      const cam = CTX.camera, kf = E.daggerRoll != null ? 0 : (E.daggerFace ?? 1);
+      if (cam && kf > 0) {
+        this.dagger.updateWorldMatrix(true, false);
+        const c = cam.position.clone().applyMatrix4(_m1.copy(this.dagger.matrixWorld).invert());
+        ang = lerp(ang, Math.atan2(-c.y, c.z), kf);
+      }
+      this.daggerRoll.rotation.set(ang, 0, 0);
+    }
     // pouch hangs from the left hand's pinch point, swinging under gravity; dust tilts it to pour
     this.pouch.visible = this._pouchVis > 0.5;
     if (!this.pouch.visible) return;
     const H = this.arms.L.hand;
     H.root.updateMatrixWorld(true);
-    const pinch = V(0.0, HAND_SIZE * 0.62, -0.035).applyMatrix4(H.root.matrixWorld).applyMatrix4(this.rootInv);
+    const pinch = H.tipWorld('thumb').lerp(H.tipWorld(0, _pv), 0.5).applyMatrix4(this.rootInv);
     const dust = clamp(E.dust ?? 0);
     const fwd = V(0, 0, 1).transformDirection(this.Mb);
     const up = V(0, 1, 0).addScaledVector(fwd, 1.6 * dust).add(V(0.12 * Math.sin(t * 1.9), 0, 0.1 * Math.sin(t * 1.4 + 1)).multiplyScalar(1 - dust));
