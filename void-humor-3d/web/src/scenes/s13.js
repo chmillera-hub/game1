@@ -13,9 +13,10 @@ import { JX } from '../chars/jesus.js';
 import { VX } from '../chars/void.js';
 import { UX, headShake } from '../chars/user.js';
 import { EDGE, todAt, voidSkyAt, sy, lookFor } from './marks.js';
-import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse, walkPath } from './kit_s11_13.js';
+import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse, walkPath, VTURN, VGENTLE } from './kit_s11_13.js';
 
 const M = EDGE.M;
+const TUNE = (() => { try { return JSON.parse(new URLSearchParams(location.search).get('tune') || '{}'); } catch (e) { return {}; } })();   // TEMP TUNE
 const KP = M.K.p, KY = M.K.yaw;
 const FWD_K = [Math.sin(KY), 0, Math.cos(KY)];                     // Jesus's facing at K (stage-local)
 const LEFT_K = [Math.cos(KY), 0, -Math.sin(KY)];                   // his left (stage-local)
@@ -27,8 +28,11 @@ const UB = [-Math.sin(M.U.yaw), 0, -Math.cos(M.U.yaw)];             // the user'
 const uEyeL = (lean) => { const b = 0.30 - lean; return [UEYE[0] + UB[0] * 0.44 * b, UEYE[1] + 0.065 * b, UEYE[2] + UB[2] * 0.44 * b]; };
 const LINE_YAW = Math.atan2(JEYE[0] - UEYE[0], JEYE[2] - UEYE[2]);  // user -> Jesus (stage-local, rad)
 const PERP_DEG = (LINE_YAW - Math.PI / 2) / (Math.PI / 180);         // the pure-profile camera yaw (downstage-right side)
-// Jesus's last steps: the time cheat across the cut (STAGING s12->s13): mid-walk at (-0.1, 0.55) -> K
-const WALK = [[0.12, 0, 0.47], [-0.1, 0, 0.55], [-0.38, 0, 0.64], KP];
+// Jesus's walk JS -> K, one continuous path from his mark at the Void's shoulder (s12 ends on him lifting the palm, turning
+// and taking the first step down this very path): the cut is an ellipsis inside one walk, and s13 opens ~0.4 s earlier in
+// it than before (about 0.9 m still to go), so the distance he has crossed reads against the seated Void at frame-right
+const WALK = [M.JS.p, [0.95, 0, 0.05], [0.12, 0, 0.47], [-0.1, 0, 0.55], [-0.38, 0, 0.64], KP];
+const WALK_T0 = -1.71, WALK_T1 = 1.0;                               // walk start / arrival, relative to s13's start
 
 // ------------------------------------------------------------------------------------------------ small vector kit
 const V3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -79,7 +83,7 @@ export default {
 
     // ================================================================ timing (beats + words)
     const S = T('s13');
-    const tArrive = S + 0.5, tKneel0 = S + 0.28, tKneel1 = tKneel0 + 0.95;
+    const tArrive = S + WALK_T1, tKneel0 = tArrive - 0.22, tKneel1 = tKneel0 + 0.95;
     const tHey = T('s13b02'), tOkay = W('s13b02', "it's", { frac: 0.6 });
     const B03 = T('s13b03'), tDont = W('s13b03', "don't", { frac: 0.1 }), tTalk3 = W('s13b03', 'talk', { frac: 0.5 }), tVoid3 = W('s13b03', 'void', { frac: 0.75 });
     const tWasnt = T('s13b04'), tFair = T('s13b05');
@@ -107,7 +111,7 @@ export default {
     const shotName = SHOTS[si][1], shotT0 = SHOTS[si][0], shotT1 = SHOTS[si + 1] ? SHOTS[si + 1][0] : E;
 
     // ================================================================ Jesus: last steps -> kneel (overshoot, settle)
-    const wk = walkPath(t, WALK, S - 0.35, tArrive, { ta: 0.01, td: 0.42, stride: 1.05, phase0: 0.62, yaw1: KY, turn: 0.5 });
+    const wk = walkPath(t, WALK, S + WALK_T0, tArrive, { ta: 0.35, td: 0.45, stride: 1.05, phase0: 0.62, yaw1: KY, turn: 0.5 });
     const kneel = k(t, [[tKneel0, 0], [tKneel1, 1, 'inOut']]);
     const kneelDip = -0.022 * pulse(t, tKneel1 - 0.12, tKneel1 + 0.34, 0.1, 0.24);   // lands a touch deep, settles
 
@@ -427,16 +431,16 @@ export default {
     const peek = k(t, [[tPk - 0.5, 0], [tPk + 0.17, 1, 'inOut'], [B06 + 0.45, 1], [B06 + 1.25, 0, 'inOut']]);
     const vPose = (pass) => {
       const je = jesus.anchor('eyes');
-      const Fsulk = VX('sad', { lidU: 0.72 }), Fgentle = VX('gentle', { lidU: 0.6, lidL: 0.48, mSmile: 0.55 });
-      const Fpeek = VX('curious', { lidU: 1.18, browIn: 0.75, browOut: 0.55, mSmile: 0.1 });
+      const Fsulk = VX('sad', { lidU: 0.72, lidArc: 0 }), Fgentle = VX('gentle', VGENTLE);          // (s12's look-back face at the cut)
+      const Fpeek = VX('curious', { lidU: 1.18, browIn: 0.75, browOut: 0.55, mSmile: 0.1, lidArc: 0 });
       const face = k(t, [['s13', Fgentle], [S + 0.6, Fgentle], [S + 1.3, Fsulk, 'inOut'], [tPk - 0.2, Fsulk], [tPk + 0.2, Fpeek, 'out'], [B06 + 0.4, Fpeek], [B06 + 1.0, Fsulk, 'inOut']]);
       const lift = pulse(t, tPk + 0.18, tPk + 0.62, 0.12, 0.2);               // brow-wisps lift: is it working?
       face.browIn += 0.25 * lift; face.browOut += 0.2 * lift;
       face.autoBlink = 0;
       return {
         pos: POS.VSIT, yaw: YAW.VSIT,
-        body: { sit: 1, slump: 0.4 - 0.06 * peek, twist: -0.35 * (1 - back) + PEEK_TWIST * peek, breathe: 1.15, breathRate: 0.19 },
-        head: { yaw: -1.75 * (1 - back) + PEEK_YAW * peek, pitch: lerp(-0.04, 0.26, back) - 0.14 * peek, roll: -0.08 * (1 - back) + 0.05 * peek },
+        body: { sit: 1, slump: 0.4 - 0.06 * peek, twist: VTURN.twist * (1 - back) + PEEK_TWIST * peek, tilt: VTURN.tilt * (1 - back), breathe: 1.15, breathRate: 0.19 },
+        head: { yaw: VTURN.yaw * (1 - back) + PEEK_YAW * peek, pitch: lerp(-0.04, 0.26, back) - 0.14 * peek, roll: -0.08 * (1 - back) + 0.05 * peek },
         armL: { preset: 'crossed' }, armR: { preset: 'crossed' },
         gaze: pass && peek > 0.05 && je ? arr(je) : null,
         face,
@@ -453,7 +457,7 @@ export default {
       const u = clamp((t - shotT0) / Math.max(0.01, shotT1 - shotT0));
       let shot;
       switch (shotName) {
-        case 'WIDE': shot = EDGE.shot(WIDE.look, { dist: lerp(WIDE.dist, WIDE.dist - 0.25, smooth(u)), yaw: WIDE.yaw, pitch: WIDE.pitch, fov: WIDE.fov, screenY: sy(WIDE.sy), drift: 0.3 }); break;
+        case 'WIDE': { const WIDE = { ...WIDE0, ...(TUNE.wide || {}) }; shot = EDGE.shot(WIDE.look, { dist: lerp(WIDE.dist, WIDE.dist - WIDE.push, smooth(u)), yaw: WIDE.yaw, pitch: WIDE.pitch, fov: WIDE.fov, screenY: sy(WIDE.sy), drift: 0.3 }); break; }
         case 'OTSK': shot = EDGE.shot(JEYE, { dist: 2.25, yaw: -30, pitch: 6, fov: 33, screenY: sy(400), drift: 0.2 }); break;
         case 'OTSK2': shot = EDGE.shot(JEYE, { dist: k(t, [[tFair, 2.2], [T('s13b09'), 2.15], [B10, 1.8, 'inOut']]), yaw: -28, pitch: 6, fov: 33, screenY: sy(400), drift: 0.2 }); break;
         case 'OTSKW': shot = EDGE.shot(JEYE, { dist: OTSKW.dist, yaw: OTSKW.yaw, pitch: OTSKW.pitch, fov: 44, screenY: sy(OTSKW.sy), drift: 0.15 }); break;
@@ -531,7 +535,9 @@ export default {
 
 // ------------------------------------------------------------------------------------------------ camera numbers
 // (stage-local degrees / metres; tuned against the real rigs with stills)
-const WIDE = { look: [-1.05, 0.72, 1.13], yaw: 22, pitch: 3, dist: 5.4, fov: 35, sy: 700 };
+// (the wide holds the user at frame-left, Jesus crossing and the seated Void's flank at frame-right: the distance he has
+//  walked from its shoulder reads; a slow push while he kneels)
+const WIDE0 = { look: [-0.5, 0.8, 0.7], yaw: 18, pitch: 3, dist: 7.0, push: 0.45, fov: 44, sy: 640 };
 const OTSKW = { yaw: -36, pitch: 6, dist: 3.3, sy: 515 };
 const OTSJL = { yaw: 97, pitch: 12, dist: 2.3, drop: 0.2, sy: 560 };
 const OTSJ = { back: 0.45, side: 0.24, up: 0.3 };

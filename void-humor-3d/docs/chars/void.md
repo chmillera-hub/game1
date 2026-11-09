@@ -28,7 +28,8 @@ sloping shoulders, a thin rolled lip so its hem blends into the body) is married
 roll** at the back/sides (max radius ~5 cm: piping, not a tyre). The **hood** is a cowl: round from behind and from the
 side (only a low, soft crown at the top-back, ~10 cm: never a pointed cone or a flat-topped box), a deep edge (brim forward over the brow, sides set back, chin edge drawn
 forward and down), a rolled brim that is thick at the top and thin at the sides, a soft shield-shaped opening with a
-slightly off-centre V at the chin, and one asymmetric overlap fold (its left side laps over the right at the chin).
+slightly off-centre V at the chin (the old asymmetric chin overlap fold, `void.fold`, is built but hidden: its end read as
+a dark horn past the face whenever the hood turned over a shoulder).
 
 Inside: unlit **cosmic darkness** (nebula + tiny stars + a faint violet glow, vignetted to black at the brim) holding
 - **Two big starlight eyes** (core `Eye`, glow mode: moon-white sclera, deep blue → teal iris, dark pupil). The lids

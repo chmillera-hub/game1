@@ -47,6 +47,13 @@ export const add = (a, b) => { const A = arr(a), B = arr(b); return [A[0] + B[0]
 /** stage-local offset vector (direction) -> world vector */
 export function SV(x, y, z) { const o = EDGE.W(0, 0, 0), p = EDGE.W(x, y, z); return [p[0] - o[0], p[1] - o[1], p[2] - o[2]]; }
 
+// ------------------------------------------------------------------------------------------- the Void's look back
+// The over-the-shoulder look of s12b02, held across the cut into s13's first second (shared so the cut matches):
+// body twist + a lean onto that side (the face and its smile clear the shoulder ridge), hood yaw, and the gentle
+// smile (rounded lids via the Void's `lidArc`, smile-crescent lower lids, small closed crescent).
+export const VTURN = { yaw: -1.4, twist: -0.7, tilt: 0.15 };
+export const VGENTLE = { lidArc: 0.95, lidU: 0.66, lidL: 0.72, browIn: 0.55, browOut: -0.14, lidSad: 0.1, mSmile: 0.42, mWide: -0.42, blush: 0.32 };
+
 // ------------------------------------------------------------------------------------------- leak guard
 // Props live in the shared EDGE scene. So they never draw in another scene's frame, each update() stamps
 // the frame time and the meshes collapse themselves in onBeforeRender when the stamp is stale.

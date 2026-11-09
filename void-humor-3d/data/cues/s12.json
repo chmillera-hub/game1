@@ -6,7 +6,9 @@
     {"t": "s12b01.end-1.30", "name": "footsteps_soft", "gain_db": -11, "pan": -0.06},
     {"t": "s12b01.end-0.81", "name": "footsteps_soft", "gain_db": -12, "pan": 0.0},
     {"t": "s12b01.end-0.48", "name": "cloth_rustle", "gain_db": -6, "pan": 0.05},
-    {"t": "s12b02+1.15", "name": "twinkle", "gain_db": -8, "pan": 0.1}
+    {"t": "s12b02+0.95", "name": "twinkle", "gain_db": -8, "pan": 0.1},
+    {"t": "s12.end-0.42", "name": "cloth_rustle", "gain_db": -12, "pan": 0.1},
+    {"t": "s12.end-0.06", "name": "footsteps_soft", "gain_db": -13, "pan": 0.1}
   ],
   "hits": []
 }

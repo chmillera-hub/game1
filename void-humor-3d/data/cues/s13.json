@@ -1,8 +1,8 @@
 {
   "sfx": [
-    {"t": "s13.start+0.0", "name": "footsteps_soft", "gain_db": -11, "pan": 0.1},
-    {"t": "s13.start+0.66", "name": "footsteps_soft", "gain_db": -13, "pan": 0.1},
-    {"t": "s13.start+1.03", "name": "cloth_rustle", "gain_db": -6, "pan": 0.05},
+    {"t": "s13.start+0.21", "name": "footsteps_soft", "gain_db": -11, "pan": 0.1},
+    {"t": "s13.start+0.69", "name": "footsteps_soft", "gain_db": -13, "pan": 0.1},
+    {"t": "s13.start+1.53", "name": "cloth_rustle", "gain_db": -6, "pan": 0.05},
     {"t": "s13b10+0.12", "name": "cloth_rustle", "gain_db": -12, "pan": -0.15},
     {"t": "s13b10+0.84", "name": "phone_tap", "gain_db": -12, "pan": -0.1},
     {"t": "s13b14+0.62", "name": "twinkle", "gain_db": -10, "pan": 0.15},

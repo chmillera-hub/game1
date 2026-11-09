@@ -87,15 +87,16 @@ export default {
         [tCut, U], [tAwk - 0.25, U], [tAwk - 0.05, G.vside, 'out'], [tAwk + 0.5, G.vside], [tAwk + 0.62, U, 'out'],
       ]);
       // the face assembles on the words
-      // the look: WORRIED brows (inner tips way up, outer ends a touch down), a flat strained rectangle of clenched
-      // teeth with the corners pulled OUT and DOWN (never a grin), a little lower-lid tension
+      // the look: a FROZEN clenched-teeth grimace — the mouth stretched to its full width, corners pulled out and a
+      // little down, lips parted on BOTH rows of teeth (jaw shut: mClench), brows raised with the inner ends highest,
+      // upper lids held high (eyes wide, darting — never droopy), the chin tucked
       const F0 = JX('listening', { browIn: 0.22, mSmile: 0.08 });
-      const F1 = JX('listening', { browIn: 1.0, browOut: 0.12, browMid: 0.1, browSq: 0.12, lidU: 1.14, mSmile: -0.05, mPress: 0.3, lidSad: 0.3 });
-      const F1b = JX('awkward', { mClench: 0.0, mOpen: 0.06, mWide: 0.7, mSmile: -0.3, mAsym: 0.06, mPress: 0.55, browIn: 1.1, browOut: 0.0, lidSad: 0.36 });   // corners stretch out + down first
-      const AWK = { mSmile: -0.5, mWide: 1.25, mOpen: 0.26, mAsym: 0.1, browIn: 1.22, browOut: -0.12, browMid: 0.06, browSq: 0.22, browAsym: 0.1, lidSad: 0.46, lidU: 1.16, lidL: 0.24 };
-      const F2o = JX('awkward', { ...AWK, mWide: 1.35, mSmile: -0.56, browIn: 1.32, lidU: 1.24 });
+      const F1 = JX('listening', { browIn: 1.0, browOut: 0.2, browMid: 0.12, browSq: 0.1, lidU: 1.16, mSmile: -0.05, mPress: 0.3, lidSad: 0.14 });
+      const F1b = JX('awkward', { mClench: 0.0, mOpen: 0.06, mWide: 0.85, mSmile: -0.26, mAsym: 0.06, mPress: 0.55, browIn: 1.15, browOut: 0.22, lidSad: 0.12, lidU: 1.18 });   // corners stretch out + down first
+      const AWK = { mClench: 1, mSmile: -0.5, mWide: 1, mOpen: 0.5, mAsym: 0.08, mTeethU: 1, mTeethL: 1, browIn: 1.3, browOut: 0.3, browMid: 0.2, browSq: 0.16, browAsym: 0.1, lidSad: 0.1, lidU: 1.22, lidL: 0.06 };
+      const F2o = JX('awkward', { ...AWK, mSmile: -0.56, mOpen: 0.56, browIn: 1.42, browOut: 0.36, lidU: 1.3 });
       const F2 = JX('awkward', AWK);
-      const F3 = JX('awkward', { ...AWK, mWide: 1.38, mSmile: -0.55, mOpen: 0.29, browIn: 1.28 });   // "a notch wider" (still down-turned)
+      const F3 = JX('awkward', { ...AWK, mSmile: -0.52, mOpen: 0.58, browIn: 1.36 });   // "a notch wider" (more teeth, still strained down)
       const face = k(t, [
         ['s11', F0], [tGets, F0], [tGets + 0.5, F1, 'inOut'],
         [tLook - 0.1, F1], [tLook + 0.05, F1b, 'inOut'], [tLook + 0.24, F2o, 'out'], [tLook + 0.5, F2, 'inOut'],
@@ -109,8 +110,8 @@ export default {
       // posture: neck draws into the shoulders, the slow inhale through the teeth lifts them, exhale-hold
       const shrug = k(t, [['s11', 0.05], [tFace, 0.08], [tFace + 0.35, 0.24, 'out'], [D0 + 0.45, 0.24], [D0 + 1.9, 0.56, 'inOut'],
         [tOh + 0.6, 0.5], [tCut + 0.3, 0.42, 'inOut']]);
-      const hp = k(t, [['s11', 0.06], [tGets + 0.05, 0.06], [tGets + 0.45, 0.0, 'inOut'], [tFace - 0.02, 0.0], [tFace + 0.22, 0.13, 'out'], [tFace + 0.45, 0.11, 'inOut'],
-        [D0 + 1.5, 0.11], [D0 + 1.75, 0.07, 'inOut'], [tOh, 0.07], [tOh + 0.25, 0.1, 'inOut']]);
+      const hp = k(t, [['s11', 0.06], [tGets + 0.05, 0.06], [tGets + 0.45, 0.0, 'inOut'], [tFace - 0.02, 0.0], [tFace + 0.22, 0.17, 'out'], [tFace + 0.45, 0.15, 'inOut'],
+        [D0 + 1.5, 0.15], [D0 + 1.75, 0.1, 'inOut'], [tOh, 0.1], [tOh + 0.25, 0.13, 'inOut']]);
       const hy = k(t, [['s11', -0.14], [tGets + 0.04, -0.14], [tGets + 0.45, 0, 'inOut'],
         [tAwk - 0.2, 0], [tAwk + 0.05, 0.1, 'inOut'], [tAwk + 0.55, 0.1], [tAwk + 0.8, -0.06, 'inOut']]);
       // heel-to-toe rock once after "awkward", hands clasp / unclasp / clasp
@@ -125,7 +126,7 @@ export default {
         head: { yaw: hy, pitch: hp, roll: k(t, [['s11', 0], [tFace, 0], [tFace + 0.4, -0.03]]), talk: 0.3 },
         gaze: pass ? gaze : null,
         face,
-        blinkAt: [tGets - 0.03, D0 + 1.43, tBoy + 0.62],
+        blinkAt: [tGets - 0.03, tBoy + 0.62],              // (no blink inside the b02 darts: the lids stay high)
         armL: arm, armR: arm,
       };
     };

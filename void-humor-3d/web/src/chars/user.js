@@ -777,6 +777,7 @@ class User extends Character {
         v: MOUTH_V, halfW: HW0, line: '#5c2320', lineW: HW0 * 0.16, interior: '#3a0d14', interior2: '#6c2029', teeth: '#fbf6ee',
         tongue: '#d4646c', lipTintRGB: '214,104,104', blushColor: '246,118,104', blushX: HW0 * 2.55, blushY: HW0 * 1.8,
         drawExtra: (gg, p) => this._drawExtra(gg, p),
+        drawInterior: (gg, o) => this._drawInterior(gg, o),
       },
       decal: { uMin: -0.92, uMax: 0.92, vMin: MOUTH_V - 0.32, vMax: EYE_V - 0.02, size: [512, 352], material: this.decalMat },
       jaw: [this.headSkin.userData.uJaw],
@@ -791,6 +792,24 @@ class User extends Character {
       eye.lo.add(m); this.wetLines.push(m);
       const rm = new THREE.Mesh(new THREE.PlaneGeometry(eye.r * 0.15, eye.r * 0.24), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.85, 0.93, 1.1), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
       eye.inner.add(rm); this.eyeRefl.push(rm);
+    }
+  }
+
+  // mouth interior (replaces core's default gradient + tongue): a warm red throat instead of near-black, and small /
+  // mid openings (pouts, parted lips, short syllables) fade further toward a lip-red, so they read as lips around an
+  // opening, never as a dark plum oval ("black lipstick" under the cool dusk light)
+  _drawInterior(g, { xr, xl, yTop, yBot, w, h }) {
+    const k = smooth(clamp((HW0 * 1.2 - h) / (HW0 * 0.9)));       // 1 for h < 0.3 HW0, 0 above 1.2 HW0
+    const mix = (a, b, u) => a.map((v, i) => Math.round(v + (b[i] - v) * u));
+    const IN = [58, 13, 20], IN2 = [108, 32, 41], LIP = [190, 86, 90];
+    const c0 = mix(mix(IN, IN2, 0.35), mix(IN2, LIP, 0.5), k), c1 = mix(IN2, LIP, 0.15 + 0.5 * k);
+    const gr = g.createLinearGradient(0, yTop, 0, yBot);
+    gr.addColorStop(0, `rgb(${c0})`); gr.addColorStop(1, `rgb(${c1})`);
+    g.fillStyle = gr; g.fillRect(xr - 1, yBot - 1, w * 2 + 2, yTop - yBot + 2);
+    const fp = this._mouthFp || {};
+    if ((fp.mTongue ?? 0.5) > 0.02 && !(clamp(fp.mClench ?? 0) > 0) && k < 0.95) {
+      g.fillStyle = `rgba(212,100,108,${(1 - k).toFixed(3)})`;
+      g.beginPath(); g.ellipse((fp.mShift || 0) * HW0 * 0.4, yBot + h * 0.12, w * 0.6, h * 0.38 * (fp.mTongue ?? 0.5) + HW0 * 0.05, 0, 0, Math.PI * 2); g.fill();
     }
   }
 
@@ -821,6 +840,22 @@ class User extends Character {
     const gr = g.createRadialGradient(shift, ly, 0, shift, ly, w * 0.7);
     gr.addColorStop(0, `rgba(205,96,96,${0.42 - 0.15 * press + 0.15 * (p.mPout || 0)})`); gr.addColorStop(1, 'rgba(205,96,96,0)');
     g.fillStyle = gr; g.beginPath(); g.ellipse(shift, ly, w * 0.68, HW0 * (0.2 + 0.08 * (p.mPout || 0)), 0, 0, Math.PI * 2); g.fill();
+    // open mouths: a lip-tint rim over core's dark outline (same path as core/face.js; strongest on small openings), so
+    // a pout or parted lips read as pink lips around the opening instead of a black oval
+    const hc = clamp(p.mClench) > 0.01 ? Math.max(h, HW0 * 0.42 * clamp(p.mClench)) : h;
+    const kr = 0.55 + 0.45 * smooth(clamp((HW0 * 1.2 - hc) / (HW0 * 0.9)));
+    if (hc >= HW0 * 0.04) {
+      const asym = clamp(p.mAsym, -1, 1);
+      const yR = (sm * 0.62 - asym * 0.3) * HW0, yL = (sm * 0.62 + asym * 0.3) * HW0, cmid = (yL + yR) / 2;
+      const yTop = cmid * 0.35 + hc * 0.3 + (sm < 0 ? -sm * HW0 * 0.1 : 0), yBot = cmid * 0.2 - hc * 0.7 - (sm > 0 ? sm * hc * 0.35 : 0);
+      const cxs = 0.45 + 0.45 * round, xr = -w + shift, xl = w + shift;
+      g.beginPath(); g.moveTo(xr, yR);
+      g.bezierCurveTo(xr + w * (1 - cxs) + w * 0.1 * round, yTop, xl - w * (1 - cxs) - w * 0.1 * round, yTop, xl, yL);
+      g.bezierCurveTo(xl - w * (1 - cxs - 0.1), yBot, xr + w * (1 - cxs - 0.1), yBot, xr, yR); g.closePath();
+      g.lineJoin = 'round';
+      g.strokeStyle = `rgba(206,98,100,${(0.8 * kr).toFixed(3)})`; g.lineWidth = HW0 * 0.19; g.stroke();
+      g.strokeStyle = `rgba(118,38,44,${(0.45 * kr).toFixed(3)})`; g.lineWidth = HW0 * 0.045; g.stroke();
+    }
     // chin dimple / crumple when the lips press and pout (about to cry)
     const cr = clamp(press * 0.6 + (p.mPout || 0) * 0.6 + (p.mTremble || 0) * 0.3 - 0.3);
     if (cr > 0.01) {
@@ -1952,6 +1987,7 @@ class User extends Character {
     let spF = sp;
     const jh = clamp(fp.jawHold ?? 0);
     if (sp && jh > 0) spF = { ...sp, open: Math.max(sp.open, fp.mOpen * 0.9 * jh), close: (sp.close || 0) * (1 - jh) };   // talk on top of a hanging jaw
+    this._mouthFp = fp;                                   // (tongue / clench for _drawInterior)
     this.face.update(t, fp, { gaze, speech: spF, blinkAt: P.blinkAt });
     // wide-eyed: the lower lid drops too (whites under the iris) — lidDrop 0..1 + automatic for lidU > 1.15
     const fs = this.face.state;

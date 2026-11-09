@@ -172,7 +172,8 @@ two cuts of the same moment.
   Jesus↔Void two-shots: Jesus looks screen-right (up), the Void looks screen-left (down). In s15–s16 the line is
   Jesus (K) ↔ Void (V15): Jesus screen-left, Void screen-right, same side.
 - s16 travel line: walking toward the sun = **screen-left** in the side tracking shots (camera on their left, the
-  camera side); from behind Jesus is screen-left. The front → back cut on "walk off" is the one accepted axial flip.
+  camera side); from behind Jesus is screen-left. Every walk-and-talk angle (b01–b10) is from the front / camera side
+  (Jesus screen-right); the cut to the far silhouettes from behind (b11) is the one accepted axial flip.
 
 ---------------------------------------------------------------------------------------------------------------------
 
@@ -668,10 +669,11 @@ Between s14 and s15 (offscreen) the Void has risen and shuffled from VSIT to V15
 - **b01 "So Jesus puts his arm around the void, and they walk off, toward the ^horizon."** First half: hold `SIDE15`-style
   side two-shot: Jesus steps round to the Void's LEFT (camera side), **RIGHT arm around it** (target = void `backLow` /
   `sideL` + 0.35 up), side-squeeze, crooked grin up; the Void leans into him (no startle), lids lower, its LEFT arm settles
-  round his shoulders; both turn to face down the path (toward the sun) and start walking (screen-left). ⏱ on "walk off"
-  (≈ `T('s16b01')+3.4`) CUT wide from behind them, 35 mm ◇ (camera 6–7 m behind on the path, y 1.6, looking down the path
-  at the sun; heads y 420–480; Jesus screen-left): the path winding to the enormous sun, the sky galaxy (`galaxyAt`) over
-  the path, the indigo pocket blending into the sunset.
+  round his shoulders; both turn to face down the path (toward the sun) and start walking (screen-left). RESTAGED (review):
+  the whole of b01 is ONE front-3/4 two-shot from Jesus's open side (camera 50–60° off the path axis toward the hill,
+  ~2.4 m high, orbiting in and pushing) so his arm reaching round its flank shows past his back; the Void squishes ~4 %
+  on the squeeze; on "walk off" they come toward the lens and screen-left (the camera backs down the path at half their
+  pace). The wide from behind on "walk off" was dropped: it made Jesus jump screen sides at every cut of the walk-off.
 - **b02 JESUS "So a neutron asks the bartender, how much for a drink?"** CUT side-on tracking medium from their left
   (camera side): camera = mid(t) + 3.0·(their left) + y 1.55, look = mid(t) + 0.6·forward + y 1.85, fov 33; faces y 330–430;
   they walk screen-LEFT, the sun glow at the left edge ahead of them. Jesus nearer the lens: free LEFT hand `explain`

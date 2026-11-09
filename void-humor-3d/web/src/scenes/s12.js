@@ -12,9 +12,10 @@ import { JX } from '../chars/jesus.js';
 import { VX } from '../chars/void.js';
 import { UX } from '../chars/user.js';
 import { EDGE, todAt, voidSkyAt, sy, lookFor } from './marks.js';
-import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse, walkPath } from './kit_s11_13.js';
+import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse, walkPath, VTURN, VGENTLE } from './kit_s11_13.js';
 
 const M = EDGE.M;
+const TUNE = (() => { try { return JSON.parse(new URLSearchParams(location.search).get('tune') || '{}'); } catch (e) { return {}; } })();   // TEMP TUNE
 // JM -> round the downstage side of the seated Void (keeps ~1.2 m off its centre) -> JS
 const PATH = [M.JM.p, [0.2, 0, 0.16], [0.95, 0, 0.1], [1.5, 0, -0.2], M.JS.p];
 
@@ -43,8 +44,13 @@ export default {
     const tTouch = Math.max(wEnd + 0.02, tShoulder + 0.02);
     const B2 = T('s12b02'), B3 = T('s12b03');
     const tTurn0 = B2 - 0.85, tTurn1 = B2 + 0.95;                         // the hood turns over its RIGHT shoulder
-    const tSmile = B2 + 1.15, tBlinkV = B2 + 1.9;
-    const tNod = B3 + 0.25, tThumb = B3 + 0.55, tBreath = B3 + 0.8, tSlide = B3 + 1.0;
+    const tSmile = B2 + 0.95, tBlinkV = B2 + 1.62;
+    const tNod = B3 + 0.25, tThumb = B3 + 0.55, tBreath = B3 + 0.7, tSlide = B3 + 0.85;
+    // the last half second: he is already going (cut on action into s13's walk) — the palm lifts off the velvet, he
+    // turns toward the user, weight forward and the first step down the same path s13 continues (STAGING s12->s13)
+    const tLeave = T('s12.end') - 0.5;
+    const lift = smooth(clamp((t - tLeave) / 0.34)), turnJ = smooth(clamp((t - tLeave) / 0.5)), step = smooth(clamp((t - tLeave - 0.18) / 0.32));
+    const DEP = SV(-0.883 * 0.15 * step, 0, 0.469 * 0.15 * step);                 // first step toward K (stage dir JS -> WALK[1])
     const shotA = t < B2, shotB = t >= B2 && t < B3, shotC = t >= B3;
 
     const wk = walkPath(t, PATH, wStart, wEnd, { ta: 0.45, td: 0.55, stride: 1.05, phase0: 0.25, yaw0: M.JM.yaw, yaw1: M.JS.yaw, turnIn: 0.4, turn: 0.55 });
@@ -66,10 +72,12 @@ export default {
       const shrug = k(t, [['s12', 0.42], [T('s12') + 0.06, 0.44], [T('s12') + 0.6, 0.0, 'inOut'], [tBreath, 0], [tBreath + 0.35, 0.12, 'inOut']]);
       const slumpEx = pulse(t, T('s12') + 0.05, T('s12') + 0.9, 0.3, 0.5);
       // right palm: rises late in the walk, overshoots above the velvet, settles flat onto the shoulder
-      const reach = k(t, [['s12', 0], [tTouch - 0.6, 0], [tTouch - 0.05, 1, 'inOut']]);
+      const reach = k(t, [['s12', 0], [tTouch - 0.6, 0], [tTouch - 0.05, 1, 'inOut']]) * (1 - lift);
       const hover = k(t, [['s12', 0.1], [tTouch - 0.2, 0.08], [tTouch + 0.02, 0.0, 'out'], [tTouch + 0.12, -0.012, 'inOut'], [tTouch + 0.3, 0.0, 'inOut']]);
       const thumb = 0.35 + 0.4 * pulse(t, tThumb, tThumb + 0.55, 0.25, 0.3);
-      const shT = vSh ? add(vSh, [0, 0.012 + hover, 0]) : null;
+      // (the palm snaps onto the velvet itself — `surface: vd` raycasts the Void's shoulder — so it stays in contact while
+      //  the Void twists round under it; the landing overshoot and the lift-off ride on top as an offset)
+      const shT = vSh ? add(add(vSh, [0, 0.012, 0]), SV(...(shotC ? (TUNE.shoff || SH_OFF) : [0, 0, 0]))) : null;
       // gaze: the Void as he walks round to it; its eyes when it turns; the user (eyes slide) at the end
       const vE = vEyes ? arr(vEyes) : SW(1.15, 1.8, -1.35);
       const uE = ue ? arr(ue) : SW(-1.3, 0.8, 1.4);
@@ -78,14 +86,14 @@ export default {
         [tSlide, vE], [tSlide + 0.22, uE, 'inOut']]);
       const nod = 0.12 * pulse(t, tNod, tNod + 0.9, 0.4, 0.45);
       return {
-        pos: wk.pos, yaw: wk.yaw,
-        walk: { amount: wk.amount, phase: wk.phase, style: 'walk' },
-        body: { shrug, slump: 0.12 * slumpEx, breathe: shotC ? 0.7 : 1, lean: 0.05 * reach, sway: shotC ? 0.3 : 1 },
-        head: { look: vE, follow: k(t, [['s12', 0.15], [wStart + 0.5, 0.55], [tSlide, 0.6], [tSlide + 0.35, 0.25, 'inOut']]), pitch: nod, roll: k(t, [['s12', 0], [tSmile, 0], [tSmile + 0.6, -0.06]]) },
+        pos: add(wk.pos, DEP), yaw: wk.yaw + 0.42 * turnJ,
+        walk: { amount: Math.max(wk.amount, 0.6 * step), phase: wk.phase + 0.32 * step, style: 'walk' },
+        body: { shrug, slump: 0.12 * slumpEx, breathe: shotC ? 0.7 : 1, lean: 0.05 * reach + 0.05 * step, sway: shotC ? 0.3 : 1 },
+        head: { look: k(t, [['s12', vE], [tSlide + 0.1, vE], [tLeave + 0.35, uE, 'inOut']]), follow: k(t, [['s12', 0.15], [wStart + 0.5, 0.55], [tSlide, 0.6], [tSlide + 0.35, 0.3, 'inOut'], [tLeave + 0.4, 0.45, 'inOut']]), pitch: nod, roll: k(t, [['s12', 0], [tSmile, 0], [tSmile + 0.6, -0.06]]) },
         gaze: pass ? gaze : null,
         face,
         blinkAt: [T('s12') + 0.62, tTouch + 0.55, tNod + 0.3, tSlide - 0.06],
-        armR: shT && reach > 0 ? { preset: 'shoulder', target: shT, palm: PALM, fingers: FING, reach, hand: { curl: 0.12, spread: 0.1, thumb, cup: 0.25 } } : { preset: 'rest' },
+        armR: shT && reach > 0.001 ? { preset: 'shoulder', target: shT, surface: vd, offset: [0, hover + 0.07 * lift, 0], reach, hand: { curl: 0.28, spread: 0.3, thumb, cup: 0.12, ...(TUNE.hand || {}) } } : { preset: 'rest' },
         armL: { preset: 'rest' },
         glow: 1.05,
       };
@@ -98,20 +106,23 @@ export default {
       const jh = jesus.anchor('handR'), je = jesus.anchor('eyes');
       const gHand = jh ? arr(jh) : SW(1.8, 1.25, -0.9), gJ = je ? arr(je) : SW(1.74, 1.55, -0.37);
       const eyes = k(t, [['s12', gHand], [tTurn0 + 0.15, gHand], [B2 + 0.55, gHand], [B2 + 0.85, gJ, 'inOut']]);
-      const Fsulk = VX('sad', { lidU: 0.7 });
-      const Fsoft = VX('calm', { lidU: 0.62, lidL: 0.36, browIn: 0.42, browOut: -0.08, mSmile: 0.1 });
-      const Fgentle = VX('gentle', { lidU: 0.6, lidL: 0.48, browIn: 0.5, mSmile: 0.62, blush: 0.3 });
+      const Fsulk = VX('sad', { lidU: 0.7, lidArc: 0 });
+      const Fsoft = VX('calm', { lidArc: 0.4, lidU: 0.8, lidL: 0.42, browIn: 0.5, browOut: -0.12, mSmile: 0.1, ...(TUNE.vsoft || {}) });
+      const Fgentle = VX('gentle', { ...VGENTLE, ...(TUNE.vgentle || {}) });
       const face = k(t, [['s12', Fsulk], [tTouch, Fsulk], [tTouch + 0.8, Fsoft, 'inOut'], [tSmile - 0.1, Fsoft], [tSmile + 0.6, Fgentle, 'inOut']]);
       face.autoBlink = 0;
+      // the slow blink after the smile lands (soft close, a held beat, a slower open)
+      face.blink = k(t, [[tBlinkV, 0], [tBlinkV + 0.22, 1, 'inOut'], [tBlinkV + 0.38, 1], [tBlinkV + 0.8, 0, 'inOut']]);
       return {
         pos: POS.VSIT, yaw: YAW.VSIT,
         body: { sit: 1, slump: k(t, [['s12', 0.32], [tTouch + 0.3, 0.32], [tTouch + 1.3, 0.44, 'inOut']]) - 0.2 * stiff,
-          shrug: 0.62 * stiff, bounce: 0.03 * stiff, breathe: 1 - 0.8 * stiff, twist: -0.35 * turn, tilt: 0.05 * turn },
-        head: { yaw: -1.75 * turn, pitch: lerp(0.3, -0.04, turn) - 0.16 * stiff, roll: -0.08 * turn + 0.06 * (1 - turn) },
+          shrug: 0.62 * stiff, bounce: 0.03 * stiff, breathe: 1 - 0.8 * stiff, twist: (TUNE.vtwist ?? VTURN.twist) * turn, tilt: (TUNE.vtilt ?? VTURN.tilt) * turn },
+        head: { yaw: (TUNE.vyaw ?? VTURN.yaw) * turn, pitch: lerp(0.3, TUNE.vpitch ?? -0.04, turn) - 0.16 * stiff, roll: (TUNE.vroll ?? -0.08) * turn + 0.06 * (1 - turn) },
         armL: { preset: 'crossed' }, armR: { preset: 'crossed' },
-        gaze: pass && t > tTurn0 ? eyes : null,
+        // in the 3/4 close the eyeline is cheated part-way toward the lens (no eyes pinned in the corners)
+        gaze: pass && t > tTurn0 ? (shotB ? mixP(eyes, app.camera.position, VCHEAT) : eyes) : null,
         face,
-        blinkAt: [B2 + 0.85, tBlinkV],
+        blinkAt: [B2 + 0.85],
         extra: { stars: 1.1 + 0.25 * smooth(clamp((t - tSmile) / 0.8)), rim: shotA ? 1 + 0.9 * smooth(clamp((t - (tTouch - 0.9)) / 0.6)) : 1 },
       };
     };
@@ -144,11 +155,19 @@ export default {
       } else if (shotB) {
         // 3/4 close as the hood comes round: aimed between both eyes (a touch toward the far eye), the mouth clear of the
         // shoulder ridge, his hand in the lower-left foreground
-        shot = EDGE.shot(CAMB.look, { dist: k(t, [['s12b02', CAMB.d0], [B2 + 1.5, CAMB.d1, 'inOut'], ['s12b02.end', CAMB.d1 - 0.08, 'inOut']]), yaw: CAMB.yaw, pitch: CAMB.pitch, fov: 33,
-          screenY: sy(k(t, [['s12b02', 380], [B2 + 1.5, 360, 'inOut']])), drift: 0.15 });
+        const CB = { ...CAMB, ...(TUNE.camb || {}) };
+        // a clean close on the Void (his hand on its shoulder stays just out of frame-left: the eyes find it off-screen,
+        // then him); the camera arcs round and up a little while it pushes in, as the hood comes round
+        const arcB = smooth(clamp((t - B2 - CB.a0) / (CB.a1 - CB.a0)));
+        const lkB = [CB.look[0] + CB.pan[0], CB.look[1], CB.look[2] + CB.pan[1]];   // (aimed a touch frame-right: his hand stays out)
+        shot = EDGE.shot(lkB, { dist: k(t, [['s12b02', CB.d0], [B2 + 1.5, CB.d1, 'inOut'], ['s12b02.end', CB.d1 - 0.08, 'inOut']]), yaw: lerp(CB.yaw, CB.yaw1, arcB), pitch: lerp(CB.pitch, CB.pitch1, arcB), fov: 33,
+          screenY: sy(k(t, [['s12b02', CB.sy0], [B2 + 1.5, CB.sy1, 'inOut']])), drift: 0.15 });
       } else {
-        shot = EDGE.shot([JEYE_JS[0] - 0.03, JEYE_JS[1], JEYE_JS[2] - 0.03], { dist: k(t, [['s12b03', 1.8], ['s12b03.end', 1.68, 'inOut']]), yaw: CAMC_YAW, pitch: 3, fov: 33, screenY: sy(400), drift: 0.12 });
+        const CC = { ...CAMC, ...(TUNE.camc || {}) };
+        const dl = EDGE.L(add(SW(0, 0, 0), DEP));                            // follow half of his first step
+        shot = EDGE.shot([JEYE_JS[0] - 0.03 + 0.5 * dl[0], JEYE_JS[1], JEYE_JS[2] - 0.03 + 0.5 * dl[2]], { dist: k(t, [['s12b03', CC.d0], ['s12b03.end', CC.d1, 'inOut']]), yaw: CC.yaw, pitch: CC.pitch, fov: 33, screenY: sy(CC.sy), drift: 0.12 });
       }
+      if (TUNE.dbgcam) shot = TUNE.dbgcam.world ? { pos: TUNE.dbgcam.pos, look: TUNE.dbgcam.look, fov: TUNE.dbgcam.fov || 40, drift: 0 } : EDGE.at(TUNE.dbgcam.pos, TUNE.dbgcam.look, TUNE.dbgcam.fov || 40, { drift: 0 });   // TEMP TUNE
       applyShot(app.camera, shot, t, 12);
     };
 
@@ -184,8 +203,15 @@ export default {
 // steady the b02 framing), and the camera yaw for the 3/4 close (inside +-50 deg of where the hood points).
 const VEYE_END = [1.33, 1.78, -1.12];
 const CAMA = { back: 0.45, up: 0.15, fov: 42, v: [1.15, 0, -1.35], vw: 0.26 };
-const CAMB = { look: [VEYE_END[0] + 0.055, VEYE_END[1] - 0.06, VEYE_END[2] - 0.2], yaw: 54, pitch: 6, d0: 3.0, d1: 2.45 };
-const CAMC_YAW = 128;
+const CAMB = { look: [VEYE_END[0] + 0.055, VEYE_END[1] - 0.06, VEYE_END[2] - 0.2], yaw: 68, yaw1: 70, pitch: 16, pitch1: 20, a0: 0.1, a1: 1.1, pan: [0.1, -0.18], d0: 3.4, d1: 3.0, sy0: 410, sy1: 380 };
+const VCHEAT = 0.45;
+// on the reverse (b03) the palm is cheated a little up and back onto the shoulder's crown (stage offset from the anchor), so it
+// reads as lying ON the velvet instead of hanging off the slope's far side (b01/b02 keep the true anchor)
+const SH_OFF = [0.05, 0.03, -0.12];
+const mixP = (a, b, u) => { const A = arr(a), B = arr(b); return [lerp(A[0], B[0], u), lerp(A[1], B[1], u), lerp(A[2], B[2], u)]; };
+// (yaw 118: the seated user stays hidden behind the Void's shoulder for the whole shot — no tangent with his forearm,
+// and no visible flip of the user to screen-right in this cut-round)
+const CAMC = { yaw: 118, pitch: 3, d0: 1.8, d1: 1.68, sy: 400 };
 // Jesus's eyes at JS with his hand on its shoulder (stage-local, measured) — the steady look point of b03
 const JEYE_JS = [1.72, 1.55, -0.53];
 // the hand on the shoulder: palm down into the velvet (tilted with its slope), fingers forward over the shoulder

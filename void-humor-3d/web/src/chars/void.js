@@ -374,6 +374,20 @@ function hoodGeometry(H) {
   return g;
 }
 
+// bow a lid hemisphere's rim up at the front centre by `a` rad (sgn +1 upper lid, -1 lower lid), from rest positions
+function lidArc(g, rest, a, sgn) {
+  const p = g.attributes.position.array;
+  for (let i = 0; i < p.length; i += 3) {
+    const x = rest[i], y = rest[i + 1], z = rest[i + 2], R = Math.hypot(x, y, z), h = Math.hypot(x, z);
+    if (h < 1e-6 || a === 0) { p[i] = x; p[i + 1] = y; p[i + 2] = z; continue; }
+    const f = z > 0 ? (z / h) ** 2 : 0, th = Math.acos(clamp(y / R, -1, 1));
+    const th2 = sgn > 0 ? th * (1 - 2 * a * f / Math.PI) : Math.PI - (Math.PI - th) * (1 + 2 * a * f / Math.PI);
+    const s = R * Math.sin(th2) / h;
+    p[i] = x * s; p[i + 1] = R * Math.cos(th2); p[i + 2] = z * s;
+  }
+  g.attributes.position.needsUpdate = true;
+}
+
 // average normals of the first & last column of a (rows x cols) grid (closing a lathe seam)
 function seamFix(g, rows, cols) {
   const n = g.attributes.normal.array;
@@ -576,6 +590,9 @@ export class Void extends Character {
         .map(([da, dz, dy]) => rim(P0 + da).add(V3(0, dy, dz)));
       this.fold = new SweepTube({ material: this.velvet, segments: 20, radial: 12, capRings: 3 });
       this.fold.update(pts, [0.07, 0.078, 0.085, 0.078, 0.07], { up: V3(0, -0.45, 1), flatten: 0.7 });
+      // (retired: with the hood turned / nodded over a shoulder its end still read as a dark horn / tusk rising past the
+      // face (s15 pat close-ups, s18, s19) -- the cowl reads fine without it. Kept built, hidden, for compatibility.)
+      this.fold.mesh.visible = false;
       this.headGroup.add(this.fold.mesh); }
     // soft fabric roll where the hood meets the capelet (back & sides only, tapering out before the face)
     this.collar = new SweepTube({ material: this.velvet, segments: 24, radial: 12, capRings: 3 });
@@ -608,13 +625,22 @@ export class Void extends Character {
     // lids see the face decal (blush / puff glows). As the lids close / squint, the eye light fades into the darkness
     // toward the corners (socket space), so happy / closed eyes are tapered arcs of light with no white corner wedges.
     this.lidMat.uniforms.uDecal.value = this.face.decal.tex;
+    // Soft lid shadow: the eye light darkens toward each lid edge (measured in the lids' own frames, uLidU / uLidL,
+    // including the optional lid arc), so lid cuts don't read as paper cut-outs in close-ups.
     for (const ey of this.face.eyes) {
       const u = ey.mat.uniforms;
       u.uSock = { value: new THREE.Matrix3() }; u.uCorner = { value: 0 };
+      u.uLidU = { value: new THREE.Matrix3() }; u.uLidL = { value: new THREE.Matrix3() }; u.uArc = { value: new THREE.Vector2() };
+      ey._lid0 = { up: ey.up.geometry.attributes.position.array.slice(), lo: ey.lo.geometry.attributes.position.array.slice() };
       ey.mat.fragmentShader = ey.mat.fragmentShader
-        .replace('uniform float uIrisR,', 'uniform mat3 uSock; uniform float uCorner; uniform float uIrisR,')
+        .replace('uniform float uIrisR,', 'uniform mat3 uSock, uLidU, uLidL; uniform vec2 uArc; uniform float uCorner; uniform float uIrisR,')
         .replace('gl_FragColor = vec4(lit, 1.0);', `vec3 sn = normalize(uSock * normalize(vWorldN));
   lit = mix(lit, vec3(0.012, 0.010, 0.036), clamp(uCorner * 1.4 * smoothstep(0.22, 0.56, abs(sn.x)), 0.0, 1.0));
+  vec3 pu = normalize(uLidU * vWorldN), pl = normalize(uLidL * vWorldN);
+  float fu = pu.z > 0.0 ? pu.z * pu.z / max(1e-4, pu.x * pu.x + pu.z * pu.z) : 0.0;
+  float fl = pl.z > 0.0 ? pl.z * pl.z / max(1e-4, pl.x * pl.x + pl.z * pl.z) : 0.0;
+  float dU = uArc.x * fu - asin(clamp(pu.y, -1.0, 1.0)), dL = asin(clamp(pl.y, -1.0, 1.0)) - uArc.y * fl;
+  lit *= 1.0 - (1.0 - uCorner) * (0.5 * (1.0 - smoothstep(0.0, 0.26, dU)) + 0.25 * (1.0 - smoothstep(0.0, 0.14, dL)));   // (fades out as the lids close: closed eyes stay arcs of light)
   gl_FragColor = vec4(lit, 1.0);`);
       ey.mat.needsUpdate = true;
     }
@@ -1207,8 +1233,16 @@ export class Void extends Character {
     if (digest !== this._mouthDigest) { this._mouthDigest = digest; this.face._lastKey = null; }   // force one core decal redraw
     this.face.update(t, fcore, { gaze, speech: null, blinkAt: P.blinkAt });
     const eyeGlow = (E.eyeGlow ?? 1) * (1 + 0.15 * cosmos);
+    // optional face param `lidArc` (0..1, default 0 = unchanged): bows both lid edges up at the centre — a rounded upper
+    // lid and a smile-crescent lower lid (the hemisphere lids otherwise cut straight lines across the eye)
+    const arc = clamp(fIn.lidArc ?? 0), aU = 0.3 * arc, aL = 0.3 * arc;   // (equal: a closed eye stays a thin arc of light)
+    if (arc !== this._lidArcK) { this._lidArcK = arc; for (const ey of this.face.eyes) { lidArc(ey.up.geometry, ey._lid0.up, aU, 1); lidArc(ey.lo.geometry, ey._lid0.lo, aL, -1); } }
     this.face.eyes.forEach((ey, i) => {
       ey.mat.uniforms.uGlow.value = 0.9 * eyeGlow;
+      ey.mat.uniforms.uArc.value.set(aU, aL);
+      ey.up.updateWorldMatrix(true, false); ey.lo.updateWorldMatrix(true, false);
+      ey.mat.uniforms.uLidU.value.setFromMatrix4(_m4.copy(ey.up.matrixWorld).invert());
+      ey.mat.uniforms.uLidL.value.setFromMatrix4(_m4.copy(ey.lo.matrixWorld).invert());
       const up = -ey.up.rotation.x, low = -ey.lo.rotation.x, r = ey.r;
       const open = clamp((up - low) / 1.45);
       this.FU.uHalo.value.setComponent(i, (0.03 + 0.1 * open) * eyeGlow * 1.6);

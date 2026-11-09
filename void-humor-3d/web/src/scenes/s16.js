@@ -1,11 +1,13 @@
 // s16 into_the_horizon — STAGING side: Jesus walks on the Void's LEFT (the hill side of the path), his RIGHT arm round
-// its flank (as far as it goes), its LEFT arm round his shoulders (routed behind his back, hand cupping his far
-// shoulder from the outside, below his head).
-//   TWO   front two-shot down the path: its hand comes down from its snort-covered mouth; Jesus turns
-//         (face sweeping round toward the lens) and steps round to its left; "arm around": his arm goes round it, a
-//         side-squeeze, a crooked grin up at it; no startle: it leans in, lids lowering, its arm settles round him.
-//   BACK  on "walk off": the wide from behind, down the path to the enormous low sun, the laughed-up galaxy over the
-//         path ahead of them (it has floated out there), the pair stepping off (Jesus screen-left).
+// its flank (as far as it goes), its LEFT arm round his shoulders (the forearm draped behind his neck, the big palm on
+// top of his far shoulder, fingers over its front).
+//   TWO   front-3/4 two-shot from Jesus's open side (down the path, the hill side), a little high, orbiting in and
+//         pushing: its hand comes down from its snort-covered mouth; Jesus turns and steps round to its left; "arm
+//         around": his RIGHT arm reaches round its flank (the forearm and hand show past his back), a side-squeeze
+//         (its body squishes a few %, his head tilts into it), a crooked grin up at it; no startle: it leans in, lids
+//         lowering, its arm settles round him; on "walk off" they step off toward the lens and screen-left (the
+//         camera backs down the path at half their pace). Every walk-and-talk angle is from the front / camera side
+//         (Jesus screen-right); FAR is the one front -> back flip, into the sunset silhouettes.
 //   TRACK dead-front tracking medium (camera backing up the path ahead of them; no hill in the way): "So a neutron
 //         asks the bartender..." (free LEFT hand ordering at a bar, brows wiggle on "neutron", eyes slide up to it;
 //         the Void bends its hood toward him) — the milked pause: they slow to a stop.
@@ -85,8 +87,8 @@ export default {
     // the phone insert's camera sits at the knees: cheat the hoodie drawstrings out of the lens for that shot
     const insW = [T('s16b08'), T('s16b09')];
     if (user.strings) for (const sg of user.strings) { hideDuring(sg.tb.mesh, [insW]); hideDuring(sg.ag, [insW]); }
-    // the galaxy's route in this scene: from its s04-s15 hanging point out over the path ahead of the walkers (G1, seen
-    // in the walk-off wide), then on to hang above the far crest (G2: in the finale lens, XWIDE and over the user)
+    // the galaxy's route in this scene: from its s04-s15 hanging point out over the path ahead of the walkers (G1,
+    // en route, off screen), then on to hang above the far crest (G2: in the finale lens, XWIDE and over the user)
     const F = set.shots.finale;
     const fd = toV(F.look).sub(toV(F.pos)).normalize();
     const G2 = toV(F.pos).addScaledVector(fd, 44).add(V3(0, 4.7, 0)).toArray();
@@ -115,7 +117,9 @@ export default {
     const tBut = W('s16b09', 'but', { frac: 0.55 }), tMaybe = W('s16b09', 'maybe', { alt: ['maybe.'], frac: 0.7 });
     // b01 choreography
     const tTurn0 = S - 0.2, tTurn1 = S + 0.9;                      // Jesus turns (decreasing yaw: face round to the lens)
-    const tStep0 = S + 0.05, tStep1 = S + 1.05;                    // ...and steps round to its left
+    const tStep0 = S + 0.3, tStep1 = S + 1.1;                      // ...and steps round to its left (holding at its side
+                                                                   // until "So", then a brisk crossing: never parked in
+                                                                   // front of its belly)
     const tV0 = S + 0.25, tV1 = tArm - 0.05;                       // it waddles into the formation
     const tHug0 = tArm - 0.12, tHug1 = tAround + 0.3;              // his RIGHT arm round it
     const tSqueeze = tVoid1 - 0.08;                                // side-squeeze
@@ -133,7 +137,7 @@ export default {
 
     // ================================================================ shot list
     const tFar = B11 - 0.1;
-    const SHOTS = [[S, 'TWO'], [tWalk - 0.04, 'BACK'], [B2 - 0.15, 'TRACK'], [B4 - 0.08, 'JCU'], [tChargeE + 0.15, 'REACT'],
+    const SHOTS = [[S, 'TWO'], [B2 - 0.15, 'TRACK'], [B4 - 0.08, 'JCU'], [tChargeE + 0.15, 'REACT'],
       [B6e + 0.25, 'TRACK2'], [tFar, 'FAR'], [B7, 'XWIDE'], [B8, 'PHONE'], [B9, 'UCU'], [cutOver, 'OVER']];
     let si = 0; for (let i = 0; i < SHOTS.length; i++) if (t >= SHOTS[i][0]) si = i;
     const shot = SHOTS[si][1], shotT0 = SHOTS[si][0], shotT1 = SHOTS[si + 1] ? SHOTS[si + 1][0] : E + 0.5;
@@ -227,7 +231,8 @@ export default {
       const hug = ramp(t, tHug0, tHug1);
       const squeeze = bump(t, tSqueeze, 0.4);
       let armR;
-      if (hug > 0.001) armR = { preset: 'around', surface: vd, reach: hug, height: jPos[1] + 1.16, span: 0.36, hand: { curl: 0.35 + 0.15 * squeeze, cup: 0.6, spread: 0.18 } };
+      // (span 0.6: the hand walks round its flank toward its back, far enough to show past his back in TWO)
+      if (hug > 0.001) armR = { preset: 'around', surface: vd, reach: hug, height: jPos[1] + 1.18, span: 0.6, hand: { curl: 0.3 + 0.15 * squeeze, cup: 0.45, spread: 0.3 } };
       else armR = { preset: 'rest' };
       const order = pulse(t, B2 + 0.12, tDrink + 0.35, 0.3, 0.35);
       const tada = pulse(t, tTada - 0.14, tTada + 0.75, 0.12, 0.35);
@@ -253,7 +258,7 @@ export default {
         body: { lean: 0.02, tilt: -(0.03 + 0.05 * leanIn + 0.06 * squeeze), shrug: 0.12 * laugh * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 4.2)) + 0.08 * squeeze,
           recoil: 0.2 * laugh, bounce: 0.008 * laugh * Math.sin(t * 2 * Math.PI * 4.2) + 0.006 * leanIn * Math.max(0, Math.sin((t - B11) * 2 * Math.PI * 1.1)), breathe: 1 },
         head: { yaw: lead * (1 - looking), look: pass && looking > 0.01 ? vE : undefined, follow: (0.32 + 0.3 * faceIn - 0.22 * laugh) * looking, pitch: -0.3 * laugh + jab - 0.03,
-          roll: -(0.06 + wiggle + 0.14 * leanIn), talk: 0.8 },
+          roll: -(0.06 + wiggle + 0.14 * leanIn + 0.16 * squeeze), talk: 0.8 },   // (- = toward his right: into it)
         gaze: pass ? (looking < 0.5 ? add(arr(jesus.anchor('eyes') || V3(...jPos)), [fwd[0] * 3 - left[0] * 1.5, 0.1, fwd[2] * 3 - left[2] * 1.5]) : laugh > 0.5 ? add(vE, [0, 0.7, 0]) : vE) : null,
         face, speech,
         blinkAt: [tStep1 + 0.05, tSqueeze + 0.45, B3 + 0.1, tBreak + 0.4, B6e + 0.2, tTelling - 0.35, B11 + 0.5],
@@ -288,24 +293,19 @@ export default {
       const gig = pulse(t, B6, B6e + 0.2, 0.15, 0.4) + 0.7 * pulse(t, B11 + 0.3, B13 + 0.3, 0.3, 0.6);
       const snort = bump(t, tSnort - 0.02, 0.24);
       const headOn = ramp(t, B13 - 0.5, B13 + 0.4);                         // its head leans against his
-      // ---- arms: LEFT (home since s15b06) settles round his shoulders (behind his back,
-      //      cupping his far shoulder from the outside, below his head); RIGHT: from the covered mouth down to its belly,
-      //      slapped over the mouth again on the snort
+      const squish = bump(t, tSqueeze - 0.03, 0.5);                           // his side-squeeze: its plush body squishes ~4 %
+      // ---- arms: LEFT (home since s15b06) settles round his shoulders: the forearm drapes behind his neck, the big
+      //      palm comes to rest on top of his FAR shoulder with the fingers over its front (the rig's own `on` contact),
+      //      so from the front / 3-4 angles it reads as a hand on his shoulder, never as a ball in a ring (the old
+      //      cupped grip on the outside of his shoulder pointed the forearm at the lens);
+      //      RIGHT: from the covered mouth down to its belly, slapped over the mouth again on the snort
       const around = ramp(t, tLean0 - 0.1, tLean1 + 0.15);
       let armL = { preset: 'rest' };
-      const jfw = [Math.sin(jYaw), 0, Math.cos(jYaw)], jlf = [Math.cos(jYaw), 0, -Math.sin(jYaw)];
+      const jfw = [Math.sin(jYaw), 0, Math.cos(jYaw)];
       if (around > 0.001) {
-        const shL = jesus.anchor('shoulderL');
-        if (shL) {
-          const r = around, arc = Math.sin(Math.PI * clamp(r));
-          const tg = add(arr(shL), [jlf[0] * 0.07 + jfw[0] * 0.03, -0.08, jlf[2] * 0.07 + jfw[2] * 0.03]);
-          armL = { preset: 'around', target: tg, reach: r, at: 'palm', handScale: 0.52,
-            palm: V3(-jlf[0] * 0.85, -0.5, -jlf[2] * 0.85).normalize().toArray(),            // into the outside of his shoulder
-            fingers: V3(jfw[0] * 0.35, -0.85, jfw[2] * 0.35).normalize().toArray(),          // draped down his upper arm
-            pole: V3(-jfw[0], -0.15, -jfw[2]).normalize().toArray(),                         // elbow behind his back
-            offset: [-jfw[0] * 0.45 * arc, 0.1 * arc, -jfw[2] * 0.45 * arc],                 // the hand travels round behind him
-            hand: { curl: 0.3, cup: 0.65, spread: 0.1, thumb: 0.35 } };
-        }
+        const r = around, arc = Math.sin(Math.PI * clamp(r));
+        armL = { preset: 'around', on: jesus, reach: r, handScale: 0.62,
+          offset: [-jfw[0] * 0.45 * arc, 0.1 * arc, -jfw[2] * 0.45 * arc] };                 // the hand travels round behind him
       }
       // RIGHT: down from the snort-covered mouth (its LEFT came home from his shoulder in s15b06)
       const down = ramp(t, S, S + 0.45);
@@ -315,8 +315,9 @@ export default {
       return {
         pos: vPos, yaw: vYaw,
         walk: { amount: vAmt, phase: vPhase, style: 'waddle' },
-        body: { lean: 0.08 + 0.1 * bend, tilt: 0.1 * leanIn + 0.06 * bend + 0.06 * headOn, twist: 0.08 * bend,
-          shrug: 0.22 * gig * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 4.6)) + 0.15 * snort, recoil: 0.07 * snort, breathe: 1.05 },
+        body: { lean: 0.08 + 0.1 * bend, tilt: 0.1 * leanIn + 0.06 * bend + 0.06 * headOn - 0.03 * squish, twist: 0.08 * bend,
+          shrug: 0.22 * gig * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 4.6)) + 0.15 * snort + 0.12 * squish, recoil: 0.07 * snort, breathe: 1.05,
+          swell: -0.5 * squish, stretch: 0.022 * squish },
         head: { yaw: 0.28 * leanIn + 0.08 * bend + 0.3 * (1 - ramp(t, S, tV1)), pitch: 0.14 + 0.12 * bend + 0.05 * leanIn, roll: 0.1 * leanIn + 0.14 * headOn, track: 0 },
         gaze: pass ? jE : null,
         face,
@@ -374,21 +375,19 @@ export default {
       const faces = lerpA(jE, vE, 0.45);
       const u = ramp(t, shotT0, shotT1);
       switch (shot) {
-        case 'TWO': {   // front two-shot (camera down the path, the low sun behind it), a slow push on the squeeze/grin
+        case 'TWO': {   // front-3/4 from Jesus's open side (the hill side), a little high: orbits in (60 -> 50 deg off the
+          //             path axis) and pushes while he steps round, so his RIGHT forearm reaching round its flank shows past his
+          //             back by "around"; Jesus screen-right, the Void screen-left (its face 3/4 in its hood); after "walk"
+          //             the camera backs down the path at half their pace (they come toward the lens and screen-left)
           const m = pathPose(set, S0, 0);
-          const D = lerp(5.6, 4.7, ramp(t, tArm - 0.2, tWalk - 0.1));
-          const P = add(m.pos, [m.dir[0] * D + m.left[0] * 2.1, 1.5, m.dir[2] * D + m.left[2] * 2.1]);
-          const fJe = add(fJ.pos, [0, 1.56, 0]), fVe = add(fV.pos, [fJ.left[0] * 0.3, 2.02, fJ.left[2] * 0.3]);   // the formation faces
-          s = aimXY(P, lerpA(fJe, fVe, 0.5), 372, 345, 44, { drift: 0.1 });
-          break;
-        }
-        case 'BACK': {  // wide from behind down the path: the pair right of the sun, the hill at left, the galaxy above
-          const m = pathPose(set, S0, 0);
-          // (from up the path on their LEFT, a little high: Jesus nearer, the sun clear above the lilac hill's crest)
-          const P = add(m.pos, [-m.dir[0] * 13.5 + m.left[0] * 2.9, 0, -m.dir[2] * 13.5 + m.left[2] * 2.9]);
-          P[1] = set.groundAt(P[0], P[2]) + 2.5 + 0.1 * u;
-          const L = add(m.pos, [m.dir[0] * 1.0, 1.8, m.dir[2] * 1.0]);
-          s = aimXY(P, L, 470, 600, 44, { drift: 0.15 });
+          const fw = [m.dir[0] * dist, 0, m.dir[2] * dist];             // the pair's walk so far (0 before the step-off)
+          const th = (lerp(60, 50, ramp(t, S + 0.15, tAround + 0.25)) - 5 * ramp(t, tW0, tW0 + 1.6)) * Math.PI / 180;
+          const D = lerp(5.9, 5.0, ramp(t, S, tW0 + 0.4));
+          const C = lerpA(fJ.pos, fV.pos, 0.5);
+          const P = add(C, [0.5 * fw[0] + (m.dir[0] * Math.cos(th) + m.left[0] * Math.sin(th)) * D, 0, 0.5 * fw[2] + (m.dir[2] * Math.cos(th) + m.left[2] * Math.sin(th)) * D]);
+          P[1] = Math.max(set.groundAt(P[0], P[2]), C[1]) + lerp(2.45, 2.15, ramp(t, tW0, shotT1));
+          const fJe = add(fJ.pos, [fw[0], 1.56, fw[2]]), fVe = add(fV.pos, [fw[0] + fJ.left[0] * 0.3, 2.02, fw[2] + fJ.left[2] * 0.3]);   // the formation faces
+          s = aimXY(P, lerpA(fJe, fVe, 0.5), 372, 370, 44, { drift: 0.1 });
           break;
         }
         case 'TRACK': case 'TRACK2': {   // front-3/4 tracking medium from Jesus's side: backing up the path ahead of them
@@ -460,10 +459,10 @@ export default {
     set.update(t, {
       tod: todAt(t), voidSky: voidSkyAt(t), voidPos: vPos,
       shadowAt: lerpA(vPos, jPos, 0.5),
-      sunGlow: shot === 'FAR' || shot === 'OVER' || shot === 'XWIDE' ? 1.1 : shot === 'BACK' ? 1.0 : 0.9,
-      sunShift: userShot ? OVER_SHIFT : shot === 'BACK' ? 0.15 : 0,
+      sunGlow: shot === 'FAR' || shot === 'OVER' || shot === 'XWIDE' ? 1.1 : 0.9,
+      sunShift: userShot ? OVER_SHIFT : 0,
       keyYaw: shot === 'UCU' || shot === 'PHONE' ? -0.05 : undefined, fillMul: shot === 'UCU' ? 1.35 : 1,
-      seeds: shot === 'TWO' || shot === 'BACK' || shot === 'XWIDE' ? 0.5 : 0, hideHeroTree: shot === 'BACK',
+      seeds: shot === 'TWO' || shot === 'XWIDE' ? 0.5 : 0,
       ...(far ? { ...far.opts, tod: todAt(t), seeds: 0 } : {}),
       clear: [[jPos[0], jPos[2], 0.6], [vPos[0], vPos[2], 1.2], [hill[0], hill[2], 0.9]],
     });
@@ -503,7 +502,7 @@ export default {
 };
 
 // the laughed-up galaxy in s16: from where it has hung since s04 (galaxyAt) out over the path ahead of the walkers
-// (G1, in the walk-off wide), then on to hang above the far crest (G2). Off screen while it travels (TWO looks back
+// (G1, en route), then on to hang above the far crest (G2). Off screen while it travels (TWO looks back
 // up the path; the tracking shots look back at the pair).
 function galaxy16(t, st, S, tWalk, tFar) {
   const g0 = galaxyAt(S);
