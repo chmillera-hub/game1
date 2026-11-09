@@ -37,13 +37,13 @@ const C_SCARF = 0xe4a419, C_IRIS = 0x6b6392, C_IRIS2 = 0xaea6cc, C_LIMBAL = 0x2c
 // Proportions. Root space: feet on y = 0, faces +Z, +X = character's left. Body space: origin at the pelvis.
 export const PELVIS_Y = 0.212, SIT_Y = 0.088, KNEEL_Y = 0.125;
 const HEAD_C = V3(0, 0.40, 0);            // head centre (body space) = Face origin
-const PIVOT = V3(0, 0.25, 0);             // bend pivot (body space, inside the scarf)
-const BEND_Y = [0.165, 0.29];             // bend blend zone (body-space y): 0 below .. 1 (rigid head) above
+const PIVOT = V3(0, 0.265, 0);            // bend pivot (body space, just above the scarf line)
+const BEND_Y = [0.195, 0.315];            // bend blend zone (body-space y): 0 below .. 1 (rigid head) above
 const SHOULDER = V3(0.168, 0.18, 0.045);
 const HIP = V3(0.07, 0.0, 0.0);
 const UPPER = 0.12, FORE = 0.114, HAND = 0.068;
 const THIGH = 0.098, SHIN = 0.094, ANKLE_Y = 0.032;
-const SCARF_Y = 0.247;
+const SCARF_Y = 0.247, SCARF_FOLLOW = 0.45;
 const EYE = { u: 0.45, v: 0.18, r: 0.078 };
 const MOUTH_V = -0.35, HW0 = 0.038;
 const LEG_R = [0.021, 0.0172, 0.0182, 0.0152, 0.0165];
@@ -100,7 +100,7 @@ export const FEAR_EXPR = {
   nervous: { browIn: 0.68, browOut: 0.1, browSq: 0.22, lidSad: 0.3, lidU: 1.08, mSmile: 0.14, mClench: 0.6, mWide: 0.45, mAsym: 0.15, saccade: 1.5 },
   scared: { lidU: 1.28, lidL: 0.04, browIn: 0.92, browOut: 0.28, browSq: 0.42, lidSad: 0.3, mSmile: -0.45, mOpen: 0.17, mWide: 0.35, mTeethL: 0.5, pupil: 0.68, mTremble: 0.35 },
   terror: { lidU: 1.42, browIn: 1, browOut: 0.55, browSq: 0.5, lidSad: 0.25, mOpen: 0.75, mWide: 0.45, mSmile: -0.6, mTeethL: 0.75, mTeethU: 0.5, pupil: 0.48, mTremble: 0.6 },
-  flinch: { lidU: 0.0, blink: 1, lidL: 1, squint: 1, lidAngry: 0.35, browIn: -0.2, browSq: 1, browOut: -0.45, browMid: -0.2, mClench: 1, mWide: 0.75, mSmile: -0.35, autoBlink: 0, saccade: 0 },
+  flinch: { lidU: 0.0, blink: 1, lidL: 1, squint: 1, lidAngry: 0.6, browIn: -0.55, browSq: 1, browOut: -0.7, browMid: -0.3, mClench: 1, mWide: 0.9, mSmile: -0.3, mAsym: 0.1, autoBlink: 0, saccade: 0 },
   cry: { browIn: 0.95, browOut: -0.35, browSq: 0.45, lidSad: 0.7, lidU: 0.72, lidL: 0.38, mSmile: -0.72, mOpen: 0.24, mWide: 0.25, mPout: 0.3, mTremble: 0.6, tearL: 0.85, tearR: 0.8, wet: 0.9 },
   sob: { browIn: 1, browOut: -0.42, browSq: 0.6, lidSad: 0.6, lidU: 0.32, lidL: 0.62, mSmile: -0.78, mOpen: 0.52, mWide: 0.38, mTeethU: 0.4, mTremble: 0.7, tearL: 1, tearR: 1, wet: 1 },
   sniffle: { browIn: 0.82, browOut: -0.26, lidSad: 0.55, lidU: 0.8, lidL: 0.25, mSmile: -0.36, mPout: 0.45, mPress: 0.35, tearL: 0.5, tearR: 0.45, wet: 0.75 },
@@ -208,11 +208,11 @@ export const ARM_PRESETS = Object.keys(ARM);
 // ---------------------------------------------------------------------------------------------------------
 // Tuft strands (head-local, from the top of the head): base offset, rest dir, length, rest curvature, thickness
 const TUFT = [
-  { o: [0, 0, 0.006], d: [0.0, 1, 0.1], L: 0.09, curv: [0.04, 0, -0.42], r: 1.0 },
-  { o: [0.017, -0.004, -0.002], d: [0.5, 1, 0.04], L: 0.064, curv: [0.48, 0, -0.12], r: 0.86 },
-  { o: [-0.018, -0.004, -0.006], d: [-0.55, 1, -0.05], L: 0.058, curv: [-0.5, 0, 0.06], r: 0.8 },
+  { o: [0, 0, 0.008], d: [0.0, 1, 0.18], L: 0.1, curv: [0.06, 0, -0.78], r: 1.0 },
+  { o: [0.02, -0.005, 0.0], d: [0.62, 1, 0.12], L: 0.07, curv: [0.62, 0, -0.28], r: 0.86 },
+  { o: [-0.021, -0.005, -0.004], d: [-0.68, 1, 0.02], L: 0.064, curv: [-0.58, 0, -0.12], r: 0.82 },
 ];
-const TUFT_PROFILE = [0.0088, 0.007, 0.0054, 0.0046, 0.0058, 0.0079];
+const TUFT_PROFILE = [0.0108, 0.0084, 0.0063, 0.0052, 0.006, 0.0078];
 const SPRING_N = 30, SPRING_DT = 0.03;
 function springK(tau, f, zeta) {   // second derivative of the damped spring's impulse response
   const w = TAU * f, a = zeta * w, wd = w * Math.sqrt(1 - zeta * zeta);
@@ -221,6 +221,14 @@ function springK(tau, f, zeta) {   // second derivative of the damped spring's i
 const KT = [], KS = [];
 for (let i = 0; i < SPRING_N; i++) { const tau = (i + 0.5) * SPRING_DT; KT.push(springK(tau, 2.6, 0.26) * SPRING_DT); KS.push(springK(tau, 1.5, 0.32) * SPRING_DT); }
 const softClamp = (v, m) => m * Math.tanh(v / m);
+
+// core SweepTube reuses one CatmullRomCurve3 and never flags it dirty, so getPointAt() would use the PREVIOUS
+// frame's arc-length table (frame output then depends on render order). Patch our instances to stay pure.
+function pureTube(tube) {
+  const up = tube.update.bind(tube);
+  tube.update = (...a) => { tube.curve.needsUpdate = true; return up(...a); };
+  return tube;
+}
 
 // ---------------------------------------------------------------------------------------------------------
 // Materials
@@ -377,8 +385,9 @@ export class Fear extends Character {
         profile: [0.8, 1, 0.8, 0.4] },
       mouth: { v: MOUTH_V, halfW: HW0, line: '#4a2460', lineW: HW0 * 0.2, interior: '#2a1030', interior2: '#5a2148', tongue: '#d77a9e', teeth: '#f7f2ff',
         lipTintRGB: '200,120,190', blushColor: '255,130,190', blushX: 0.078, blushY: 0.03 },
-      decal: { uMin: -0.85, uMax: 0.85, vMin: -0.6, vMax: 0.1, size: [512, 352] },
+      decal: { uMin: -0.85, uMax: 0.85, vMin: -0.56, vMax: 0.1, size: [512, 352] },
     });
+    for (const br of this.face.brows || []) pureTube(br.tube);
     for (const eye of this.face.eyes) for (const c of eye.up.children) if (c.geometry && c.geometry.type === 'ConeGeometry') c.visible = false;
     // tear meniscus along each lower lid (wet, welling eyes)
     this.menisci = this.face.eyes.map((eye) => {
@@ -396,7 +405,7 @@ export class Fear extends Character {
     const top = headSurface(0, Math.PI / 2 - 0.08);
     this.topP = top.p.clone();
     this.tuft = TUFT.map((s) => {
-      const tube = new SweepTube({ material: this.tuftMat, segments: 14, radial: 8, capRings: 3 });
+      const tube = pureTube(new SweepTube({ material: this.tuftMat, segments: 14, radial: 8, capRings: 3 }));
       this.headGroup.add(tube.mesh);
       const base = this.topP.clone().add(V3(...s.o)).addScaledVector(top.n, -0.006);
       return { ...s, tube, base, d0: V3(...s.d).normalize(), curv0: V3(...s.curv) };
@@ -405,7 +414,7 @@ export class Fear extends Character {
 
   _buildScarf() {
     // wrap: a slightly spiralling loop around the bean at SCARF_Y, ends tucked under the knot (front-left)
-    this.wrap = new SweepTube({ material: knitMaterial(30, 4), segments: 72, radial: 12, capRings: 2, castShadow: true });
+    this.wrap = pureTube(new SweepTube({ material: knitMaterial(30, 4), segments: 72, radial: 12, capRings: 2, castShadow: true }));
     tubeUV(this.wrap); this.bodyG.add(this.wrap.mesh);
     this.wrap.mesh.material.map.repeat.set(30, 4);
     const KA = 0.5;                                  // knot angle (from +Z toward +X)
@@ -434,7 +443,7 @@ export class Fear extends Character {
     this.bodyG.add(this.knot);
     // hanging ends with fringe
     this.tails = [{ L: 0.2, off: -0.012, w: 1 }, { L: 0.158, off: 0.016, w: 0.92 }].map((T, i) => {
-      const tube = new SweepTube({ material: knitMaterial(12, 2), segments: 14, radial: 10, capRings: 2, castShadow: true });
+      const tube = pureTube(new SweepTube({ material: knitMaterial(12, 2), segments: 14, radial: 10, capRings: 2, castShadow: true }));
       tubeUV(tube); this.bodyG.add(tube.mesh);
       const fr = new THREE.Group(); this.bodyG.add(fr);
       const fm = new THREE.MeshStandardMaterial({ color: 0xc98f22, roughness: 0.9 });
@@ -452,14 +461,14 @@ export class Fear extends Character {
     for (const side of ['L', 'R']) {
       const hand = new Hand({ size: HAND, fingers: 3, side, material: this.limbMat, thick: 1.28, fingerLen: 1.05 });
       const limb = new Limb({ material: this.limbMat, upper: UPPER, lower: FORE, radius: [0.0145, 0.0118, 0.011], segments: 14, radial: 8, hand, soft: 0.4 });
-      this.root.add(limb.group);
+      pureTube(limb.tube); this.root.add(limb.group);
       const palmL = HAND * 0.46, palmT = HAND * 0.16 * 1.28;
       this.addAnchor('hand' + side, hand.root, [0, palmL * 0.55, -palmT * 0.9]);
       this.arms[side] = limb;
     }
     this.legs = {};
     for (const side of ['L', 'R']) {
-      const tube = new SweepTube({ material: this.limbMat, segments: 12, radial: 8, capRings: 2, castShadow: true });
+      const tube = pureTube(new SweepTube({ material: this.limbMat, segments: 12, radial: 8, capRings: 2, castShadow: true }));
       this.root.add(tube.mesh);
       const knee = new THREE.Mesh(new THREE.SphereGeometry(0.0225, 14, 10), this.limbMat); knee.castShadow = true;
       this.root.add(knee);
@@ -473,8 +482,8 @@ export class Fear extends Character {
   }
 
   _buildTears() {
-    const mat = new THREE.MeshPhysicalMaterial({ color: 0xe6f4ff, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.8, emissive: 0x8fb8ff,
-      emissiveIntensity: 0.4, clearcoat: 1, clearcoatRoughness: 0.05, depthWrite: false });
+    const mat = new THREE.MeshPhysicalMaterial({ color: 0xb8dcff, roughness: 0.03, metalness: 0, transparent: true, opacity: 0.6, emissive: 0x6f9cff,
+      emissiveIntensity: 0.22, clearcoat: 1, clearcoatRoughness: 0.03, specularIntensity: 1, depthWrite: false });
     this.drops = [];
     for (let i = 0; i < 4; i++) {
       const m = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), mat.clone());
@@ -543,8 +552,8 @@ export class Fear extends Character {
     return { pos, yaw, pel, bodyQ, bodyS, headQ, headOff, crouch, hunch, shrug, sit, kneel, cower, tremble, startle, sob, sobP, wa, ph, st, s1, c1, br, recoil };
   }
   // body space -> head-bent body space (CPU copy of the vertex-shader bend)
-  _bend(K, p, out = V3()) {
-    const w = smoothstep(BEND_Y[0], BEND_Y[1], p.y);
+  _bend(K, p, out = V3(), k = 1) {
+    const w = smoothstep(BEND_Y[0], BEND_Y[1], p.y) * k;
     _q.slerpQuaternions(QI, K.headQ, w);
     return out.copy(p).sub(PIVOT).applyQuaternion(_q).add(PIVOT).addScaledVector(K.headOff, w);
   }
@@ -563,7 +572,7 @@ export class Fear extends Character {
   _secondary(t, P, K0, poseAt) {
     const tips = this.tuft.map((S) => S.base.clone().addScaledVector(S.d0, S.L).add(V3(0, 0, 0.012)));
     const x0 = tips.map((p) => this._bodyToWorld(K0, this._headToBody(K0, p)));
-    const k0 = this._bodyToWorld(K0, this._bend(K0, this.knotP));
+    const k0 = this._bodyToWorld(K0, this._bend(K0, this.knotP, V3(), SCARF_FOLLOW));
     const yT = tips.map(() => V3()), yS = V3(), a = V3(), b = V3();
     for (let i = 0; i < SPRING_N; i++) {
       const tau = (i + 0.5) * SPRING_DT;
@@ -574,7 +583,7 @@ export class Fear extends Character {
         this._bodyToWorld(K, this._headToBody(K, tips[k], a), a).sub(x0[k]);
         yT[k].addScaledVector(a, -KT[i]);
       }
-      this._bodyToWorld(K, this._bend(K, this.knotP, b), b).sub(k0);
+      this._bodyToWorld(K, this._bend(K, this.knotP, b, SCARF_FOLLOW), b).sub(k0);
       yS.addScaledVector(b, -KS[i]);
     }
     return { tuft: yT, tail: yS };
@@ -645,7 +654,7 @@ export class Fear extends Character {
     const an = (n, v) => this._anch[n].position.copy(v);
     const bp = (x, y, z) => V3(x, y, z).applyMatrix4(MB);
     an('chest', bp(0, 0.17, 0.225)); an('back', bp(0, 0.17, -0.225)); an('belly', bp(0, 0.06, 0.225)); an('hip', bp(0, 0, 0));
-    an('scarf', this._bend(K, this.knotP).applyMatrix4(MB));
+    an('scarf', this._bend(K, this.knotP, V3(), SCARF_FOLLOW).applyMatrix4(MB));
     an('shoulderL', bp(SHOULDER.x, SHOULDER.y + 0.02 * K.shrug, SHOULDER.z)); an('shoulderR', bp(-SHOULDER.x, SHOULDER.y + 0.02 * K.shrug, SHOULDER.z));
     an('tuft', this._tuftTip.clone().applyMatrix4(MH)); an('tuftBase', this.tuft[0].base.clone().applyMatrix4(MH));
     an('footL', this._feet.L); an('footR', this._feet.R);
@@ -687,12 +696,13 @@ export class Fear extends Character {
 
   _scarf(t, K, yWorld) {
     // wrap follows the bend (CPU copy of the shader bend, so it hugs the bent bean)
-    const pts = this.wrapPts.map((p) => this._bend(K, p));
-    const ups = this.wrapUps.map((u, i) => { _q.slerpQuaternions(QI, K.headQ, smoothstep(BEND_Y[0], BEND_Y[1], this.wrapPts[i].y)); return u.clone().applyQuaternion(_q); });
+    const SK = SCARF_FOLLOW;   // the scarf slips: it follows only part of the head bend
+    const pts = this.wrapPts.map((p) => this._bend(K, p, V3(), SK));
+    const ups = this.wrapUps.map((u, i) => { _q.slerpQuaternions(QI, K.headQ, SK * smoothstep(BEND_Y[0], BEND_Y[1], this.wrapPts[i].y)); return u.clone().applyQuaternion(_q); });
     this.wrap.update(pts, this.wrapR, { up: (s) => ups[Math.min(ups.length - 1, Math.round(s * (ups.length - 1)))], flatten: 0.42 });
     // knot
-    const kp = this._bend(K, this.knotP);
-    const wk = smoothstep(BEND_Y[0], BEND_Y[1], this.knotP.y);
+    const kp = this._bend(K, this.knotP, V3(), SK);
+    const wk = SK * smoothstep(BEND_Y[0], BEND_Y[1], this.knotP.y);
     _q.slerpQuaternions(QI, K.headQ, wk);
     this.knot.position.copy(kp);
     orientYZ(this.knot, V3(0, 1, 0).applyQuaternion(_q), this.knotN.clone().applyQuaternion(_q));
@@ -744,14 +754,14 @@ export class Fear extends Character {
         const go = hash1(n * 13 + (sx > 0 ? 3 : 7) + j * 101) < 0.35 + 0.75 * cry;
         if (!go) { m.visible = false; continue; }
         const swell = smooth(u / 0.3), slide = smooth((u - 0.3) / 0.62);
-        const uu = sx * (EYE.u + 0.07 + 0.1 * slide), vv = lerp(EYE.v - 0.37, -0.74, slide);
+        const uu = sx * (EYE.u + 0.07 + 0.1 * slide), vv = lerp(EYE.v - 0.37, -0.64, slide);
         const s = headSurface(uu, vv);
-        const r = 0.0085 * (0.35 + 0.65 * swell) * (0.8 + 0.4 * cry);
+        const r = 0.0072 * (0.35 + 0.65 * swell) * (0.8 + 0.4 * cry);
         m.position.copy(s.p).addScaledVector(s.n, r * 0.45);
         const tdir = headSurface(uu + sx * 0.02, vv + 0.04).p.sub(s.p).normalize();   // up along the path
         orientYZ(m, tdir, s.n);
         m.scale.set(r * 0.85, r * (1.1 + 0.45 * slide), r * 0.62);
-        m.material.opacity = 0.85 * (1 - smooth((u - 0.86) / 0.12));
+        m.material.opacity = 0.62 * (1 - smooth((u - 0.86) / 0.12));
         m.visible = true;
       }
     }

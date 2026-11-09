@@ -202,7 +202,7 @@ export async function setup(app) {
     fragmentShader: 'varying vec3 vP; void main(){ float h = normalize(vP).y; vec3 a = vec3(1.0,0.78,0.62), b = vec3(0.55,0.52,0.78); gl_FragColor = vec4(mix(a, b, smoothstep(-0.05, 0.6, h)), 1.0);\n#include <colorspace_fragment>\n}',
   }));
   scene.add(sky);
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(30, 64), new THREE.MeshStandardMaterial({ color: 0xd9b6a0, roughness: 0.95 }));
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(30, 48), new THREE.MeshLambertMaterial({ color: 0xd9b6a0 }));
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
   // footprints grid (to read walking motion)
   const dots = new THREE.InstancedMesh(new THREE.CircleGeometry(0.035, 12), new THREE.MeshBasicMaterial({ color: 0xbf9580 }), 400);

@@ -110,7 +110,7 @@ export async function setup(app) {
   const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.11, 0.24, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0x8a96a8, metalness: 0.6, roughness: 0.4, side: THREE.DoubleSide }));
   bucket.position.set(-1.3, 0.12, 0.1); bucket.rotation.z = 1.2; scene.add(bucket); bucket.visible = false;
   const sky2 = new Particles({ max: 260, intensity: 1.5 }); scene.add(sky2.mesh);
-  const cosmosGlow = glowSprite(0x8a70ff, 3.0, 0); cosmosGlow.position.set(0, 2.0, -1.2); scene.add(cosmosGlow);
+  const cosmosGlow = glowSprite(0x8a70ff, 4.0, 0); cosmosGlow.position.set(0, 2.4, -2.5); scene.add(cosmosGlow);
   scene.add(app.camera);
   const lab = label(); app.camera.add(lab.m);
   return { scene, fear, cg, partner, post, bucket, sky2, cosmosGlow, skyU, key, rim, hemi, lab,
@@ -150,6 +150,8 @@ function act(t) {
     if (ex === 'shy' || ex === 'shySmile') { head.roll = -0.12; head.pitch = 0.1; }
     if (ex === 'sad' || ex === 'whimper') { head.pitch = 0.12; extra.tuftDroop = 0.7; }
     if (ex === 'curious' || ex === 'confused') head.roll = 0.16;
+    if (ex === 'flinch') { head.pitch = 0.12; head.yaw = -0.15; body.shrug = 0.6 * sm(0, 0.2, u); extra.tremble = 0.5; extra.tuftDroop = 0.4; }
+    if (ex === 'gulp') body.shrug = 0.3;
     R.pose = { face, extra, head, body, gaze: ex === 'shy' ? null : 'camera' };
     R.shot = framed([0, 0.6, 0], { dist: 1.5, yaw: 9, pitch: 3, fov: 30, screenY: 0.4, drift: 0 });
     R.label = 'expr: ' + ex;
@@ -175,10 +177,10 @@ function act(t) {
     face = mixFace(face, FX('worried'), sm(3.2, 3.5, u));
     face = mixFace(face, FX('gulp'), env(u, 3.6, 4.4, 0.1, 0.3));
     R.pose = { face, gaze: snap > 0.5 && back < 0.5 ? src : 'camera', extra: { startle: st, tuftPerk: clamp(snap * 0.8 * (1 - back * 0.7)), tremble: 0.25 * sm(1.0, 1.5, u) },
-      head: { look: src, track: 0.62 * snap * (1 - back), roll: 0.12 * sm(1.2, 1.6, u) * (1 - back) }, body: { twist: -0.18 * snap * (1 - back) },
+      head: { look: src, track: 0.45 * snap * (1 - back), roll: 0.12 * sm(1.2, 1.6, u) * (1 - back) }, body: { twist: -0.18 * snap * (1 - back) },
       armL: { preset: 'up', from: 'rest', mix: env(u, 0.6, 1.5, 0.08, 0.5) * 0.7 }, armR: { preset: 'chest', from: 'rest', mix: sm(0.65, 0.9, u) * (1 - sm(3.4, 4, u)) },
       speech: talkSample(u, 1.9, 3.1, 3), blinkAt: [seg.t0 + 0.55] };
-    R.shot = FULL(-0.12, 0.47, 1.75, 14, 4, 0.44);
+    R.shot = FULL(-0.12, 0.47, 1.75, -12, 4, 0.44);
     R.props.bucket = true;
   } else if (name === 'tremble') {
     const tr = sm(0.2, 2.0, u);
@@ -217,7 +219,7 @@ function act(t) {
       extra: { cry: 0.45 * aw, glow: 1 + 0.3 * up, tuftPerk: 0.3 * up },
       armL: { preset: 'clasp', from: 'rest', mix: sm(1.2, 2.2, u) }, armR: { preset: 'clasp', from: 'rest', mix: sm(1.3, 2.3, u) } };
     R.props.cosmos = up;
-    R.shot = framed([0, 0.6, 0], { dist: 1.6, yaw: 18, pitch: -6, fov: 34, screenY: 0.62, drift: 0 });
+    R.shot = framed([0, 0.6, 0], { dist: 1.7, yaw: 38, pitch: -2, fov: 34, screenY: 0.6, drift: 0 });
   } else if (name === 'shy') {
     const a = sm(0.3, 1.0, u), sm2 = sm(1.6, 2.4, u), look = env(u, 2.2, 3.5, 0.3, 0.4);
     let face = mixFace(FX('neutral'), FX('shy'), a);
@@ -234,19 +236,19 @@ function act(t) {
     const fingerTip = hp.clone().add(V(-0.02, -0.03, 0.15));
     let face = mixFace(FX('worried'), FX('hopeful'), sm(0.6, 1.4, u));
     face = mixFace(face, FX('trust'), sm(2.4, 3.2, u));
-    R.pose = { pos: [0, 0, 0.3], yaw: 0.45, face, gaze: V(0.75, 2.2, -0.1), head: { look: V(0.75, 2.2, -0.1), track: 0.75 * pr }, extra: { tuftPerk: 0.25 },
+    R.pose = { pos: [0, 0, 0.3], yaw: 0.25, face, gaze: V(0.75, 2.2, -0.1), head: { look: V(0.75, 2.2, -0.1), track: 0.55 * pr }, extra: { tuftPerk: 0.25 },
       armL: { preset: 'hold', target: fingerTip, reach: r, hand: { grip: 0.5 + 0.4 * r, curl: 0.5 } }, armR: { preset: 'chest', from: 'rest', mix: sm(0.4, 1.2, u) } };
-    R.shot = framed([0.25, 0.75, 0.25], { dist: 2.6, yaw: 12, pitch: 5, fov: 32, screenY: 0.5, drift: 0 });
+    R.shot = framed([0.06, 0.62, 0.3], { dist: 2.9, yaw: -10, pitch: 4, fov: 32, screenY: 0.52, drift: 0 });
   } else if (name === 'cling') {
-    // cling to a big partner's leg (post) at its left, peeking back at camera
-    const w = sm(0.2, 1.0, u);
-    const c = V(0.27, 0, 0.12);
+    // hides behind a big partner's leg (post), both hands on it, peeking out past its edge
+    const w = sm(0.2, 1.0, u), pk = sm(1.4, 2.2, u);
+    const c = V(0.14, 0, 0.3);
     R.props.post = c;
-    R.pose = { pos: [0, 0, 0], yaw: 0.75 * w, face: mixFace(FX('scared'), FX('relieved'), sm(1.8, 2.8, u)), gaze: 'camera', head: { yaw: -0.85 * w, roll: 0.12 * w },
-      body: { tilt: 0.08 * w, lean: 0.05 * w }, extra: { tremble: 0.4 * (1 - sm(1.8, 2.8, u)) },
-      armL: { target: V(c.x + 0.03, 0.36, c.z + 0.075), reach: w, palm: [0.3, 0, -1], fingers: [0.9, 0, -0.4], hand: { curl: 0.55, cup: 0.5 } },
-      armR: { target: V(c.x - 0.065, 0.3, c.z + 0.045), reach: sm(0.4, 1.2, u), palm: [0.9, 0, -0.4], fingers: [0.3, 0.1, -1], hand: { curl: 0.6, cup: 0.5 } } };
-    R.shot = FULL(0.12, 0.45, 1.9, 38, 4, 0.45);
+    R.pose = { pos: [-0.1, 0, 0], yaw: 0.35, face: mixFace(FX('scared'), FX('peek'), pk * 0.7), gaze: 'camera', head: { yaw: -0.35 * w - 0.15 * pk, roll: 0.16 * w, forward: 0.01 * pk },
+      body: { tilt: 0.12 * w, lean: 0.08 * w, shrug: 0.3 * w }, extra: { tremble: 0.35 * w },
+      armL: { target: V(c.x - 0.04, 0.42, c.z - 0.065), reach: w, palm: [0.6, 0, 0.8], fingers: [0.1, 1, 0.2], hand: { curl: 0.55, cup: 0.5 } },
+      armR: { target: V(c.x - 0.075, 0.33, c.z - 0.025), reach: sm(0.4, 1.2, u), palm: [1, 0, 0.3], fingers: [0.1, 1, 0.3], hand: { curl: 0.6, cup: 0.5 } } };
+    R.shot = FULL(0.0, 0.45, 1.9, -6, 4, 0.45);
   } else if (name === 'sit') {
     const s = sm(0.2, 1.3, u);
     R.pose = { face: mixFace(FX('neutral'), FX('relieved'), sm(1.2, 2.0, u)), gaze: 'camera', body: { sit: s }, armL: { preset: 'tummy', from: 'rest', mix: sm(1.3, 2.0, u) }, armR: { preset: 'rest' } };
@@ -300,7 +302,7 @@ export async function update(t, app, S) {
     }
   }
   S.sky2.end();
-  S.cosmosGlow.material.opacity = 0.35 * cz;
+  S.cosmosGlow.material.opacity = 0.18 * cz;
   applyShot(app.camera, R.shot, t);   // camera first: the face reads it (catchlights, gaze 'camera')
   const poseAt = (tt) => act(Math.max(tt, seg.t0)).pose;
   S.fear.update(t, poseAt);

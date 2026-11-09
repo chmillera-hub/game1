@@ -100,11 +100,10 @@ S('LURK: crouch, peek around the big one, tapping', 5, (lt, s) => {
   const pk = ramp(lt, 0.4, 1.4) * (1 - 0.35 * ramp(lt, 3.6, 4.4));
   const edge = s.bigEdge();
   return {
-    pos: [0, 0, 0],
-    pose: { pos: [-0.05, 0, -1.05], yaw: 0.25, body: { crouch: 0.75, peek: -0.9 * pk }, face: ['lurk', 1], gaze: s.fearEyes,
-      head: { follow: 0.4 * pk, roll: -0.15 * pk }, armL: { preset: 'edge', target: edge, palm: [0.6, 0, -0.8], fingers: [-0.2, 1, 0.3], reach: pk },
+    pose: { pos: [-0.46, 0, -0.32], yaw: 0.25, body: { crouch: 0.55, peek: -0.85 * pk }, face: ['lurk', 1], gaze: s.fearEyes,
+      head: { follow: 0.5 * pk, roll: -0.12 * pk }, armL: { preset: 'edge', target: edge, palm: [0.9, 0, -0.3], fingers: [0.1, 1, 0.4], reach: pk },
       armR: { preset: 'claw', reach: pk }, extra: { tap: 1, pouch: false } },
-    shot: framed([0.4, 1.0, -0.5], { dist: 4.0, yaw: 22, pitch: 6, fov: 32, screenY: 0.44, drift: 0 }),
+    shot: framed([0.0, 1.2, 0.0], { dist: 4.4, yaw: 14, pitch: 5, fov: 32, screenY: 0.45, drift: 0 }),
   };
 });
 S('LICK LIPS (close-up)', 3.2, (lt, s) => {
@@ -113,12 +112,12 @@ S('LICK LIPS (close-up)', 3.2, (lt, s) => {
   const lick2 = lt < 1.9 ? 0 : clamp((lt - 1.9) / 1.0);
   const L = lick > 0 && lick < 1 ? lick : lick2;
   return { pose: { face: lt < 0.4 ? 'hungry' : (L > 0.1 && L < 0.9 ? ['hungry', 1] : 'gloat'), gaze: s.fearEyes, head: { pitch: -0.05, roll: 0.06 * Math.sin(lt * 2) }, extra: { lick: L }, speech: false },
-    ...CLOSE(18, 1.1) };
+    ...CLOSE(18, 1.4) };
 });
 S('gloating whisper-talk (lip-sync) + dagger', 4, (lt, s) => ({
   pose: { face: lt < 2 ? 'whisper' : 'gloat', speech: talkSample(s.t, 0.55), gaze: 'camera', head: { yaw: 0.2, roll: -0.08, pitch: 0.05 }, body: { hunch: 0.4 },
     armR: { preset: 'dagger_ready', reach: ramp(lt, 0.2, 0.8) }, armL: { preset: 'pouch' } },
-  shot: framed([0, 1.45, 0.1], { dist: 2.3, yaw: 18, pitch: 2, fov: 30, screenY: 0.4, drift: 0 }),
+  shot: framed([0, 1.5, 0.15], { dist: 2.9, yaw: -12, pitch: 2, fov: 30, screenY: 0.42, drift: 0 }),
 }));
 S('numbing dust: pouch pour', 3.5, (lt, s) => {
   const d = ramp(lt, 0.6, 1.2) * (1 - ramp(lt, 2.8, 3.3));
@@ -139,16 +138,21 @@ S('KICKED in the chest -> flight', 3.2, (lt, s) => {
   const kick = lt < 0.45 ? 0 : lt < hit ? ease.in((lt - 0.45) / (hit - 0.45)) : 1 - ramp(lt, hit + 0.3, hit + 1.0);
   s.kickAmt = kick;
   const kicked = lt < hit ? 0 : clamp(tau / 0.06);
-  const y = Math.max(0, 3.6 * tau - 3.9 * tau * tau), z = -3.0 * tau;
+  const y = Math.max(0, 3.6 * tau - 3.9 * tau * tau), z = -1.55 * tau;
   const hatOff = clamp(tau / 0.25);
   const ht = tau;
   return {
     pose: { pos: [0, y, z], face: lt < 0.5 ? 'gloat' : lt < hit ? 'uhoh' : 'popped', gaze: lt < hit ? s.kickFoot() : 'camera',
       armR: { preset: 'dagger_ready' }, armL: { preset: 'pouch' }, body: { recoil: lt < hit ? 0.3 * ramp(lt, 0.5, 0.75) : 0 },
-      extra: { kicked, flip: -1.3 * tau, hatOff, hatPos: [0.15, 2.05 + 3.2 * ht - 3.0 * ht * ht, 0.1 - 1.4 * ht], hatRot: [-4 * ht, 2 * ht, 1.5 * ht], dagger: true } },
-    shot: framed([0, 1.35, -1.1], { dist: 6.2, yaw: 84, pitch: 4, fov: 34, screenY: 0.46, drift: 0 }),
+      extra: { kicked, flip: -1.3 * tau, hatOff, hatPos: [0.15, Math.max(0.05, 2.1 + 3.4 * ht - 3.6 * ht * ht), 0.25 - 0.7 * ht], hatRot: [-4 * ht, 2 * ht, 1.5 * ht], dagger: true } },
+    shot: framed([0, 1.45, -0.5], { dist: 8.0, yaw: 80, pitch: 4, fov: 34, screenY: 0.46, drift: 0 }),
   };
 });
+S('KICKED: mid-air hold (flail, popped eyes, hat off)', 3, (lt, s) => ({
+  pose: { pos: [0, 0.55 + 0.05 * Math.sin(lt * 3), 0], yaw: 0.5, face: 'popped', gaze: 'camera',
+    extra: { kicked: 1, flip: -0.15, hatOff: 1, hatPos: [0.3, 2.65 + 0.1 * Math.sin(lt * 2), -0.4], hatRot: [-3 * lt, 1.5 * lt, 0.8], dagger: true } },
+  shot: framed([0, 1.6, 0], { dist: 4.4, yaw: 25, pitch: 2, fov: 32, screenY: 0.44, drift: 0 }),
+}));
 S('CRASH: upside-down, dizzy, bucket on head', 4.5, (lt, s) => {
   s.buckets.visible = true;
   const bk = ramp(lt, 1.6, 2.2);
@@ -216,7 +220,7 @@ export async function setup(app) {
   const body = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), vm); body.scale.set(1.0, 1.25, 0.85); body.position.y = 1.2; big.add(body);
   const hd = new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 20), vm); hd.position.set(0, 2.3, 0.05); big.add(hd);
   big.position.set(0.95, 0, 0.35); big.visible = false; scene.add(big);
-  const bigEdge = () => V(0.08, 1.45, -0.42);
+  const bigEdge = () => V(-0.05, 1.3, 0.3);
   // little Fear bean stand-in
   const fear = new THREE.Group();
   const fm = new THREE.MeshStandardMaterial({ color: 0xcdb8ff, roughness: 0.5, emissive: 0x2a1a50 });
@@ -269,8 +273,8 @@ export async function update(t, app, s) {
   // kicker leg: swings from behind/up into the chest
   if (s.kicker.visible) {
     const k = s.kickAmt;
-    s.kicker.position.set(0.0, 2.0, 1.15);
-    s.kicker.rotation.set(-0.2 - 1.15 * k, 0, 0);
+    s.kicker.position.set(0.0, 1.55, 0.98);
+    s.kicker.rotation.set(0.15 + 1.32 * k, 0, 0);
   }
   // bucket dropping onto the head (oriented along the head's up axis)
   if (s.bucketOn) {

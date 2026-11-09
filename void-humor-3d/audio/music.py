@@ -24,13 +24,14 @@ THE MUSIC (all original):
   3-2-3-5 cell, a callback to the creator's earlier film, and blooms lydian among the galaxies).
   Keys — Part One lives in F major with the Void's D minor as its shadow (the same notes, darker centre);
   the bonus scene shifts to D (chromatic-mediant 'other world' at the dissolve): creepy D minor, then D major.
-  Moods (17) = textures: chase, arrival, sly, sneaky, romp, dry, tender, sincere, exit, bittersweet, walkoff,
-  hush, creep, suspense, slapstick, innocent, cosmos. Under speech every texture thins to pads, soft pulses
+  Moods (18) = textures: chase, arrival, sly, sneaky, romp, dry, tender, sincere, exit, bittersweet, walkoff,
+  hush, creep, still, suspense, slapstick, innocent, cosmos. Under speech every texture thins to pads, soft pulses
   and high pings; melodies only enter the gaps.
   Word-painting: every ^word gets a high bell (celesta/glock/harp, chord tone of the moment, its attack ON the
   word onset), every ~word a low note (contrabass + low piano + soft timpani on the current root).
   Hits: sting, stop (stop-time: the music cuts dead, optional orchestral stab), swell, wahwah (muted-trumpet
-  wah-wah-wah-waah), tada, creep.
+  wah-wah-wah-waah, or a one-note 'doink'), tada, creep, pluck, ping. A hit's time is a timeline ref/seconds or
+  an SFX anchor {"sfx": "block_thunk", "scene": "s14"}; "until" sets its length.
 """
 import argparse
 import itertools
@@ -408,6 +409,7 @@ class Cue:
         self.speech = loc(ctx["speech"])
         self.quiet = loc(ctx["quiet"])
         self.vocal_events = [(t - self.start, kind, spk) for t, kind, spk in ctx["vocal_events"] if self.start <= t < self.end]
+        self.lines = [(a - self.start, b - self.start, spk, txt) for a, b, spk, txt in ctx.get("lines", []) if self.start <= a < self.end]
         self.hits = [dict(h, lt=h["t"] - self.start) for h in ctx["hits"] if self.start - 0.01 <= h["t"] < self.end]
         self.stops = [(h["lt"], h["lt"] + h.get("len", 2.5)) for h in self.hits if h["kind"] == "stop"]
         self.swells = [(h["lt"], float(h.get("len", 4.0))) for h in self.hits if h["kind"] == "swell"]
@@ -1023,13 +1025,24 @@ def m_slapstick(w, cue, harm, grid):
 
 
 def m_innocent(w, cue, harm, grid):
-    order = ["fear_question", "whome"]
+    """Comic innocence, told by three little gestures anchored to the dialogue: a solo-flute question right after
+    the first question asked, a two-note bassoon 'who, me?' on the Void's shrug, a rising celesta answer after the
+    last line (trust). Falls back to the dialogue gaps when the scene has no such lines."""
+    q = next((b for a, b, spk, txt in cue.lines if "?" in txt), None)
+    shrug = next((t for t, kind, spk in cue.vocal_events if spk == "VOID"), None)
+    if shrug is None:
+        shrug = next((a + 0.4 for a, b, spk, txt in cue.lines if "shrug" in txt.lower()), None)
+    last = max([b for a, b, spk, txt in cue.lines] + [-1.0])
     gs = cue.gaps(lead=0.2, tail=0.3, min_len=1.0)
-    for i, (a, b) in enumerate(gs[:2]):
-        P = PHRASES[order[i]]
-        place_phrase(w, harm, P, a + 0.1, cue.beat, P["stem"], phrase_shift(cue, P), 0, w.vel(50, a))
-    if len(gs) >= 3 or (gs and cue.D - gs[-1][0] > 2.0):
-        a = gs[-1][0] if len(gs) >= 3 else max(gs[-1][0], cue.D - 2.2)
+    spots = [("fear_question", q + 0.08 if q is not None else (gs[0][0] + 0.1 if gs else None), 0.85),
+             ("whome", shrug if shrug is not None else (gs[1][0] + 0.1 if len(gs) > 1 else None), 0.9)]
+    for nm, t, vm in spots:
+        if t is None or t >= cue.D - 1.0:
+            continue
+        P = PHRASES[nm]
+        place_phrase(w, harm, P, t, cue.beat * 0.85, P["stem"], phrase_shift(cue, P), 0, w.vel(50, t) * vm)
+    a = last + 0.12 if last > 0 and last < cue.D - 1.2 else (gs[-1][0] if gs else None)
+    if a is not None:
         c = chord_at(harm, a)
         run = sorted({k for p in c["pcs"] + [(c["root"] + 2) % 12] for k in in_range(p, 74, 98)})
         for i, k in enumerate(run):
@@ -1300,11 +1313,12 @@ def load_or_make_plan(tl, sp, path, replan=False):
 
 def load_context(tl, sp, plan, verbose=True):
     beats, order = tl["beats"], tl["order"]
-    speech, quiet, vev = [], [], []
+    speech, quiet, vev, lines = [], [], [], []
     for bid in order:
         b = beats[bid]
         if b["kind"] == "line":
             speech.append((b["start"], b["end"]))
+            lines.append((b["start"], b["end"], b.get("speaker"), b.get("text") or ""))
         elif b["kind"] == "vocal":
             if b.get("vocal") in QUIET_VOCALS:
                 quiet.append((b["start"], b["end"]))
@@ -1393,7 +1407,7 @@ def load_context(tl, sp, plan, verbose=True):
     if verbose:
         print(f"[music] {len(speech)} lines, {len(quiet)} quiet vocals, {len(vev)} vocal beats, {len(marks)} word marks"
               f"{' (estimated times)' if any(m['est'] for m in marks) else ''}, {len(hits)} hits", file=sys.stderr)
-    return dict(speech=speech, quiet=quiet, vocal_events=vev, marks=marks, hits=hits)
+    return dict(speech=speech, quiet=quiet, vocal_events=vev, marks=marks, hits=hits, lines=lines)
 
 
 HIT_KINDS = ("sting", "stop", "swell", "wahwah", "tada", "creep", "pluck", "ping")
@@ -1445,8 +1459,10 @@ def accent_notes(F, cues, marks, cfg):
             out.append(dict(m, placed=False, why="no cue"))
             continue
         lt = m["t"] - cue.start
-        if cue.stopped(lt):
-            out.append(dict(m, placed=False, why="stop-time"))
+        # inside a stop-time only the bed is silent: a lone accent there is good cartoon punctuation, but never
+        # right on top of the stop's own stab
+        if any(abs(lt - a) < 0.35 for a, b in cue.stops):
+            out.append(dict(m, placed=False, why="on a stop-time stab"))
             continue
         c = chord_at(cue.harm, lt) if cue.harm else chord(FINAL.get(cue.ref, "F"), cue.shift)
         t = m["t"]

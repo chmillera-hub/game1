@@ -82,6 +82,7 @@ comic timing stays clean.
 | suspense | Dm 72 | high string tremolo, ticking pizzicato, cello pedal, pad | a fragile skitter on celesta |
 | slapstick | Dm 84 | tiptoe until the kick; after each stop-time, a xylophone tumble and a triangle "ting", then near silence | sly/creep cells, low |
 | innocent | D 76 | soft pad, pings; in successive gaps: flute question, bassoon "who, me?", a rising celesta shimmer | (gestures) |
+| still | Dm 60 | "a quiet truth": single low piano notes and a breath of pad | — |
 | cosmos | D 63 | harp + celesta glissandi up, slow strings, choir, bowed glass, harp arpeggios, 16th-note celesta cascades in the gaps; swell (ramp) then hush; final rolled D(add9) | Void bloom (horns), Fear's wonder (celesta), Jesus reach in D, Fear hope |
 
 **Level.** Each cue is calibrated to its mood's loudness target, plus 5 dB per unit of intensity above
@@ -107,7 +108,7 @@ ending. A text ending in "dead stop" or "cuts out" adds a stop-time over a trail
 
 On later runs the plan is **loaded as-is**, so hand edits stick. If the screenplay's scene list (ids, slugs,
 locations) or a scene's `music` notes change, or a plan reference no longer exists, the plan is derived again
-and the old one is kept as `data/music_plan.json.bak`. To force a fresh plan,
+and the old one is kept as `data/music_plan.<date-time>.bak.json` (backups never overwrite each other). To force a fresh plan,
 run `python3 audio/music.py --replan`. To print the plan without rendering, use `--plan-only`. To see
 every note, write a piano roll with `--roll out/music_roll.png`.
 
@@ -143,7 +144,7 @@ time is estimated from the word's position in the line. For each mark:
 
 Measured on the test mix: attacks land on the word onset within ±15 ms (bowed low notes within +30 ms).
 In the final mix, the accents sit about 8 dB under the word they paint (range -12 to -2 dB). Accents
-closer than 0.9 s to the previous one are skipped, as are accents inside a stop-time; `data/music_report.json`
+closer than 0.9 s to the previous one are skipped, as are accents within 0.35 s of a stop-time's start (inside a stop-time a lone accent is allowed: good cartoon punctuation); `data/music_report.json`
 lists each accent and why one was skipped. To silence one, add `"beat:word"` to `accents.skip`. To change
 all of them, set `accents.gain_db`. They are rendered into `out/stems/music_features.wav`, which the mix
 ducks only 2 dB under speech, while the bed ducks 7.5 dB, so they are felt on the words.
@@ -151,7 +152,9 @@ ducks only 2 dB under speech, while the bed ducks 7.5 dB, so they are felt on th
 ### Comic hits
 Animators add hits in their scene cue file, `data/cues/<sceneId>.json` → `"hits": [...]`, or in
 `data/music_hits.json` (a list), or in a plan cue's `hits`. Each hit is `{"t": ref|seconds, "kind": ...,
-"len": s}`:
+"len": s}`. Instead of `t`, a hit can be anchored to a sound effect: `{"sfx": "block_thunk", "scene": "s14",
+"offset": 0.1, ...}` lands on that SFX event's time inside that scene. `"until": ref` sets the length from
+the end point (for example `"until": "s14.end"`).
 
 | kind | effect |
 |---|---|
@@ -161,6 +164,10 @@ Animators add hits in their scene cue file, `data/cues/<sceneId>.json` → `"hit
 | `wahwah` | muted trumpet "wah-wah-wah-waaah", descending in semitones from the 5th, with a plunger-style brightness envelope and a drooping wobble on the last note; soft, tasteful |
 | `tada` | a harp/glockenspiel run up into a horn chord + timpani + cymbal on `t` |
 | `creep` | a low clarinet/bassoon chromatic slither + a bowed-glass tritone |
+| `pluck` | one tiny pizzicato on the current chord (a comic button) |
+| `ping` | one glockenspiel note on the current chord (a wink); successive pings pick different chord tones |
+
+`wahwah` also takes `"notes": 1..4`. With `"notes": 1` it is a single muted-trumpet "doink" with a droop.
 
 Automatic hits, which explicit ones override when they fall within 1 s:
 - `kick_thump` → `stop`, lasting through the flight and crash plus 1.3 s of silence.
@@ -311,9 +318,9 @@ faster-whisper; OpenAI Whisper weights, MIT).
 ## Gotchas
 - Before TTS (estimated timeline) the mix has no voices and accent times are estimates. **After TTS, run
   `tools/build_timeline.py` and then `tools/build_audio.sh`.**
-- The plan persists across re-timings (TTS, pacing). It is re-derived (old one kept as `.bak`) when the scene
+- The plan persists across re-timings (TTS, pacing). It is re-derived (the old one is kept as a timestamped `.bak.json`) when the scene
   list or a scene's `music` notes change, or when one of its references no longer exists — copy your hand
-  edits back from the `.bak` if needed.
+  edits back from the backup if needed.
 - Melodies need gaps. Scenes with wall-to-wall narration get textures and pings only, plus phrase heads
   where a breath allows. That is intended, so the voice stays on top.
 - Do not add reverb to SFX in scene code: the files and the mix already carry their rooms.

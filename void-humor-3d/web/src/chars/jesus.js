@@ -23,7 +23,7 @@ const SKIN = 0xb08c6e, HAIR_C = 0x3b2517, BROW_C = 0x3a2215, ROBE_C = 0xe9ddc4, 
 
 // Proportions (metres). Root at the feet, facing +Z, +X = character's left.
 const HIP_Y = 0.92, WAIST_H = 0.12, CHEST_Y0 = HIP_Y + WAIST_H;      // waist pivot at 1.04
-const NECK_BASE = 0.30, NECK_LEN = 0.075, HEAD_UP = 0.125;           // head centre ~1.54
+const NECK_BASE = 0.30, NECK_LEN = 0.072, HEAD_UP = 0.122, HEAD_SCALE = 1.08;   // head centre ~1.53
 const SH = [0.178, 0.272, -0.012];                                   // left shoulder joint (chest-local)
 const UPPER = 0.27, FORE = 0.25, HAND_SIZE = 0.17;
 const HIP_X = 0.09, THIGH = 0.42, SHIN = 0.41, ANKLE_Y = 0.075, FLOOR = 0.012;
@@ -461,7 +461,7 @@ class Jesus extends Character {
     this.chestG.position.y = WAIST_H;
     this.neckG.position.set(0, NECK_BASE, -0.01);
     this.headPivot.position.set(0, NECK_LEN, 0.004);
-    this.headG.position.set(0, HEAD_UP, 0);
+    this.headG.position.set(0, HEAD_UP, 0); this.headG.scale.setScalar(HEAD_SCALE);
     this.neckG.rotation.order = this.headPivot.rotation.order = 'YXZ';
     this.pelvisG.rotation.order = 'YXZ'; this.chestG.rotation.order = 'YXZ';
   }
@@ -817,7 +817,7 @@ class Jesus extends Character {
 
   _updateRobe(ctx) {
     const { br, shrug, hunch, caps, pc, yaw, swing, knees } = ctx;
-    const drop = clamp((HIP_Y - pc.y) / 0.45), ky0 = lerp(1, 0.6, Math.pow(drop, 0.85));   // fabric bunches when the hips drop
+    const drop = clamp((HIP_Y - pc.y) / 0.8), ky0 = lerp(1, 0.35, Math.pow(drop, 0.85));   // fabric bunches when the hips drop
     // ...except over a raised knee (the cloth must travel over the thigh and down the shin)
     const J = this.RJ, NT = this.NT, SI = this.SI, P = this.robePos;
     const Mc = this.Mc, Mp = this.Mp, a = V(), b = V();

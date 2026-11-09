@@ -1,47 +1,35 @@
-// Probe (dev only): robust in-page perf breakdown (interleaved variants, min of N, forced GPU sync).
+// Probe (dev only): API sanity sweep — every preset / extreme pose; reports NaNs and anchor sanity.
 import * as THREE from 'three';
-import { applyShot, framed } from '../core/camera.js';
-import { CTX } from '../core/context.js';
-import { GLOBAL } from '../core/materials.js';
-import { VX } from '../chars/void.js';
+import { VX, VOID_EXPR, ARM, eyeRoll, whisperPose } from '../chars/void.js';
 export async function setup(app) {
-  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x806090);
-  scene.add(new THREE.HemisphereLight(0xffe2cc, 0x4a3a66, 1.1));
-  const key = new THREE.DirectionalLight(0xffd9b8, 2.4); key.position.set(4, 6, 5); scene.add(key);
+  const scene = new THREE.Scene();
   const vd = await app.char('VOID'); scene.add(vd.root);
-  const gl = app.renderer.getContext(); const px = new Uint8Array(4);
-  const shots = { full: framed([0, 1.5, 0], { dist: 8, fov: 32, screenY: 0.46, drift: 0 }), close: framed([0, 2.0, 0.35], { dist: 3.6, fov: 30, screenY: 0.36, drift: 0 }) };
-  app.post.setScene(scene, app.camera); app.post.setLook({ bloom: 0.6 });
-  const all = () => [vd.arms.L.merged.mesh, vd.arms.R.merged.mesh, vd.body, vd.cape, vd.hood, vd.faceField, vd.fx.mesh, vd.shadow, vd.hoodGlow, ...vd.halos, ...vd.browHalo.map((b) => b.mesh), ...vd.face.brows.map((b) => b.tube.mesh), vd.face.decal.mesh, ...vd.face.eyes.map((e) => e.group), ...['L', 'R'].flatMap((k) => [vd.arms[k].tube.mesh, vd.legs[k].mesh, vd.feet[k].group])];
-  const V = {
-    none: () => { vd.root.visible = false; },
-    all: () => {},
-    noBodyCapeHood: () => { vd.body.visible = vd.cape.visible = vd.hood.visible = false; },
-    noHands: () => { vd.arms.L.merged.mesh.visible = vd.arms.R.merged.mesh.visible = false; },
-    noArmsLegs: () => { for (const k of ['L', 'R']) { vd.arms[k].tube.mesh.visible = false; vd.legs[k].mesh.visible = false; vd.feet[k].group.visible = false; } },
-    noFaceStuff: () => { vd.faceField.visible = false; vd.face.decal.mesh.visible = false; vd.face.eyes.forEach((e) => e.group.visible = false); vd.face.brows.forEach((b) => b.tube.mesh.visible = false); vd.browHalo.forEach((b) => b.mesh.visible = false); vd.halos.forEach((h) => h.visible = false); vd.hoodGlow.visible = false; },
-    basicBody: () => { vd.body.material = vd.cape.material = basic; vd.hood.material = [basic, vd.faceMat]; },
-    stdBody: () => { vd.body.material = vd.cape.material = std; vd.hood.material = [std, vd.faceMat]; },
-    noFx: () => { vd.fx.mesh.visible = false; vd.shadow.visible = false; },
-  };
-  const extra = new THREE.Group(); scene.add(extra); extra.visible = false;
-  for (let i = 0; i < 30; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), vd.velvet); m.position.set(-1 + i * 0.07, 0.3, 2); extra.add(m); }
-  const basic = new THREE.MeshBasicMaterial({ color: 0x302050 }), std = new THREE.MeshStandardMaterial({ color: 0x302050, roughness: 0.8 });
-  const restoreM = () => { vd.body.material = vd.cape.material = vd.velvet; vd.hood.material = [vd.velvet, vd.faceMat]; };
-  const res = {};
-  for (const sh of ['full']) {
-    applyShot(app.camera, shots[sh], 0);
-    for (let rep = 0; rep < 10; rep++) for (const [n, f] of Object.entries(V)) {
-      vd.root.visible = true; extra.visible = false; restoreM(); for (const o of all()) o.visible = true;
-      vd.update(1 + rep / 24, { face: VX('laugh'), extra: { laugh: 0.5 } });
-      f();
-      GLOBAL.uTime.value = 1;
-      const t0 = performance.now(); app.post.composer.render(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      const dt = performance.now() - t0; const key = sh + ':' + n; res[key] = Math.min(res[key] ?? 1e9, dt);
+  app.camera.position.set(0, 2, 8); app.camera.lookAt(0, 1.5, 0); app.camera.updateMatrixWorld();
+  const bad = [];
+  const chk = (label) => {
+    for (const g of [vd.bodyGeo, vd.capeGeo, vd.arms.L.tube.geo, vd.arms.R.tube.geo, vd.legs.L.geo, vd.legs.R.geo, vd.arms.L.merged.mesh.geometry]) {
+      const a = g.attributes.position.array; for (let i = 0; i < a.length; i++) if (!Number.isFinite(a[i])) { bad.push(label + ' geo'); return; }
     }
-  }
-  for (const [k, v] of Object.entries(res)) console.log(k.padEnd(22), v.toFixed(0), 'ms');
-  const tu = performance.now(); for (let i = 0; i < 30; i++) vd.update(2 + i / 24, { face: VX('laugh'), extra: { laugh: 0.5 } }); console.log('update() ms', ((performance.now() - tu) / 30).toFixed(1));
-  return { scene, vd, look: { bloom: 0.6 } };
+    for (const n of ['head', 'eyes', 'mouth', 'mouthDir', 'whisper', 'earL', 'earR', 'chest', 'back', 'backLow', 'shoulderL', 'shoulderR', 'sideL', 'sideR', 'hip', 'handL', 'handR', 'footL', 'footR', 'kickFoot', 'hoodTop']) {
+      const v = vd.anchor(n); if (!v || !Number.isFinite(v.x + v.y + v.z)) bad.push(label + ' anchor ' + n);
+    }
+  };
+  let n = 0;
+  for (const p of Object.keys(ARM)) for (const side of ['L', 'R']) { vd.update(1, { ['arm' + side]: { preset: p, target: [1.5, 1.4, 0.8] } }); chk('arm ' + p + side); vd.update(1.3, { ['arm' + side]: { preset: p, from: 'rest', mix: 0.5 } }); chk('mix ' + p); n += 2; }
+  for (const e of Object.keys(VOID_EXPR)) { vd.update(2, { face: VX(e) }); chk('expr ' + e); n++; }
+  const extremes = [
+    { body: { sit: 1 }, extra: { kick: 1 } }, { body: { kneel: 1, lean: 0.8 } }, { body: { crouch: 1, shrug: 1, slump: 1 } }, { extra: { kick: -0.5, kickSide: 'L' } }, { extra: { kick: 1.25 } },
+    { walk: { amount: 1, phase: 0.37, style: 'run' } }, { walk: { amount: 1, phase: 0.8, style: 'stomp' } }, { walk: { amount: 1, phase: 0.1, style: 'sneak' } },
+    { head: { yaw: 2.5, pitch: 0.8, roll: 0.5, track: 1 }, gaze: [3, 1, 2] }, { gaze: 'camera', head: { track: 0.5 } }, { extra: { puff: 1, laugh: 1, cosmos: 1, cough: { t0: 0, t1: 5 } } },
+    { ...whisperPose(-1, 1.3, 1) }, { face: VX('annoyed', eyeRoll(0.5)) }, { body: { recoil: 1, bounce: 0.2, swell: 1, stretch: 0.1, pitch: 0.3 }, extra: { hem: 1 } },
+    { armL: { preset: 'tip', target: [0.5, 1.2, 1.1], tip: true, fingers: [0, 0, 1] }, armR: { preset: 'pat', target: [-1.5, 1.5, 0.5], pat: 1 } },
+  ];
+  extremes.forEach((p, i) => { vd.update(3 + i * 0.1, p); chk('extreme ' + i); n++; });
+  const pos = vd.solvePos(4, { ...whisperPose(1, 0.9) }, 'whisper', new THREE.Vector3(1, 1.6, 1.2));
+  console.log('solvePos', pos.map((v) => v.toFixed(2)), 'err', pos.err.toFixed(3), 'whisper now', vd.anchor('whisper').toArray().map((v) => v.toFixed(2)));
+  vd.update(5, { gaze: vd });   // Character as gaze (its own eyes: degenerate but must not NaN)
+  chk('gaze char');
+  console.log('checked', n, 'poses; problems:', bad.length ? bad.slice(0, 20).join(' | ') : 'none');
+  return { scene, look: {} };
 }
-export async function update(t, app, s) { applyShot(app.camera, framed([0, 1.5, 0], { dist: 8, fov: 32, screenY: 0.46, drift: 0 }), t); }
+export async function update(t, app, s) { app.camera.position.set(0, 2, 8); app.camera.lookAt(0, 1.5, 0); }

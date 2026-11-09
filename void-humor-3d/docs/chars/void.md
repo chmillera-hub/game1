@@ -11,7 +11,7 @@ A huge (~3.07 m to the hood tip), plump, bell-shaped hooded cloak-being. Deep in
 key-lit violet sheen), faint stars drifting *inside* the fabric (two parallax star layers in the Void's own
 space, low contrast, slow twinkle), faint nebula shimmer, an HDR violet→teal fresnel rim (bloom-friendly), and
 sparse star motes lifting off. A shoulder **capelet** (open at the front, scalloped hem) marries the hood to the
-cloak and gives the back view a clear "hooded cloak" read; the hood has a soft drooping peak and an arched,
+cloak and gives the back view a clear "hooded cloak" read (its front edges drape flush onto the chest like lapels); the hood has a soft drooping peak and an arched,
 overhanging brim. Inside the hood: unlit **cosmic darkness** (subtle nebula + tiny stars, vignetted to black at
 the brim) holding:
 
@@ -112,9 +112,28 @@ pivot), `chest`, `back`, `backLow` (lower back, ~0.95 m: where a 1.75 m human's 
 - **Silhouette at dusk**: raise `extra.rim` to 1.5–2 and `eyeGlow` 1.2; eyes/brows stay readable.
 
 ## Performance
-update() ≈ 2–3 ms. See the report in the final message / the numbers below for render cost. Geometry: body
-64×62 + capelet 64×22 (rewritten in place each frame), hood 64×50 static, 2 SweepTube arms + 2 legs, 2 merged
-hands (1 draw call each), 1 particle mesh. No per-frame allocations of big geometry, no shader recompiles.
+- `update()` ≈ 2–3 ms (so `solvePos` = 2 extra updates is cheap).
+- Render cost (SwiftShader, 720×1280). Measured while other jobs held load ≈ 10 on 4 cores, interleaved with
+  the core `facetest` lab, best of 3: facetest 0.85 s · void lab full-body 0.80 s · face close-up 0.85 s ·
+  laugh + coughed stars 0.72 s → **parity with facetest (0.48 s/frame unloaded) ⇒ ≈ 0.45–0.5 s/frame
+  unloaded** for the lab (sky + ground + 1024² shadow + Void). The empty-frame floor (post + readback) is
+  ≈ 0.37 s, so the Void itself costs ≈ 0.1–0.15 s.
+- What was done for speed: velvet is MeshStandard + inlined cheap terms (no MeshPhysical sheen, no core
+  `enhance()` fizz fbm); all low-frequency noise is evaluated per VERTEX (body/face fields), per-pixel work is
+  one star layer + a few multiplies; each hand's 12 capsule meshes are merged into one mesh rebuilt per frame;
+  the mouth decal canvas (384×320) only re-uploads when the mouth changes, and its cosmos interior animates at
+  12 Hz; meshes: body 56×54 + capelet 56×22 (rewritten in place), hood 56×43 static.
+- Draw calls ≈ 30 (eyes/lids/catchlights are core Face parts).
+
+## Implementation notes (deviations from the generic core path, all inside void.js)
+- The **mouth** is painted by `_paintMouth` through the Face decal's `drawExtra` hook; the core mouth is kept
+  invisible (transparent line, zero mouth params) because its toothy path can't make a crescent "D" laugh.
+  Lip-sync is blended in void.js with the same rule as core Face (`talk` respected).
+- Rim/sheen/stars are the Void's own shader block (not `materials.being/enhance`) — same idea (HDR violet→teal
+  fresnel rim for bloom), ~2× cheaper on SwiftShader.
+- The sheen uses the view-space key direction from `EYE_LIGHT.uKeyDir`, set per draw from the rendering camera.
+- **Scenes: apply the camera before `update()`** (core eye catchlights read `CTX.camera` during update).
+- Dev probe lab `web/src/labs/void_probe.js`: API sanity sweep (113 poses, NaN/anchor checks, solvePos test).
 
 ## Known limitations
 - Particles (motes, cough) live in the Void's root space: if the Void moves fast while coughing, in-flight

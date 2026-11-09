@@ -35,7 +35,7 @@ const qE = (x, y, z, o = 'YXZ') => new THREE.Quaternion().setFromEuler(_e1.set(x
 const C = {
   face: 0xb3b9c6, socket: 0x7c8296, coat: 0x4a5266, lapel: 0x30364a, shirt: 0xc3c7d0, cravat: 0x7f8494,
   glove: 0xcfd0d0, stripeA: 0x8b909e, hat: 0x353b4b, band: 0x1d2029, shoe: 0x262932, hair: 0x3c4050,
-  velvet: 0x4d3d5c, blade: 0xa9b2c4, tongue: 0x9a7cb2, cold: 0x9fb9ea,
+  velvet: 0x4d3d5c, blade: 0xa9b2c4, tongue: 0x9a84ae, cold: 0x9fb9ea,
 };
 // Proportions (metres). Root at the feet, facing +Z, +X = the magician's LEFT.
 const HIP_Y = 1.035, HIP_X = 0.078, THIGH = 0.475, SHIN = 0.465, ANKLE_Y = 0.062;
@@ -47,7 +47,7 @@ const HEAD_S = 1.2;                               // head scale (bigger head rea
 const HR = [0.094, 0.138, 0.104];                 // skull radii (narrow, tall)
 const EYE_U = 0.42, EYE_V = 0.1, EYE_R = 0.0275, MOUTH_V = -0.47, HW0 = 0.046;
 const UPPER = 0.31, FORE = 0.29, HAND_SIZE = 0.2;
-const JAW = { y: -0.07, drop: 0.02, back: 0.004, soft: 0.03 };
+const JAW = { y: -0.075, drop: 0.009, back: 0.002, soft: 0.03 };
 
 // ---------------------------------------------------------------------------------------------------------
 // Head surface (head-local: origin = head centre, +Z out of the face). Shared by mesh, Face, hair, nose, tongue.
@@ -155,10 +155,10 @@ export const ARM = {
   crossed: { sp: 'chest', t: [-0.075, 0.25, 0.17], pole: [1, -0.6, 0.1], palm: [0, -0.4, -1], fing: [-1, 0.2, -0.1], hand: { curl: 0.55, spread: 0.05, thumb: 0.3 } },
   steeple: { sp: 'chest', t: [0.085, 0.24, 0.27], pole: [1, -0.6, -0.1], palm: [-1, 0.1, 0.15], fing: [-0.45, 0.85, 0.35], hand: { curl: 0.08, spread: 0.32, thumb: 0.45 }, anim: 'steeple' },
   rub: { sp: 'chest', t: [0.05, 0.2, 0.27], pole: [1, -0.6, 0], palm: [-1, 0, 0.1], fing: [-0.2, 0.75, 0.6], hand: { curl: 0.12, spread: 0.08, thumb: 0.3 }, anim: 'rub' },
-  creep: { sp: 'chest', t: [0.2, 0.3, 0.3], pole: [1, -0.3, -0.4], palm: [0, -1, 0.1], fing: [0.1, -0.55, 1], hand: { curl: 0.42, spread: 0.45, thumb: 0.3 }, anim: 'wiggle' },
+  creep: { sp: 'chest', t: [0.2, 0.42, 0.3], pole: [1, -0.3, -0.4], palm: [0, -1, 0.1], fing: [0.1, -0.55, 1], hand: { curl: 0.42, spread: 0.45, thumb: 0.3 }, anim: 'wiggle' },
   claw: { sp: 'chest', t: [0.24, 0.42, 0.32], pole: [1, -0.2, -0.4], palm: [0, -0.2, 1], fing: [0.15, 1, 0.1], hand: { curl: 0.55, spread: 0.55, thumb: 0.4 }, anim: 'wiggle' },
   edge: { sp: 'chest', t: [0.22, 0.38, 0.36], pole: [1, -0.4, -0.3], palm: [0, 0, 1], fing: [0, 1, 0.1], hand: { curl: 0.2, spread: 0.25, thumb: 0.35 }, anim: 'tap' },
-  dagger_ready: { sp: 'chest', t: [0.13, 0.5, 0.25], pole: [1, -0.5, -0.4], palm: [1, 0, 0.2], fing: [0, 0.1, 1], hand: { grip: 1, curl: 0.6 } },
+  dagger_ready: { sp: 'chest', t: [0.17, 0.6, 0.14], pole: [1, -0.6, -0.3], palm: [1, 0, 0.35], fing: [0.15, 0.2, 1], hand: { grip: 1, curl: 0.6 } },
   dagger_low: { sp: 'chest', t: [0.17, 0.12, 0.3], pole: [1, 0, -0.5], palm: [0.2, 1, 0], fing: [0, -0.3, 1], hand: { grip: 1, curl: 0.6 } },
   dagger_stab: { sp: 'chest', t: [0.06, 0.32, 0.6], pole: [1, -0.3, -0.5], palm: [0, 1, 0], fing: [0, -0.5, 1], hand: { grip: 1, curl: 0.6 } },
   pouch: { sp: 'chest', t: [0.17, 0.27, 0.32], pole: [1, -0.4, -0.4], palm: [-0.3, -0.6, 0.6], fing: [0, 0.3, 1], hand: { curl: 0.72, thumb: 0.7, cup: 0.3 } },
@@ -214,14 +214,14 @@ function plantAnkle(x, z, lift, pitch, out) {
 
 // ---------------------------------------------------------------------------------------------------------
 // Materials
+// Perf: MeshStandardMaterial by default (SwiftShader is fill-rate bound); physical (sheen / clearcoat) only when asked.
 function gloom(color, o = {}) {
-  const m = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(color), roughness: o.roughness ?? 0.82, metalness: o.metalness ?? 0,
+  const base = { color: new THREE.Color(color), roughness: o.roughness ?? 0.82, metalness: o.metalness ?? 0, side: o.side ?? THREE.FrontSide };
+  const m = o.physical ? new THREE.MeshPhysicalMaterial({ ...base,
     sheen: o.sheen ?? 0.45, sheenColor: new THREE.Color(o.sheenColor ?? 0xa9b6d6), sheenRoughness: o.sheenRoughness ?? 0.5,
-    clearcoat: o.clearcoat ?? 0, clearcoatRoughness: o.ccRough ?? 0.35, side: o.side ?? THREE.FrontSide,
-  });
+    clearcoat: o.clearcoat ?? 0, clearcoatRoughness: o.ccRough ?? 0.35 }) : new THREE.MeshStandardMaterial(base);
   return enhance(m, { rim: o.rim ?? 0.55, rimColor: o.rimColor ?? C.cold, rimPower: o.rimPower ?? 2.6, glow: o.glow ?? 0.05,
-    fizz: o.fizz ?? 0.035, fizzColor: o.fizzColor ?? 0xb5c3e6, fizzScale: o.fizzScale ?? 9, fizzSpeed: 0.18,
+    fizz: o.fizz ?? 0, fizzColor: o.fizzColor ?? 0xb5c3e6, fizzScale: o.fizzScale ?? 9, fizzSpeed: 0.18,
     wrap: o.wrap ?? 0.25, wrapColor: o.wrapColor ?? 0x7f92c8, jaw: o.jaw });
 }
 // vertical pinstripes: per-vertex aRing = (cos, sin) of the around-angle (seam-free), anti-aliased with fwidth
@@ -300,25 +300,25 @@ class Magician extends Character {
 
   // ------------------------------------------------------------------ materials
   _mats() {
-    this.faceMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35, fizz: 0.03, jaw: JAW });
-    this.skinMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35, fizz: 0.03 });
+    this.faceMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35, jaw: JAW });
+    this.skinMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35 });
     this.lidMat = gloom(C.socket, { roughness: 0.6, rim: 0.3, glow: 0.04, fizz: 0 });
-    this.coatMat = gloom(C.coat, { sheen: 0.55, sheenColor: 0x93a1c4, rim: 0.6, fizz: 0.045 });
-    this.coat2Mat = gloom(C.coat, { sheen: 0.55, sheenColor: 0x93a1c4, rim: 0.5, fizz: 0.04, side: THREE.DoubleSide });
+    this.coatMat = gloom(C.coat, { sheen: 0.55, sheenColor: 0x93a1c4, rim: 0.6, fizz: 0.04, wrap: 0.35 });
+    this.coat2Mat = gloom(C.coat, { sheen: 0.55, sheenColor: 0x93a1c4, rim: 0.5, fizz: 0.04, wrap: 0.35, side: THREE.DoubleSide });
     this.lapelMat = gloom(C.lapel, { roughness: 0.4, sheen: 0.9, sheenColor: 0xb0bde0, rim: 0.45 });
     this.shirtMat = gloom(C.shirt, { roughness: 0.75, rim: 0.4, glow: 0.06 });
     this.cravatMat = gloom(C.cravat, { roughness: 0.5, sheen: 0.8, sheenColor: 0xd0d6ee, rim: 0.4 });
     this.cuffMat = gloom(C.glove, { roughness: 0.65, rim: 0.4, glow: 0.07, side: THREE.DoubleSide });
     this.gloveMat = gloom(C.glove, { roughness: 0.65, sheen: 0.4, sheenColor: 0xffffff, rim: 0.45, glow: 0.07 });
-    this.trouserMat = striped(gloom(C.stripeA, { roughness: 0.85, rim: 0.45, fizz: 0.02 }), 8, 0.5);
-    this.hatMat = gloom(C.hat, { roughness: 0.7, sheen: 0.7, sheenColor: 0x8d99bb, rim: 0.6, fizz: 0.03 });
+    this.trouserMat = striped(gloom(C.stripeA, { roughness: 0.85, rim: 0.45 }), 8, 0.5);
+    this.hatMat = gloom(C.hat, { roughness: 0.7, sheen: 0.7, sheenColor: 0x8d99bb, rim: 0.6 });
     this.bandMat = gloom(C.band, { roughness: 0.45, sheen: 0.9, sheenColor: 0x7f8aa8, rim: 0.3 });
-    this.shoeMat = gloom(C.shoe, { roughness: 0.32, clearcoat: 0.8, ccRough: 0.25, sheen: 0.2, rim: 0.5 });
+    this.shoeMat = gloom(C.shoe, { roughness: 0.3,  clearcoat: 0.8, ccRough: 0.25, sheen: 0.2, rim: 0.5 });
     this.hairMat = gloom(C.hair, { roughness: 0.45, sheen: 0.8, sheenColor: 0x9aa6c8, rim: 0.4 });
-    this.velvetMat = gloom(C.velvet, { roughness: 0.9, sheen: 1, sheenColor: 0xa992cc, sheenRoughness: 0.35, rim: 0.55, rimColor: 0xb7a6e6 });
-    this.bladeMat = gloom(C.blade, { roughness: 0.22, metalness: 0.55, clearcoat: 1, ccRough: 0.1, sheen: 0, rim: 0.9, rimColor: 0xd8e6ff, glow: 0.08, fizz: 0 });
+    this.velvetMat = gloom(C.velvet, { physical: true, roughness: 0.9, sheen: 1, sheenColor: 0xa992cc, sheenRoughness: 0.35, rim: 0.55, rimColor: 0xb7a6e6 });
+    this.bladeMat = gloom(C.blade, { physical: true, roughness: 0.22, metalness: 0.55, clearcoat: 1, ccRough: 0.1, sheen: 0, rim: 0.9, rimColor: 0xd8e6ff, glow: 0.08, fizz: 0 });
     this.darkMat = gloom(0x23252e, { roughness: 0.5, rim: 0.3, fizz: 0 });
-    this.tongueMat = new THREE.MeshPhysicalMaterial({ color: C.tongue, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.4, sheenColor: 0xe0c6ff });
+    this.tongueMat = new THREE.MeshPhysicalMaterial({ color: C.tongue, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 });
     enhance(this.tongueMat, { rim: 0.5, rimColor: 0xd9b8ff, glow: 0.08, wrap: 0.4, wrapColor: 0xc06090 });
     this._rims = [this.faceMat, this.skinMat, this.coatMat, this.coat2Mat, this.lapelMat, this.shirtMat, this.cravatMat, this.gloveMat, this.trouserMat, this.hatMat, this.shoeMat, this.hairMat, this.velvetMat]
       .map((m) => [m, m.userData.uniforms.uRim.value]);
@@ -405,13 +405,9 @@ class Magician extends Character {
     this.headG.add(this.headMesh);
     // long nose (slightly hooked, narrow, bulb tip)
     const nose = new SweepTube({ material: this.skinMat, segments: 16, radial: 12, capRings: 4 });
-    nose.update([SP(0, EYE_V - 0.02, -0.006), SP(0, -0.03, 0.004), SP(0, -0.12, 0.016), SP(0, -0.19, 0.033), SP(0, -0.235, 0.046), SP(0, -0.262, 0.04)],
+    nose.update([SP(0, EYE_V - 0.02, -0.006), SP(0, -0.03, 0.005), SP(0, -0.11, 0.018), SP(0, -0.17, 0.038), SP(0, -0.205, 0.056), SP(0, -0.226, 0.054)],
       [0.0075, 0.0105, 0.0165, 0.019, 0.0125, 0.006], { up: V(1, 0, 0), flatten: 0.55 });
     this.headG.add(nose.mesh);
-    for (const s of [1, -1]) {   // nostril wings
-      const w = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), this.skinMat);
-      w.position.copy(SP(s * 0.075, -0.215, 0.004)); w.scale.set(0.0085, 0.0075, 0.012); w.rotation.y = s * 0.4; this.headG.add(w);
-    }
     // ears: long, flat, a bit pointy at the back
     for (const s of [1, -1]) {
       const e = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), this.skinMat);
@@ -446,10 +442,12 @@ class Magician extends Character {
       },
       brows: { color: 0x24262f, thickness: 0.0056, lift: 0.002, inner: [0.15, 0.37], mid: [0.42, 0.47], outer: [0.72, 0.37], range: 0.17, flatten: 0.5, profile: [0.8, 1.1, 0.95, 0.35] },
       mouth: {
-        v: MOUTH_V, halfW: HW0, line: '#231d2c', lineW: HW0 * 0.12, interior: '#1c1326', interior2: '#5b3a66', teeth: '#d8d4c0',
+        v: MOUTH_V, halfW: HW0, line: '#231d2c', lineW: HW0 * 0.12, interior: '#24182f', interior2: '#76507f', teeth: '#d8d4c0',
         tongue: '#a283b8', lipTintRGB: '86,72,104', blushColor: '150,140,190', drawExtra: (gg, p) => this._drawExtra(gg, p),
       },
-      decal: { uMin: -1.2, uMax: 1.2, vMin: MOUTH_V - 0.62, vMax: EYE_V + 0.33, size: [768, 640] },
+      decal: { uMin: -1.2, uMax: 1.2, vMin: MOUTH_V - 0.62, vMax: EYE_V + 0.33, size: [640, 512],
+        // perf: a cheap Lambert decal (the paint is mostly dark shading / lines; core accepts cfg.decal.material)
+        material: new THREE.MeshLambertMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }) },
       jaw: [this.faceMat.userData.uJaw],
     });
     // dizzy swirl caps (children of the eyeballs: follow gaze, sit under the lids)
@@ -508,11 +506,12 @@ class Magician extends Character {
     g.fillStyle = '#1b1d25';
     for (const s of [-1, 1]) {
       const N = 14, top = [], bot = [];
-      const x0 = m.shift + s * HW0 * 0.05, x1 = m.shift + s * m.w * 0.66;
+      const x0 = m.shift + s * HW0 * 0.05, x1 = m.shift + s * Math.min(m.w * 0.62, HW0 * 0.62);
+      const y0 = Math.max(m.top, lipY(m.shift)) + HW0 * 0.34;
       for (let i = 0; i <= N; i++) {
         const f = i / N, x = lerp(x0, x1, f);
-        const y = lipY(x) + HW0 * (0.36 + 0.05 * f) + HW0 * 0.42 * Math.pow(smoothstep(0.65, 1, f), 2) * (0.6 + 0.4 * clamp(p.mSmile + 0.4));
-        const th = HW0 * (0.085 * Math.sin(Math.PI * Math.min(1, 0.12 + f * 0.95)) + 0.012);
+        const y = y0 + (lipY(x) - lipY(m.shift)) * 0.35 + HW0 * 0.04 * f + HW0 * 0.38 * Math.pow(smoothstep(0.7, 1, f), 2) * (0.7 + 0.3 * clamp(p.mSmile + 0.4));
+        const th = HW0 * (0.09 * Math.sin(Math.PI * Math.min(1, 0.12 + f * 0.95)) + 0.012);
         const xx = x + s * HW0 * 0.06 * Math.pow(smoothstep(0.8, 1, f), 2);
         top.push([xx, y + th]); bot.push([xx, y - th]);
       }
@@ -624,10 +623,10 @@ class Magician extends Character {
   _buildProps() {
     // dagger, built along +X (blade toward the thumb side of the right hand), flat in XY
     const dg = new THREE.Group();
-    const L = 0.17, N = 28, top = [], bot = [];
+    const L = 0.2, N = 32, top = [], bot = [];
     for (let i = 0; i <= N; i++) {
       const x = (i / N) * L, u = i / N;
-      const w = 0.0125 * Math.pow(1 - u, 0.65) + 0.0006, yc = 0.0045 * Math.sin(u * Math.PI * 3.2) * (1 - u * 0.5);
+      const w = 0.0155 * Math.pow(1 - u, 0.6) + 0.0006, yc = 0.0058 * Math.sin(u * Math.PI * 3.2) * (1 - u * 0.5);
       top.push([0.03 + x, yc + w]); bot.push([0.03 + x, yc - w]);
     }
     const sh = new THREE.Shape();
@@ -790,7 +789,7 @@ class Magician extends Character {
     const qK = qE(-0.55 + flip + 0.08 * fl(1, 1.3, flail), 0.12 * fl(2, 0.9, flail), 0.16 * fl(3, 1.1, flail), 'XYZ');
     const daze = dizzy * (0.6 + 0.4 * Math.sin(t * 2.1));
     const qC = new THREE.Quaternion().setFromAxisAngle(V(1, 0, 0), -0.3).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1), Math.PI + 0.12 + 0.03 * Math.sin(t * 1.7) * dizzy));
-    const pivK = V(0, HIP_Y + 0.08, 0), pivC = V(0.02, 0.9, -0.14);
+    const pivK = V(0, HIP_Y + 0.08, 0), pivC = V(0.02, 1.06, -0.16);
     const q = qS.clone().slerp(qK, wK / Math.max(1e-6, wS + wK)).slerp(qC, wC);
     this.bodyG.position.set(0, 0, 0).addScaledVector(pel, wS).addScaledVector(pivK, wK).addScaledVector(pivC, wC);
     this.bodyG.quaternion.copy(q);
@@ -1016,7 +1015,7 @@ class Magician extends Character {
     }
     // props force a hold
     const holdD = side === 'R' && this._daggerVis > 0.5, holdP = side === 'L' && this._pouchVis > 0.5;
-    if (holdD) { acc.hand.grip = Math.max(acc.hand.grip, 1 - 0.0 * X.free); acc.hand.point = 0; acc.hand.curl = Math.max(acc.hand.curl, 0.55); acc.hand.splay = 0; acc.hand.spread = Math.min(acc.hand.spread, 0.1); }
+    if (holdD) { acc.hand.grip = 0.2; acc.hand.point = 0; acc.hand.curl = Math.max(acc.hand.curl, 0.95); acc.hand.thumb = 0.15; acc.hand.splay = 0; acc.hand.spread = Math.min(acc.hand.spread, 0.06); acc.hand.cup = 0; }
     if (holdP) { acc.hand.curl = Math.max(acc.hand.curl, 0.68); acc.hand.thumb = Math.max(acc.hand.thumb, 0.65); acc.hand.point = 0; acc.hand.splay = 0; acc.hand.spread = Math.min(acc.hand.spread, 0.12); }
     // solve
     const pole = acc.pole.lengthSq() > 1e-8 ? acc.pole.normalize() : V(s, 0, -1);
@@ -1061,6 +1060,11 @@ class Magician extends Character {
     const L = [SP(0, MOUTH_V - 0.02, -0.03), SP(su * 0.12, MOUTH_V - 0.01, 0.016), SP(su * 0.55, lerp(MOUTH_V + 0.03, tipV, 0.6), 0.032), SP(su, tipV, 0.02), SP(su + sg * 0.12, tipV + 0.08, 0.026)];
     const sw = 0.03 * Math.sin(t * 1.9);
     const O = [SP(0, MOUTH_V - 0.02, -0.03), SP(0.12, MOUTH_V - 0.05, 0.018), SP(0.24, MOUTH_V - 0.2, 0.034), SP(0.27 + sw, MOUTH_V - 0.36, 0.038), SP(0.25 + sw * 1.3, MOUTH_V - 0.45, 0.032)];
+    const inv = smoothstep(0.1, -0.5, V(0, 1, 0).transformDirection(this.Mh).y);       // head upside-down
+    if (inv > 0) {
+      const O2 = [SP(0, MOUTH_V - 0.02, -0.03), SP(0.2, MOUTH_V + 0.0, 0.018), SP(0.42, MOUTH_V + 0.08, 0.03), SP(0.56 + sw, MOUTH_V + 0.19, 0.034), SP(0.62 + sw * 1.3, MOUTH_V + 0.28, 0.03)];
+      O.forEach((p, i) => p.lerp(O2[i], inv));
+    }
     const wt = tOut / Math.max(1e-4, lickOn + tOut);
     const pts = L.map((p, i) => p.lerp(O[i], wt));
     this.tongueCurve.points = pts;
@@ -1218,11 +1222,12 @@ class Magician extends Character {
     // dizzy: little stars circling above the head (world-up ring)
     const st = clamp(E.stars ?? dizzy);
     if (st > 0.01) {
-      const c = this.headG.position.clone().add(V(0, 0.2 - 0.12 * wC, 0));
-      if (wC > 0.5) c.y = Math.max(c.y, this.headG.position.y + 0.12);
+      // above the head when upright; a ring round the head (in front of the face) when upside-down
+      const c = this.headG.position.clone().add(V(0, 0.26 * (1 - wC) + 0.02 * wC, 0.04 * wC));
+      const R = lerp(0.17, 0.27, wC);
       for (let i = 0; i < 5; i++) {
         const a = t * 3.2 + (i / 5) * TAU;
-        const p = c.clone().add(V(Math.cos(a) * 0.17, 0.03 * Math.sin(a * 2 + i), Math.sin(a) * 0.12));
+        const p = c.clone().add(V(Math.cos(a) * R, 0.03 * Math.sin(a * 2 + i) + wC * 0.1 * Math.sin(a), Math.sin(a) * R * 0.7));
         fx.add(p.toArray(), 0.05 + 0.012 * Math.sin(t * 7 + i), i % 2 ? 0xfff0b0 : 0xe8ecff, 0.95 * st, t * 2 + i, CELL.star);
       }
     }

@@ -19,8 +19,8 @@ const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _m4 = new THREE.Matri
 
 // ---------------------------------------------------------------------------------------------------------
 // Proportions (rest, metres, root space: feet on y=0, facing +Z, +X = the Void's left)
-const NA = 64;                 // body columns (around)
-const NR = 62;                 // body rows (profile samples: underside -> hem -> up to the neck)
+const NA = 56;                 // body columns (around)
+const NR = 54;                 // body rows (profile samples: underside -> hem -> up to the neck)
 const FSTEP = 0.1, FK = 28;    // spine frames every 10 cm (0 .. 2.7 m)
 const SZ = 0.9;                // body depth / width
 const NECK_Y = 1.66, HEAD_UP = 0.5, HEAD_FWD = 0.1;     // hood centre at rest ≈ (0, 2.16, 0.12)
@@ -203,18 +203,19 @@ function velvetMaterial(U) {
 // Face darkness (face field, hood lining, eyelids): unlit deep cosmos; pattern computed in head space from the
 // direction around the face centre, so lids and field match exactly. Darkens toward the hood edge.
 const FACE_VS = /* glsl */`uniform mat4 uHeadInv; uniform vec3 uC; uniform float uTime;
-varying vec3 vW; varying vec2 vN;
+varying vec3 vLp; varying vec2 vN;
 ${VGLSL}
-void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
-  vec3 d = normalize((uHeadInv * w).xyz - uC);
+void main(){ vec4 w = modelMatrix * vec4(position, 1.0);
+  vLp = (uHeadInv * w).xyz;
+  vec3 d = normalize(vLp - uC);
   vN = vec2(vd_n(d * 2.6 + vec3(0.0, uTime * 0.03, uTime * 0.02)), vd_n(d * 4.6 + vec3(5.2, -uTime * 0.025, 1.3)));
   gl_Position = projectionMatrix * viewMatrix * w; }`;
 const FACE_FS = /* glsl */`
 uniform mat4 uHeadInv; uniform vec3 uC; uniform vec2 uOpen; uniform float uTime, uCosmos, uBright;
-varying vec3 vW; varying vec2 vN;
+varying vec3 vLp; varying vec2 vN;
 ${VGLSL}
 void main(){
-  vec3 lp = (uHeadInv * vec4(vW, 1.0)).xyz;
+  vec3 lp = vLp;
   vec3 d = normalize(lp - uC);
   float cz = 1.0 + 2.5 * uCosmos;
   float n1 = vN.x, n2 = vN.y;
@@ -257,8 +258,8 @@ function hoodGeometry(H) {
   // Lathe around +Z (the face axis). Each column psi gets its own profile so the opening is an arch (taller at
   // the top, a soft point like a hood's brim) rather than a porthole. Rows: outer shell (back pole -> opening
   // edge), rolled brim, then the lining going back into the dark (lining = material group 1).
-  const NO = 34, NRL = 10, LIN = [[-0.004, -0.05], [-0.018, -0.15], [-0.036, -0.29], [-0.06, -0.45], [-0.09, -0.62]];
-  const NS = 64, NP = NO + 1 + NRL + LIN.length;
+  const NO = 28, NRL = 9, LIN = [[-0.004, -0.05], [-0.018, -0.15], [-0.036, -0.29], [-0.06, -0.45], [-0.09, -0.62]];
+  const NS = 56, NP = NO + 1 + NRL + LIN.length;
   const profFor = (psi) => {
     const up = Math.sin(psi);
     const phi0 = H.phi0 + 0.1 * Math.pow(Math.max(0, up), 2.5) - 0.03 * Math.pow(Math.max(0, -up), 2);
@@ -492,7 +493,7 @@ export class Void extends Character {
     this.headGroup.add(this.hood);
     const surface = ellipsoidSurface(FR, FC);
     this.surface = surface;
-    this.faceField = new THREE.Mesh(surfaceGeometry(surface, -1.5, 1.5, -1.4, 1.35, 44, 40), this.faceMat);
+    this.faceField = new THREE.Mesh(surfaceGeometry(surface, -1.5, 1.5, -1.4, 1.35, 36, 32), this.faceMat);
     this.headGroup.add(this.faceField);
     const decalMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, color: new THREE.Color(1.7, 1.7, 1.7) });
     const self = this;
@@ -508,7 +509,7 @@ export class Void extends Character {
         blushX: 0.32, blushY: 0.08, teeth: 'rgba(0,0,0,0)', animated: true,
         drawExtra: (g, p, t) => self._drawExtra(g, p, t),
       },
-      decal: { uMin: -0.85, uMax: 0.85, vMin: -1.25, vMax: 0.05, size: [512, 420], lift: 0.004, material: decalMat },
+      decal: { uMin: -0.8, uMax: 0.8, vMin: -1.2, vMax: 0.05, size: [384, 320], lift: 0.004, material: decalMat },
     });
     // soft starlight halos around the eyes + a faint glow in the hood
     this.halos = this.face.eyes.map((ey) => {
@@ -518,7 +519,7 @@ export class Void extends Character {
       this.headGroup.add(s);
       return s;
     });
-    this.hoodGlow = glowSprite(0x6a48ff, 1.6, 0.1);
+    this.hoodGlow = glowSprite(0x6a48ff, 1.25, 0.1);
     this.hoodGlow.position.set(0, -0.05, 0.28); this.headGroup.add(this.hoodGlow);
     // brow halos (wider, fainter copies of the brow wisps)
     this.browHalo = this.face.brows.map(() => { const tb = new SweepTube({ material: this.browHaloMat, segments: 14, radial: 8, capRings: 3 }); this.headGroup.add(tb.mesh); return tb; });
@@ -677,7 +678,7 @@ export class Void extends Character {
         g.beginPath(); g.arc(x, y, r * 0.72, sx > 0 ? -0.5 : Math.PI - 1.0, sx > 0 ? 1.0 : Math.PI + 0.5); g.stroke();
       }
     }
-    this._paintMouth(g, m, t);
+    this._paintMouth(g, m, m.tq);
   }
 
   // ---------------------------------------------------------------- spine frames
@@ -963,9 +964,13 @@ export class Void extends Character {
     this.face.cfg.mouth.line = 'rgba(0,0,0,0)';
     // the core decal redraws only when its key changes: feed it a digest of the painted mouth via mShift (the core
     // mouth is fully transparent, so mShift has no visual effect there); twinkle frames only while the mouth is open
+    // The painted interior (twinkling stars, turning galaxy) animates at 12 Hz: the quantized time is part of the
+    // digest, so the canvas is redrawn/uploaded at most 12x per second (still a pure function of t).
+    const live = M.open * (1 - M.close) > 0.03 || M.tremble > 0;
+    M.tq = live ? Math.floor(t * 12) / 12 : 0;
     fcore.mShift = M.open * 1.01 + M.smile * 7.3 + M.wide * 13.1 + M.round * 17.9 + M.press * 23.3 + M.pout * 29.7 + M.asym * 31.1
-      + M.vis * 37.9 + M.puff * 41.3 + M.blush * 43.7 + M.close * 47.9 + M.tremble * 53.1 + (M.shift || 0) * 59.3;
-    this.face.cfg.mouth.animated = M.open * (1 - M.close) > 0.03 || M.tremble > 0;
+      + M.vis * 37.9 + M.puff * 41.3 + M.blush * 43.7 + M.close * 47.9 + M.tremble * 53.1 + (M.shift || 0) * 59.3 + (M.tq % 100) * 61.7;
+    this.face.cfg.mouth.animated = false;
     this.face.update(t, fcore, { gaze, speech: null, blinkAt: P.blinkAt });
     const eyeGlow = (E.eyeGlow ?? 1) * (1 + 0.15 * cosmos);
     this.face.eyes.forEach((ey, i) => {
