@@ -17,6 +17,7 @@ const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const toV = (a) => (a instanceof THREE.Vector3 ? a.clone() : new THREE.Vector3(a[0], a[1], a[2]));
 const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _m4 = new THREE.Matrix4();
+const _e2 = new THREE.Euler(), _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3();
 
 // ---------------------------------------------------------------------------------------------------------
 // Proportions (rest, metres, root space: feet on y=0, facing +Z, +X = the Void's left)
@@ -25,6 +26,7 @@ const NR = 54;                 // body rows (profile samples: underside -> hem -
 const FSTEP = 0.1, FK = 28;    // spine frames every 10 cm (0 .. 2.7 m)
 const SZ = 0.9;                // body depth / width
 const NECK_Y = 1.66, HEAD_UP = 0.5, HEAD_FWD = 0.1;     // hood centre at rest ≈ (0, 2.16, 0.12)
+const CHIN_PIV = new THREE.Vector3(0, HEAD_UP - 0.75, 0.48);   // nod-down pivot (head-pivot frame) = the hood's chin rim
 const CHEST_Y = 1.05, SHOULDER_Y = 1.42, HIP_Y = 0.4;
 const FR = [0.62, 0.58, 0.33], FC = [0, -0.05, 0.05];     // face-field ellipsoid (head-local)
 const HOOD = { rx: 0.82, ry: 0.79, rz: 0.8, phi0: 1.0, roll: 0.09, tilt: 0.08, peak: 0.3 };
@@ -565,11 +567,13 @@ export class Void extends Character {
     this.hood.castShadow = true;
     this.headGroup.add(this.hood);
     // the cowl's one asymmetric overlap: the left side of the opening folds over the right at the chin
+    // (both ends sink 4 cm back into the brim roll with blunt 7 cm radii and the band lies flat on the brim, so it
+    // never reads as a horn / tusk at the side or a strap across the chin)
     { const rim = this.hood.geometry.userData.rim, P0 = -Math.PI / 2;
-      const pts = [[1.3, 0.0, 0.0], [0.8, 0.06, -0.04], [0.3, 0.1, -0.09], [-0.2, 0.08, -0.1], [-0.6, 0.0, -0.06]]
+      const pts = [[1.05, -0.04, 0.0], [0.7, 0.03, -0.03], [0.3, 0.06, -0.07], [-0.15, 0.04, -0.07], [-0.5, -0.04, -0.04]]
         .map(([da, dz, dy]) => rim(P0 + da).add(V3(0, dy, dz)));
       this.fold = new SweepTube({ material: this.velvet, segments: 20, radial: 12, capRings: 3 });
-      this.fold.update(pts, [0.035, 0.075, 0.09, 0.07, 0.03], { up: V3(0, -0.45, 1), flatten: 0.45 });
+      this.fold.update(pts, [0.07, 0.078, 0.085, 0.078, 0.07], { up: V3(0, -0.45, 1), flatten: 0.7 });
       this.headGroup.add(this.fold.mesh); }
     // soft fabric roll where the hood meets the capelet (back & sides only, tapering out before the face)
     this.collar = new SweepTube({ material: this.velvet, segments: 24, radial: 12, capRings: 3 });
@@ -580,7 +584,8 @@ export class Void extends Character {
     this.headGroup.add(this.faceField);
     // a dark "floor" under the face field so nothing below the head (neck, capelet, fold) peeks in under the chin
     this.chinPlug = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 10, 0, TAU, Math.PI * 0.35, Math.PI * 0.65), this.faceMat);
-    this.chinPlug.scale.set(0.56, 0.16, 0.42); this.chinPlug.position.set(0, -0.6, 0.12);
+    // (narrower than the hood's section at that height, so its rim never pokes out through the hood's sides as a black notch)
+    this.chinPlug.scale.set(0.47, 0.17, 0.43); this.chinPlug.position.set(0, -0.6, 0.13);
     this.headGroup.add(this.chinPlug);
     const decalMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, color: new THREE.Color(DECAL_K, DECAL_K, DECAL_K) });
     const self = this;
@@ -949,6 +954,16 @@ export class Void extends Character {
     let { tgt, fd, pn, pole } = S;
     const hp = { ...S.hand, ...(A.hand || {}) };
     hp.curl = (hp.curl ?? 0.15) + 0.04 * fbm1(t * 0.5, 60 + s);
+    // cupped whisper / pat / around hands (and any open cupped hand): a flatter palm and the fingers a little apart,
+    // so they read as a hand, not a ball (an explicit hand.flat overrides)
+    if (hp.flat === undefined) {
+      const cupd = name === 'whisper' || name === 'pat' || name === 'around' ? 1
+        : smooth(((hp.cup ?? 0.1) - 0.45) / 0.3) * (1 - smooth(((hp.curl ?? 0.15) - 0.5) / 0.3));
+      if (cupd > 0) {
+        hp.flat = 0.9 * cupd; hp.spread = Math.max(hp.spread ?? 0.15, lerp(hp.spread ?? 0.15, 0.32, cupd));
+        hp.cup = (hp.cup ?? 0.1) * (1 - 0.45 * cupd);   // fingers reach out past the palm's silhouette (not tucked under it)
+      }
+    }
     hand.pose(hp);
     const k = A.handScale ?? (A.on ? 0.72 : S.hs);
     hand.root.scale.setScalar(k);
@@ -982,10 +997,15 @@ export class Void extends Character {
     if (A.offset) tgt.add(this._wd(A.offset).multiplyScalar(toV(A.offset).length()));
     const L = ARM_L1 + ARM_L2, f = clamp(tgt.distanceTo(sh) / (L * 0.97), 1, S.stretch);   // a little rubber stretch
     limb.l1 = ARM_L1 * f; limb.l2 = ARM_L2 * f;
-    limb.update(sh, tgt, pole, { palmNormal: pn, fingerDir: fd, radius: ARM_R.map((r) => r / Math.sqrt(f)) });
+    // (a scaled-down hand gets a matching wrist: the sleeve tube's end tapers with the cuff scale, else its rounded
+    // end cap is a ball bigger than the hand whenever the forearm points at the lens)
+    const kc = lerp(1, k, 0.6);
+    limb.update(sh, tgt, pole, { palmNormal: pn, fingerDir: fd, radius: ARM_R.map((r, i) => r / Math.sqrt(f) * (i < 3 ? 1 : i === 3 ? lerp(1, kc, 0.5) : kc)) });
     // flared sleeve cuff around the wrist, hanging a little toward the ground
     const fa = limb.end.clone().sub(limb.mid).normalize();
-    limb.cuff.update(limb.end, fa, pn || V3(0, -1, 0), this._wd([0, -1, 0]), lerp(1, k, 0.6));
+    // (view-aware: it shrinks its flare and sits back when the forearm points at the lens -- see Cuff.update)
+    const view = CTX.camera ? this.root.worldToLocal(CTX.camera.position.clone()).sub(limb.end).normalize() : null;
+    limb.cuff.update(limb.end, fa, pn || V3(0, -1, 0), this._wd([0, -1, 0]), kc, view);
   }
 
   // ---------------------------------------------------------------- legs & feet
@@ -1131,15 +1151,24 @@ export class Void extends Character {
     }
     _e.set(hpitch, hyaw, hroll, 'YXZ');
     this.headPivot.quaternion.copy(qn).multiply(_q.setFromEuler(_e));
+    // a nod DOWN pivots about the hood's chin, not the neck: the bowed hood rides over the round chest instead of
+    // sinking its chin into it (from low cameras the chest showed as a lilac slab across the lower face). Looking up /
+    // level is unchanged (whisper poses, laughs).
+    if (hpitch > 0) {
+      const a = _v1.copy(CHIN_PIV).applyEuler(_e2.set(0, hyaw, hroll, 'YXZ')), b = _v2.copy(CHIN_PIV).applyEuler(_e);
+      this.headPivot.position.add(a.sub(b).applyQuaternion(qn));
+    }
     const sq = (Hd.squash ?? 0) + 0.05 * laugh * lr - 0.04 * clamp((fIn.lidU ?? 1) - 1.2);
     this.headGroup.scale.set((1 + 0.1 * puff) * (1 + sq), (1 + 0.04 * puff) * (1 - sq), (1 + 0.07 * puff) * (1 + sq * 0.5));
     this.headGroup.updateMatrixWorld(true);
     { const pts = [], M = this._frameMat(NECK_Y, _m4);
       for (let i = 0; i <= 8; i++) {
-        const th = lerp(1.05, TAU - 1.05, i / 8), R = 0.69 + 0.025 * Math.cos(3 * th);
-        pts.push(V3(R * Math.sin(th), 0.06 + 0.02 * Math.sin(2.5 * th + 0.4) + shrug * 0.09 + 0.004 * br, R * Math.cos(th) * 0.92 - 0.02).applyMatrix4(M));
+        // (the two front ends dip and tuck into the capelet with blunt radii: no pointed "beak" in front of the face
+        // when the hood turns over a shoulder)
+        const th = lerp(1.05, TAU - 1.05, i / 8), e = Math.pow(Math.abs(i / 4 - 1), 3), R = 0.69 + 0.025 * Math.cos(3 * th) - 0.03 * e;
+        pts.push(V3(R * Math.sin(th), 0.06 + 0.02 * Math.sin(2.5 * th + 0.4) + shrug * 0.09 + 0.004 * br - 0.07 * e, R * Math.cos(th) * 0.92 - 0.02).applyMatrix4(M));
       }
-      this.collar.update(pts, (u) => 0.02 + 0.09 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.25, up: this._xd(NECK_Y, [0, 1, 0]) }); }
+      this.collar.update(pts, (u) => 0.04 + 0.07 * Math.pow(Math.sin(Math.PI * u), 0.6), { flatten: 0.25, up: this._xd(NECK_Y, [0, 1, 0]) }); }
 
     // ---- face
     const fp = { ...FACE_DEFAULTS, ...fIn };

@@ -532,19 +532,62 @@ class UHand {
     const lens = [0.93, 1.0, 0.95, 0.78];
     this.fingers = [0, 1, 2, 3].map((i) => {
       const u = (i - 1.5) / 1.5;                                    // index = -1 (thumb side)
-      const tube = new SweepTube({ material, segments: 9, radial: 8, capRings: 2 });
+      // (16 x 14: smooth even in the full-screen phone inserts; the tubes are tiny, the cost is negligible)
+      const tube = new SweepTube({ material, segments: 14, radial: 16, capRings: 3 });
       this.root.add(tube.mesh);
       const L = size * 0.5 * lens[i];
       return { i, u, base: V(-ts * u * pw2 * 0.37, pl * 0.9, -pt * 0.02), segs: [0.44, 0.31, 0.25].map((f) => f * L), r: size * 0.074 * (i === 3 ? 0.86 : i === 0 ? 1.0 : 0.97), tube, pts: [V(), V(), V(), V(), V()] };
     });
-    this.thumb = { base: V(ts * pw2 * 0.34, pl * 0.2, -pt * 0.2), segs: [0.2, 0.19, 0.15].map((f) => f * size), r: size * 0.084, tube: new SweepTube({ material, segments: 8, radial: 8, capRings: 2 }), pts: [V(), V(), V(), V()] };
+    this.thumb = { base: V(ts * pw2 * 0.34, pl * 0.2, -pt * 0.2), segs: [0.2, 0.19, 0.15].map((f) => f * size), r: size * 0.084, tube: new SweepTube({ material, segments: 14, radial: 16, capRings: 3 }), pts: [V(), V(), V(), V()] };
     this.root.add(this.thumb.tube.mesh);
     this.pose({});
   }
   aim(fingerDir, palmNormal) { return orientYZ(this.root, fingerDir, palmNormal.clone().multiplyScalar(-1)); }
-  pose({ curl = 0.15, point = 0, spread = 0.15, thumb = 0.3, cup = 0.1, splay = 0, grip = 0, perFinger = null, thumbTo = null, thumbW = 0 } = {}) {
+  /** finger path round the phone's +X side edge (see pose wrap); false = cannot reach -> use the curl model */
+  _wrapFinger(f, ts, spread, W, inv) {
+    const fan = ts * f.u * (spread * 0.34 + 0.035);
+    const fd = V(-Math.sin(fan), Math.cos(fan), 0);
+    const r = f.r / W.s;                                             // finger radius in phone units
+    const pB = f.base.clone().applyMatrix4(inv), dP = fd.clone().transformDirection(inv);
+    if (dP.x < 0.2) return false;
+    const se = (W.hw - pB.x) / dP.x;                                 // phone units along the finger to the edge
+    const ye = pB.y + dP.y * se;
+    if (se <= 0 || Math.abs(ye) > W.hh - r * 1.1) return false;
+    const Lf = f.segs[0] + f.segs[1] + f.segs[2];
+    const zb = -W.hd - r * 1.0;                                      // centreline resting on the phone's back
+    const inP = W.maxIn / W.s, tipR = r * 0.66;
+    const pts = [
+      pB.clone().addScaledVector(dP, -r * 1.2), pB.clone(),
+      pB.clone().addScaledVector(dP, se * 0.55).setZ(lerp(pB.z, zb, 0.8)),
+      V(W.hw - r * 0.55, ye, zb),                                    // at the edge, on the back
+      V(W.hw + r * 0.95, ye, 0),                                     // round the side (shows beyond the edge)
+      V(W.hw + r * 0.55, ye, W.hd + r * 0.75),                       // over the front corner
+      V(W.hw - inP + tipR * 0.95, ye, W.hd + tipR * 0.95),           // tip on the bezel: its cap ends maxIn onto the glass
+    ];
+    let len = 0; for (let i = 2; i < pts.length; i++) len += pts[i].distanceTo(pts[i - 1]);
+    if (len * W.s > Lf * 1.35) {                                     // too short to reach round: lies straight along the back
+      const Lp = Math.min(Lf / W.s, se - r * 0.2);
+      const back = [pB.clone().addScaledVector(dP, -r * 1.2), pB.clone()];
+      for (const u of [0.35, 0.7, 1]) back.push(pB.clone().addScaledVector(dP, Lp * u).setZ(lerp(pB.z, zb, Math.min(1, u * 1.6))));
+      for (const p of back) p.applyMatrix4(W.m);
+      f.tube.update(back, [f.r * 1.08, f.r * 1.02, f.r * 0.9, f.r * 0.8, f.r * 0.66]);
+      return true;
+    }
+    for (const p of pts) p.applyMatrix4(W.m);
+    f.tube.update(pts, [f.r * 1.08, f.r * 1.04, f.r * 1.0, f.r * 0.95, f.r * 0.9, f.r * 0.8, f.r * 0.66]);
+    return true;
+  }
+  /**
+   * wrap (optional, phone 'flat' grip): { m: phone-geometry -> hand-local Matrix4 (incl. scale s), s, hw, hh, hd
+   * (phone half extents, geometry units), maxIn (m the fingertips may reach onto the glass) }. Each finger that can
+   * reach runs across the phone's back, wraps its side edge (the proximal part shows beyond the edge) and rests its
+   * tip on the bezel; a finger too short for the edge lies along the back (curl model).
+   */
+  pose({ curl = 0.15, point = 0, spread = 0.15, thumb = 0.3, cup = 0.1, splay = 0, grip = 0, perFinger = null, thumbTo = null, thumbW = 0, wrap = null } = {}) {
     const ts = this.ts, pn = V(0, 0, -1);
+    const wInv = wrap ? (wrap.inv || (wrap.inv = wrap.m.clone().invert())) : null;
     for (const f of this.fingers) {
+      if (wrap && this._wrapFinger(f, ts, spread, wrap, wInv)) continue;
       let c = perFinger ? perFinger[f.i] : curl;
       c = lerp(c, f.i === 0 ? 0 : 1, point);
       c = lerp(c, 0.55, grip);
@@ -1281,7 +1324,7 @@ class User extends Character {
   _buildArms() {
     this.arms = {};
     for (const side of ['L', 'R']) {
-      const sleeve = new SweepTube({ material: this.sleeveMat, segments: 28, radial: 18, capRings: 2, castShadow: true });
+      const sleeve = new SweepTube({ material: this.sleeveMat, segments: 28, radial: 26, capRings: 2, castShadow: true });   // (26: no facets in the full-screen inserts)
       const hand = new UHand({ size: HAND_SIZE, side, material: this.bodySkin });
       this.root.add(sleeve.mesh, hand.root);
       this.arms[side] = { sleeve, hand, elbow: V(), wrist: V(), shoulder: V() };
@@ -1480,6 +1523,9 @@ class User extends Character {
           tgt.lerp(this._screenToHand('flat', side, tu, tv, 0.0105 + 0.014 * (1 - tap)), tw);
         }
         hp.thumbTo = tgt; hp.thumbW = lerp(0.85, 1, tw);
+        // the fingers wrap the far side edge for real (no tips poking through the glass), tips <= 8 mm onto the bezel
+        this._wrapW = this._wrapW || {};
+        hp.wrap = this._wrapW[side] || (this._wrapW[side] = { m: this._phoneMat('flat', side), s: PH_S, hw: PH_W / 2, hh: PH_H / 2, hd: PH_D / 2, maxIn: 0.008 });
       } else if (gm === 'fist') { hp.curl = Math.max(hp.curl, 0.88); hp.grip = 0.2; hp.thumb = Math.min(hp.thumb, 0.25); }
       else if (gm === 'tuck') { hp.curl = Math.max(hp.curl, 0.6); }
       this.phoneGrip = gm;

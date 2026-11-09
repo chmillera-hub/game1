@@ -29,7 +29,8 @@ async function open(browser, port, lab) {
   const page = await browser.newPage({ viewport: { width: 720, height: 1280 } });
   page.on('console', (m) => { const t = m.text(); if (!/GPU stall|Automatic fallback|WebGL-|GroupMarkerNotSet/.test(t)) console.log('  page:', t); });
   page.on('pageerror', (e) => console.log('  PAGE ERROR:', e.message));
-  await page.goto(`http://127.0.0.1:${port}/index.html${lab ? '?lab=' + lab : ''}`);
+  const q = [lab ? 'lab=' + lab : '', process.env.QUERY || ''].filter(Boolean).join('&');
+  await page.goto(`http://127.0.0.1:${port}/index.html${q ? '?' + q : ''}`);
   await page.waitForFunction('window.ready === true', null, { timeout: 180000 });
   const err = await page.evaluate(() => window.initError || null);
   if (err) throw new Error('init failed: ' + err);

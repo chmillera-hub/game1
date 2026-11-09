@@ -51,6 +51,14 @@ export function makePost(renderer, scene, camera, W, H) {
   composer.addPass(renderPass);
   const bloom = new UnrealBloomPass(new THREE.Vector2(W / 2, H / 2), 0.5, 0.55, 0.82);
   composer.addPass(bloom);
+  // UnrealBloomPass uses sigma = kernelRadius, i.e. a nearly flat, truncated kernel: an isolated bright star blooms
+  // into a visible hard-edged SQUARE. Re-weight every mip's blur with a real Gaussian (sigma = radius / 2.3) so the
+  // falloff reaches ~0 at the kernel edge (round, soft halos). The shader renormalises by the weight sum.
+  bloom.separableBlurMaterials.forEach((m) => {
+    const R = m.defines.KERNEL_RADIUS, s = R / 2.3;
+    m.uniforms.gaussianCoefficients.value = Array.from({ length: R }, (_, i) => Math.exp(-0.5 * i * i / (s * s)));
+  });
+  const NOBLOOM = /(^|[?&])nobloom(=|&|$)/.test(location.search);   // debug: ?nobloom
   composer.addPass(new OutputPass());
   const grade = new ShaderPass(GradeShader);
   grade.uniforms.uRes.value.set(W, H);
@@ -60,7 +68,7 @@ export function makePost(renderer, scene, camera, W, H) {
     setScene(s, c) { renderPass.scene = s; renderPass.camera = c; },
     /** look: { bloom, bloomRadius, bloomThreshold, vignette, sat, warm, lift:[r,g,b], gain:[r,g,b], fade, fadeColor, exposure } */
     setLook(look = {}) {
-      bloom.strength = look.bloom ?? 0.5; bloom.radius = look.bloomRadius ?? 0.55; bloom.threshold = look.bloomThreshold ?? 0.82;
+      bloom.strength = NOBLOOM ? 0 : (look.bloom ?? 0.5); bloom.enabled = !NOBLOOM; bloom.radius = look.bloomRadius ?? 0.55; bloom.threshold = look.bloomThreshold ?? 0.82;
       const u = grade.uniforms;
       u.uVignette.value = look.vignette ?? 0.28; u.uSat.value = look.sat ?? 1.06; u.uWarm.value = look.warm ?? 0;
       u.uLift.value.setRGB(...(look.lift || [0, 0, 0])); u.uGain.value.setRGB(...(look.gain || [1, 1, 1]));

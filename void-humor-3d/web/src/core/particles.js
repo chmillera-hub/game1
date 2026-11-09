@@ -49,8 +49,9 @@ function atlas() {
 
 const VS = /* glsl */`
 attribute vec3 iPos; attribute vec4 iCol; attribute vec3 iMisc; // size, rot, cell
-varying vec2 vUv; varying vec4 vCol;
+varying vec2 vUv; varying vec4 vCol; varying vec2 vQ;
 void main(){
+  vQ = uv;
   vec4 mv = modelViewMatrix * vec4(iPos, 1.0);
   float c = cos(iMisc.y), s = sin(iMisc.y);
   vec2 q = vec2(c * position.x - s * position.y, s * position.x + c * position.y) * iMisc.x;
@@ -64,10 +65,13 @@ void main(){
 }`;
 const FS = /* glsl */`
 uniform sampler2D map; uniform float uIntensity;
-varying vec2 vUv; varying vec4 vCol;
+varying vec2 vUv; varying vec4 vCol; varying vec2 vQ;
 void main(){
   vec4 t = texture2D(map, vUv);
-  gl_FragColor = vec4(vCol.rgb * uIntensity, t.a * vCol.a);
+  // force a round falloff to exactly 0 at the quad edge: mip-level bleed from neighbouring atlas cells
+  // otherwise leaves a faint square around small sprites (visible on dark skies, amplified by bloom)
+  float edge = 1.0 - smoothstep(0.40, 0.5, length(vQ - 0.5));
+  gl_FragColor = vec4(vCol.rgb * uIntensity, t.a * vCol.a * edge);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;

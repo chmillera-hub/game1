@@ -6,6 +6,7 @@ import { orientYZ } from '../core/limbs.js';
 import { clamp, lerp } from '../core/util.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+const smoothstep01 = (x) => { const u = clamp(x, 0, 1); return u * u * (3 - 2 * u); };
 const _a = V(), _b = V(), _c = V(), _t = V(), _n = V(), _bn = V();
 
 /** Uniform Catmull-Rom through pts (array of Vector3), u in 0..1 -> out */
@@ -97,6 +98,9 @@ export class VoidHand {
       palm.computeVertexNormals(); }
     const wrist = new THREE.SphereGeometry(1, 16, 10);
     wrist.scale(size * 0.26, size * 0.34, size * 0.2); wrist.translate(0, -size * 0.04, size * 0.01);
+    this.palmN = palm.attributes.position.count;           // palm verts lead the merged buffer (flattened by pose.flat)
+    this.palmBase = Float32Array.from(palm.attributes.position.array); this.palmNrm = Float32Array.from(palm.attributes.normal.array);
+    this._flat = 0;
     const statics = [palm, wrist];
     const nStatic = statics.reduce((s, g) => s + g.attributes.position.count, 0);
     // fingers: index (thumb side), middle, outer
@@ -133,10 +137,21 @@ export class VoidHand {
     this.pose({});
   }
   aim(fingerDir, palmNormal) { return orientYZ(this.root, fingerDir, palmNormal.clone().multiplyScalar(-1)); }
-  pose({ curl = 0.15, point = 0, spread = 0.15, thumb = 0.3, cup = 0.1, splay = 0, grip = 0, perFinger = null } = {}) {
-    const key = [curl, point, spread, thumb, cup, splay, grip].map((v) => v.toFixed(3)).join(',') + (perFinger ? perFinger.join(',') : '');
+  /** flat (0..1, default 0): flattens the palm pillow (back of the hand most) so a cupped hand reads as a hand, not a ball */
+  pose({ curl = 0.15, point = 0, spread = 0.15, thumb = 0.3, cup = 0.1, splay = 0, grip = 0, perFinger = null, flat = 0 } = {}) {
+    const key = [curl, point, spread, thumb, cup, splay, grip, flat].map((v) => v.toFixed(3)).join(',') + (perFinger ? perFinger.join(',') : '');
     if (key === this._key) return this;
     this._key = key;
+    if (Math.abs(flat - this._flat) > 1e-4) {
+      this._flat = flat;
+      const B = this.palmBase, NB = this.palmNrm, P = this.pos, N = this.nrm, sb = 1 - 0.4 * flat, sp = 1 - 0.15 * flat, sx = 1 - 0.12 * flat;
+      for (let i = 0; i < this.palmN; i++) {
+        const z = B[i * 3 + 2], s = z > 0 ? sb : sp;
+        P[i * 3] = B[i * 3] * sx; P[i * 3 + 2] = z * s;
+        const nx = NB[i * 3] / sx, ny = NB[i * 3 + 1], nz = NB[i * 3 + 2] / s, l = Math.hypot(nx, ny, nz) || 1;
+        N[i * 3] = nx / l; N[i * 3 + 1] = ny / l; N[i * 3 + 2] = nz / l;
+      }
+    }
     const ts = this.ts, pn = _a.set(0, 0, -1), up = V(0, 0, 1);
     for (const f of this.fingers) {
       let c = perFinger ? perFinger[f.i] : curl;
@@ -148,12 +163,12 @@ export class VoidHand {
       const fan = ts * f.u * (spread * 0.32 + 0.06);
       const fd = V(-Math.sin(fan), Math.cos(fan), 0);
       const dirAt = (a) => fd.clone().multiplyScalar(Math.cos(a)).addScaledVector(pn, Math.sin(a));
-      const P = f.pts;
+      const P = f.pts, fl = 1 + 0.15 * flat;                     // (a flattened hand gets slightly longer fingers)
       P[0].copy(f.base).addScaledVector(fd, -f.r * 1.4);
       P[1].copy(f.base);
-      P[2].copy(P[1]).addScaledVector(dirAt(mcp), f.segs[0]);
-      P[3].copy(P[2]).addScaledVector(dirAt(mcp + pip), f.segs[1]);
-      P[4].copy(P[3]).addScaledVector(dirAt(mcp + pip + dip), f.segs[2] - f.r * 0.6);
+      P[2].copy(P[1]).addScaledVector(dirAt(mcp), f.segs[0] * fl);
+      P[3].copy(P[2]).addScaledVector(dirAt(mcp + pip), f.segs[1] * fl);
+      P[4].copy(P[3]).addScaledVector(dirAt(mcp + pip + dip), f.segs[2] * fl - f.r * 0.6);
       const r = f.r;
       f.w.write(this.pos, this.nrm, P, (s) => r * (1.04 - 0.14 * s), up);
       if (f.i === 0) this.indexTip.copy(P[4]).addScaledVector(_b.subVectors(P[4], P[3]).normalize(), r * 0.9);
@@ -183,8 +198,10 @@ export class VoidHand {
 export class Cuff {
   constructor(outer, lining) {
     // profile [radial, axial]: outer shell (back -> lip), rolled lip, lining going back inside
-    this.prof = [[0.158, -0.4], [0.163, -0.3], [0.176, -0.2], [0.195, -0.12], [0.215, -0.05], [0.229, 0.0], [0.236, 0.02],
-      [0.231, 0.038], [0.217, 0.043], [0.203, 0.03], [0.192, 0.0], [0.176, -0.08], [0.156, -0.2]];
+    // (a bell, not a cone: the radius holds near the sleeve's and flares in the last ~12 cm -- a long linear cone read
+    // as a megaphone in close shots)
+    this.prof = [[0.158, -0.4], [0.16, -0.3], [0.165, -0.2], [0.176, -0.12], [0.198, -0.05], [0.222, 0.0], [0.232, 0.02],
+      [0.229, 0.038], [0.216, 0.043], [0.203, 0.03], [0.19, 0.0], [0.17, -0.08], [0.156, -0.2]];
     this.NL = 9;                                   // rows [0, NL] are velvet; the rest is lining
     const NP = this.prof.length, NC = this.NC = 26;
     this.pos = new Float32Array(NP * (NC + 1) * 3);
@@ -203,7 +220,13 @@ export class Cuff {
     this.mesh = new THREE.Mesh(g, [outer, lining]);
     this.mesh.frustumCulled = false;
   }
-  update(wrist, dir, ref, down, k = 1) {
+  /**
+   * view (optional, unit, same space): direction from the cuff toward the camera. When the forearm points roughly at
+   * (or away from) the lens the flare shrinks (up to 75 % of its excess over the sleeve) and the cuff slides back
+   * along the forearm, so it never reads as a ring / donut around the hand. The flare is asymmetric: the upper side
+   * hugs the forearm and only the gravity side flares (no closed bell / megaphone).
+   */
+  update(wrist, dir, ref, down, k = 1, view = null) {
     const ax = _t.copy(dir).normalize();
     const e1 = _a.copy(ref).addScaledVector(ax, -ref.dot(ax));
     if (e1.lengthSq() < 1e-6) e1.set(1, 0, 0).addScaledVector(ax, -ax.x);
@@ -211,16 +234,23 @@ export class Cuff {
     const e2 = _b.crossVectors(ax, e1).normalize();
     const gp = _c.copy(down).addScaledVector(ax, -down.dot(ax));   // gravity across the sleeve
     const gl = gp.length(); if (gl > 1e-6) gp.multiplyScalar(1 / gl);
+    const al = view ? Math.abs(ax.dot(view)) : 0;
+    const va = smoothstep01((al - 0.5) / 0.4);                    // 0 side-on .. 1 forearm along the view axis
+    const flareV = 1 - 0.75 * va;                                  // flare kept (fraction of its excess)
+    const slide = (0.03 + 0.07 * va) * k;                          // the cuff sits back along the forearm
+    const R0 = this.prof[0][0];                                    // sleeve radius at the back of the cuff
     const NP = this.prof.length, NC = this.NC, pos = this.pos;
     for (let j = 0; j <= NC; j++) {
       const a = (j / NC) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
       const dx = e1.x * ca + e2.x * sa, dy = e1.y * ca + e2.y * sa, dz = e1.z * ca + e2.z * sa;
-      const gw = Math.max(0, dx * gp.x + dy * gp.y + dz * gp.z) * gl;
+      const gd = (dx * gp.x + dy * gp.y + dz * gp.z) * gl;          // -1 upper side .. +1 gravity side
+      const gw = Math.max(0, gd);
       const sag = gw * gw;
+      const flare = flareV * (1 - 0.62 * smoothstep01(-gd * 1.4));  // upper half hugs the forearm (~0.8 of the lip radius)
       for (let r = 0; r < NP; r++) {
         const [rr, aa] = this.prof[r];
         const lip = clamp((aa + 0.3) / 0.33);              // 0 at the back of the cuff .. 1 at the lip
-        const R = (rr + 0.022 * sag * lip) * k, A = (aa + 0.065 * sag * lip) * k;
+        const R = (R0 + (rr - R0) * flare + 0.022 * sag * lip) * k, A = (aa + 0.065 * sag * lip) * k - slide;
         const kk = (r * (NC + 1) + j) * 3;
         pos[kk] = wrist.x + ax.x * A + dx * R + gp.x * 0.02 * sag * lip * k;
         pos[kk + 1] = wrist.y + ax.y * A + dy * R + gp.y * 0.02 * sag * lip * k;

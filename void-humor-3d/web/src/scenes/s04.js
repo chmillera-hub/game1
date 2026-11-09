@@ -157,7 +157,7 @@ export default {
     st.scene.add(jesus.root, vd.root, user.root);
     jesus.root.visible = vd.root.visible = user.root.visible = true;
     const S = times();
-    applyShot(app.camera, shotAt(t, cams(S, st.R)), t, 4);
+    applyShot(app.camera, globalThis.__dbgCam || shotAt(t, cams(S, st.R)), t, 4);   // DBGCAM
     poseAll(t, S, st);
 
     // ---- the little galaxy (shared prop) and the sky galaxy

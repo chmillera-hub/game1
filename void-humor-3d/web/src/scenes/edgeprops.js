@@ -111,32 +111,44 @@ export function voidNormal(vd, y, ang) {
 // for the arm around it or the whisper; STAGING §8). s04b13 (him offscreen) slides him back onto JV for s05.
 export const JOUT = 0.28;
 export const JV_OUT = (() => { const J = EDGE.M.JV.p, V = EDGE.M.V.p, d = [J[0] - V[0], J[2] - V[2]], n = Math.hypot(d[0], d[1]); return [J[0] + d[0] / n * JOUT, 0, J[2] + d[1] / n * JOUT]; })();
-/** arm-around contact height (world): below his shoulder, on the velvet of the Void's right flank */
-export const AROUND_H = 1.3;
+// The HUG mark (s03b03 -> s04b11): from JV_OUT he sidles HUG_IN closer and HUG_ROT (rad, about the Void's axis) round
+// its right flank, so his hip and sleeve touch the velvet and his arm can wrap round the curve toward its back
+// (from JV_OUT he stood ~0.4 m off its front-right: the arm could only stick out sideways into its front).
+export const HUG_IN = 0.14, HUG_ROT = -0.3;
+export function hugMark(rot = HUG_ROT, inn = HUG_IN) { const V = EDGE.M.V.p, d = [JV_OUT[0] - V[0], JV_OUT[2] - V[2]], r = Math.hypot(d[0], d[1]) - inn, a = Math.atan2(d[0], d[1]) + rot; return [V[0] + r * Math.sin(a), 0, V[2] + r * Math.cos(a)]; }
+export const JV_HUG = hugMark();
+/** arm-around contact height (world): below his shoulder, on the bulge of the Void's right flank (the upper arm angles down onto the curve) */
+export const AROUND_H = 1.22;
 /**
- * Jesus's LEFT palm on the Void's right flank: world height h, swept round toward its back, ~reachM from his
- * shoulder (palm on the velvet just round the curve). -> { p, a, n (outward normal), tb (tangent toward its back) }.
+ * Jesus's LEFT palm on the Void's right flank: world height h, swept as far round toward its back (aPref, angle about
+ * its axis: 0 = its front, -PI/2 = its right side) as his arm reaches: the palm lands between reachMin and reachMax
+ * from his shoulder top (the elbow stays bent). -> { p, a, n (outward normal), tb (tangent toward its back) }.
  * Call after both rigs were updated for this frame (reads the live surface + his shoulder).
  */
-export function aroundContact(vd, jesus, h = AROUND_H, reachM = 0.45, aPref = -1.1) {
+export function aroundContact(vd, jesus, h = AROUND_H, reachMax = 0.47, aPref = -1.48, reachMin = 0.3) {
   const sh = jesus.anchor('shoulderL');
   let best = null, bd = 1e9;
-  for (let a = -1.5; a <= -0.7; a += 0.025) {
+  for (let a = -2.1; a <= -0.6; a += 0.02) {
     const p = voidSurface(vd, h, a, 0.012);
-    const d = Math.abs(p.distanceTo(sh) - reachM) + 0.3 * Math.abs(a - aPref);
+    const dist = p.distanceTo(sh);
+    const d = Math.abs(a - aPref) + 12 * Math.max(0, dist - reachMax) + 12 * Math.max(0, reachMin - dist);
     if (d < bd) { bd = d; best = [p, a]; }
   }
   const a = best[1], n = voidNormal(vd, h, a);
   const tb = voidSurface(vd, h, a - 0.05, 0).sub(voidSurface(vd, h, a + 0.05, 0)).normalize();
-  return { p: best[0], a, n, tb };
+  return { p: best[0], a, n, tb, sh };
 }
-/** the `armL` pose for the arm around the Void: upper arm level out to his side, forearm round its curve. lift (m) / tap */
+/**
+ * the `armL` pose for the arm around the Void: the upper arm angles down and back over its curve, elbow bent and out
+ * off the velvet (pole = outward + down + toward its back), the forearm wraps round the curve, fingers spread on the
+ * velvet toward its back. lift (m): the hand lifts off along the normal (pats).
+ */
 export function aroundArm(c, reach = 1, lift = 0) {
-  const a = EDGE.W(1, 0, 0.35), o = EDGE.W(0, 0, 0);
-  const pole = new THREE.Vector3(a[0] - o[0], -0.15 * Math.hypot(1, 0.35), a[2] - o[2]).normalize();   // stage-fixed: no elbow flips
-  const tgt = c.p.clone().addScaledVector(c.n, 0.66 * lift).add(new THREE.Vector3(0, lift, 0));
-  const fing = c.tb.clone().add(new THREE.Vector3(0, -0.25, 0)).addScaledVector(c.n, -0.1).normalize();
-  return { preset: 'around', target: tgt, normal: c.n.toArray(), pole: pole.toArray(), fingers: fing.toArray(), reach, hand: { curl: 0.25, spread: 0.18, cup: 0.35, thumb: 0.4 } };
+  const PW = globalThis.__pole || [0.8, -0.5, 0.15];
+  const pole = c.n.clone().multiplyScalar(PW[0]).add(new THREE.Vector3(0, PW[1], 0)).addScaledVector(c.tb, PW[2]).normalize();
+  const tgt = c.p.clone().addScaledVector(c.n, 0.8 * lift).add(new THREE.Vector3(0, 0.35 * lift, 0));
+  const fing = c.tb.clone().add(new THREE.Vector3(0, -0.18, 0)).addScaledVector(c.n, -0.12).normalize();
+  return { preset: 'around', target: tgt, normal: c.n.toArray(), pole: pole.toArray(), fingers: fing.toArray(), reach, hand: { curl: 0.18, spread: 0.32, cup: 0.25, thumb: 0.45 } };
 }
 
 // ------------------------------------------------------------------------------------------------ set seeds
