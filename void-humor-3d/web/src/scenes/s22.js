@@ -26,7 +26,7 @@ const ID = 's22';
 globalThis.DBG22 = 1; // TEMP
 // Fear's stage-local facing: s21's end (toward the Void's hands) -> 3/4 to the camera side -> a little more open at the end
 const YF_S = FEAR_LYAW + FEAR_TURN, YF_MID = 0.75, YF_END = 0.32;
-const STEP = 0.28;   // the small step back off the Void's hem during b02
+const STEP = 0.16;   // the small step back off the Void's hem during b02
 
 export default {
   id: ID,
@@ -64,7 +64,7 @@ export default {
     const corner = add(M.CRASH, [0, 0.55, 0]);
     const lg = littleGalaxy(t, L, c, M, vs);
     // the Void closes (b05 open, the button, the lens): no eye glare
-    const voidClose = (shot === 2 && t < L.B5 + 0.7) || shot === 6 || shot === 8 || shot === 9 || (shot === 10 && t < L.B12);
+    const voidClose = shot === 2 || shot === 3 || shot === 4 || shot === 6 || shot === 8 || shot === 9 || (shot === 10 && t < L.B12);
     // book camera direction (the palms tip toward the lens, as at the end of s21)
     if (!st.camDir) st.camDir = sub(ROOM.W(0.55, 0.9, 3.25), bookPoint(vs));
 
@@ -118,7 +118,7 @@ export default {
         const back = [-Math.sin(fy), 0, -Math.cos(fy)], left = [Math.cos(fy), 0, -Math.sin(fy)];
         const sway = 0.01 * Math.sin(t * 1.3) * smooth(clamp((t - L.B12) / 1));
         const shT = fsh ? add(A(fsh), [back[0] * 0.025 + left[0] * 0.01, 0.03 + sway, back[2] * 0.025 + left[2] * 0.01]) : add(fp, [0, 0.5, 0]);
-        armL = { preset: 'pat', from: 'open', mix: onSh, target: shT, reach: onSh, handScale: 0.62, at: 'palm',
+        armL = { preset: 'pat', from: 'open', mix: onSh, target: shT, reach: onSh, handScale: 0.7, at: 'palm',
           palm: [-left[0] * 0.25, -1, -left[2] * 0.25], fingers: [back[0] * 0.55 + left[0] * 0.45, -0.7, back[2] * 0.55 + left[2] * 0.45],
           pole: [0.3, -0.6, 0.6], hand: { curl: 0.28, cup: 0.45, spread: 0.12, thumb: 0.3 } };
       }
@@ -126,7 +126,7 @@ export default {
       const hum = pulse(t, L.B12, T(ID + '.end') + 1, 0.6, 0.6);
       return {
         pos: vs.pos, yaw: vs.yaw,
-        body: { lean: 0.16 + 0.2 * bend, crouch: 0.08 * bend, breathe: 1, tilt: 0.02 * Math.sin(t * 1.4) * hum + 0.07 * bend, twist: 0.12 * bend },
+        body: { lean: 0.16 + 0.34 * bend, crouch: 0.14 * bend, breathe: 1, tilt: 0.02 * Math.sin(t * 1.4) * hum + 0.13 * bend, twist: 0.14 * bend },
         head: { pitch: 0.3 + 0.06 * bend, yaw: 0.14 + 0.08 * bend, roll: 0.04 + 0.03 * Math.sin(t * 1.4) * hum },
         gaze: pass ? gaze : null,
         face,
@@ -218,7 +218,7 @@ export default {
 
     if (globalThis.DBG22) {
       console.log('DBG22', t.toFixed(2), 'shot', shot, 'rev', reveal.toFixed(2), JSON.stringify({ v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), hand: pix(cam, vd.anchor('handL')), sh: pix(cam, fear.anchor('shoulderL')),
-        handToSh: +vd.anchor('handL').distanceTo(fear.anchor('shoulderL')).toFixed(3), scarf: pix(cam, fear.anchor('scarf')), m: pix(cam, mag.anchor('head')), crash: pix(cam, M.CRASH), lg: pix(cam, lg.pos) }));
+        handToSh: +vd.anchor('handL').distanceTo(fear.anchor('shoulderL')).toFixed(3), shToSh: +vd.anchor('shoulderL').distanceTo(fear.anchor('shoulderL')).toFixed(3), scarf: pix(cam, fear.anchor('scarf')), m: pix(cam, mag.anchor('head')), crash: pix(cam, M.CRASH), lg: pix(cam, lg.pos) }));
     }
     // look: s21's look -> the cosmos look as the room dissolves; the Void closes keep its eyes out of the bloom
     const a = lookFor('s21', set.look), b = cos.blendLook(lookFor(ID, set.look), 0.5);

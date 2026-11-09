@@ -230,8 +230,8 @@ function magPose(t, st) {
   const body = {
     crouch: lerp(1.0, 0.1, rise) + 0.06 * glee + (inB7 ? 0.18 : 0),
     peek: inB7 ? -0.1 : atPeek ? -0.8 : 0.25 + 0.6 * lean,
-    hunch: 0.28 + 0.25 * glee - 0.1 * rise,
-    lean: (atPeek ? 0.12 : 0.06) + 0.08 * glee,
+    hunch: 0.28 + 0.25 * glee - 0.1 * rise + (inB7 ? 0.15 : 0),
+    lean: (atPeek ? 0.12 : 0.06) + 0.08 * glee + (inB7 ? 0.1 : 0),
     shrug: 0.5 * glee,
     snicker: 0.7 * glee,
     tiptoe: inB7 ? 0.6 : 0.25 * rise,
@@ -278,7 +278,7 @@ function magPose(t, st) {
     const off = V3().addScaledVector(side, -0.24 * up).addScaledVector(front, 0.08 * up).add(V3(0, (0.1 + 0.02 * Math.sin((t - TT.dagger) * 3)) * up, 0));
     armR = up > 0.001 ? { preset: [['dagger_low', 1 - up + 1e-4], ['dagger_ready', up]], offset: off.toArray() } : { preset: 'dagger_low' };
   } else if (!inB7) armR = { preset: 'dagger_ready', offset: V3().addScaledVector(side, -0.2).addScaledVector(front, -0.05).add(V3(0, 0.1 + 0.16 * higher, 0)).toArray() };
-  else armR = { preset: 'dagger_ready', offset: [0, 0.08, 0] };
+  else armR = { preset: 'dagger_ready', offset: V3().addScaledVector(side, -0.12).add(V3(0, 0.08, 0)).toArray() };   // dagger up by his ear
   let armL;
   const E = {};
   if (t < TT.numbing - 0.15) armL = { preset: 'creep', reach: clamp(rise * 1.2) };
