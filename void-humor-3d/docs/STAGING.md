@@ -569,10 +569,19 @@ at the same speed from `FRAME0`.
   side; head.yaw −1.9 with body.twist −0.35 per the Void doc). Eyes arrive a beat before the hood; look at the hand,
   then at Jesus; scowl gone, lids half and soft, gentle closed crescent; slow blink; a mote drifts up past his hand
   (his hand in the lower foreground).
+  **As built (review fix):** high over Jesus's shoulder instead (`s12.js` CAMB: yaw 24→22, pitch 33→35, dist 3.1→2.8;
+  the back of his head soft in the lower third, his hand hidden below it): the front-side close showed a capelet plate
+  across the mouth and a sleeve stump with a hooked finger. The turn is `VTURN` (kit_s11_13.js: head.yaw −1.4, twist
+  −0.7, tilt 0.15 — the face clears the shoulder ridge), the face `VGENTLE` (rounded lids via the Void's `lidArc`,
+  smile-crescent lower lids, small closed crescent), slow blink at b02+1.62, eyeline cheated 45 % toward the lens.
 - **b03 (1.5 s silent)** CUT reverse on Jesus (face y≈380) from just over the Void's right shoulder (its shoulder edge soft
   in the foreground), ◇ pos ≈ void `shoulderR` + (0.15, 0.30, −0.20) stage, look = jesus.eyes, fov 33; side-lit warm rim
   (`keyYaw` cheat ≤ 0.15 to rim his hair). Soft eyes, small smile, one slow nod; thumb moves once on the velvet; a breath
   in and his eyes slide toward the user: one more try.
+  **As built (review fix):** `EDGE.shot(JEYE_JS, {yaw 118, …})` keeps the seated user hidden behind the Void's shoulder
+  (no tangent with his forearm, no visible flip); the palm contact is a raycast onto the velvet (`surface: vd`), cheated
+  onto the shoulder's crown for this reverse. CUT ON ACTION: in the last 0.5 s the palm lifts off, he turns 0.42 rad
+  toward the user, weight forward and a first step down s13's path (cues: cloth s12.end−0.42, step s12.end−0.06).
 
 ### s13 talk_to_me (158.2–203.8) — tod 0.42 → 0.50 (the heart; let it breathe)
 - **b01 (1.6 s silent)** CAM medium wide at the seated user's eye height ◇ `EDGE.shot([−0.95, 0.85, 1.0], {dist 4.0,
@@ -580,6 +589,10 @@ at the same speed from `FRAME0`.
   stage (−0.1, 0, 0.55) heading to K; arrives `+0.6`, kneels (`kneel` 0→1 over 1.1 s, right knee down), LEFT forearm on
   the raised knee (`knee_rest`), palms open. The Void's head turns back to face upstage by `+0.8`. User leans back,
   checks his hands, then his face.
+  **As built (review fix):** one continuous walk JS → (0.95, 0.05) → (0.12, 0.47) → … → K (`s13.js` WALK, from s13+−1.71
+  to arrival s13+1.0, ~1.14 m/s); the cut opens ~0.4 s earlier in it (stage ≈ (0.19, 0.44), ~0.9 m to go), kneel from
+  arrival −0.22. WIDE: `EDGE.shot([−0.5, 0.8, 0.7], {dist 7.0→6.55, yaw 18, pitch 3, fov 44, screenY sy(640)})` — user
+  frame-left, Jesus crossing, the seated Void's flank at frame-right (the distance reads). Footfalls s13+0.21 / +0.69.
 - **b02 JESUS "Hey. It's okay."** CUT over the user's shoulder onto Jesus ◇ ("OTS-K"): pos ≈ (−1.65, 0.95, 2.05), look ≈
   (−0.55, 1.0, 0.45), fov 33 (cowlick soft lower-left above y 850; Jesus face y≈400; the seated Void's back soft behind
   him). Soft lids, inner brows up, tiny smile. User's shoulders: one sniff.
@@ -863,7 +876,7 @@ Between s14 and s15 (offscreen) the Void has risen and shuffled from VSIT to V15
 | s09→s10 | same | user arms crossed (phone tucked), chin up; Void arms crossed; Jesus facing camera at JM | mote gone (dropped on "scary") |
 | s10→s11 | Void seated at VSIT (back to everyone) | Void arms crossed, hood drooping; user arms crossed checking the phone; Jesus JM | — |
 | s11→s12 | Jesus JM → walking to JS | Jesus's grimace melts on the s12 exhale | — |
-| s12→s13 | Jesus at JS (hand on the Void's RIGHT shoulder) → s13 starts with Jesus mid-walk at (−0.1, 0.55) | Void's head over its right shoulder (gentle smile) → turns back to upstage by s13b01+0.8 | — |
+| s12→s13 | Jesus leaving JS (palm lifted, turned toward the user, first step) → s13 starts with Jesus mid-walk on the same path at ≈ (0.19, 0.44) | Void's head over its right shoulder (`VTURN`, gentle smile `VGENTLE`) → turns back to upstage by s13b01+0.8 | — |
 | s13→s14 | Jesus kneeling at K; user at U; Void seated VSIT | user hood CINCHED, phone face-up glowing; Jesus small closed smile | little galaxy still at the sneaker |
 | s14→s15 | Jesus kneeling K; user gone (over the rise); Void seated VSIT in s14 → standing at V15 at s15 start (offscreen move) | Jesus phone tucked in the sash, sash smoothed | — |
 | s15→s16 | Jesus standing at K facing the Void (yaw 2.4); Void at V15 facing him | Void's hand over its mouth after the snort, eyes crinkled | tod 0.55 continuous; galaxy starts its drift at s16b01 |

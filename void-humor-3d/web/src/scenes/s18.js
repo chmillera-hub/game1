@@ -62,6 +62,7 @@ export default {
     const mp = magPose(t, st);
     mag.update(t, mp);
     if (mp._twirl > 0.01) twirlFix(t, mag, mp);
+    if (t >= S.T.cut6) clearOfVoid(t, vd, mag, mp);
     // the dagger's glint on "dagger" (and a smaller one as it goes higher on "knock")
     const g = Math.max(pulse(t, S.T.dagger + 0.16, 0.07, 0.07, 0.35), 0.6 * pulse(t, S.T.knock + 0.1, 0.07, 0.05, 0.3));
     st.glint.visible = g > 0.01;
@@ -143,6 +144,7 @@ const DEF = {
   cuPos: [3.55, 1.6, 3.45],
   layPos: [3.95, 1.55, 2.65],
   trkOff: [0.55, 0.9, 2.55],
+  trkDown: 0.32, trkWiden: 5, trkAhead: 0.45,
 };
 
 // ------------------------------------------------------------------------------------------------ camera
@@ -163,15 +165,20 @@ function shotAt(t) {
   }
   if (t < TT.cut6) return mixShot(S.CU, S.CU_B, ramp(t, TT.cut4, TT.cut6, 'inOut'));
   if (t < TT.cut7) return { ...S.LAY, pos: toV(S.LAY.pos).lerp(toV(S.LAY.look), 0.04 * ramp(t, TT.cut6, TT.cut7, 'linear')).toArray() };
-  // b07: track the tiptoe, then tilt down to the prints
+  // b07: track the tiptoe; on the freeze, ease down + a touch wider so the grey prints fill the lower frame
   const m = magTiptoe(t);
   const sh = S.TRK(m.pos); sh.fov = 50;
   // aim a little ahead of his feet (he leans far forward on the tiptoe: keep the head in frame)
   sh.look = toV(sh.look).add(V3(Math.sin(m.yaw) * 0.32, 0.05, Math.cos(m.yaw) * 0.32)).toArray();
-  const down = ramp(t, m.tOut + 0.15, TT.end + 0.05, 'inOut');
-  const trail = toV(S.B7).lerp(toV(S.FAR), 0.5).setY(0.0);
-  const look = toV(sh.look).lerp(trail, 0.8 * down);
-  return { ...sh, look: look.toArray(), fov: 50 - 4 * down };
+  // (review: the old tilt went all the way to the floor and the shot -- the last image before the cut to s19 --
+  // ended on his head and torso cropped at the top-left edge over the Void's flank: it read as him sunk into its body,
+  // a tangle of limbs. Now the move stops with the whole frozen figure in frame -- hat clear of the top, one foot up,
+  // head cocked, the Void's flank behind him -- and the trail of prints across the lower half.)
+  const down = ramp(t, m.tOut + 0.2, TT.end - 0.15, 'inOut');
+  // (down toward the floor just ahead of his planted foot, so he stays centred while the prints come up behind him)
+  const floor = toV(m.pos).add(V3(Math.sin(m.yaw) * DEF.trkAhead, 0.1, Math.cos(m.yaw) * DEF.trkAhead));
+  const look = toV(sh.look).lerp(floor, DEF.trkDown * down);
+  return { ...sh, look: look.toArray(), fov: 50 + DEF.trkWiden * down };
 }
 function shotStart(t) {
   const TT = S.T;
@@ -334,6 +341,20 @@ function magPose(t, st) {
   if (t >= TT.cut2 && t < TT.cut3) E.daggerFace = 1;
   return { _twirl: t >= TT.cut4 && t < TT.cut6 ? twirl : 0, _twirlPh: (t - TT.fearW) / 0.55, pos, yaw, body, walk, head, gaze, face, armL, armR, extra: E, speech,
     blinkAt: [TT.magician - 0.02, TT.dagger + 0.02, TT.cut4 + 0.25, TT.ooh + 0.45, TT.cut6 + 0.15, TT.b7 + 0.1] };
+}
+
+// guard (b06/b07, out at the Void's flank): his root and torso never come within 0.15 m of the Void's surface (rest
+// radius at that height about its axis); if they would, the root is pushed out radially and the pose re-solved. With
+// the current marks (B6, B7 -> FAR at r >= 1.6 m) it never triggers (measured clearance >= 0.04 m hip, 0.28 m chest).
+function clearOfVoid(t, vd, mag, mp) {
+  const ax = vd.root.position;
+  const need = (p) => vd.rAt(clamp(p.y, 0, 2.99)) + 0.15 - Math.hypot(p.x - ax.x, p.z - ax.z);
+  const r = mag.root.position.clone(); r.y = 0.9;
+  const d = Math.max(need(r), need(mag.anchor('hip')), need(mag.anchor('chest')), need(mag.anchor('head')));
+  if (d <= 0.002) return;
+  const p = toV(mp.pos), dir = V3(p.x - ax.x, 0, p.z - ax.z).normalize();
+  mp.pos = [p.x + dir.x * d, p.y, p.z + dir.z * d];
+  mag.update(t, mp);
 }
 
 // the moustache twirl: a second pass puts the glove's pinch (thumb + index tips) ON the left moustache tip, rolling a hair

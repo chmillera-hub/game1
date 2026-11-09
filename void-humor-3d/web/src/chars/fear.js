@@ -310,21 +310,28 @@ function knitMaterial() {
           vec3 sx = dFdx(sp), sy = dFdy(sp), r1 = cross(sy, sn), r2 = cross(sn, sx);
           float det = dot(sx, r1) * fd;
           return normalize(abs(det) * sn - sign(det) * (dh.x * r1 + dh.y * r2));
+        }
+        float knitH(vec2 kq) {
+          vec2 kc = fract(kq) - 0.5;
+          float kRow = fract(kq.x + abs(kc.y) * 0.9);           // chevron rows: the 'V' legs of each stitch
+          float kRidge = pow(sin(3.14159 * kRow), 0.7);
+          float kCol = smoothstep(0.0, 0.2, abs(kc.y)) * (1.0 - 0.35 * smoothstep(0.38, 0.5, abs(kc.y)));
+          return kRidge * kCol;
         }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
         // uv unit ~ 4.4 cm along x / ~5.3 cm around y -> stitches ~1.1 cm long x ~0.75 cm wide (columns run along)
         vec2 kq = vec2(vKnit.x * 4.0, vKnit.y * 7.0);
-        vec2 kc = fract(kq) - 0.5;
-        float kRow = fract(kq.x + abs(kc.y) * 0.9);             // chevron rows: the 'V' legs of each stitch
-        float kRidge = pow(sin(3.14159 * kRow), 0.7);
-        float kCol = smoothstep(0.0, 0.2, abs(kc.y)) * (1.0 - 0.35 * smoothstep(0.38, 0.5, abs(kc.y)));
-        float kH = kRidge * kCol;
+        float kH = knitH(kq);
+        // bump slope by per-pixel finite differences (kq is linear in uv, so its screen derivatives are exact even per
+        // 2x2 quad): dFdx(kH) itself is ONE value per quad on SwiftShader -> the stitches broke into 2x2 'brick' blocks
+        vec2 kdx = dFdx(kq), kdy = dFdy(kq);
+        vec2 kSlope = vec2(knitH(kq + kdx) - kH, knitH(kq + kdy) - kH);
         // fade the stitches out early (gone below ~4-5 px per stitch): SwiftShader takes derivatives per 2x2 quad, so
         // small stitches broke into blocky 2x2 noise in medium/wide shots
         float kAA = clamp((0.22 - max(fwidth(kq.x), fwidth(kq.y))) / 0.12, 0.0, 1.0);
         diffuseColor.rgb *= mix(0.9, 0.79 + 0.25 * kH, kAA);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-        normal = knitPerturb(-vViewPosition, normal, vec2(dFdx(kH), dFdy(kH)) * 0.0025 * kAA * kAA, faceDirection);`);
+        normal = knitPerturb(-vViewPosition, normal, kSlope * 0.0025 * kAA * kAA, faceDirection);`);
   };
   const key = m.customProgramCacheKey.bind(m);
   m.customProgramCacheKey = () => key() + 'fearKnit';

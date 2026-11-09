@@ -16,7 +16,6 @@ import { EDGE, todAt, voidSkyAt, sy, lookFor } from './marks.js';
 import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse, walkPath, VTURN, VGENTLE } from './kit_s11_13.js';
 
 const M = EDGE.M;
-const TUNE = (() => { try { return JSON.parse(new URLSearchParams(location.search).get('tune') || '{}'); } catch (e) { return {}; } })();   // TEMP TUNE
 const KP = M.K.p, KY = M.K.yaw;
 const FWD_K = [Math.sin(KY), 0, Math.cos(KY)];                     // Jesus's facing at K (stage-local)
 const LEFT_K = [Math.cos(KY), 0, -Math.sin(KY)];                   // his left (stage-local)
@@ -457,7 +456,7 @@ export default {
       const u = clamp((t - shotT0) / Math.max(0.01, shotT1 - shotT0));
       let shot;
       switch (shotName) {
-        case 'WIDE': { const WIDE = { ...WIDE0, ...(TUNE.wide || {}) }; shot = EDGE.shot(WIDE.look, { dist: lerp(WIDE.dist, WIDE.dist - WIDE.push, smooth(u)), yaw: WIDE.yaw, pitch: WIDE.pitch, fov: WIDE.fov, screenY: sy(WIDE.sy), drift: 0.3 }); break; }
+        case 'WIDE': { const WIDE = WIDE0; shot = EDGE.shot(WIDE.look, { dist: lerp(WIDE.dist, WIDE.dist - WIDE.push, smooth(u)), yaw: WIDE.yaw, pitch: WIDE.pitch, fov: WIDE.fov, screenY: sy(WIDE.sy), drift: 0.3 }); break; }
         case 'OTSK': shot = EDGE.shot(JEYE, { dist: 2.25, yaw: -30, pitch: 6, fov: 33, screenY: sy(400), drift: 0.2 }); break;
         case 'OTSK2': shot = EDGE.shot(JEYE, { dist: k(t, [[tFair, 2.2], [T('s13b09'), 2.15], [B10, 1.8, 'inOut']]), yaw: -28, pitch: 6, fov: 33, screenY: sy(400), drift: 0.2 }); break;
         case 'OTSKW': shot = EDGE.shot(JEYE, { dist: OTSKW.dist, yaw: OTSKW.yaw, pitch: OTSKW.pitch, fov: 44, screenY: sy(OTSKW.sy), drift: 0.15 }); break;

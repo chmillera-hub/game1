@@ -1,8 +1,9 @@
 // s12 a_hand_on_the_shoulder — the tenderest beat of Part One. The grimace melts on an exhale, Jesus walks round
 // the downstage side of the sulking, seated Void and lays his RIGHT palm flat on its RIGHT shoulder (no pat).
 // It stiffens, then eases under his hand; it looks back over that shoulder (eyes first) — the hand, then him —
-// and gives him a small closed crescent smile; reverse: Jesus's slight nod, a thumb stroke on the velvet, a breath
-// in, and his eyes slide toward the user: one more try.
+// and gives him a small closed crescent smile with soft rounded lids, then a slow blink (high over his shoulder);
+// reverse: Jesus's slight nod, a thumb stroke on the velvet, a breath in, his eyes slide toward the user: one more
+// try — and in the last half second he is already going (palm off, turning, first step: s13 cuts in mid-walk).
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
@@ -15,7 +16,6 @@ import { EDGE, todAt, voidSkyAt, sy, lookFor } from './marks.js';
 import { loadLines, W, POS, YAW, SW, SV, add, arr, own, stamp, drawSkyGalaxy, makeLittleGalaxy, solve, pulse, walkPath, VTURN, VGENTLE } from './kit_s11_13.js';
 
 const M = EDGE.M;
-const TUNE = (() => { try { return JSON.parse(new URLSearchParams(location.search).get('tune') || '{}'); } catch (e) { return {}; } })();   // TEMP TUNE
 // JM -> round the downstage side of the seated Void (keeps ~1.2 m off its centre) -> JS
 const PATH = [M.JM.p, [0.2, 0, 0.16], [0.95, 0, 0.1], [1.5, 0, -0.2], M.JS.p];
 
@@ -60,7 +60,7 @@ export default {
       const vEyes = vd.anchor('eyes'), vSh = vd.anchor('shoulderR');
       const ue = user.anchor('eyes');
       // the grimace melts on the exhale, then tenderness
-      const Fawk = JX('awkward', { mSmile: 0.08, mAsym: 0.18, browIn: 1.2, browOut: 0.45, lidSad: 0.28, lidU: 1.16, mWide: 1.1 });
+      const Fawk = JX('awkward', { mSmile: -0.5, mOpen: 0.56, mWide: 1, mAsym: 0.08, mTeethU: 1, mTeethL: 1, browIn: 1.3, browOut: 0.3, browMid: 0.2, lidSad: 0.1, lidU: 1.22 });   // = s11's held grimace
       const Fmelt = JX('concerned', { mSmile: 0.05, lidU: 0.86, browIn: 0.45 });
       const Ften = JX('tender', { mSmile: 0.28, mPress: 0.3, lidU: 0.82 });
       const Fsoft = JX('tender', { mSmile: 0.4, mPress: 0.45, mOpen: 0, lidU: 0.78, lidL: 0.38, browIn: 0.5, wet: 0.35 });
@@ -77,7 +77,7 @@ export default {
       const thumb = 0.35 + 0.4 * pulse(t, tThumb, tThumb + 0.55, 0.25, 0.3);
       // (the palm snaps onto the velvet itself — `surface: vd` raycasts the Void's shoulder — so it stays in contact while
       //  the Void twists round under it; the landing overshoot and the lift-off ride on top as an offset)
-      const shT = vSh ? add(add(vSh, [0, 0.012, 0]), SV(...(shotC ? (TUNE.shoff || SH_OFF) : [0, 0, 0]))) : null;
+      const shT = vSh ? add(add(vSh, [0, 0.012, 0]), SV(...(shotC ? SH_OFF : [0, 0, 0]))) : null;
       // gaze: the Void as he walks round to it; its eyes when it turns; the user (eyes slide) at the end
       const vE = vEyes ? arr(vEyes) : SW(1.15, 1.8, -1.35);
       const uE = ue ? arr(ue) : SW(-1.3, 0.8, 1.4);
@@ -93,7 +93,7 @@ export default {
         gaze: pass ? gaze : null,
         face,
         blinkAt: [T('s12') + 0.62, tTouch + 0.55, tNod + 0.3, tSlide - 0.06],
-        armR: shT && reach > 0.001 ? { preset: 'shoulder', target: shT, surface: vd, offset: [0, hover + 0.07 * lift, 0], reach, hand: { curl: 0.28, spread: 0.3, thumb, cup: 0.12, ...(TUNE.hand || {}) } } : { preset: 'rest' },
+        armR: shT && reach > 0.001 ? { preset: 'shoulder', target: shT, surface: vd, offset: [0, hover + 0.07 * lift, 0], reach, hand: { curl: 0.28, spread: 0.3, thumb, cup: 0.12 } } : { preset: 'rest' },
         armL: { preset: 'rest' },
         glow: 1.05,
       };
@@ -107,8 +107,8 @@ export default {
       const gHand = jh ? arr(jh) : SW(1.8, 1.25, -0.9), gJ = je ? arr(je) : SW(1.74, 1.55, -0.37);
       const eyes = k(t, [['s12', gHand], [tTurn0 + 0.15, gHand], [B2 + 0.55, gHand], [B2 + 0.85, gJ, 'inOut']]);
       const Fsulk = VX('sad', { lidU: 0.7, lidArc: 0 });
-      const Fsoft = VX('calm', { lidArc: 0.4, lidU: 0.8, lidL: 0.42, browIn: 0.5, browOut: -0.12, mSmile: 0.1, ...(TUNE.vsoft || {}) });
-      const Fgentle = VX('gentle', { ...VGENTLE, ...(TUNE.vgentle || {}) });
+      const Fsoft = VX('calm', { lidArc: 0.4, lidU: 0.8, lidL: 0.42, browIn: 0.5, browOut: -0.12, mSmile: 0.1 });
+      const Fgentle = VX('gentle', VGENTLE);
       const face = k(t, [['s12', Fsulk], [tTouch, Fsulk], [tTouch + 0.8, Fsoft, 'inOut'], [tSmile - 0.1, Fsoft], [tSmile + 0.6, Fgentle, 'inOut']]);
       face.autoBlink = 0;
       // the slow blink after the smile lands (soft close, a held beat, a slower open)
@@ -116,8 +116,8 @@ export default {
       return {
         pos: POS.VSIT, yaw: YAW.VSIT,
         body: { sit: 1, slump: k(t, [['s12', 0.32], [tTouch + 0.3, 0.32], [tTouch + 1.3, 0.44, 'inOut']]) - 0.2 * stiff,
-          shrug: 0.62 * stiff, bounce: 0.03 * stiff, breathe: 1 - 0.8 * stiff, twist: (TUNE.vtwist ?? VTURN.twist) * turn, tilt: (TUNE.vtilt ?? VTURN.tilt) * turn },
-        head: { yaw: (TUNE.vyaw ?? VTURN.yaw) * turn, pitch: lerp(0.3, TUNE.vpitch ?? -0.04, turn) - 0.16 * stiff, roll: (TUNE.vroll ?? -0.08) * turn + 0.06 * (1 - turn) },
+          shrug: 0.62 * stiff, bounce: 0.03 * stiff, breathe: 1 - 0.8 * stiff, twist: VTURN.twist * turn, tilt: VTURN.tilt * turn },
+        head: { yaw: VTURN.yaw * turn, pitch: lerp(0.3, -0.04, turn) - 0.16 * stiff, roll: -0.08 * turn + 0.06 * (1 - turn) },
         armL: { preset: 'crossed' }, armR: { preset: 'crossed' },
         // in the 3/4 close the eyeline is cheated part-way toward the lens (no eyes pinned in the corners)
         gaze: pass && t > tTurn0 ? (shotB ? mixP(eyes, app.camera.position, VCHEAT) : eyes) : null,
@@ -155,19 +155,18 @@ export default {
       } else if (shotB) {
         // 3/4 close as the hood comes round: aimed between both eyes (a touch toward the far eye), the mouth clear of the
         // shoulder ridge, his hand in the lower-left foreground
-        const CB = { ...CAMB, ...(TUNE.camb || {}) };
-        // a clean close on the Void (his hand on its shoulder stays just out of frame-left: the eyes find it off-screen,
-        // then him); the camera arcs round and up a little while it pushes in, as the hood comes round
+        const CB = CAMB;
+        // high over HIS shoulder (the back of his head soft in the lower third, his hand on its shoulder hidden below it):
+        // the hood comes round toward him — and us — and the gentle smile lands on him; a slow push in. (From the front-
+        // side this close was a capelet plate across the mouth and a stump of sleeve with a hooked finger.)
         const arcB = smooth(clamp((t - B2 - CB.a0) / (CB.a1 - CB.a0)));
-        const lkB = [CB.look[0] + CB.pan[0], CB.look[1], CB.look[2] + CB.pan[1]];   // (aimed a touch frame-right: his hand stays out)
-        shot = EDGE.shot(lkB, { dist: k(t, [['s12b02', CB.d0], [B2 + 1.5, CB.d1, 'inOut'], ['s12b02.end', CB.d1 - 0.08, 'inOut']]), yaw: lerp(CB.yaw, CB.yaw1, arcB), pitch: lerp(CB.pitch, CB.pitch1, arcB), fov: 33,
+        shot = EDGE.shot(CB.look, { dist: k(t, [['s12b02', CB.d0], [B2 + 1.5, CB.d1, 'inOut'], ['s12b02.end', CB.d1 - 0.08, 'inOut']]), yaw: lerp(CB.yaw, CB.yaw1, arcB), pitch: lerp(CB.pitch, CB.pitch1, arcB), fov: 33,
           screenY: sy(k(t, [['s12b02', CB.sy0], [B2 + 1.5, CB.sy1, 'inOut']])), drift: 0.15 });
       } else {
-        const CC = { ...CAMC, ...(TUNE.camc || {}) };
+        const CC = CAMC;
         const dl = EDGE.L(add(SW(0, 0, 0), DEP));                            // follow half of his first step
         shot = EDGE.shot([JEYE_JS[0] - 0.03 + 0.5 * dl[0], JEYE_JS[1], JEYE_JS[2] - 0.03 + 0.5 * dl[2]], { dist: k(t, [['s12b03', CC.d0], ['s12b03.end', CC.d1, 'inOut']]), yaw: CC.yaw, pitch: CC.pitch, fov: 33, screenY: sy(CC.sy), drift: 0.12 });
       }
-      if (TUNE.dbgcam) shot = TUNE.dbgcam.world ? { pos: TUNE.dbgcam.pos, look: TUNE.dbgcam.look, fov: TUNE.dbgcam.fov || 40, drift: 0 } : EDGE.at(TUNE.dbgcam.pos, TUNE.dbgcam.look, TUNE.dbgcam.fov || 40, { drift: 0 });   // TEMP TUNE
       applyShot(app.camera, shot, t, 12);
     };
 
@@ -200,10 +199,11 @@ export default {
 };
 
 // The Void's eyes (stage-local) when its hood has turned over its right shoulder (measured from the rig; used to
-// steady the b02 framing), and the camera yaw for the 3/4 close (inside +-50 deg of where the hood points).
+// steady the b02 framing), and the b02 camera: high over Jesus's shoulder, inside +-50 deg of where the hood points.
+// VCHEAT: the share of its eyeline cheated toward the lens in b02.
 const VEYE_END = [1.33, 1.78, -1.12];
 const CAMA = { back: 0.45, up: 0.15, fov: 42, v: [1.15, 0, -1.35], vw: 0.26 };
-const CAMB = { look: [VEYE_END[0] + 0.055, VEYE_END[1] - 0.06, VEYE_END[2] - 0.2], yaw: 68, yaw1: 70, pitch: 16, pitch1: 20, a0: 0.1, a1: 1.1, pan: [0.1, -0.18], d0: 3.4, d1: 3.0, sy0: 410, sy1: 380 };
+const CAMB = { look: [VEYE_END[0] + 0.055, VEYE_END[1] - 0.06, VEYE_END[2] - 0.2], yaw: 24, yaw1: 22, pitch: 33, pitch1: 35, a0: 0.1, a1: 1.1, d0: 3.1, d1: 2.8, sy0: 380, sy1: 370 };
 const VCHEAT = 0.45;
 // on the reverse (b03) the palm is cheated a little up and back onto the shoulder's crown (stage offset from the anchor), so it
 // reads as lying ON the velvet instead of hanging off the slope's far side (b01/b02 keep the true anchor)
@@ -214,6 +214,3 @@ const mixP = (a, b, u) => { const A = arr(a), B = arr(b); return [lerp(A[0], B[0
 const CAMC = { yaw: 118, pitch: 3, d0: 1.8, d1: 1.68, sy: 400 };
 // Jesus's eyes at JS with his hand on its shoulder (stage-local, measured) — the steady look point of b03
 const JEYE_JS = [1.72, 1.55, -0.53];
-// the hand on the shoulder: palm down into the velvet (tilted with its slope), fingers forward over the shoulder
-const PALM = (() => { const a = EDGE.W(-0.2, -0.92, -0.12), o = EDGE.W(0, 0, 0); return [a[0] - o[0], a[1] - o[1], a[2] - o[2]]; })();
-const FING = (() => { const a = EDGE.W(-0.12, -0.22, -0.97), o = EDGE.W(0, 0, 0); return [a[0] - o[0], a[1] - o[1], a[2] - o[2]]; })();

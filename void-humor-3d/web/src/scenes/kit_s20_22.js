@@ -200,7 +200,10 @@ export function voidSpot(t) {
 // magician) and sways slowly; in s21b03 it floats up off the opening hand and fades.
 export function starAt(t) {
   const c = times();
-  const S0 = [1.5, 0.95, 0.75], S1 = [1.02, 0.98, 0.78], S2 = [1.05, 1.32, 1.0], S3 = [0.96, 1.48, 1.28];   // all within the arm's reach
+  // S3 (from s20b04 on): beside Fear's face height+0.5 m, in front of the Void's camera-side flank: in the crash cutaway and
+  // s21's opening FEAR_CU the hand + star sit right of Fear's head (y~370-560), the arm hidden by the hand itself — no
+  // sleeve tube across the top of the frame, no star in the UI band
+  const S0 = [1.5, 0.95, 0.75], S1 = [1.02, 0.98, 0.78], S2 = [1.05, 1.32, 1.0], S3 = [1.25, 1.15, 1.0];   // all within the arm's reach
   const p = k(t, [[c.B1 + 0.75, S0], [c.making + 0.05, S1, 'inOut'], [c.obvious + 0.25, S1, 'inOut'], [c.B2 + 1.1, S2, 'inOut'],
     [c.B3 + 0.2, S2], [c.B4 + 0.9, S3, 'inOut']]);
   // slow sway (Fear's tuft sways with it)
@@ -213,12 +216,14 @@ export function starAt(t) {
   return { pos: ROOM.W(loc), lit, held: 1 - fl };
 }
 /**
- * The star hand's palm + hand params (s20/s21): the palm is turned ~115 deg from Fear so the curled fingers + thumb show beside
- * the raised index (seen from the back, a lone upright finger over a fist read as a rude gesture). `toward`: unit
- * horizontal direction from the star to Fear.
+ * The star hand's palm + hand params (s20/s21): the palm is turned ~210 deg from Fear, so every camera-side shot (the low
+ * two-shot, the KICK wide and medium, the crash cutaway, s21's FEAR_CU) sees the PALM side: the index up at the edge of
+ * the hand, the other fingertips curled toward the lens, the thumb across them ("one moment" / "look"). (Seen from the
+ * back, a lone upright finger over a fist reads as a rude gesture.) `toward`: unit horizontal direction from the star to
+ * Fear.
  */
 export function starHand(toward) {
-  const r = -2.0, c = Math.cos(r), s = Math.sin(r);
+  const r = -3.68, c = Math.cos(r), s = Math.sin(r);
   return { palm: [toward[0] * c + toward[2] * s, 0.05, -toward[0] * s + toward[2] * c], hand: { point: 1, curl: 1, thumb: 0.6, cup: 0.2 } };
 }
 /** the world position of the Void's LEFT index fingertip (after vd.update), nudged a little past the tip */
@@ -322,12 +327,12 @@ export function bookArms(vs, close, open, fromL = 'rest', fromR = 'belly', show 
   return { armL: mk(1), armR: mk(-1), palms: add(bp, [0, 0.04 + 0.02 * open, 0]), up: R([0, 1, 0.25 * open]) };
 }
 /**
- * FEAR_CU from the Void side: s20's crash cutaway = s21's opening. Pulled back and raised to the star's height (no
- * low-angle perspective throwing the near arm up into the UI band): Fear's eyes y~660, the Void's raised star hand +
- * fingertip star y~170-380 with the sleeve reading as an arm coming in from the right, the Void's smile at the top-right.
+ * FEAR_CU from the Void side: s20's crash cutaway = s21's opening. Level with the star (no low-angle perspective throwing
+ * the near arm up into the UI band): Fear's eyes y~640, the Void's star hand just right of Fear's head (star y~300,
+ * the hand itself hides the sleeve), the Void's flank at the right edge.
  */
 export function fearCU(fe, push = 0) {
-  return ROOM.shot(ROOM.L(fe), { dist: 3.6 - 0.12 * push, yaw: 32, pitch: 4, fov: 40, screenY: sy(660), drift: 0.05 });
+  return ROOM.shot(ROOM.L(fe), { dist: 2.85 - 0.12 * push, yaw: 40, pitch: 4, fov: 40, screenY: sy(640), drift: 0.05 });
 }
 
 /** BACKROOM opts for the janitor corner at t (shared by s20..s22). `mag` = the magician rig (already updated). */

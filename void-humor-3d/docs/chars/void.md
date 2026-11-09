@@ -80,7 +80,7 @@ Void's catchlights/gaze use the previous frame's camera, which breaks out-of-ord
 | `head {yaw, pitch, roll}` | relative to the neck (rad). yaw clamps at ±2.0 (over-the-shoulder ≈ ±1.9 with `body.twist` ∓0.35). **pitch + = nod down, − = tip back.** `track` 0..1 turns the hood toward `gaze`; `squash` (+ wider/shorter) |
 | `gaze` | Vector3 / [x,y,z] / Character / `'camera'` / null — **eyes only** (the hood follows only with `head.track`). Peripheral side-eye: keep the head still, use `gaze` or `face.gazeYaw ≈ ±0.65`. |
 | `armL` / `armR` | see **Arms** |
-| `face` | flat Face params; build with `VX(name, overrides)` (Void presets) or core `X()`. `mTeeth*`, `mTongue` ignored; `mClench` → pressed wide lips. Void extras: `puff` 0..1, `mDroop` 0..1 (sad-smile corners), `mWavy` 0..1 (squiggle). `blush` = violet starry blush (also shows on the lids), `tearL/R` = starlight tears. |
+| `face` | flat Face params; build with `VX(name, overrides)` (Void presets) or core `X()`. `mTeeth*`, `mTongue` ignored; `mClench` → pressed wide lips. Void extras: `puff` 0..1, `mDroop` 0..1 (sad-smile corners), `mWavy` 0..1 (squiggle), `lidArc` 0..1 (default 0: bows both lid edges up at the centre — rounded upper lids + smile-crescent lower lids; keep it in every key of a `k()` sequence). The eye light also darkens softly toward each lid edge (fades out as the lids close). `blush` = violet starry blush (also shows on the lids), `tearL/R` = starlight tears. |
 | `speech` | `false` or `{open, wide, round, close}`; default = automatic lip-sync for speaker `VOID` |
 | `blinkAt` | extra explicit blink times |
 | `extra.puff` 0..1 | huff & puff: hood swells, cheek glows bulge (visible over the lids too), pucker mouth, body swells |

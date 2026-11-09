@@ -182,6 +182,17 @@ export default {
       size: [0.12, 0.22], grow: 2.0, color: [0x9890a6, 0x8a8298], alpha: 0.4, fade: [0.08, 0.6], cell: CELL.puff, spin: 0.8 });
     fx.burst({ t, at: c.contact, count: 5, seed: 2012, life: 0.45, origin: st.chest0, vel: [0, 0.4, 0], spread: [0.9, 0.7, 0.9], drag: 4,
       size: [0.04, 0.07], color: [0xfff1c8, 0xd8ccff], alpha: 0.9, fade: [0.05, 0.6], cell: CELL.star, spin: 2 });
+    // the impact: a quick soft ring that pops out from the sole on his chest (3-4 frames) + a few star streaks, so the
+    // foot-to-chest contact reads at a glance in the side-on medium
+    if (t >= c.contact && t < c.contact + 0.22) {
+      const u = (t - c.contact) / 0.22;
+      const cp = A(app.camera.position), tc = sub(cp, st.chest0), tl = Math.hypot(...tc) || 1;
+      const ip = add(st.chest0, tc.map((x) => (x / tl) * 0.4));   // drawn just in front of him (not hidden in his coat)
+      fx.add(ip, 0.14 + 0.36 * ease.out(u), 0xf4ecff, 0.5 * (1 - u) * (1 - u), 0, CELL.ring);
+      fx.add(ip, 0.1 + 0.1 * u, 0xfff6e0, 0.45 * (1 - u), 0, CELL.dot);
+    }
+    fx.burst({ t, at: c.contact, count: 6, seed: 2018, life: 0.3, origin: st.chest0, vel: [0, 0, 0], spread: [2.2, 1.8, 2.2], drag: 6,
+      size: [0.05, 0.08], color: [0xffffff, 0xfff0c0], alpha: 0.85, fade: [0.02, 0.5], cell: CELL.star, spin: 3 });
     // flight: a sparse grey dust trail from the pouch
     const tau = flightTau(t);
     if (tau !== null && tau < c.F) {
@@ -347,7 +358,8 @@ function magPose(st, t, pass) {
           ? { preset: [['dagger_ready', 1 - daggerUp], ['up', daggerUp]], offset: [0, 0.36 * (1 - daggerUp) + 0.03 * Math.sin(t * 9) * daggerUp, 0] }
           : { preset: 'dagger_ready', offset: [0, 0.22 + 0.14 * (1 - smooth(clamp((t - c.B3) / 0.5))), 0] },
       armL: sq > 0.01 ? { preset: [['pouch', 1 - sq], ['up', sq]], target: add(st.chest0, [0.5, 0.66, -0.3]), reach: sq } : { preset: 'pouch' },
-      extra: { eyePop: hit ? 1 : glee * (1 - 0.4 * smooth(clamp(fold))) * (1 - uhoh) + 0.7 * uhoh, tongueOut: 0.45 * smooth(clamp(fold)) * (1 - uhoh) * (1 - sq), tap: 0.4 * (1 - glee),
+      // (on the foot the eyes bulge cartoon-big so they read in the medium: ~1.6x)
+      extra: { eyePop: hit ? 1 + 0.75 * sq : glee * (1 - 0.4 * smooth(clamp(fold))) * (1 - uhoh) + 0.7 * uhoh, tongueOut: 0.45 * smooth(clamp(fold)) * (1 - uhoh) * (1 - sq), tap: 0.4 * (1 - glee),
         hatOff: hit ? 1 : 0, ...(hatP ? { hatPos: hatP.pos, hatRot: hatP.rot } : {}), stars: 0 },
     };
   }
@@ -527,7 +539,7 @@ function frameShot(st, t, shot, c, M) {
       if (sk > 0.02) sh.shake = { amp: 0.014 * sk, freq: 11 };
       return sh;
     }
-    case 7: // FEAR_CU from the Void side, the fingertip star at the top edge (= s21's opening setup)
+    case 7: // FEAR_CU from the Void side, the star hand right of Fear's head (= s21's opening setup)
       return fearCU(fe, 0);
   }
   return ROOM.cam('MASTER');

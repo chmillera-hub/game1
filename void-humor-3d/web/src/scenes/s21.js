@@ -3,7 +3,7 @@
 // trusting, lets it go. Then the Void opens its hands like a book; a glow begins in its palms.
 //
 // Shots:
-//   A  scene start -> s21b03     FEAR_CU from the Void side (the fingertip star at the top edge): the last broom
+//   A  scene start -> s21b03     FEAR_CU from the Void side (the star hand right of Fear's head): the last broom
 //                                clatters off-screen -> a second, smaller twitch; "What's... what's that noise?" on tiptoe,
 //                                leaning to peek round the Void's bulk, eyes darting, a gulp between the two "what's"
 //   B  s21b03 -> s21b04          medium two-shot: the SHRUG on "shrugs" (shoulders to the hood, palms up, eyes to the

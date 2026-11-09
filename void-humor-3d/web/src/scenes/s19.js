@@ -57,7 +57,7 @@ export default {
     st.glint.visible = g > 0.01;
     if (st.glint.visible) { st.glint.position.copy(S.glintEcu); st.glint.material.opacity = 0.7 * g; st.glint.scale.setScalar(0.1 + 0.16 * g); st.glint.material.rotation = 0.5 * g; }
     // exposure: the eye ECU keeps its cosmic black (smaller boost); Fear's lavender CU the least
-    st.look = bonusLook(lookFor('s19', set.look), t < S.T.cut3 ? 1.65 : t < S.T.cut5 ? 1.38 : t >= S.T.cutF && t < S.T.cutW ? 1.15 : 1.65);
+    st.look = bonusLook(lookFor('s19', set.look), t < S.T.cut3 ? 1.65 : t < S.T.cut5 ? 1.5 : t >= S.T.cutF && t < S.T.cutW ? 1.15 : 1.65);
   },
 };
 

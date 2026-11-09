@@ -153,16 +153,26 @@ function statics(st) {
   // Offsets fit core Hand at size 0.075 with grip 1: the finger loop closes round a point ~(0.035, 0.016) from the
   // wrist; the bar (r 0.0125) sits a little behind it so the curled middle/tip segments lie on its front.
   { const cam = toV(out.INS.pos);
-    const grip = (bar, sx) => {
+    const grip = (bar, sx, { awayFrom = null, back = 0.028, side = 0.024 } = {}) => {
       const fd = cam.clone().sub(bar); fd.y = 0; fd.normalize();                      // fingers: toward the lens
       const pn = V3(0, 1, 0).cross(fd).normalize();                                   // palm: across the view, away
       const sh = fin.clone().addScaledVector(left, 0.17 * sx);                        // from its own shoulder (the
-      const out_ = bar.clone().sub(sh); out_.y = 0;                                   // wrist stays on the arm's side
-      if (pn.dot(out_) < 0) pn.negate();                                              // of the bar: no arm crossing)
-      const wrist = bar.clone().addScaledVector(fd, -0.028).addScaledVector(pn, -0.024);
+      const out_ = awayFrom ? bar.clone().sub(awayFrom) : bar.clone().sub(sh); out_.y = 0;   // wrist stays on the arm's
+      if (pn.dot(out_) < 0) pn.negate();                                              // side of the bar)
+      const wrist = bar.clone().addScaledVector(fd, -back).addScaledVector(pn, -side);
       return { wrist, palm: pn.toArray(), fingers: fd.toArray() };
     };
-    out.gripL = grip(out.barL, 1); out.gripR = grip(out.barR, -1); }
+    // (review: the LEFT hand gripped the -36 deg jamb alone, 2.4 cm from the door's latch-side edge bar: its wrist and
+    // palm hid behind that edge bar and three finger loops floated on the jamb, detached from the arm. It now grips the
+    // jamb + door edge bar TOGETHER (holding the door shut): the wrist and palm sit clear of the pair on the door side,
+    // where the forearm visibly runs into them, and the fingers wrap across the front of both bars. It lets go, startled,
+    // on the click -- before the door swings.)
+    { const cc = set.anchors.cageCenter, y = out.barL.y, v = out.barL.clone().sub(cc); v.y = 0;
+      const far = set.cageBar(36, y), rot = (a) => v.clone().applyAxisAngle(V3(0, 1, 0), a).add(cc).setY(y);
+      const e1 = rot(3 * Math.PI / 180), e2 = rot(-3 * Math.PI / 180);
+      out.doorEdge = e1.distanceTo(far) < e2.distanceTo(far) ? e1 : e2;
+      out.pairL = out.barL.clone().lerp(out.doorEdge, 0.5); }
+    out.gripL = grip(out.pairL, 1, { awayFrom: out.doorEdge, ...DEF.gripL }); out.gripR = grip(out.barR, -1); }
   // MASTER: cage + Fear left, the Void towering, the janitor's corner back-right, the warm bulb clear of the hood
   // (camera position searched offline: the corner clears the Void's silhouette, the bulb clears the hood)
   out.MASTER = fitShot([[out.fEyesFIN, 120, 690], [out.vEyesM, 360, 330], [set.anchors.cornerCenter, 640, 640, 1.0]], 44, ROOM.W(-3.0, 2.2, 8.0), ROOM.cam('MASTER').look, { posReg: 10, free: [0, 0, 0] });
@@ -185,6 +195,7 @@ const DEF = {
   insPos: [0.2, 0.3, 1.95],
   cu: { dist: 1.3, yaw: 54, pitch: 2, fov: 33, screenY: 470 / 1280 },
   tiltPos: [1.2, 1.1, 4.8],
+  gripL: { back: 0.022, side: 0.036 },
 };
 
 // ------------------------------------------------------------------------------------------------ camera
@@ -281,7 +292,9 @@ function fearPose(t) {
   // (the hands drop off the bars to its sides as it listens; they come together at the chest as it turns round)
   const gripArm = (G, bar) => (G ? { preset: 'hold', target: G.wrist, palm: G.palm, fingers: G.fingers, shoulder: [0.015, 0.015, 0.02],
     hand: { grip: 1, curl: 0.62, thumb: 0.25, spread: 0.04 }, reach: 1 - let_ } : { preset: 'grip', target: bar, reach: 1 - let_ });
-  const armL = let_ < 0.999 ? gripArm(S.gripL, S.barL) : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA - 0.05, turnB - 0.1) };
+  // the latch-side hand (on the door edge, right by the lever) flinches off at the click, clear before the door swings
+  const letL = Math.max(let_, ramp(t, click + 0.03, click + 0.2, 'out'));
+  const armL = letL < 0.999 ? { ...gripArm(S.gripL, S.barL), reach: 1 - letL } : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA - 0.05, turnB - 0.1) };
   const armR = let_ < 0.999 ? gripArm(S.gripR, S.barR) : { preset: 'clasp', from: 'rest', mix: ramp(t, turnA, turnB - 0.05) };
   // ---- walk: two tiny shuffle steps while turning round
   const walk = turn > 0 && turn < 1 ? { amount: Math.sin(Math.PI * turn), phase: turn * 1.0, style: 'sneak' } : { amount: 0 };
