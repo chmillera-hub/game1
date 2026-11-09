@@ -28,7 +28,7 @@ import { V3, toV, loadWords, wordT, pulse, ramp, gazeSched, scopeVisible, voidSu
 import { fitShot, mixShot } from './armour_shared.js';
 import { M, W, WDIR, speechSafe, defendTarget, plainDefendWrist, userPosAt } from './kit_s05_07.js';
 
-const DEBUG = true;
+const DEBUG = false;
 const JY0 = -0.32, JY1 = -0.5;          // Jesus's local facing: s06's -> s08's (WY(M.JV))
 const DEPTH = 1.15;                      // whisperPose depth (STAGING: mouth just above his left ear)
 const HEADYAW = 0.6;                    // fraction of whisperPose's hood yaw kept (the face stays readable to camera)
