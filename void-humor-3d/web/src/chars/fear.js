@@ -13,10 +13,11 @@
 //    pose) and convolves the motion of the strand roots with the spring's impulse response. Pure function of t.
 // Pose API, anchors, tips: docs/chars/fear.md.  Lab: src/labs/fear.js.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Character, gazePoint } from '../core/character.js';
 import { Face, EXPR, FACE_DEFAULTS } from '../core/face.js';
 import { SweepTube, Limb, Hand, solveIK2, orientYZ } from '../core/limbs.js';
-import { being, cloth, glowSprite, contactShadow } from '../core/materials.js';
+import { being, cloth, enhance, glowSprite, contactShadow } from '../core/materials.js';
 import { Particles, CELL } from '../core/particles.js';
 import { CTX } from '../core/context.js';
 import { clamp, lerp, smooth, smoothstep, noise1, fbm1, hash1 } from '../core/util.js';
@@ -232,6 +233,13 @@ function pureTube(tube) {
 
 // ---------------------------------------------------------------------------------------------------------
 // Materials
+// cheaper "being" for small parts (MeshStandard + the same core enhance(): rim / glow / fizz / wrap, no sheen)
+function beingLite(color, o) {
+  const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: o.roughness ?? 0.5, metalness: 0 });
+  return enhance(m, { rim: o.rim, rimColor: o.rimColor ?? color, rimPower: o.rimPower ?? 2.2, glow: o.glow, glowColor: o.glowColor ?? color,
+    fizz: o.fizz ?? 0, fizzColor: o.fizzColor ?? 0xffffff, fizzScale: o.fizzScale ?? 7, fizzSpeed: o.fizzSpeed ?? 0.3, wrap: o.wrap ?? 0.3, wrapColor: o.wrapColor ?? color });
+}
+
 function bendMaterial(mat, U) {
   const prev = mat.onBeforeCompile;
   mat.onBeforeCompile = (sh, r) => {
@@ -304,9 +312,9 @@ export class Fear extends Character {
     const beingOpts = { roughness: 0.5, sheen: 0.35, sheenColor: 0xf4e8ff, rim: 0.7, rimColor: C_RIM, rimPower: 2.6, glow: 0.07, glowColor: C_GLOW,
       fizz: 0.05, fizzColor: 0xeee4ff, fizzScale: 10, fizzSpeed: 0.22, wrap: 0.3, wrapColor: C_WRAP };
     this.bodyMat = bendMaterial(being(C_BODY, beingOpts), this.U);
-    this.lidMat = being(C_BODY, { ...beingOpts, rim: 0.45, rimPower: 3.2, fizz: 0.02 });
-    this.limbMat = being(C_LIMB, { ...beingOpts, rim: 0.6, glow: 0.06, fizz: 0.03 });
-    this.tuftMat = being(C_TUFT, { ...beingOpts, rim: 1.2, rimPower: 1.8, glow: 0.16, fizz: 0.1, fizzScale: 30 });
+    this.lidMat = beingLite(C_BODY, { ...beingOpts, rim: 0.45, rimPower: 3.2, fizz: 0 });
+    this.limbMat = beingLite(C_LIMB, { ...beingOpts, rim: 0.6, glow: 0.07, fizz: 0 });
+    this.tuftMat = beingLite(C_TUFT, { ...beingOpts, rim: 1.2, rimPower: 1.8, glow: 0.17, fizz: 0.1, fizzScale: 30 });
     this.mats = [this.bodyMat, this.lidMat, this.limbMat, this.tuftMat];
     this.baseU = this.mats.map((m) => ({ rim: m.userData.uniforms.uRim.value, glow: m.userData.uniforms.uGlow.value, fizz: m.userData.uniforms.uFizz.value }));
 
@@ -446,12 +454,13 @@ export class Fear extends Character {
       const tube = pureTube(new SweepTube({ material: knitMaterial(12, 2), segments: 14, radial: 10, capRings: 2, castShadow: true }));
       tubeUV(tube); this.bodyG.add(tube.mesh);
       const fr = new THREE.Group(); this.bodyG.add(fr);
-      const fm = new THREE.MeshStandardMaterial({ color: 0xc98f22, roughness: 0.9 });
+      const parts = [];
       for (let k = 0; k < 5; k++) {
-        const c = new THREE.Mesh(new THREE.CapsuleGeometry(0.0034, 0.026 + 0.006 * hash1(k * 7 + i), 2, 5), fm);
-        c.position.set((k - 2) * 0.0085, -0.016, 0); c.rotation.z = (k - 2) * 0.06;
-        fr.add(c);
+        const c = new THREE.CapsuleGeometry(0.0034, 0.026 + 0.006 * hash1(k * 7 + i), 2, 5);
+        c.rotateZ((k - 2) * 0.06); c.translate((k - 2) * 0.0085, -0.016, 0);
+        parts.push(c);
       }
+      fr.add(new THREE.Mesh(mergeGeometries(parts), new THREE.MeshStandardMaterial({ color: 0xc98f22, roughness: 0.9 })));
       return { ...T, tube, fr };
     });
   }

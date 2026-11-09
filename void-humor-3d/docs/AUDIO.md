@@ -31,6 +31,8 @@ from each word's position in its line.
 | `audio/music.py` | score engine: plan derivation, leitmotifs, mood textures, word-painting, hits, rendering |
 | `audio/mix.py` | final mix |
 | `data/music_plan.json` | **the cue plan, derived automatically, hand-editable** |
+| `data/music_overrides.json` | composer edits re-applied on every plan derivation (survive screenplay revisions) |
+| `tools/build_audio.sh` | runs sfx (if needed) → collect_sfx → music → mix |
 | `data/music_report.json` | what was rendered: cues (chords, calibration), every accent (word, time, note, instrument, chord), every hit |
 | `out/music.wav` | the score (-18 LUFS, ≤ -1 dBTP) = `out/stems/music_bed.wav` + `out/stems/music_features.wav` |
 | `out/stems/mix_*.wav` | the mixed stems after the master gain (dialogue, sfx, ambience, music_bed, music_features) |
@@ -108,7 +110,8 @@ ending. A text ending in "dead stop" or "cuts out" adds a stop-time over a trail
 
 On later runs the plan is **loaded as-is**, so hand edits stick. If the screenplay's scene list (ids, slugs,
 locations) or a scene's `music` notes change, or a plan reference no longer exists, the plan is derived again
-and the old one is kept as `data/music_plan.<date-time>.bak.json` (backups never overwrite each other). To force a fresh plan,
+and the old one is kept as `data/music_plan.<date-time>.bak.json` (backups never overwrite each other). When a backup matches the
+current timeline again (for example after one run against a stale timeline), it is restored automatically instead of being derived again. To force a fresh plan,
 run `python3 audio/music.py --replan`. To print the plan without rendering, use `--plan-only`. To see
 every note, write a piano roll with `--roll out/music_roll.png`.
 
@@ -132,6 +135,30 @@ Cue fields:
 - `gain_db`: a level trim.
 - `prog`: chords in the mood's reference key (F for major Part One moods, Dm for minor ones, D for Part
   Two major).
+
+### Composer overrides (`data/music_overrides.json`) — edits that survive screenplay revisions
+Direct edits to `data/music_plan.json` last until the screenplay's scenes or music notes change. Edits that
+must survive revisions go in `data/music_overrides.json`; they are re-applied every time the plan is
+derived. Keys:
+- `"s02"`: the cue that starts with that scene.
+- `"s18:still"`: the cue of that mood containing the scene.
+
+Values are any cue field. `"hits+"` appends hits to the cue containing the scene. References to beats
+that no longer exist are skipped with a warning. Editing this file re-derives the plan. The current file
+holds the composer's choices for this film:
+- Music re-enters with a harp glissando on "^Now".
+- A held breath before the snort.
+- A glockenspiel "tee-hee".
+- A muted-trumpet "doink" after the bleep.
+- A pizzicato "nope".
+- Dead stops under the silence after "How does that sound?", on the block, and on "the void just...".
+- One pizzicato for the final bucket.
+
+```json
+{"scenes": {"s02": {"from": "s02b02-0.1", "transition_in": "cut"},
+            "s06": {"hits+": [{"t": "s06b01.end+0.12", "kind": "wahwah", "notes": 1}]},
+            "s14": {"hits+": [{"sfx": "block_thunk", "scene": "s14", "kind": "stop", "until": "s14.end", "stab": false}]}}}
+```
 
 ### Word-painting accents (`^word` high, `~word` low)
 After TTS, `data/timeline.json` gives each mark an absolute time (the Whisper word start). Before TTS, the

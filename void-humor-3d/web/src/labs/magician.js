@@ -103,7 +103,7 @@ S('LURK: crouch, peek around the big one, tapping', 5, (lt, s) => {
     pose: { pos: [-0.46, 0, -0.32], yaw: 0.25, body: { crouch: 0.55, peek: -0.85 * pk }, face: ['lurk', 1], gaze: s.fearEyes,
       head: { follow: 0.5 * pk, roll: -0.12 * pk }, armL: { preset: 'edge', target: edge, palm: [0.9, 0, -0.3], fingers: [0.1, 1, 0.4], reach: pk },
       armR: { preset: 'claw', reach: pk }, extra: { tap: 1, pouch: false } },
-    shot: framed([0.0, 1.2, 0.0], { dist: 4.4, yaw: 14, pitch: 5, fov: 32, screenY: 0.45, drift: 0 }),
+    shot: framed([-0.25, 1.2, 0.0], { dist: 4.4, yaw: 14, pitch: 5, fov: 32, screenY: 0.45, drift: 0 }),
   };
 });
 S('LICK LIPS (close-up)', 3.2, (lt, s) => {
@@ -131,20 +131,22 @@ S('dagger stab at partner', 2.5, (lt, s) => {
     armR: { preset: [['dagger_ready', 1 - stab], ['dagger_stab', stab]], reach: wind }, armL: { preset: 'pouch' } },
     shot: framed([0.2, 1.2, 0.3], { dist: 3.2, yaw: 55, pitch: 3, fov: 32, screenY: 0.42, drift: 0 }) };
 });
-S('KICKED in the chest -> flight', 3.2, (lt, s) => {
-  s.kicker.visible = true;
-  const hit = 0.8, tau = Math.max(0, lt - hit);
+S('KICKED in the chest -> flight -> crash landing', 3.6, (lt, s) => {
+  s.kicker.visible = true; s.buckets.visible = lt > 1.5;
+  const hit = 0.8, tau = Math.max(0, lt - hit), land = 0.92;
   // kicker leg swings in from +Z, hits the chest at `hit`
   const kick = lt < 0.45 ? 0 : lt < hit ? ease.in((lt - 0.45) / (hit - 0.45)) : 1 - ramp(lt, hit + 0.3, hit + 1.0);
   s.kickAmt = kick;
+  const crashed = ramp(tau, land - 0.12, land + 0.1);
   const kicked = lt < hit ? 0 : clamp(tau / 0.06);
-  const y = Math.max(0, 3.6 * tau - 3.9 * tau * tau), z = -1.55 * tau;
-  const hatOff = clamp(tau / 0.25);
+  const tt = Math.min(tau, land);
+  const y = Math.max(0, 3.6 * tt - 3.9 * tt * tt), z = -1.55 * tt;
   const ht = tau;
   return {
-    pose: { pos: [0, y, z], face: lt < 0.5 ? 'gloat' : lt < hit ? 'uhoh' : 'popped', gaze: lt < hit ? s.kickFoot() : 'camera',
+    pose: { pos: [0, y, z], face: lt < 0.5 ? 'gloat' : lt < hit ? 'uhoh' : crashed > 0.5 ? 'dazed' : 'popped', gaze: lt < hit ? s.kickFoot() : 'camera',
       armR: { preset: 'dagger_ready' }, armL: { preset: 'pouch' }, body: { recoil: lt < hit ? 0.3 * ramp(lt, 0.5, 0.75) : 0 },
-      extra: { kicked, flip: -1.3 * tau, hatOff, hatPos: [0.15, Math.max(0.05, 2.1 + 3.4 * ht - 3.6 * ht * ht), 0.25 - 0.7 * ht], hatRot: [-4 * ht, 2 * ht, 1.5 * ht], dagger: true } },
+      extra: { kicked, crashed, dizzy: ramp(tau, land, land + 0.4), flip: -1.3 * tt, hatOff: clamp(tau / 0.25), dagger: crashed < 0.5,
+        hatPos: [0.15, Math.max(0.05, 2.1 + 3.4 * ht - 3.6 * ht * ht), 0.25 - 0.7 * Math.min(ht, 1.25)], hatRot: [-4 * Math.min(ht, 1.25), 2 * Math.min(ht, 1.25), 1.5 * Math.min(ht, 1.25)] } },
     shot: framed([0, 1.45, -0.5], { dist: 8.0, yaw: 80, pitch: 4, fov: 34, screenY: 0.46, drift: 0 }),
   };
 });

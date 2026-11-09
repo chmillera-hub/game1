@@ -1263,10 +1263,73 @@ def derive_plan(tl, sp):
     return out
 
 
+OVERRIDES = os.path.join(ROOT, "data", "music_overrides.json")
+
+
+def load_overrides():
+    if os.path.exists(OVERRIDES):
+        try:
+            return json.load(open(OVERRIDES))
+        except Exception as e:  # noqa: BLE001
+            print(f"[music] {OVERRIDES} unreadable ({e}) — ignored", file=sys.stderr)
+    return {}
+
+
 def scene_signature(tl):
     import hashlib
-    return [f"{s['id']}:{s.get('slug', '')}:{s.get('location', '')}:"
-            + hashlib.md5(json.dumps(s.get("music", {}), sort_keys=True).encode()).hexdigest()[:8] for s in tl["scenes"]]
+    sig = [f"{s['id']}:{s.get('slug', '')}:{s.get('location', '')}:"
+           + hashlib.md5(json.dumps(s.get("music", {}), sort_keys=True).encode()).hexdigest()[:8] for s in tl["scenes"]]
+    ov = load_overrides()
+    if ov.get("scenes"):
+        sig.append("overrides:" + hashlib.md5(json.dumps(ov["scenes"], sort_keys=True).encode()).hexdigest()[:8])
+    return sig
+
+
+def apply_overrides(cues, tl, ov):
+    """Composer edits that survive screenplay revisions: data/music_overrides.json {"scenes": {"s02": {...},
+    "s18:still": {...}}}. Keys address the cue that starts with that scene (or, with ':mood', the cue of that
+    mood containing it); "hits+" appends hits to the cue containing the scene. References that no longer exist
+    are skipped with a warning."""
+    R = A.TimeRefs(tl)
+
+    def ok(v):
+        try:
+            R(v)
+            return True
+        except KeyError:
+            return False
+
+    for key, edits in (ov.get("scenes") or {}).items():
+        if key.startswith("_"):
+            continue
+        sid, _, mood = key.partition(":")
+        cont = [c for c in cues if sid in c["scenes"] and (not mood or c["mood"] == mood)]
+        if not cont:
+            print(f"[music] override {key}: no cue for that scene/mood — skipped", file=sys.stderr)
+            continue
+        first = next((c for c in cont if c["scenes"][0] == sid), cont[0])
+        for k, v in edits.items():
+            if k.startswith("_"):
+                continue
+            if k in ("hits", "hits+"):
+                good = []
+                for h in v:
+                    refs = [h[x] for x in ("t", "until") if x in h] + ([h["scene"]] if h.get("scene") else [])
+                    if all(ok(r) for r in refs):
+                        good.append(h)
+                    else:
+                        print(f"[music] override {key}: hit {h} refers to a missing beat — skipped", file=sys.stderr)
+                tgt = cont[0] if k == "hits+" else first
+                tgt["hits"] = (tgt.get("hits", []) if k == "hits+" else []) + good
+            elif k in ("from", "to"):
+                if ok(v):
+                    first[k] = v
+                else:
+                    print(f"[music] override {key}: {k}={v!r} refers to a missing beat — skipped", file=sys.stderr)
+            else:
+                first[k] = v
+        first["overridden"] = sorted(set(first.get("overridden", []) + [key]))
+    return cues
 
 
 PLAN_HELP = ("Cue plan for audio/music.py — edit freely, then re-run `python3 audio/music.py`. Each cue: from/to "
@@ -1281,17 +1344,33 @@ PLAN_HELP = ("Cue plan for audio/music.py — edit freely, then re-run `python3 
 
 def load_or_make_plan(tl, sp, path, replan=False):
     sig = scene_signature(tl)
-    if os.path.exists(path) and not replan:
-        plan = json.load(open(path))
-        R = A.TimeRefs(tl)
+    R = A.TimeRefs(tl)
+
+    def fits(plan):
         try:
             for c in plan.get("cues", []):
                 R(c["from"]), R(c["to"])
-            refs_ok = True
         except KeyError:
-            refs_ok = False
-        if plan.get("signature") == sig and refs_ok:
+            return False
+        return plan.get("signature") == sig
+
+    if os.path.exists(path) and not replan:
+        plan = json.load(open(path))
+        if fits(plan):
             return plan, False
+        # a stale timeline (or an older screenplay) earlier may have pushed the right plan into a backup: restore it
+        import glob as _glob
+        for bak in sorted(_glob.glob(path.replace(".json", "") + ".*.bak.json"), reverse=True):
+            try:
+                old = json.load(open(bak))
+            except Exception:  # noqa: BLE001
+                continue
+            if fits(old):
+                import time
+                os.replace(path, path.replace(".json", "") + time.strftime(".%Y%m%d-%H%M%S.bak.json"))
+                json.dump(old, open(path, "w"), indent=1)
+                print(f"[music] restored the matching plan from {bak}", file=sys.stderr)
+                return old, False
         import time
         bak = path.replace(".json", "") + time.strftime(".%Y%m%d-%H%M%S.bak.json")
         os.replace(path, bak)
@@ -1302,7 +1381,7 @@ def load_or_make_plan(tl, sp, path, replan=False):
             "accents": {"enabled": True, "gain_db": 0.0, "min_spacing": 0.9, "skip": [],
                         "_help": "skip: ['s04b06:teehee', ...] (beat:word); gain_db scales all word-painting notes"},
             "auto_hits": {"kick_thump": "stop", "block_thunk": "wahwah", "enabled": True},
-            "cues": derive_plan(tl, sp)}
+            "cues": apply_overrides(derive_plan(tl, sp), tl, load_overrides())}
     json.dump(plan, open(path, "w"), indent=1)
     return plan, True
 

@@ -1,0 +1,496 @@
+{
+ "_help": "Cue plan for audio/music.py \u2014 edit freely, then re-run `python3 audio/music.py`. Each cue: from/to (timeline refs: 's03', 's03.end', 's03b05', 's03b05+0.4'), mood (one of: chase, arrival, sly, sneaky, romp, dry, tender, sincere, exit, bittersweet, walkoff, hush, creep, suspense, slapstick, innocent, still, cosmos), key (the mood's mode is kept; folded to \u00b16 semitones), bpm, intensity 0..1, optional ramp [[frac, mult]...] (intensity multiplier across the cue), transition_in (crossfade | cut | dissolve), ending (true: final cadence + held chord after the last line), melody_stem (override the phrase instrument), prog ([[chord, beats], ...] in the mood's ref key), hits ([{t, kind, len}]). Global: accents (word-painting) and auto_hits settings. If the screenplay's scene list changes, the plan is re-derived automatically (the old one is kept as data/music_plan.json.bak). ending_hold: seconds the final chord rings (default 6).",
+ "signature": [
+  "s01:running_from_the_void:THE_EDGE:1bf0a78e",
+  "s02:and_jesus_appears:THE_EDGE:e84368ee",
+  "s03:the_whisper:THE_EDGE:69dbee39",
+  "s04:cosmic_laughter:THE_EDGE:c6e13030",
+  "s05:a_pretty_good_sense_of_humor:THE_EDGE:6600e72b",
+  "s06:what_the_actual:THE_EDGE:3c5e43aa",
+  "s07:the_void_whispers:THE_EDGE:5fae5957",
+  "s08:do_you_have_a_moment:THE_EDGE:760f1e4d",
+  "s09:hell_no:THE_EDGE:d423330b",
+  "s10:rolls_its_eyes:THE_EDGE:45232495",
+  "s11:oh_boy:THE_EDGE:7f961cbc",
+  "s12:a_hand_on_the_shoulder:THE_EDGE:66e516ff",
+  "s13:talk_to_me:THE_EDGE:ecedc46b",
+  "s14:blocked:THE_EDGE:048b995b",
+  "s15:fair_enough:THE_EDGE:7b3ca648",
+  "s16:into_the_horizon:THE_EDGE:d34587a5",
+  "s17:bonus_scene:MIND_BACKROOM:d9febe41",
+  "s18:the_magician_lurks:MIND_BACKROOM:41a6145d",
+  "s19:the_corner_of_its_eye:MIND_BACKROOM:e87f013b",
+  "s20:the_kick:MIND_BACKROOM:1afad5b5",
+  "s21:whats_that_noise:MIND_BACKROOM:662077e4",
+  "s22:a_moment_with_my_fear:MIND_BACKROOM:b9936ba0",
+  "overrides:93939344"
+ ],
+ "music_lufs": -18.0,
+ "accents": {
+  "enabled": true,
+  "gain_db": 0.0,
+  "min_spacing": 0.9,
+  "skip": [],
+  "_help": "skip: ['s04b06:teehee', ...] (beat:word); gain_db scales all word-painting notes"
+ },
+ "auto_hits": {
+  "kick_thump": "stop",
+  "block_thunk": "wahwah",
+  "enabled": true
+ },
+ "cues": [
+  {
+   "id": "c01",
+   "scenes": [
+    "s01"
+   ],
+   "from": "s01",
+   "to": "s01.end",
+   "mood": "chase",
+   "key": "Dm",
+   "bpm": 112,
+   "intensity": 0.45,
+   "transition_in": "crossfade",
+   "source": "comic-anxious scurry over a warm dusk"
+  },
+  {
+   "id": "c02",
+   "scenes": [
+    "s02"
+   ],
+   "from": "s02b02-0.1",
+   "to": "s02.end",
+   "mood": "arrival",
+   "key": "F",
+   "bpm": 72,
+   "intensity": 0.35,
+   "transition_in": "cut",
+   "source": "the chase stops dead for the cue; then a warm, light surprise",
+   "overridden": [
+    "s02"
+   ]
+  },
+  {
+   "id": "c03",
+   "scenes": [
+    "s03"
+   ],
+   "from": "s03",
+   "to": "s03.end",
+   "mood": "sly",
+   "key": "Dm",
+   "bpm": 96,
+   "intensity": 0.35,
+   "transition_in": "crossfade",
+   "source": "playful, sly, tiptoeing"
+  },
+  {
+   "id": "c04",
+   "scenes": [
+    "s04"
+   ],
+   "from": "s04b02",
+   "to": "s04.end",
+   "mood": "romp",
+   "key": "F",
+   "bpm": 126,
+   "intensity": 0.65,
+   "ramp": [
+    [
+     0,
+     0.7
+    ],
+    [
+     1,
+     1.0
+    ]
+   ],
+   "transition_in": "cut",
+   "source": "a held breath, then a comic eruption into sparkle that peaks with the big galaxy",
+   "overridden": [
+    "s04"
+   ]
+  },
+  {
+   "id": "c05",
+   "scenes": [
+    "s05",
+    "s06"
+   ],
+   "from": "s05",
+   "to": "s06.end",
+   "mood": "dry",
+   "key": "F",
+   "bpm": 84,
+   "intensity": 0.25,
+   "transition_in": "cut",
+   "source": "a cheeky little cadence, then held breath | near-silence for the punchline; a muted-trumpet 'doink' after the bleep",
+   "hits": [
+    {
+     "t": "s05b06",
+     "kind": "ping"
+    },
+    {
+     "t": "s05b06+0.28",
+     "kind": "ping"
+    },
+    {
+     "t": "s06b01.end+0.12",
+     "kind": "wahwah",
+     "notes": 1
+    }
+   ],
+   "overridden": [
+    "s05",
+    "s06"
+   ]
+  },
+  {
+   "id": "c06",
+   "scenes": [
+    "s07"
+   ],
+   "from": "s07",
+   "to": "s07.end",
+   "mood": "sneaky",
+   "key": "Dm",
+   "bpm": 88,
+   "intensity": 0.3,
+   "transition_in": "crossfade",
+   "source": "sneaky and curious, then a sudden soft sincerity"
+  },
+  {
+   "id": "c07",
+   "scenes": [
+    "s08"
+   ],
+   "from": "s08",
+   "to": "s08.end",
+   "mood": "sincere",
+   "key": "F",
+   "bpm": 68,
+   "intensity": 0.3,
+   "ramp": [
+    [
+     0,
+     0.85
+    ],
+    [
+     0.8,
+     1.15
+    ],
+    [
+     1,
+     1.0
+    ]
+   ],
+   "transition_in": "crossfade",
+   "source": "polite, hopeful, a little absurd"
+  },
+  {
+   "id": "c08",
+   "scenes": [
+    "s09"
+   ],
+   "from": "s09",
+   "to": "s09.end",
+   "mood": "dry",
+   "key": "F",
+   "bpm": 84,
+   "intensity": 0.25,
+   "transition_in": "cut",
+   "source": "a stop, then a low thud",
+   "hits": [
+    {
+     "t": "s09b02",
+     "kind": "sting"
+    }
+   ],
+   "overridden": [
+    "s09"
+   ]
+  },
+  {
+   "id": "c09",
+   "scenes": [
+    "s10"
+   ],
+   "from": "s10",
+   "to": "s10.end",
+   "mood": "exit",
+   "key": "Dm",
+   "bpm": 108,
+   "intensity": 0.35,
+   "transition_in": "crossfade",
+   "source": "grumpy comic, then a small ache"
+  },
+  {
+   "id": "c10",
+   "scenes": [
+    "s11"
+   ],
+   "from": "s11",
+   "to": "s11.end",
+   "mood": "dry",
+   "key": "F",
+   "bpm": 84,
+   "intensity": 0.15,
+   "transition_in": "cut",
+   "source": "comic suspension"
+  },
+  {
+   "id": "c11",
+   "scenes": [
+    "s12"
+   ],
+   "from": "s12",
+   "to": "s12.end",
+   "mood": "tender",
+   "key": "F",
+   "bpm": 66,
+   "intensity": 0.3,
+   "transition_in": "crossfade",
+   "source": "tender"
+  },
+  {
+   "id": "c12",
+   "scenes": [
+    "s13"
+   ],
+   "from": "s13",
+   "to": "s13.end",
+   "mood": "sincere",
+   "key": "F",
+   "bpm": 68,
+   "intensity": 0.35,
+   "ramp": [
+    [
+     0,
+     0.85
+    ],
+    [
+     0.8,
+     1.15
+    ],
+    [
+     1,
+     1.0
+    ]
+   ],
+   "transition_in": "crossfade",
+   "hits": [
+    {
+     "t": "s13b19",
+     "kind": "stop",
+     "len": 1.4,
+     "stab": false
+    },
+    {
+     "t": "s13b18",
+     "kind": "stop",
+     "until": "s13.end",
+     "stab": false
+    }
+   ],
+   "source": "warm and intimate, then hopeful, then a dead stop",
+   "overridden": [
+    "s13"
+   ]
+  },
+  {
+   "id": "c13",
+   "scenes": [
+    "s14"
+   ],
+   "from": "s14",
+   "to": "s14.end",
+   "mood": "exit",
+   "key": "Dm",
+   "bpm": 108,
+   "intensity": 0.45,
+   "transition_in": "cut",
+   "source": "comic stomp, a dead stop for the ding, then a little lonely",
+   "hits": [
+    {
+     "sfx": "block_thunk",
+     "scene": "s14",
+     "kind": "stop",
+     "until": "s14.end",
+     "stab": false
+    }
+   ],
+   "overridden": [
+    "s14"
+   ]
+  },
+  {
+   "id": "c14",
+   "scenes": [
+    "s15"
+   ],
+   "from": "s15",
+   "to": "s15.end",
+   "mood": "bittersweet",
+   "key": "F",
+   "bpm": 63,
+   "intensity": 0.25,
+   "transition_in": "crossfade",
+   "source": "bittersweet, gentle, then a small lift"
+  },
+  {
+   "id": "c15",
+   "scenes": [
+    "s16"
+   ],
+   "from": "s16",
+   "to": "s16.end",
+   "mood": "walkoff",
+   "key": "F",
+   "bpm": 84,
+   "intensity": 0.45,
+   "ramp": [
+    [
+     0,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     1,
+     0.6
+    ]
+   ],
+   "transition_in": "crossfade",
+   "ending": true,
+   "source": "warm, gently comic, resolving"
+  },
+  {
+   "id": "c16",
+   "scenes": [
+    "s17"
+   ],
+   "from": "s17",
+   "to": "s17.end",
+   "mood": "hush",
+   "key": "D",
+   "bpm": 66,
+   "intensity": 0.25,
+   "transition_in": "dissolve",
+   "source": "a giggle, then hushed storybook mystery"
+  },
+  {
+   "id": "c17",
+   "scenes": [
+    "s18"
+   ],
+   "from": "s18",
+   "to": "s18.end",
+   "mood": "creep",
+   "key": "Dm",
+   "bpm": 80,
+   "intensity": 0.35,
+   "transition_in": "crossfade",
+   "source": "creepy-comic tiptoe"
+  },
+  {
+   "id": "c18",
+   "scenes": [
+    "s19",
+    "s20"
+   ],
+   "from": "s19",
+   "to": "s20b04",
+   "mood": "suspense",
+   "key": "Dm",
+   "bpm": 72,
+   "intensity": 0.425,
+   "transition_in": "crossfade",
+   "source": "suspense held under tenderness | tiptoe suspense, a held breath, a comic hit",
+   "hits": [
+    {
+     "t": "s20b03+0.5",
+     "kind": "stop",
+     "until": "s20b04",
+     "stab": false
+    }
+   ]
+  },
+  {
+   "id": "c19",
+   "scenes": [
+    "s20"
+   ],
+   "from": "s20b04",
+   "to": "s20.end",
+   "mood": "slapstick",
+   "key": "Dm",
+   "bpm": 84,
+   "intensity": 0.55,
+   "transition_in": "crossfade",
+   "source": "a rattling slapstick tumble",
+   "overridden": [
+    "s20"
+   ]
+  },
+  {
+   "id": "c20",
+   "scenes": [
+    "s21"
+   ],
+   "from": "s21",
+   "to": "s21.end",
+   "mood": "innocent",
+   "key": "D",
+   "bpm": 76,
+   "intensity": 0.25,
+   "transition_in": "crossfade",
+   "source": "comic innocence, then trust"
+  },
+  {
+   "id": "c21",
+   "scenes": [
+    "s22"
+   ],
+   "from": "s22",
+   "to": "s22.end",
+   "mood": "cosmos",
+   "key": "D",
+   "bpm": 63,
+   "intensity": 0.55,
+   "ramp": [
+    [
+     0,
+     0.85
+    ],
+    [
+     0.5,
+     1.25
+    ],
+    [
+     0.85,
+     0.95
+    ],
+    [
+     1,
+     0.8
+    ]
+   ],
+   "transition_in": "crossfade",
+   "ending": true,
+   "source": "awe and warmth; a big swell, then hush; one tiny comic pluck; a warm last chord",
+   "hits": [
+    {
+     "sfx": "bucket_bonk",
+     "scene": "s22",
+     "kind": "pluck",
+     "offset": 0.15
+    }
+   ],
+   "overridden": [
+    "s22"
+   ]
+  }
+ ]
+}

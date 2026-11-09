@@ -1,0 +1,1044 @@
+{
+ "cues": [
+  {
+   "id": "c01",
+   "mood": "chase",
+   "key": "Dm",
+   "bpm": 112.0,
+   "start": 0.0,
+   "cal_db": 4.2,
+   "end": 7.41,
+   "intensity": 0.45,
+   "transition_in": "crossfade",
+   "phrases": 1,
+   "ending_at": null,
+   "notes": {
+    "flute": 6,
+    "pizz": 25,
+    "bassoon": 14,
+    "pizzlow": 14,
+    "kit": 4,
+    "timpani": 4,
+    "slowstr": 7
+   },
+   "chords": [
+    "0.0:Dm@D",
+    "0.5:Dm@D",
+    "2.11:Dm@D",
+    "2.14:Bb/D@Bb",
+    "4.29:Gm/D@G",
+    "6.43:A7@A"
+   ]
+  },
+  {
+   "id": "c02",
+   "mood": "arrival",
+   "key": "F",
+   "bpm": 72.0,
+   "start": 10.65,
+   "cal_db": 2.9,
+   "end": 21.87,
+   "intensity": 0.35,
+   "transition_in": "cut",
+   "phrases": 2,
+   "ending_at": null,
+   "notes": {
+    "harp": 17,
+    "horns": 10,
+    "celesta": 7,
+    "slowstr": 9,
+    "lowstr": 6
+   },
+   "chords": [
+    "10.65:Fadd9@F",
+    "11.48:F@F",
+    "13.57:Dm7@D",
+    "15.65:Dm7@D",
+    "17.32:Bbmaj7@Bb",
+    "19.12:F6@F"
+   ]
+  },
+  {
+   "id": "c03",
+   "mood": "sly",
+   "key": "Dm",
+   "bpm": 96.0,
+   "start": 21.87,
+   "cal_db": 9.4,
+   "end": 37.03,
+   "intensity": 0.35,
+   "transition_in": "crossfade",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "upright": 25,
+    "vibes": 6,
+    "brushkit": 12,
+    "pad": 16
+   },
+   "chords": [
+    "21.87:Dm7@D",
+    "24.37:G9@G",
+    "26.87:Dm7@D",
+    "29.37:G13@G",
+    "30.62:A7b9@A",
+    "31.87:Dm7@D",
+    "34.37:G9@G",
+    "36.87:Dm7@D"
+   ]
+  },
+  {
+   "id": "c04",
+   "mood": "romp",
+   "key": "F",
+   "bpm": 126.0,
+   "start": 38.28,
+   "cal_db": 1.8,
+   "end": 53.05,
+   "intensity": 0.65,
+   "transition_in": "cut",
+   "phrases": 4,
+   "ending_at": null,
+   "notes": {
+    "glock": 29,
+    "bassoon": 17,
+    "tuba": 16,
+    "pizz": 30,
+    "strings": 19,
+    "timpani": 37,
+    "orchkit": 34
+   },
+   "chords": [
+    "38.28:F@F",
+    "40.19:C7@C",
+    "40.64:F@F",
+    "41.92:C7@C",
+    "42.35:F@F",
+    "44.0:Bb@Bb",
+    "45.9:F/C@F",
+    "47.8:C7@C",
+    "49.71:F@F",
+    "51.61:F@F"
+   ]
+  },
+  {
+   "id": "c05",
+   "mood": "dry",
+   "key": "F",
+   "bpm": 84.0,
+   "start": 53.05,
+   "cal_db": 7.8,
+   "end": 70.14,
+   "intensity": 0.25,
+   "transition_in": "cut",
+   "phrases": 2,
+   "ending_at": null,
+   "notes": {
+    "violin": 3,
+    "pad": 9,
+    "pizz": 2,
+    "bassoon": 2
+   },
+   "chords": [
+    "53.05:Fadd9@F",
+    "58.77:Dm9@D",
+    "64.48:Fadd9@F"
+   ]
+  },
+  {
+   "id": "c06",
+   "mood": "sneaky",
+   "key": "Dm",
+   "bpm": 88.0,
+   "start": 70.14,
+   "cal_db": 10.3,
+   "end": 86.12,
+   "intensity": 0.3,
+   "transition_in": "crossfade",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "upright": 24,
+    "vibes": 6,
+    "brushkit": 12,
+    "pad": 7
+   },
+   "chords": [
+    "70.14:Dm@D",
+    "72.87:Dm/C@D",
+    "75.6:Bbmaj7@Bb",
+    "78.32:A7@A",
+    "81.05:Dm@D",
+    "83.78:Dm/C@D"
+   ]
+  },
+  {
+   "id": "c07",
+   "mood": "sincere",
+   "key": "F",
+   "bpm": 68.0,
+   "start": 86.12,
+   "cal_db": 3.8,
+   "end": 97.62,
+   "intensity": 0.3,
+   "transition_in": "crossfade",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "piano": 8,
+    "slowstr": 11,
+    "lowstr": 4,
+    "celesta": 1
+   },
+   "chords": [
+    "86.12:F@F",
+    "89.65:Am7@A",
+    "93.18:Bbmaj7@Bb",
+    "96.71:C7sus4@C"
+   ]
+  },
+  {
+   "id": "c08",
+   "mood": "dry",
+   "key": "F",
+   "bpm": 84.0,
+   "start": 97.62,
+   "cal_db": 6.2,
+   "end": 104.28,
+   "intensity": 0.25,
+   "transition_in": "cut",
+   "phrases": 2,
+   "ending_at": null,
+   "notes": {
+    "violin": 2,
+    "pad": 6,
+    "pizz": 2,
+    "bassoon": 2
+   },
+   "chords": [
+    "97.62:Fadd9@F",
+    "103.33:Dm9@D"
+   ]
+  },
+  {
+   "id": "c09",
+   "mood": "exit",
+   "key": "Dm",
+   "bpm": 108.0,
+   "start": 104.28,
+   "cal_db": 7.9,
+   "end": 115.36,
+   "intensity": 0.35,
+   "transition_in": "crossfade",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "bassoon": 20,
+    "pizzlow": 20,
+    "pizz": 3
+   },
+   "chords": [
+    "104.28:Dm@D",
+    "106.51:Gm/Bb@G",
+    "108.73:A7@A",
+    "110.95:Dm@D",
+    "113.17:Dm@D"
+   ]
+  },
+  {
+   "id": "c10",
+   "mood": "dry",
+   "key": "F",
+   "bpm": 84.0,
+   "start": 115.36,
+   "cal_db": 11.0,
+   "end": 124.04,
+   "intensity": 0.15,
+   "transition_in": "cut",
+   "phrases": 1,
+   "ending_at": null,
+   "notes": {
+    "violin": 2,
+    "pizz": 2
+   },
+   "chords": [
+    "115.36:Fadd9@F",
+    "121.08:Dm9@D"
+   ]
+  },
+  {
+   "id": "c11",
+   "mood": "tender",
+   "key": "F",
+   "bpm": 66.0,
+   "start": 124.04,
+   "cal_db": 2.5,
+   "end": 131.23,
+   "intensity": 0.3,
+   "transition_in": "crossfade",
+   "phrases": 1,
+   "ending_at": null,
+   "notes": {
+    "piano": 10,
+    "slowstr": 6,
+    "lowstr": 3
+   },
+   "chords": [
+    "124.04:F@F",
+    "127.28:F@F",
+    "129.55:Dm7@D"
+   ]
+  },
+  {
+   "id": "c12",
+   "mood": "sincere",
+   "key": "F",
+   "bpm": 68.0,
+   "start": 131.23,
+   "cal_db": 2.5,
+   "end": 164.37,
+   "intensity": 0.35,
+   "transition_in": "crossfade",
+   "phrases": 2,
+   "ending_at": null,
+   "notes": {
+    "piano": 24,
+    "slowstr": 26,
+    "cello": 2,
+    "lowstr": 11,
+    "celesta": 3
+   },
+   "chords": [
+    "131.23:F@F",
+    "131.73:F6@F",
+    "134.82:Am7@A",
+    "138.29:Bbmaj7@Bb",
+    "141.82:C7sus4@C",
+    "142.75:Dm7@D",
+    "144.07:F/C@F",
+    "146.72:Dm7@D",
+    "148.87:Bbmaj7@Bb",
+    "152.4:Gm7@G",
+    "155.93:C7@C",
+    "159.46:F@F",
+    "162.99:Am7@A"
+   ]
+  },
+  {
+   "id": "c13",
+   "mood": "exit",
+   "key": "Dm",
+   "bpm": 108.0,
+   "start": 164.37,
+   "cal_db": 5.5,
+   "end": 177.38,
+   "intensity": 0.45,
+   "transition_in": "cut",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "bassoon": 10,
+    "pizzlow": 10,
+    "timpani": 5
+   },
+   "chords": [
+    "164.37:Dm@D",
+    "166.59:Gm/Bb@G",
+    "168.81:A7@A",
+    "171.03:Dm@D",
+    "173.26:Dm@D",
+    "175.48:Gm/Bb@G"
+   ]
+  },
+  {
+   "id": "c14",
+   "mood": "bittersweet",
+   "key": "F",
+   "bpm": 63.0,
+   "start": 177.38,
+   "cal_db": 5.7,
+   "end": 189.94,
+   "intensity": 0.25,
+   "transition_in": "crossfade",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "piano": 8,
+    "slowstr": 8,
+    "lowstr": 4
+   },
+   "chords": [
+    "177.38:F@F",
+    "181.19:Am/E@A",
+    "185.0:Dm7@D",
+    "188.81:Bbm6@Bb"
+   ]
+  },
+  {
+   "id": "c15",
+   "mood": "walkoff",
+   "key": "F",
+   "bpm": 84.0,
+   "start": 189.94,
+   "cal_db": 2.0,
+   "end": 217.72,
+   "intensity": 0.45,
+   "transition_in": "crossfade",
+   "phrases": 5,
+   "ending_at": 215.22,
+   "notes": {
+    "celesta": 16,
+    "glock": 18,
+    "cello": 8,
+    "upright": 36,
+    "brushkit": 24,
+    "slowstr": 37,
+    "piano": 16,
+    "harp": 5
+   },
+   "chords": [
+    "189.94:F@F",
+    "192.79:Dm7@D",
+    "195.65:Gm7@G",
+    "198.51:C7@C",
+    "201.36:Am7@A",
+    "202.12:F@F",
+    "203.55:Dm7@D",
+    "204.98:C/E@C",
+    "206.41:C7sus4@C",
+    "208.2:Gm7@G",
+    "209.94:C7@C",
+    "211.01:F@F",
+    "212.79:Dm7@D",
+    "214.58:C7@C",
+    "215.22:Fadd9@F"
+   ]
+  },
+  {
+   "id": "c16",
+   "mood": "hush",
+   "key": "D",
+   "bpm": 66.0,
+   "start": 217.72,
+   "cal_db": 7.7,
+   "end": 226.82,
+   "intensity": 0.25,
+   "transition_in": "dissolve",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "harp": 14,
+    "pad": 6,
+    "lowstr": 3,
+    "musicbox": 2
+   },
+   "chords": [
+    "217.72:Dadd9@D",
+    "221.36:Bm(add9)@B",
+    "225.0:Gmaj7@G"
+   ]
+  },
+  {
+   "id": "c17",
+   "mood": "creep",
+   "key": "Dm",
+   "bpm": 80.0,
+   "start": 226.82,
+   "cal_db": 6.2,
+   "end": 246.2,
+   "intensity": 0.35,
+   "transition_in": "crossfade",
+   "phrases": 1,
+   "ending_at": null,
+   "notes": {
+    "clarinet": 5,
+    "bassoon": 5,
+    "pizzlow": 26,
+    "lowstr": 7,
+    "glass": 7,
+    "timpani": 4
+   },
+   "chords": [
+    "226.82:Dm@D",
+    "229.82:Eb/D@Eb",
+    "232.82:Dm@D",
+    "235.82:A7b9@A",
+    "238.82:Dm@D",
+    "241.82:Eb/D@Eb",
+    "243.55:Dm@D",
+    "246.17:Dm@D"
+   ]
+  },
+  {
+   "id": "c18",
+   "mood": "suspense",
+   "key": "Dm",
+   "bpm": 72.0,
+   "start": 246.2,
+   "cal_db": 1.7,
+   "end": 261.7,
+   "intensity": 0.425,
+   "transition_in": "crossfade",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "tremolo": 5,
+    "pizz": 17,
+    "cello": 3,
+    "pad": 5
+   },
+   "chords": [
+    "246.2:Dm(add9)@D",
+    "252.87:Bbmaj7#11@Bb",
+    "259.53:Dm(add9)@D"
+   ]
+  },
+  {
+   "id": "c19",
+   "mood": "slapstick",
+   "key": "Dm",
+   "bpm": 84.0,
+   "start": 261.7,
+   "cal_db": -3.1,
+   "end": 274.1,
+   "intensity": 0.55,
+   "transition_in": "crossfade",
+   "phrases": 0,
+   "ending_at": null,
+   "notes": {
+    "pizzlow": 1,
+    "pad": 6,
+    "xylo": 7,
+    "kit": 1
+   },
+   "chords": [
+    "261.7:Dm@D",
+    "264.56:Gm/D@G",
+    "267.41:Dm@D",
+    "270.27:A7@A",
+    "273.13:Dm@D"
+   ]
+  },
+  {
+   "id": "c20",
+   "mood": "innocent",
+   "key": "D",
+   "bpm": 76.0,
+   "start": 274.1,
+   "cal_db": 4.7,
+   "end": 283.94,
+   "intensity": 0.25,
+   "transition_in": "crossfade",
+   "phrases": 2,
+   "ending_at": null,
+   "notes": {
+    "flute": 4,
+    "bassoon": 2,
+    "celesta": 9,
+    "pad": 14
+   },
+   "chords": [
+    "274.1:D@D",
+    "277.25:G/D@G",
+    "277.39:D@D",
+    "279.07:G6@G",
+    "279.25:D@D",
+    "280.83:D@D",
+    "283.57:A7sus4@A"
+   ]
+  },
+  {
+   "id": "c21",
+   "mood": "cosmos",
+   "key": "D",
+   "bpm": 63.0,
+   "start": 283.94,
+   "cal_db": 1.7,
+   "end": 316.3,
+   "intensity": 0.55,
+   "transition_in": "crossfade",
+   "phrases": 3,
+   "ending_at": 313.8,
+   "notes": {
+    "harp": 56,
+    "celesta": 28,
+    "slowstr": 38,
+    "lowstr": 16,
+    "choir": 29,
+    "glass": 16,
+    "piano": 5
+   },
+   "chords": [
+    "283.94:Dmaj7@D",
+    "287.75:Bm7@B",
+    "288.75:Dmaj9@D",
+    "291.61:E/D@E",
+    "293.03:Dmaj9@D",
+    "295.42:A7sus4@A",
+    "297.27:A7@A",
+    "299.18:F#m7@F#",
+    "302.99:Bm7@B",
+    "304.01:Dmaj9@D",
+    "306.87:E/D@E",
+    "308.3:Dmaj9@D",
+    "310.68:Em7@E",
+    "311.9:A7sus4@A",
+    "312.85:A7@A",
+    "313.8:Dadd9@D"
+   ]
+  }
+ ],
+ "accents": [
+  {
+   "t": 6.41,
+   "end": 6.55,
+   "word": "void",
+   "kind": "low",
+   "beat": "s01b03",
+   "est": false,
+   "placed": true,
+   "note": "D2",
+   "instr": "low",
+   "chord": "Gm/D",
+   "cue": "c01"
+  },
+  {
+   "t": 10.75,
+   "end": 10.91,
+   "word": "Now",
+   "kind": "high",
+   "beat": "s02b02",
+   "est": false,
+   "placed": true,
+   "note": "F6",
+   "instr": "celesta",
+   "chord": "Fadd9",
+   "cue": "c02"
+  },
+  {
+   "t": 35.721,
+   "end": 36.001,
+   "word": "theories",
+   "kind": "high",
+   "beat": "s03b06",
+   "est": false,
+   "placed": true,
+   "note": "B6",
+   "instr": "glock",
+   "chord": "G9",
+   "cue": "c03"
+  },
+  {
+   "t": 44.821,
+   "end": 45.481,
+   "word": "Maniacally",
+   "kind": "high",
+   "beat": "s04b05",
+   "est": false,
+   "placed": true,
+   "note": "D6",
+   "instr": "glock",
+   "chord": "Bb",
+   "cue": "c04"
+  },
+  {
+   "t": 47.931,
+   "end": 48.351,
+   "word": "galaxies",
+   "kind": "high",
+   "beat": "s04b09",
+   "est": false,
+   "placed": true,
+   "note": "G6",
+   "instr": "glock",
+   "chord": "C7",
+   "cue": "c04"
+  },
+  {
+   "t": 61.451,
+   "end": 61.731,
+   "word": "humor",
+   "kind": "high",
+   "beat": "s05b04",
+   "est": false,
+   "placed": true,
+   "note": "F6",
+   "instr": "celesta",
+   "chord": "Dm9",
+   "cue": "c05"
+  },
+  {
+   "t": 82.873,
+   "end": 83.113,
+   "word": "hurts",
+   "kind": "low",
+   "beat": "s07b09",
+   "est": false,
+   "placed": true,
+   "note": "D2",
+   "instr": "low",
+   "chord": "Dm",
+   "cue": "c06"
+  },
+  {
+   "t": 88.569,
+   "end": 89.209,
+   "word": "scowls",
+   "kind": "low",
+   "beat": "s08b01",
+   "est": false,
+   "placed": true,
+   "note": "F1",
+   "instr": "low",
+   "chord": "F",
+   "cue": "c07"
+  },
+  {
+   "t": 101.391,
+   "end": 101.611,
+   "word": "scary",
+   "kind": "low",
+   "beat": "s09b03",
+   "est": false,
+   "placed": true,
+   "note": "F1",
+   "instr": "low",
+   "chord": "Fadd9",
+   "cue": "c08"
+  },
+  {
+   "t": 113.403,
+   "end": 113.583,
+   "word": "lot",
+   "kind": "low",
+   "beat": "s10b06",
+   "est": false,
+   "placed": true,
+   "note": "D2",
+   "instr": "low",
+   "chord": "Dm",
+   "cue": "c09"
+  },
+  {
+   "t": 122.407,
+   "end": 122.587,
+   "word": "awkward",
+   "kind": "low",
+   "beat": "s11b04",
+   "est": false,
+   "placed": true,
+   "note": "D2",
+   "instr": "low",
+   "chord": "Dm9",
+   "cue": "c10"
+  },
+  {
+   "t": 139.989,
+   "end": 140.269,
+   "word": "crying",
+   "kind": "low",
+   "beat": "s13b09",
+   "est": false,
+   "placed": true,
+   "note": "Bb1",
+   "instr": "low",
+   "chord": "Bbmaj7",
+   "cue": "c12"
+  },
+  {
+   "t": 149.406,
+   "end": 149.746,
+   "word": "you",
+   "kind": "high",
+   "beat": "s13b08",
+   "est": false,
+   "placed": true,
+   "note": "F6",
+   "instr": "harp",
+   "chord": "Bbmaj7",
+   "cue": "c12"
+  },
+  {
+   "t": 156.099,
+   "end": 156.439,
+   "word": "meaningful",
+   "kind": "high",
+   "beat": "s13b14",
+   "est": false,
+   "placed": true,
+   "note": "G6",
+   "instr": "harp",
+   "chord": "C7",
+   "cue": "c12"
+  },
+  {
+   "t": 175.56,
+   "end": 175.96,
+   "word": "intensely",
+   "kind": "high",
+   "beat": "s14b06",
+   "est": false,
+   "placed": true,
+   "note": "D6",
+   "instr": "glock",
+   "chord": "Gm/Bb",
+   "cue": "c13"
+  },
+  {
+   "t": 183.21,
+   "end": 183.49,
+   "word": "sad",
+   "kind": "low",
+   "beat": "s15b04",
+   "est": false,
+   "placed": true,
+   "note": "E1",
+   "instr": "low",
+   "chord": "Am/E",
+   "cue": "c14"
+  },
+  {
+   "t": 194.305,
+   "end": 194.665,
+   "word": "horizon",
+   "kind": "high",
+   "beat": "s16b01",
+   "est": false,
+   "placed": true,
+   "note": "F6",
+   "instr": "celesta",
+   "chord": "Dm7",
+   "cue": "c15"
+  },
+  {
+   "t": 201.073,
+   "end": 201.373,
+   "word": "charge",
+   "kind": "high",
+   "beat": "s16b04",
+   "est": false,
+   "placed": true,
+   "note": "E6",
+   "instr": "celesta",
+   "chord": "C7",
+   "cue": "c15"
+  },
+  {
+   "t": 216.555,
+   "end": 216.895,
+   "word": "maybe",
+   "kind": "high",
+   "beat": "s16b09",
+   "est": false,
+   "placed": true,
+   "note": "F6",
+   "instr": "celesta",
+   "chord": "Fadd9",
+   "cue": "c15"
+  },
+  {
+   "t": 219.585,
+   "end": 220.005,
+   "word": "Bonus",
+   "kind": "high",
+   "beat": "s17b01",
+   "est": false,
+   "placed": true,
+   "note": "A6",
+   "instr": "celesta",
+   "chord": "Dadd9",
+   "cue": "c16"
+  },
+  {
+   "t": 229.805,
+   "end": 230.105,
+   "word": "depression",
+   "kind": "low",
+   "beat": "s18b02",
+   "est": false,
+   "placed": true,
+   "note": "D2",
+   "instr": "low",
+   "chord": "Dm",
+   "cue": "c17"
+  },
+  {
+   "t": 263.579,
+   "end": 263.799,
+   "word": "fat",
+   "kind": "high",
+   "beat": "s20b05",
+   "est": false,
+   "placed": true,
+   "note": "D6",
+   "instr": "glock",
+   "chord": "Dm",
+   "cue": "c19"
+  },
+  {
+   "t": 272.619,
+   "end": 273.059,
+   "word": "rude",
+   "kind": "high",
+   "beat": "s20b08",
+   "est": false,
+   "placed": true,
+   "note": "G6",
+   "instr": "glock",
+   "chord": "A7",
+   "cue": "c19"
+  },
+  {
+   "t": 286.629,
+   "end": 286.909,
+   "word": "galaxies",
+   "kind": "high",
+   "beat": "s22b01",
+   "est": false,
+   "placed": true,
+   "note": "F#6",
+   "instr": "celesta",
+   "chord": "Dmaj7",
+   "cue": "c21"
+  },
+  {
+   "t": 303.172,
+   "end": 303.432,
+   "word": "fear",
+   "kind": "high",
+   "beat": "s22b08",
+   "est": false,
+   "placed": true,
+   "note": "F#6",
+   "instr": "celesta",
+   "chord": "Bm7",
+   "cue": "c21"
+  }
+ ],
+ "hits": [
+  {
+   "t": 63.7,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "plan:c05",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c05"
+  },
+  {
+   "t": 63.980000000000004,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "plan:c05",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c05"
+  },
+  {
+   "t": 67.763,
+   "kind": "wahwah",
+   "len": 2.0,
+   "src": "plan:c05",
+   "stab": false,
+   "notes": 1,
+   "placed": true,
+   "cue": "c05"
+  },
+  {
+   "t": 99.57,
+   "kind": "sting",
+   "len": 2.0,
+   "src": "plan:c08",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c08"
+  },
+  {
+   "t": 158.894,
+   "kind": "stop",
+   "len": 5.4739999999999895,
+   "src": "plan:c12",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c12"
+  },
+  {
+   "t": 163.168,
+   "kind": "stop",
+   "len": 1.4,
+   "src": "plan:c12",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c12"
+  },
+  {
+   "t": 169.73,
+   "kind": "stop",
+   "len": 7.650000000000006,
+   "src": "plan:c13",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c13"
+  },
+  {
+   "t": 169.98,
+   "kind": "wahwah",
+   "len": 2.0,
+   "src": "auto:block_thunk",
+   "stab": true,
+   "notes": 4,
+   "placed": true,
+   "cue": "c13"
+  },
+  {
+   "t": 260.309,
+   "kind": "stop",
+   "len": 1.3899999999999864,
+   "src": "plan:c18",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c18"
+  },
+  {
+   "t": 261.779,
+   "kind": "stop",
+   "len": 9.119999999999994,
+   "src": "auto:kick_thump",
+   "stab": true,
+   "notes": 4,
+   "placed": true,
+   "cue": "c19"
+  },
+  {
+   "t": 305.532,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "plan:c21",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c21"
+  }
+ ],
+ "file": {
+  "seconds": 316.302,
+  "peak_db": -1.01,
+  "true_peak_db": -1.0,
+  "rms_db": -21.03,
+  "lufs": -18.0,
+  "dc": 0.0,
+  "nan": 0,
+  "max_jump": 0.3639,
+  "click_score": 4.3,
+  "start_abs": 0.0,
+  "end_abs": 0.0
+ },
+ "gain_db": 1.55
+}

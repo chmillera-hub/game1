@@ -303,8 +303,8 @@ class Magician extends Character {
     this.faceMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35, jaw: JAW });
     this.skinMat = gloom(C.face, { roughness: 0.55, sheen: 0.3, sheenColor: 0xdfe6ff, rim: 0.7, glow: 0.07, wrap: 0.35 });
     this.lidMat = gloom(C.socket, { roughness: 0.6, rim: 0.3, glow: 0.04, fizz: 0 });
-    this.coatMat = gloom(C.coat, { sheen: 0.55, sheenColor: 0x93a1c4, rim: 0.6, fizz: 0.04, wrap: 0.35 });
-    this.coat2Mat = gloom(C.coat, { sheen: 0.55, sheenColor: 0x93a1c4, rim: 0.5, fizz: 0.04, wrap: 0.35, side: THREE.DoubleSide });
+    this.coatMat = gloom(C.coat, { rim: 0.6, wrap: 0.35 });
+    this.coat2Mat = gloom(C.coat, { rim: 0.5, wrap: 0.35, side: THREE.DoubleSide });
     this.lapelMat = gloom(C.lapel, { roughness: 0.4, sheen: 0.9, sheenColor: 0xb0bde0, rim: 0.45 });
     this.shirtMat = gloom(C.shirt, { roughness: 0.75, rim: 0.4, glow: 0.06 });
     this.cravatMat = gloom(C.cravat, { roughness: 0.5, sheen: 0.8, sheenColor: 0xd0d6ee, rim: 0.4 });
@@ -593,7 +593,7 @@ class Magician extends Character {
         const yy = y0 + H * 0.5 * (1 - 0.35 * (1 - rounded(L / 0.12))) + hgt * 0.5 * se(Math.cos(a), 2.6) + 0.055 * Math.pow(smoothstep(0.62, 1.0, L), 2.2);
         out.set(w * se(Math.sin(a), 2.6), yy, z);
       });
-      const sm = new THREE.Mesh(sg, this.shoeMat); sm.castShadow = true; shoe.add(sm);
+      const sm = new THREE.Mesh(sg, this.shoeMat); shoe.add(sm);
       this.root.add(tube.mesh, shoe);
       this.legs[side] = { tube, shoe, hip: V(), knee: V(), ankle: V() };
     }
@@ -611,7 +611,7 @@ class Magician extends Character {
       const idx = [];
       for (let j = 0; j < this.NV; j++) for (let i = 0; i < this.NU; i++) { const a = j * (this.NU + 1) + i, b = a + 1, c = a + this.NU + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
       g.setIndex(idx);
-      const mesh = new THREE.Mesh(g, this.coat2Mat); mesh.frustumCulled = false; mesh.castShadow = true;
+      const mesh = new THREE.Mesh(g, this.coat2Mat); mesh.frustumCulled = false;
       this.root.add(mesh);
       // tattered hem: per-column length factors (jagged)
       const jag = Array.from({ length: this.NU + 1 }, (_, i) => 1 + (i % 2 ? -0.12 : 0.03) * (0.6 + 0.8 * hash1(i * 7 + (s > 0 ? 3 : 11))));
@@ -652,7 +652,7 @@ class Magician extends Character {
       const wob = 1 + 0.06 * Math.sin(a * 5) * smoothstep(0.55, 0.9, s);
       out.set(Math.sin(a) * r * wob, y, Math.cos(a) * r * wob);
     }), this.velvetMat);
-    body.castShadow = true; pg.add(body);
+    pg.add(body);
     const neckR = new THREE.Mesh(new THREE.TorusGeometry(0.015, 0.0035, 6, 18), this.cravatMat); neckR.rotation.x = Math.PI / 2; neckR.position.y = -0.012; pg.add(neckR);
     this.frill = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.014, 0.03, 18, 1, true), this.velvetMat);
     this.frill.material = this.velvetMat; this.frill.position.y = 0.004; pg.add(this.frill);

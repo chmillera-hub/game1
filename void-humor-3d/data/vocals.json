@@ -1,37 +1,177 @@
 {
- "s01b06": {
+ "s02b03": {
   "speaker": "USER",
   "vocal": "scream_short",
-  "file": "audio/vocals/s01b06.wav",
+  "file": "audio/vocals/s02b03.wav",
   "dur": 0.8,
   "caption": null
  },
  "s03b05": {
+  "speaker": "JESUS",
+  "vocal": "whisper",
+  "file": "audio/vocals/s03b05.wav",
+  "dur": 3.4,
+  "caption": "(whispers a joke)"
+ },
+ "s04b02": {
+  "speaker": "VOID",
+  "vocal": "snort",
+  "file": "audio/vocals/s04b02.wav",
+  "dur": 0.7,
+  "caption": null
+ },
+ "s04b03": {
+  "speaker": "VOID",
+  "vocal": "giggle",
+  "file": "audio/vocals/s04b03.wav",
+  "dur": 1.2,
+  "caption": null
+ },
+ "s04b04": {
   "speaker": "VOID",
   "vocal": "laugh_maniacal",
-  "file": "audio/vocals/s03b05.wav",
-  "dur": 3.0,
+  "file": "audio/vocals/s04b04.wav",
+  "dur": 2.2,
+  "caption": "(HA!)"
+ },
+ "s04b06": {
+  "speaker": "VOID",
+  "vocal": "laugh_maniacal",
+  "file": "audio/vocals/s04b06.wav",
+  "dur": 2.4,
   "caption": null
  },
- "s05b02": {
+ "s04b08": {
+  "speaker": "VOID",
+  "vocal": "cough",
+  "file": "audio/vocals/s04b08.wav",
+  "dur": 1.5,
+  "caption": null
+ },
+ "s04b10": {
+  "speaker": "VOID",
+  "vocal": "cough",
+  "file": "audio/vocals/s04b10.wav",
+  "dur": 1.3,
+  "caption": null
+ },
+ "s04b11": {
+  "speaker": "VOID",
+  "vocal": "laugh_maniacal",
+  "file": "audio/vocals/s04b11.wav",
+  "dur": 2.4,
+  "caption": null
+ },
+ "s04b12": {
+  "speaker": "JESUS",
+  "vocal": "laugh_soft",
+  "file": "audio/vocals/s04b12.wav",
+  "dur": 2.2,
+  "caption": null
+ },
+ "s06b02": {
+  "speaker": "VOID",
+  "vocal": "giggle",
+  "file": "audio/vocals/s06b02.wav",
+  "dur": 1.4,
+  "caption": null
+ },
+ "s06b03": {
+  "speaker": "VOID",
+  "vocal": "cough",
+  "file": "audio/vocals/s06b03.wav",
+  "dur": 0.7,
+  "caption": null
+ },
+ "s07b02": {
   "speaker": "VOID",
   "vocal": "whisper",
-  "file": "audio/vocals/s05b02.wav",
-  "dur": 3.2,
+  "file": "audio/vocals/s07b02.wav",
+  "dur": 3.4,
   "caption": null
  },
- "s05b07": {
+ "s07b03": {
   "speaker": "JESUS",
   "vocal": "mmhm",
-  "file": "audio/vocals/s05b07.wav",
+  "file": "audio/vocals/s07b03.wav",
+  "dur": 2.8,
+  "caption": null
+ },
+ "s07b07": {
+  "speaker": "VOID",
+  "vocal": "whisper",
+  "file": "audio/vocals/s07b07.wav",
+  "dur": 2.4,
+  "caption": null
+ },
+ "s07b08": {
+  "speaker": "VOID",
+  "vocal": "whisper",
+  "file": "audio/vocals/s07b08.wav",
+  "dur": 1.6,
+  "caption": "(a slower whisper)"
+ },
+ "s10b03": {
+  "speaker": "VOID",
+  "vocal": "huff",
+  "file": "audio/vocals/s10b03.wav",
+  "dur": 1.8,
+  "caption": null
+ },
+ "s15b05": {
+  "speaker": "VOID",
+  "vocal": "sigh",
+  "file": "audio/vocals/s15b05.wav",
+  "dur": 1.2,
+  "caption": null
+ },
+ "s15b07": {
+  "speaker": "VOID",
+  "vocal": "snort",
+  "file": "audio/vocals/s15b07.wav",
   "dur": 0.8,
   "caption": null
  },
- "s06b06": {
+ "s16b05": {
   "speaker": "VOID",
-  "vocal": "huff",
-  "file": "audio/vocals/s06b06.wav",
-  "dur": 2.2,
-  "caption": "(huff... puff)"
+  "vocal": "snort",
+  "file": "audio/vocals/s16b05.wav",
+  "dur": 0.7,
+  "caption": null
+ },
+ "s16b06": {
+  "speaker": "VOID",
+  "vocal": "giggle",
+  "file": "audio/vocals/s16b06.wav",
+  "dur": 1.6,
+  "caption": null
+ },
+ "s16b12": {
+  "speaker": "VOID",
+  "vocal": "giggle",
+  "file": "audio/vocals/s16b12.wav",
+  "dur": 2.4,
+  "caption": null
+ },
+ "s19b05": {
+  "speaker": "VOID",
+  "vocal": "hum",
+  "file": "audio/vocals/s19b05.wav",
+  "dur": 1.8,
+  "caption": "(a low, warm hum)"
+ },
+ "s21b04": {
+  "speaker": "VOID",
+  "vocal": "hum",
+  "file": "audio/vocals/s21b04.wav",
+  "dur": 1.0,
+  "caption": "(innocent hum)"
+ },
+ "s22b13": {
+  "speaker": "VOID",
+  "vocal": "hum",
+  "file": "audio/vocals/s22b13.wav",
+  "dur": 2.4,
+  "caption": null
  }
 }

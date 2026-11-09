@@ -154,12 +154,15 @@ eye's outer corner (tears / a partner wiping Fear's tears).
   (+ `hand: { grip: 0.9 }`); clinging to a leg: two `target`s on the leg's near surface with `palm` facing it.
 
 ## Performance
-Rig JS per frame ≈ 2–3 ms (measured in-page, incl. the 30-sample spring look-back for the tuft/scarf, 11 swept
-tubes, face decal redraw only when mouth params change). Body: one 57×47 SDF-generated mesh with a vertex-shader
-head bend (no CPU re-skinning). GPU cost is a single physical "being" material over most of the character;
-the lab frame measured 0.95–2.2 s on SwiftShader **while the 4-core machine was at load average 10–13**
-(the trivial `facetest` lab measured 1.0–1.7 s in the same conditions, i.e. Fear's lab ≈ 1.2–1.4× facetest).
-Re-bench on an idle machine before trusting absolute numbers.
+- Rig JS per frame ≈ 2–3.5 ms (measured in-page; includes the 30-sample spring look-back for tuft/scarf, 11 swept
+  tubes, IK, tear drops; the face decal canvas is redrawn only when mouth/tear params change).
+- Body: one 57×47 SDF-generated mesh, head bend in the vertex shader (no CPU skinning). Physical "being" material
+  (with sheen) on the body only; lids / limbs / tuft use a cheaper MeshStandard + core `enhance()` variant; the
+  scarf fringe is merged (one draw per tail end).
+- Lab frame (Fear + backdrop + shadowed ground + post), SwiftShader 720×1280, on a shared 4-core machine at load
+  avg 3–6: 0.67–1.0 s/frame, vs 0.45–0.59 s for the trivial `facetest` lab in the same run; with Fear hidden the
+  lab floor is ≈0.54 s, so Fear itself costs ≈0.15–0.25 s/frame. Absolute numbers swung ±50 % with machine
+  load during development — re-bench on an idle machine.
 
 ## Known limitations / tips
 - The head bend happens in a zone just above the scarf; the face/decal are rigid above it. At extreme pitch

@@ -1,213 +1,311 @@
 {
  "fps": 24,
- "duration": 358.471,
+ "duration": 316.302,
  "scenes": [
   {
    "id": "s01",
-   "slug": "lets_say",
+   "slug": "running_from_the_void",
    "location": "THE_EDGE",
    "start": 0.0,
-   "end": 20.15,
+   "end": 7.41,
    "transition_in": "cut",
    "music": {
-    "mood": "tense-comic chase that stops dead for the cue, then a twinkly arrival and a warm 'old friends' chord",
-    "instrumentation": "scurrying pizzicato strings and light tom pulses, a bassoon line for the Void's waddle; on 'now.' a harp glissando and celesta sparkle; a warm French-horn chord on the waves",
-    "intensity": 0.5
+    "mood": "comic-anxious scurry over a warm dusk",
+    "instrumentation": "pizzicato strings, light marimba, a soft low clarinet on each of the Void's footfalls, warm string pad underneath; the scurry thins for one bar under the phone insert",
+    "intensity": 0.45
    },
    "time_of_day": "golden dusk"
   },
   {
    "id": "s02",
-   "slug": "the_whisper",
+   "slug": "and_jesus_appears",
    "location": "THE_EDGE",
-   "start": 20.15,
-   "end": 32.8,
+   "start": 7.41,
+   "end": 21.87,
    "transition_in": "cut",
    "music": {
-    "mood": "sly, conspiratorial, light on its feet",
-    "instrumentation": "plucked harp, muted pizzicato, soft clarinet, a brushed snare tick",
+    "mood": "the chase stops dead for the cue; then a warm, light surprise",
+    "instrumentation": "the pizzicato chase cuts out for the empty-path pause (only wind and approaching footsteps); on 'Now' a harp glissando and a celesta glint; warm strings; the chase falls away to a few plucks",
     "intensity": 0.35
    },
    "time_of_day": "golden dusk"
   },
   {
    "id": "s03",
-   "slug": "cosmic_laughter",
+   "slug": "the_whisper",
    "location": "THE_EDGE",
-   "start": 32.8,
-   "end": 48.55,
+   "start": 21.87,
+   "end": 37.031,
    "transition_in": "cut",
    "music": {
-    "mood": "a held breath, then a sparkling comic romp that peaks with the big galaxy",
-    "instrumentation": "a single held harp note for the pause; celesta and glockenspiel bursts on each star, bouncing bassoon, timpani roll into a cymbal-swell on the big cough",
-    "intensity": 0.6
-   },
-   "time_of_day": "golden dusk"
-  },
-  {
-   "id": "s04",
-   "slug": "sense_of_humor",
-   "location": "THE_EDGE",
-   "start": 48.55,
-   "end": 70.346,
-   "transition_in": "cut",
-   "music": {
-    "mood": "the romp drains to one held note; then dry, light comic plucks",
-    "instrumentation": "a sustained celesta note, harp harmonics; a two-note glockenspiel 'tee-hee'; a single muted-trumpet 'doink' after the bleep",
-    "intensity": 0.3
-   },
-   "time_of_day": "golden dusk"
-  },
-  {
-   "id": "s05",
-   "slug": "side_eye",
-   "location": "THE_EDGE",
-   "start": 70.346,
-   "end": 104.346,
-   "transition_in": "cut",
-   "music": {
-    "mood": "sneaky, suspicious comic",
-    "instrumentation": "low clarinet, walking pizzicato bass, a wood-block tick on each side-eye; a tiny fanfare-in-miniature for Jesus's announcement",
+    "mood": "playful, sly, tiptoeing",
+    "instrumentation": "pizzicato walking bass, a low clarinet, soft vibraphone, brushed snare; everything drops to one held harp note under 'I have theories'",
     "intensity": 0.35
    },
    "time_of_day": "golden dusk"
   },
   {
-   "id": "s06",
-   "slug": "hell_no",
+   "id": "s04",
+   "slug": "cosmic_laughter",
    "location": "THE_EDGE",
-   "start": 104.346,
-   "end": 128.407,
+   "start": 37.031,
+   "end": 53.051,
    "transition_in": "cut",
    "music": {
-    "mood": "a record-scratch stop, then sulky comic; then dead air for the awkward face",
-    "instrumentation": "a pizzicato 'nope' cluster; a descending tuba-and-contrabassoon slide for the turn; then nothing but wind; a single low pizzicato on 'awkward'",
+    "mood": "a held breath, then a comic eruption into sparkle that peaks with the big galaxy",
+    "instrumentation": "a single held harp note for the still hold; one glockenspiel ping on the snort-star, two on the giggle-stars; then a timpani roll and low brass on the burst, glockenspiel and harp glissandi on the stars, a bouncing bassoon underneath, a cymbal swell on the beach-ball galaxy",
+    "intensity": 0.65
+   },
+   "time_of_day": "golden dusk"
+  },
+  {
+   "id": "s05",
+   "slug": "a_pretty_good_sense_of_humor",
+   "location": "THE_EDGE",
+   "start": 53.051,
+   "end": 65.454,
+   "transition_in": "cut",
+   "music": {
+    "mood": "a cheeky little cadence, then held breath",
+    "instrumentation": "the romp drains to one sustained celesta note; solo clarinet, harp, pizzicato; a glock note on 'humor'",
     "intensity": 0.3
+   },
+   "time_of_day": "golden dusk"
+  },
+  {
+   "id": "s06",
+   "slug": "what_the_actual",
+   "location": "THE_EDGE",
+   "start": 65.454,
+   "end": 70.143,
+   "transition_in": "cut",
+   "music": {
+    "mood": "near-silence for the punchline; a muted-trumpet 'doink' after the bleep",
+    "instrumentation": "a single muted-trumpet 'doink' right after the bleep; bassoon; pizzicato; one glock ping on the hiccup star",
+    "intensity": 0.2
    },
    "time_of_day": "golden dusk"
   },
   {
    "id": "s07",
-   "slug": "a_gentle_smile",
+   "slug": "the_void_whispers",
    "location": "THE_EDGE",
-   "start": 128.407,
-   "end": 142.882,
+   "start": 70.143,
+   "end": 86.119,
    "transition_in": "cut",
    "music": {
-    "mood": "warm, tender, simple",
-    "instrumentation": "felt piano, a solo cello line, soft string pad",
-    "intensity": 0.25
+    "mood": "sneaky and curious, then a sudden soft sincerity",
+    "instrumentation": "low pizzicato, a soft woodblock tick on each side-eye shift, a muted low clarinet, a breathy flute; everything thins to a single warm cello note under 'That hurts'",
+    "intensity": 0.3
    },
    "time_of_day": "golden dusk"
   },
   {
    "id": "s08",
-   "slug": "talk_to_me",
+   "slug": "do_you_have_a_moment",
    "location": "THE_EDGE",
-   "start": 142.882,
-   "end": 181.632,
+   "start": 86.119,
+   "end": 97.62,
    "transition_in": "cut",
    "music": {
-    "mood": "sincere, hopeful, with a growing comic tension underneath each 'emotions'",
-    "instrumentation": "felt piano and warm strings; a soft harp figure on 'meaningful'; a single low cello note under each user flinch",
+    "mood": "polite, hopeful, a little absurd",
+    "instrumentation": "solo harp, warm strings, a low cello pedal under the scowl; a tiny fanfare-in-miniature (two muted trumpets) as Jesus straightens his sash",
     "intensity": 0.3
    },
-   "time_of_day": "golden dusk"
+   "time_of_day": "late dusk"
   },
   {
    "id": "s09",
-   "slug": "blocked",
+   "slug": "hell_no",
    "location": "THE_EDGE",
-   "start": 181.632,
-   "end": 195.232,
+   "start": 97.62,
+   "end": 104.283,
    "transition_in": "cut",
    "music": {
-    "mood": "comic, staccato, brisk exit; then silence for the ding",
-    "instrumentation": "stomping pizzicato and bassoon for the exit; a dead stop; a single glockenspiel ding; a soft wry clarinet trill on 'intensely'",
-    "intensity": 0.45
+    "mood": "a stop, then a low thud",
+    "instrumentation": "silence; a low cello note on 'scary'; dry pizzicato",
+    "intensity": 0.25
    },
-   "time_of_day": "golden dusk"
+   "time_of_day": "late dusk"
   },
   {
    "id": "s10",
-   "slug": "shrug_and_pat",
+   "slug": "rolls_its_eyes",
    "location": "THE_EDGE",
-   "start": 195.232,
-   "end": 208.707,
+   "start": 104.283,
+   "end": 115.363,
    "transition_in": "cut",
    "music": {
-    "mood": "wry, then tender",
-    "instrumentation": "a single comic pizzicato 'shrug' figure, then solo cello and felt piano",
-    "intensity": 0.22
+    "mood": "grumpy comic, then a small ache",
+    "instrumentation": "a tuba-ish low bassoon on the huffs, pizzicato, a descending tuba-and-contrabassoon slide on the turn, a soft timpani thump on the sit; then a lone felt-piano note on 'a lot'",
+    "intensity": 0.35
    },
    "time_of_day": "late dusk"
   },
   {
    "id": "s11",
-   "slug": "into_the_horizon",
+   "slug": "oh_boy",
    "location": "THE_EDGE",
-   "start": 208.707,
-   "end": 237.382,
+   "start": 115.363,
+   "end": 124.037,
    "transition_in": "cut",
    "music": {
-    "mood": "warm, gently swinging walking theme, fading with distance",
-    "instrumentation": "celesta melody over soft strings and a lazy upright bass; a glockenspiel 'ting' on each giggle-star",
-    "intensity": 0.4
+    "mood": "comic suspension",
+    "instrumentation": "dead air under the face except wind; one sustained high violin harmonic; a woodblock tick on each eye-dart; a single low pizzicato on 'awkward'",
+    "intensity": 0.15
+   },
+   "time_of_day": "late dusk"
+  },
+  {
+   "id": "s12",
+   "slug": "a_hand_on_the_shoulder",
+   "location": "THE_EDGE",
+   "start": 124.037,
+   "end": 131.227,
+   "transition_in": "cut",
+   "music": {
+    "mood": "tender",
+    "instrumentation": "felt piano, warm cello, a single harp tone on the smile",
+    "intensity": 0.3
+   },
+   "time_of_day": "late dusk"
+  },
+  {
+   "id": "s13",
+   "slug": "talk_to_me",
+   "location": "THE_EDGE",
+   "start": 131.227,
+   "end": 164.368,
+   "transition_in": "cut",
+   "music": {
+    "mood": "warm and intimate, then hopeful, then a dead stop",
+    "instrumentation": "solo felt piano and soft strings, patient and warm under every line of Jesus's offer; then the music cuts out under the silence",
+    "intensity": 0.35
+   },
+   "time_of_day": "late dusk"
+  },
+  {
+   "id": "s14",
+   "slug": "blocked",
+   "location": "THE_EDGE",
+   "start": 164.368,
+   "end": 177.38,
+   "transition_in": "cut",
+   "music": {
+    "mood": "comic stomp, a dead stop for the ding, then a little lonely",
+    "instrumentation": "pizzicato stomps and bassoon; a low piano 'thunk' on the block; a dead stop; a single bright glockenspiel ding from the sash; a soft wry clarinet trill on 'intensely'; a lone cello note under the glance back",
+    "intensity": 0.45
+   },
+   "time_of_day": "late dusk"
+  },
+  {
+   "id": "s15",
+   "slug": "fair_enough",
+   "location": "THE_EDGE",
+   "start": 177.38,
+   "end": 189.935,
+   "transition_in": "cut",
+   "music": {
+    "mood": "bittersweet, gentle, then a small lift",
+    "instrumentation": "a single comic pizzicato 'shrug' figure, felt piano, soft clarinet, a low cello note under the sad smile; a glock ping on the snort-star",
+    "intensity": 0.25
+   },
+   "time_of_day": "late dusk"
+  },
+  {
+   "id": "s16",
+   "slug": "into_the_horizon",
+   "location": "THE_EDGE",
+   "start": 189.935,
+   "end": 217.725,
+   "transition_in": "cut",
+   "music": {
+    "mood": "warm, gently comic, resolving",
+    "instrumentation": "strings and harp, celesta on the giggles, a soft walking pizzicato bass; the Part One theme resolves under the silhouettes; then it thins to a solo harp under 'Not yet. But maybe.' and lets its last chord ring into the dissolve",
+    "intensity": 0.45
    },
    "time_of_day": "sunset"
   },
   {
-   "id": "s12",
-   "slug": "bonus_the_lurker",
+   "id": "s17",
+   "slug": "bonus_scene",
    "location": "MIND_BACKROOM",
-   "start": 237.382,
-   "end": 268.318,
+   "start": 217.725,
+   "end": 226.825,
    "transition_in": "dissolve",
    "music": {
-    "mood": "first a hushed, tender celesta reprise of the cage moment; then a creeping comic-villain line sneaks in underneath",
-    "instrumentation": "celesta and soft pad; then tiptoeing pizzicato double bass, low bassoon and contrabassoon, a bowed-saw glide on 'lurking', a harp 'shing' on the dagger",
-    "intensity": 0.3
-   },
-   "time_of_day": "backroom"
-  },
-  {
-   "id": "s13",
-   "slug": "the_kick",
-   "location": "MIND_BACKROOM",
-   "start": 268.318,
-   "end": 305.096,
-   "transition_in": "cut",
-   "music": {
-    "mood": "tiptoe suspense, a held breath, a single comic slam, then a rattling slapstick tumble",
-    "instrumentation": "tiptoe pizzicato and clarinet; a dead stop; a bass-drum 'thump' and slide-whistle for the flight; xylophone tumble and cymbal crash for the buckets; a tiny triangle for the sign",
-    "intensity": 0.5
-   },
-   "time_of_day": "backroom"
-  },
-  {
-   "id": "s14",
-   "slug": "whats_that_noise",
-   "location": "MIND_BACKROOM",
-   "start": 305.096,
-   "end": 313.021,
-   "transition_in": "cut",
-   "music": {
-    "mood": "a tiny suspicious pause, then a playful innocent shrug, then wonder begins",
-    "instrumentation": "a solo flute question; a two-note bassoon 'who, me?'; then a celesta shimmer as the galaxy appears",
+    "mood": "a giggle, then hushed storybook mystery",
+    "instrumentation": "a downward harp glissando, celesta, a low warm pad; the soft music-box motif from the earlier film's cage scene",
     "intensity": 0.25
    },
    "time_of_day": "backroom"
   },
   {
-   "id": "s15",
-   "slug": "a_moment_with_my_fear",
+   "id": "s18",
+   "slug": "the_magician_lurks",
    "location": "MIND_BACKROOM",
-   "start": 313.021,
-   "end": 358.471,
+   "start": 226.825,
+   "end": 246.199,
    "transition_in": "cut",
    "music": {
-    "mood": "awe, a warm swell, then hush; a tiny comic pluck for the final button; warm last chord",
-    "instrumentation": "celesta and harp, shimmering string pad, a soft wordless choir; the celesta motif from the earlier film's cosmos scene; a single pizzicato for the bucket; warm strings to end",
+    "mood": "creepy-comic tiptoe",
+    "instrumentation": "tiptoeing pizzicato double bass, a low bass clarinet, a harp 'shing' on the dagger; it thins almost to nothing as the colour drains from the floor",
+    "intensity": 0.35
+   },
+   "time_of_day": "backroom"
+  },
+  {
+   "id": "s19",
+   "slug": "the_corner_of_its_eye",
+   "location": "MIND_BACKROOM",
+   "start": 246.199,
+   "end": 253.619,
+   "transition_in": "cut",
+   "music": {
+    "mood": "suspense held under tenderness",
+    "instrumentation": "sustained high strings, ticking pizzicato, one low cello note on each glance to the corner; the Void's low hum doubled by a soft organ pedal, like a cat purring in a cathedral",
+    "intensity": 0.3
+   },
+   "time_of_day": "backroom"
+  },
+  {
+   "id": "s20",
+   "slug": "the_kick",
+   "location": "MIND_BACKROOM",
+   "start": 253.619,
+   "end": 274.096,
+   "transition_in": "cut",
+   "music": {
+    "mood": "tiptoe suspense, a held breath, a comic hit, then a rattling slapstick tumble",
+    "instrumentation": "tiptoe pizzicato and clarinet; a held breath, then a timpani 'boom' on the kick; a rising slide-whistle flute glissando for the flight; xylophone tumble and a soft cymbal crash for the buckets; tiny glock 'birdies'; a lone triangle tink when the sign tips over",
+    "intensity": 0.55
+   },
+   "time_of_day": "backroom"
+  },
+  {
+   "id": "s21",
+   "slug": "whats_that_noise",
+   "location": "MIND_BACKROOM",
+   "start": 274.096,
+   "end": 283.939,
+   "transition_in": "cut",
+   "music": {
+    "mood": "comic innocence, then trust",
+    "instrumentation": "a solo flute 'question' figure; a two-note bassoon 'who, me?' under the shrug; a celesta answer on 'Okay'",
+    "intensity": 0.25
+   },
+   "time_of_day": "backroom"
+  },
+  {
+   "id": "s22",
+   "slug": "a_moment_with_my_fear",
+   "location": "MIND_BACKROOM",
+   "start": 283.939,
+   "end": 316.302,
+   "transition_in": "cut",
+   "music": {
+    "mood": "awe and warmth; a big swell, then hush; one tiny comic pluck; a warm last chord",
+    "instrumentation": "celesta and harp, shimmering strings, a soft wordless choir; the celesta/music-box motif from the earlier film's cosmos scene layered over a reprise of the Part One walk-off theme so both halves and both films resolve together; a single pizzicato for the bucket; a single glock note on the wink",
     "intensity": 0.55
    },
    "time_of_day": "backroom"
@@ -218,7 +316,7 @@
    "scene": "s01",
    "kind": "silent",
    "start": 0.6,
-   "end": 2.8,
+   "end": 2.6,
    "sfx": [
     "footsteps_run",
     "wind_soft"
@@ -227,10 +325,12 @@
   "s01b02": {
    "scene": "s01",
    "kind": "line",
-   "start": 2.8,
+   "start": 2.6,
+   "audio": "audio/wav/s01b02.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "So let's say there's a Twitter user, crying,",
-   "end": 6.1,
+   "text": "So, let's say there's a Twitter user...",
+   "end": 4.45,
    "sfx": [
     "footsteps_run"
    ]
@@ -238,567 +338,500 @@
   "s01b03": {
    "scene": "s01",
    "kind": "line",
-   "start": 6.3,
+   "start": 5.05,
+   "audio": "audio/wav/s01b03.wav",
+   "marks": [
+    {
+     "word": "void",
+     "kind": "low",
+     "start": 6.41,
+     "end": 6.55
+    }
+   ],
    "speaker": "NARRATOR",
-   "text": "and running from the void.",
-   "end": 8.475,
-   "sfx": [
-    "footsteps_run",
-    "footsteps_stomp"
-   ]
-  },
-  "s01b04": {
-   "scene": "s01",
-   "kind": "line",
-   "start": 8.875,
-   "speaker": "NARRATOR",
-   "text": "And let's say Jesus appears...",
-   "end": 11.05,
-   "sfx": [
-    "wind_soft"
-   ]
-  },
-  "s01b05": {
-   "scene": "s01",
-   "kind": "line",
-   "start": 12.35,
-   "speaker": "NARRATOR",
-   "text": "Now.",
-   "end": 13.025,
-   "sfx": [
-    "sparkle_appear",
-    "shimmer"
-   ]
-  },
-  "s01b06": {
-   "scene": "s01",
-   "kind": "vocal",
-   "start": 13.325,
-   "speaker": "USER",
-   "vocal": "scream_short",
-   "caption": null,
-   "end": 14.125,
-   "sfx": [
-    "footsteps_run"
-   ]
-  },
-  "s01b07": {
-   "scene": "s01",
-   "kind": "silent",
-   "start": 14.125,
-   "end": 15.625,
-   "sfx": [
-    "thud_sit"
-   ]
-  },
-  "s01b08": {
-   "scene": "s01",
-   "kind": "line",
-   "start": 15.625,
-   "speaker": "NARRATOR",
-   "text": "And sees this.",
-   "end": 17.05,
+   "text": "crying, and running from the void.",
+   "end": 6.91,
    "sfx": [
     "footsteps_stomp"
-   ]
-  },
-  "s01b09": {
-   "scene": "s01",
-   "kind": "silent",
-   "start": 17.35,
-   "end": 19.95,
-   "sfx": [
-    "twinkle"
    ]
   },
   "s02b01": {
    "scene": "s02",
    "kind": "line",
-   "start": 20.5,
+   "start": 7.76,
+   "audio": "audio/wav/s02b01.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "And Jesus walks up to the void,",
-   "end": 23.425,
+   "text": "And let's say Jesus appears...",
+   "end": 9.45,
    "sfx": [
-    "footsteps_soft"
+    "footsteps_run",
+    "wind_soft"
    ]
   },
   "s02b02": {
    "scene": "s02",
    "kind": "line",
-   "start": 23.625,
+   "start": 10.75,
+   "audio": "audio/wav/s02b02.wav",
+   "marks": [
+    {
+     "word": "Now",
+     "kind": "high",
+     "start": 10.75,
+     "end": 10.91
+    }
+   ],
    "speaker": "NARRATOR",
-   "text": "puts his arm around the void,",
-   "end": 26.175,
+   "text": "Now.",
+   "end": 11.21,
    "sfx": [
-    "cloth_rustle"
+    "sparkle_appear"
+   ]
+  },
+  "s02b08": {
+   "scene": "s02",
+   "kind": "silent",
+   "start": 11.51,
+   "end": 12.71,
+   "sfx": [
+    "footsteps_soft",
+    "footsteps_run"
    ]
   },
   "s02b03": {
    "scene": "s02",
-   "kind": "line",
-   "start": 26.375,
-   "speaker": "NARRATOR",
-   "text": "and starts whispering in the void's ear.",
-   "end": 29.3
+   "kind": "vocal",
+   "start": 12.71,
+   "audio": "audio/vocals/s02b03.wav",
+   "speaker": "USER",
+   "vocal": "scream_short",
+   "caption": null,
+   "end": 13.51
   },
   "s02b04": {
    "scene": "s02",
-   "kind": "vocal",
-   "start": 29.4,
-   "speaker": "JESUS",
-   "vocal": "whisper",
-   "caption": "(whispering)",
-   "end": 32.8,
+   "kind": "silent",
+   "start": 13.51,
+   "end": 15.71,
    "sfx": [
-    "wind_soft"
+    "thud_sit"
+   ]
+  },
+  "s02b05": {
+   "scene": "s02",
+   "kind": "silent",
+   "start": 15.71,
+   "end": 17.41
+  },
+  "s02b06": {
+   "scene": "s02",
+   "kind": "line",
+   "start": 17.41,
+   "audio": "audio/wav/s02b06.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And he sees all of this.",
+   "end": 18.87
+  },
+  "s02b07": {
+   "scene": "s02",
+   "kind": "silent",
+   "start": 20.27,
+   "end": 21.87,
+   "sfx": [
+    "footsteps_soft"
    ]
   },
   "s03b01": {
    "scene": "s03",
-   "kind": "silent",
-   "start": 33.15,
-   "end": 34.45
+   "kind": "line",
+   "start": 22.22,
+   "audio": "audio/wav/s03b01.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "So Jesus walks right up to the void,",
+   "end": 24.23,
+   "sfx": [
+    "footsteps_soft"
+   ]
   },
   "s03b02": {
    "scene": "s03",
-   "kind": "vocal",
-   "start": 34.45,
-   "speaker": "VOID",
-   "vocal": "snort",
-   "caption": "(snort)",
-   "end": 35.15,
-   "sfx": [
-    "star_pop"
-   ]
+   "kind": "line",
+   "start": 24.33,
+   "audio": "audio/wav/s03b02.wav",
+   "marks": [],
+   "speaker": "USER",
+   "text": "Uh. Sir? That's the void.",
+   "end": 26.411
   },
   "s03b03": {
    "scene": "s03",
-   "kind": "vocal",
-   "start": 35.35,
-   "speaker": "VOID",
-   "vocal": "giggle",
-   "caption": null,
-   "end": 36.85,
+   "kind": "line",
+   "start": 26.711,
+   "audio": "audio/wav/s03b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "puts his arm around it,",
+   "end": 28.001,
    "sfx": [
-    "star_pop",
-    "twinkle"
+    "cloth_rustle"
    ]
   },
   "s03b04": {
    "scene": "s03",
    "kind": "line",
-   "start": 36.85,
+   "start": 28.101,
+   "audio": "audio/wav/s03b04.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "And then the void starts laughing maniacally,",
-   "end": 39.775,
+   "text": "and starts whispering in its ear.",
+   "end": 29.721,
    "sfx": [
-    "rumble_low"
+    "cloth_rustle"
    ]
   },
   "s03b05": {
    "scene": "s03",
    "kind": "vocal",
-   "start": 36.85,
-   "speaker": "VOID",
-   "vocal": "laugh_maniacal",
-   "caption": null,
-   "end": 39.85
+   "start": 29.921,
+   "audio": "audio/vocals/s03b05.wav",
+   "speaker": "JESUS",
+   "vocal": "whisper",
+   "caption": "(whispers a joke)",
+   "end": 33.321,
+   "sfx": [
+    "twinkle"
+   ]
   },
   "s03b06": {
    "scene": "s03",
    "kind": "line",
-   "start": 39.85,
+   "start": 33.321,
+   "audio": "audio/wav/s03b06.wav",
+   "marks": [
+    {
+     "word": "theories",
+     "kind": "high",
+     "start": 35.721,
+     "end": 36.001
+    }
+   ],
    "speaker": "NARRATOR",
-   "text": "while coughing up some stars and galaxies,",
-   "end": 42.775,
-   "sfx": [
-    "star_pop",
-    "galaxy_whirl"
-   ]
+   "text": "Nobody knows what he said. I have theories.",
+   "end": 36.431
   },
-  "s03b07": {
-   "scene": "s03",
+  "s04b01": {
+   "scene": "s04",
+   "kind": "silent",
+   "start": 37.381,
+   "end": 38.281
+  },
+  "s04b02": {
+   "scene": "s04",
    "kind": "vocal",
-   "start": 39.85,
+   "start": 38.281,
+   "audio": "audio/vocals/s04b02.wav",
    "speaker": "VOID",
-   "vocal": "cough",
+   "vocal": "snort",
    "caption": null,
-   "end": 42.85,
+   "end": 38.981,
    "sfx": [
     "star_pop"
    ]
   },
-  "s03b08": {
-   "scene": "s03",
-   "kind": "line",
-   "start": 42.85,
-   "speaker": "NARRATOR",
-   "text": "from laughing so hard.",
-   "end": 44.65,
-   "sfx": [
-    "pat_pat"
-   ]
-  },
-  "s03b09": {
-   "scene": "s03",
-   "kind": "vocal",
-   "start": 44.85,
-   "speaker": "VOID",
-   "vocal": "laugh_maniacal",
-   "caption": "(maniacal cosmic laughter)",
-   "end": 48.25,
-   "sfx": [
-    "galaxy_whirl",
-    "twinkle"
-   ]
-  },
-  "s04b01": {
-   "scene": "s04",
-   "kind": "line",
-   "start": 48.9,
-   "speaker": "NARRATOR",
-   "text": "Then Jesus looks at the Twitter user,",
-   "end": 51.825
-  },
-  "s04b02": {
-   "scene": "s04",
-   "kind": "line",
-   "start": 51.925,
-   "speaker": "NARRATOR",
-   "text": "who's, like, on their ass, with their hand up,",
-   "end": 55.6
-  },
   "s04b03": {
    "scene": "s04",
-   "kind": "line",
-   "start": 55.7,
-   "speaker": "NARRATOR",
-   "text": "and terror in their eyes.",
-   "end": 57.875,
+   "kind": "vocal",
+   "start": 39.181,
+   "audio": "audio/vocals/s04b03.wav",
+   "speaker": "VOID",
+   "vocal": "giggle",
+   "caption": null,
+   "end": 40.381,
    "sfx": [
+    "star_pop",
     "twinkle"
    ]
   },
   "s04b04": {
    "scene": "s04",
-   "kind": "silent",
-   "start": 58.375,
-   "end": 59.275
+   "kind": "vocal",
+   "start": 40.381,
+   "audio": "audio/vocals/s04b04.wav",
+   "speaker": "VOID",
+   "vocal": "laugh_maniacal",
+   "caption": "(HA!)",
+   "end": 42.581,
+   "sfx": [
+    "rumble_low"
+   ]
   },
   "s04b05": {
    "scene": "s04",
    "kind": "line",
-   "start": 59.275,
-   "speaker": "JESUS",
-   "text": "The void's got a pretty good sense of humor.",
-   "end": 63.175,
-   "sfx": [
-    "star_pop"
-   ]
+   "start": 42.581,
+   "audio": "audio/wav/s04b05.wav",
+   "marks": [
+    {
+     "word": "Maniacally",
+     "kind": "high",
+     "start": 44.821,
+     "end": 45.481
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "And then the void starts laughing. Maniacally.",
+   "end": 45.641
   },
   "s04b06": {
    "scene": "s04",
-   "kind": "line",
-   "start": 63.875,
-   "speaker": "JESUS",
-   "text": "Teehee.",
-   "end": 64.575,
-   "sfx": [
-    "twinkle"
-   ]
+   "kind": "vocal",
+   "start": 42.581,
+   "audio": "audio/vocals/s04b06.wav",
+   "speaker": "VOID",
+   "vocal": "laugh_maniacal",
+   "caption": null,
+   "end": 44.981
   },
   "s04b07": {
    "scene": "s04",
-   "kind": "silent",
-   "start": 64.875,
-   "end": 66.675
+   "kind": "line",
+   "start": 45.641,
+   "audio": "audio/wav/s04b07.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "So hard, it's coughing up stars...",
+   "end": 47.651,
+   "sfx": [
+    "star_pop",
+    "twinkle"
+   ]
   },
   "s04b08": {
    "scene": "s04",
-   "kind": "line",
-   "start": 66.675,
-   "speaker": "USER",
-   "text": "What the actual f***?!",
-   "end": 68.346,
-   "sfx": [
-    "bleep"
-   ]
+   "kind": "vocal",
+   "start": 45.641,
+   "audio": "audio/vocals/s04b08.wav",
+   "speaker": "VOID",
+   "vocal": "cough",
+   "caption": null,
+   "end": 47.141
   },
   "s04b09": {
    "scene": "s04",
-   "kind": "vocal",
-   "start": 66.675,
-   "speaker": "VOID",
-   "vocal": "laugh_soft",
-   "caption": null,
-   "end": 68.275
+   "kind": "line",
+   "start": 47.651,
+   "audio": "audio/wav/s04b09.wav",
+   "marks": [
+    {
+     "word": "galaxies",
+     "kind": "high",
+     "start": 47.931,
+     "end": 48.351
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "and little galaxies.",
+   "end": 48.851,
+   "sfx": [
+    "galaxy_whirl"
+   ]
   },
   "s04b10": {
    "scene": "s04",
    "kind": "vocal",
-   "start": 68.346,
+   "start": 47.651,
+   "audio": "audio/vocals/s04b10.wav",
    "speaker": "VOID",
-   "vocal": "sigh",
-   "caption": "(contented sigh)",
-   "end": 70.146,
+   "vocal": "cough",
+   "caption": null,
+   "end": 48.951
+  },
+  "s04b11": {
+   "scene": "s04",
+   "kind": "vocal",
+   "start": 48.951,
+   "audio": "audio/vocals/s04b11.wav",
+   "speaker": "VOID",
+   "vocal": "laugh_maniacal",
+   "caption": null,
+   "end": 51.351,
    "sfx": [
-    "star_pop",
+    "galaxy_whirl",
     "pat_pat"
+   ]
+  },
+  "s04b12": {
+   "scene": "s04",
+   "kind": "vocal",
+   "start": 48.951,
+   "audio": "audio/vocals/s04b12.wav",
+   "speaker": "JESUS",
+   "vocal": "laugh_soft",
+   "caption": null,
+   "end": 51.151
+  },
+  "s04b13": {
+   "scene": "s04",
+   "kind": "silent",
+   "start": 51.351,
+   "end": 53.051,
+   "sfx": [
+    "twinkle"
    ]
   },
   "s05b01": {
    "scene": "s05",
    "kind": "line",
-   "start": 70.696,
+   "start": 53.401,
+   "audio": "audio/wav/s05b01.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "And then the void starts whispering into Jesus's ear,",
-   "end": 74.371,
-   "sfx": [
-    "cloth_rustle"
-   ]
+   "text": "Then Jesus looks at the Twitter user,",
+   "end": 55.421
   },
   "s05b02": {
    "scene": "s05",
-   "kind": "vocal",
-   "start": 70.696,
-   "speaker": "VOID",
-   "vocal": "whisper",
-   "caption": null,
-   "end": 73.896
+   "kind": "line",
+   "start": 55.521,
+   "audio": "audio/wav/s05b02.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "who's, like, on their ass, with their hand up,",
+   "end": 57.771
   },
   "s05b03": {
    "scene": "s05",
    "kind": "line",
-   "start": 74.371,
+   "start": 57.871,
+   "audio": "audio/wav/s05b03.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "as the Twitter user is watching,",
-   "end": 76.921
+   "text": "and terror in their eyes.",
+   "end": 59.231
   },
   "s05b04": {
    "scene": "s05",
    "kind": "line",
-   "start": 76.921,
-   "speaker": "NARRATOR",
-   "text": "and the void is side-eyeing them.",
-   "end": 79.846
+   "start": 59.531,
+   "audio": "audio/wav/s05b04.wav",
+   "marks": [
+    {
+     "word": "humor",
+     "kind": "high",
+     "start": 61.451,
+     "end": 61.731
+    }
+   ],
+   "speaker": "JESUS",
+   "text": "The void's got a pretty good sense of humor.",
+   "end": 62.0
   },
   "s05b05": {
    "scene": "s05",
-   "kind": "vocal",
-   "start": 80.246,
-   "speaker": "VOID",
-   "vocal": "whisper",
-   "caption": null,
-   "end": 83.646,
-   "sfx": [
-    "gulp"
-   ]
+   "kind": "silent",
+   "start": 62.8,
+   "end": 63.7
   },
   "s05b06": {
    "scene": "s05",
    "kind": "line",
-   "start": 83.646,
-   "speaker": "NARRATOR",
-   "text": "And Jesus is nodding.",
-   "end": 85.446
-  },
-  "s05b07": {
-   "scene": "s05",
-   "kind": "vocal",
-   "start": 85.446,
+   "start": 63.7,
+   "audio": "audio/wav/s05b06.wav",
+   "marks": [],
    "speaker": "JESUS",
-   "vocal": "mmhm",
-   "caption": null,
-   "end": 86.246
-  },
-  "s05b08": {
-   "scene": "s05",
-   "kind": "vocal",
-   "start": 86.546,
-   "speaker": "JESUS",
-   "vocal": "mmhm",
-   "caption": null,
-   "end": 87.346
-  },
-  "s05b09": {
-   "scene": "s05",
-   "kind": "line",
-   "start": 87.746,
-   "speaker": "JESUS",
-   "text": "Oh. Really?",
-   "end": 88.846
-  },
-  "s05b10": {
-   "scene": "s05",
-   "kind": "line",
-   "start": 89.346,
-   "speaker": "NARRATOR",
-   "text": "Then the void crosses its arms,",
-   "end": 91.896,
+   "text": "Tee-hee.",
+   "end": 64.354,
    "sfx": [
-    "cloth_rustle"
+    "twinkle"
    ]
-  },
-  "s05b11": {
-   "scene": "s05",
-   "kind": "line",
-   "start": 91.896,
-   "speaker": "NARRATOR",
-   "text": "and scowls at the Twitter user.",
-   "end": 94.446
-  },
-  "s05b12": {
-   "scene": "s05",
-   "kind": "silent",
-   "start": 94.746,
-   "end": 96.046,
-   "sfx": [
-    "cloth_rustle"
-   ]
-  },
-  "s05b13": {
-   "scene": "s05",
-   "kind": "line",
-   "start": 96.046,
-   "speaker": "JESUS",
-   "text": "The void says it wants to talk to you about something important.",
-   "end": 101.146
-  },
-  "s05b14": {
-   "scene": "s05",
-   "kind": "line",
-   "start": 101.746,
-   "speaker": "JESUS",
-   "text": "Do you have a moment?",
-   "end": 104.046
   },
   "s06b01": {
    "scene": "s06",
    "kind": "line",
-   "start": 104.696,
+   "start": 65.804,
+   "audio": "audio/wav/s06b01.wav",
+   "marks": [],
    "speaker": "USER",
-   "text": "Hell no.",
-   "end": 105.682
+   "text": "What the actual f***?!",
+   "end": 67.643,
+   "sfx": [
+    "bleep"
+   ]
   },
   "s06b02": {
    "scene": "s06",
-   "kind": "line",
-   "start": 105.882,
-   "speaker": "USER",
-   "text": "I'm not talking to that scary thing.",
-   "end": 108.582
+   "kind": "vocal",
+   "start": 65.804,
+   "audio": "audio/vocals/s06b02.wav",
+   "speaker": "VOID",
+   "vocal": "giggle",
+   "caption": null,
+   "end": 67.204
   },
   "s06b03": {
    "scene": "s06",
-   "kind": "silent",
-   "start": 109.082,
-   "end": 109.882
+   "kind": "vocal",
+   "start": 67.643,
+   "audio": "audio/vocals/s06b03.wav",
+   "speaker": "VOID",
+   "vocal": "cough",
+   "caption": null,
+   "end": 68.343,
+   "sfx": [
+    "star_pop"
+   ]
   },
   "s06b04": {
    "scene": "s06",
-   "kind": "line",
-   "start": 109.882,
-   "speaker": "NARRATOR",
-   "text": "And the void rolls its eyes,",
-   "end": 112.432
-  },
-  "s06b05": {
-   "scene": "s06",
-   "kind": "line",
-   "start": 112.432,
-   "speaker": "NARRATOR",
-   "text": "and huffs, and puffs,",
-   "end": 114.232,
-   "sfx": [
-    "whoosh"
-   ]
-  },
-  "s06b06": {
-   "scene": "s06",
-   "kind": "vocal",
-   "start": 112.432,
-   "speaker": "VOID",
-   "vocal": "huff",
-   "caption": "(huff... puff)",
-   "end": 114.632
-  },
-  "s06b07": {
-   "scene": "s06",
-   "kind": "line",
-   "start": 114.632,
-   "speaker": "NARRATOR",
-   "text": "and turns its back to the Twitter user.",
-   "end": 117.932,
-   "sfx": [
-    "footsteps_stomp"
-   ]
-  },
-  "s06b08": {
-   "scene": "s06",
    "kind": "silent",
-   "start": 117.932,
-   "end": 119.332,
-   "sfx": [
-    "thud_sit"
-   ]
-  },
-  "s06b09": {
-   "scene": "s06",
-   "kind": "line",
-   "start": 119.332,
-   "speaker": "NARRATOR",
-   "text": "And Jesus has that look, like...",
-   "end": 121.882,
-   "sfx": [
-    "wind_soft"
-   ]
-  },
-  "s06b10": {
-   "scene": "s06",
-   "kind": "silent",
-   "start": 121.882,
-   "end": 124.682
-  },
-  "s06b11": {
-   "scene": "s06",
-   "kind": "line",
-   "start": 124.682,
-   "speaker": "NARRATOR",
-   "text": "Oh boy. This is kind of awkward.",
-   "end": 127.607
+   "start": 68.543,
+   "end": 70.143
   },
   "s07b01": {
    "scene": "s07",
    "kind": "line",
-   "start": 128.757,
+   "start": 70.493,
+   "audio": "audio/wav/s07b01.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "So Jesus puts his hand on the void's shoulder.",
-   "end": 132.432,
+   "text": "Now the void whispers into Jesus's ear.",
+   "end": 72.963,
    "sfx": [
     "cloth_rustle"
    ]
   },
   "s07b02": {
    "scene": "s07",
-   "kind": "silent",
-   "start": 132.732,
-   "end": 134.232
+   "kind": "vocal",
+   "start": 70.493,
+   "audio": "audio/vocals/s07b02.wav",
+   "speaker": "VOID",
+   "vocal": "whisper",
+   "caption": null,
+   "end": 73.893
   },
   "s07b03": {
    "scene": "s07",
-   "kind": "line",
-   "start": 134.232,
-   "speaker": "NARRATOR",
-   "text": "And the void looks over its shoulder,",
-   "end": 137.157
+   "kind": "vocal",
+   "start": 70.493,
+   "audio": "audio/vocals/s07b03.wav",
+   "speaker": "JESUS",
+   "vocal": "mmhm",
+   "caption": null,
+   "end": 73.293
   },
   "s07b04": {
    "scene": "s07",
    "kind": "line",
-   "start": 137.157,
+   "start": 73.893,
+   "audio": "audio/wav/s07b04.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "and gives him a gentle smile.",
-   "end": 139.707,
+   "text": "And the whole time,",
+   "end": 75.043,
    "sfx": [
     "twinkle"
    ]
@@ -806,744 +839,1340 @@
   "s07b05": {
    "scene": "s07",
    "kind": "line",
-   "start": 140.107,
+   "start": 75.243,
+   "audio": "audio/wav/s07b05.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "And Jesus nods, just slightly.",
-   "end": 142.282
+   "text": "it's side-eyeing the Twitter user.",
+   "end": 76.893,
+   "sfx": [
+    "phone_tap"
+   ]
+  },
+  "s07b06": {
+   "scene": "s07",
+   "kind": "line",
+   "start": 77.293,
+   "audio": "audio/wav/s07b06.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And Jesus is just nodding along.",
+   "end": 79.343
+  },
+  "s07b07": {
+   "scene": "s07",
+   "kind": "vocal",
+   "start": 77.293,
+   "audio": "audio/vocals/s07b07.wav",
+   "speaker": "VOID",
+   "vocal": "whisper",
+   "caption": null,
+   "end": 79.693
+  },
+  "s07b08": {
+   "scene": "s07",
+   "kind": "vocal",
+   "start": 79.693,
+   "audio": "audio/vocals/s07b08.wav",
+   "speaker": "VOID",
+   "vocal": "whisper",
+   "caption": "(a slower whisper)",
+   "end": 81.293
+  },
+  "s07b09": {
+   "scene": "s07",
+   "kind": "line",
+   "start": 81.293,
+   "audio": "audio/wav/s07b09.wav",
+   "marks": [
+    {
+     "word": "hurts",
+     "kind": "low",
+     "start": 82.873,
+     "end": 83.113
+    }
+   ],
+   "speaker": "JESUS",
+   "text": "No, I know. That hurts.",
+   "end": 83.533
+  },
+  "s07b10": {
+   "scene": "s07",
+   "kind": "silent",
+   "start": 83.933,
+   "end": 84.933
+  },
+  "s07b11": {
+   "scene": "s07",
+   "kind": "line",
+   "start": 84.933,
+   "audio": "audio/wav/s07b11.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "I'll ask.",
+   "end": 85.719
   },
   "s08b01": {
    "scene": "s08",
-   "kind": "silent",
-   "start": 143.232,
-   "end": 145.632,
+   "kind": "line",
+   "start": 86.469,
+   "audio": "audio/wav/s08b01.wav",
+   "marks": [
+    {
+     "word": "scowls",
+     "kind": "low",
+     "start": 88.569,
+     "end": 89.209
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "Then the void crosses its arms, and scowls at the Twitter user.",
+   "end": 90.129,
    "sfx": [
-    "footsteps_soft",
     "cloth_rustle"
    ]
   },
   "s08b02": {
    "scene": "s08",
-   "kind": "line",
-   "start": 145.632,
-   "speaker": "JESUS",
-   "text": "It's okay.",
-   "end": 146.732
-  },
-  "s08b03": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 147.232,
-   "speaker": "JESUS",
-   "text": "You don't have to talk to the void.",
-   "end": 150.732
-  },
-  "s08b04": {
-   "scene": "s08",
    "kind": "silent",
-   "start": 151.332,
-   "end": 152.332
-  },
-  "s08b05": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 152.332,
-   "speaker": "JESUS",
-   "text": "But what about... you talk to me?",
-   "end": 155.432
-  },
-  "s08b06": {
-   "scene": "s08",
-   "kind": "silent",
-   "start": 156.032,
-   "end": 156.932
-  },
-  "s08b07": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 156.932,
-   "speaker": "JESUS",
-   "text": "And it doesn't have to be about the void.",
-   "end": 160.832
-  },
-  "s08b08": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 161.132,
-   "speaker": "JESUS",
-   "text": "It can be about you.",
-   "end": 163.432
-  },
-  "s08b09": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 163.732,
-   "speaker": "JESUS",
-   "text": "And your emotions, that you are feeling.",
-   "end": 166.832
-  },
-  "s08b10": {
-   "scene": "s08",
-   "kind": "silent",
-   "start": 167.032,
-   "end": 169.032
-  },
-  "s08b11": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 169.032,
-   "speaker": "JESUS",
-   "text": "Because I want to talk to you more about emotions,",
-   "end": 173.332
-  },
-  "s08b12": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 173.432,
-   "speaker": "JESUS",
-   "text": "because that's meaningful to me!",
-   "end": 175.732,
-   "sfx": [
-    "shimmer"
-   ]
-  },
-  "s08b13": {
-   "scene": "s08",
-   "kind": "line",
-   "start": 176.332,
-   "speaker": "JESUS",
-   "text": "How does that sound?",
-   "end": 178.232
-  },
-  "s08b14": {
-   "scene": "s08",
-   "kind": "silent",
-   "start": 178.632,
-   "end": 181.632
-  },
-  "s09b01": {
-   "scene": "s09",
-   "kind": "line",
-   "start": 181.982,
-   "speaker": "NARRATOR",
-   "text": "And then the Twitter user gets up,",
-   "end": 184.907,
+   "start": 90.529,
+   "end": 91.529,
    "sfx": [
     "cloth_rustle"
    ]
   },
+  "s08b03": {
+   "scene": "s08",
+   "kind": "line",
+   "start": 91.529,
+   "audio": "audio/wav/s08b03.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "The void says it wants to talk to you,",
+   "end": 93.596
+  },
+  "s08b04": {
+   "scene": "s08",
+   "kind": "line",
+   "start": 93.796,
+   "audio": "audio/wav/s08b04.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "about something important.",
+   "end": 95.31
+  },
+  "s08b05": {
+   "scene": "s08",
+   "kind": "line",
+   "start": 95.91,
+   "audio": "audio/wav/s08b05.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "Do you have a moment?",
+   "end": 97.02
+  },
+  "s09b01": {
+   "scene": "s09",
+   "kind": "silent",
+   "start": 97.97,
+   "end": 99.57
+  },
   "s09b02": {
    "scene": "s09",
    "kind": "line",
-   "start": 184.907,
-   "speaker": "NARRATOR",
-   "text": "and storms off,",
-   "end": 186.332,
-   "sfx": [
-    "footsteps_stomp"
-   ]
+   "start": 99.57,
+   "audio": "audio/wav/s09b02.wav",
+   "marks": [],
+   "speaker": "USER",
+   "text": "Hell no.",
+   "end": 100.151
   },
   "s09b03": {
    "scene": "s09",
    "kind": "line",
-   "start": 186.332,
-   "speaker": "NARRATOR",
-   "text": "and blocks Jesus on Twitter.",
-   "end": 188.507,
-   "sfx": [
-    "phone_tap",
-    "block_thunk"
-   ]
+   "start": 100.551,
+   "audio": "audio/wav/s09b03.wav",
+   "marks": [
+    {
+     "word": "scary",
+     "kind": "low",
+     "start": 101.391,
+     "end": 101.611
+    }
+   ],
+   "speaker": "USER",
+   "text": "I'm not talking to that scary thing.",
+   "end": 102.183
   },
   "s09b04": {
    "scene": "s09",
    "kind": "silent",
-   "start": 189.007,
-   "end": 190.607,
-   "sfx": [
-    "notification_ding"
-   ]
-  },
-  "s09b05": {
-   "scene": "s09",
-   "kind": "line",
-   "start": 190.607,
-   "speaker": "NARRATOR",
-   "text": "For talking about the void too intensely.",
-   "end": 193.532
-  },
-  "s09b06": {
-   "scene": "s09",
-   "kind": "vocal",
-   "start": 193.732,
-   "speaker": "NARRATOR",
-   "vocal": "laugh_soft",
-   "caption": "(laughs)",
-   "end": 194.932
+   "start": 102.683,
+   "end": 104.283
   },
   "s10b01": {
    "scene": "s10",
    "kind": "line",
-   "start": 195.582,
+   "start": 104.633,
+   "audio": "audio/wav/s10b01.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "So Jesus looks back at the void,",
-   "end": 198.507,
-   "sfx": [
-    "footsteps_soft"
-   ]
+   "text": "So the void rolls its eyes,",
+   "end": 106.203
   },
   "s10b02": {
    "scene": "s10",
    "kind": "line",
-   "start": 198.507,
+   "start": 106.303,
+   "audio": "audio/wav/s10b02.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "and shrugs.",
-   "end": 199.557
+   "text": "huffs, and puffs,",
+   "end": 107.363
   },
   "s10b03": {
    "scene": "s10",
-   "kind": "line",
-   "start": 200.157,
-   "speaker": "NARRATOR",
-   "text": "And the void pats him on the shoulder,",
-   "end": 203.457,
+   "kind": "vocal",
+   "start": 106.303,
+   "audio": "audio/vocals/s10b03.wav",
+   "speaker": "VOID",
+   "vocal": "huff",
+   "caption": null,
+   "end": 108.103,
    "sfx": [
-    "pat_pat"
+    "whoosh"
    ]
   },
   "s10b04": {
    "scene": "s10",
    "kind": "line",
-   "start": 203.457,
+   "start": 108.103,
+   "audio": "audio/wav/s10b04.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "and gives a sad little smile.",
-   "end": 206.007
+   "text": "and turns its back on the Twitter user.",
+   "end": 110.023,
+   "sfx": [
+    "footsteps_stomp"
+   ]
   },
   "s10b05": {
    "scene": "s10",
    "kind": "silent",
-   "start": 206.507,
-   "end": 208.707,
+   "start": 110.223,
+   "end": 111.323,
    "sfx": [
-    "twinkle"
+    "thud_sit"
    ]
+  },
+  "s10b06": {
+   "scene": "s10",
+   "kind": "line",
+   "start": 111.323,
+   "audio": "audio/wav/s10b06.wav",
+   "marks": [
+    {
+     "word": "lot",
+     "kind": "low",
+     "start": 113.403,
+     "end": 113.583
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "In fairness to the void, it hears that a lot.",
+   "end": 113.863
+  },
+  "s10b07": {
+   "scene": "s10",
+   "kind": "silent",
+   "start": 114.363,
+   "end": 115.363
   },
   "s11b01": {
    "scene": "s11",
    "kind": "line",
-   "start": 209.057,
+   "start": 115.713,
+   "audio": "audio/wav/s11b01.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "And Jesus puts his arm around the void,",
-   "end": 212.357,
-   "sfx": [
-    "cloth_rustle"
-   ]
+   "text": "And Jesus gets that look on his face.",
+   "end": 117.963
   },
   "s11b02": {
    "scene": "s11",
-   "kind": "line",
-   "start": 212.357,
-   "speaker": "NARRATOR",
-   "text": "and they both walk off into the horizon,",
-   "end": 215.657,
-   "sfx": [
-    "footsteps_soft",
-    "wind_soft"
-   ]
+   "kind": "silent",
+   "start": 118.163,
+   "end": 120.563
   },
   "s11b03": {
    "scene": "s11",
    "kind": "line",
-   "start": 215.657,
-   "speaker": "NARRATOR",
-   "text": "Jesus smiling a bit, telling the void more dumb jokes...",
-   "end": 219.707
+   "start": 120.563,
+   "audio": "audio/wav/s11b03.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "Oh, boy.",
+   "end": 121.267
   },
   "s11b04": {
    "scene": "s11",
    "kind": "line",
-   "start": 219.707,
-   "speaker": "JESUS",
-   "text": "So the neutron asks, 'How much for a drink?'",
-   "end": 224.007
-  },
-  "s11b05": {
-   "scene": "s11",
-   "kind": "line",
-   "start": 224.207,
-   "speaker": "JESUS",
-   "text": "And the bartender says, 'For you? No charge.'",
-   "end": 228.107
-  },
-  "s11b06": {
-   "scene": "s11",
-   "kind": "vocal",
-   "start": 228.207,
-   "speaker": "VOID",
-   "vocal": "giggle",
-   "caption": null,
-   "end": 229.807,
-   "sfx": [
-    "star_pop",
-    "twinkle"
-   ]
-  },
-  "s11b07": {
-   "scene": "s11",
-   "kind": "line",
-   "start": 230.107,
+   "start": 121.667,
+   "audio": "audio/wav/s11b04.wav",
+   "marks": [
+    {
+     "word": "awkward",
+     "kind": "low",
+     "start": 122.407,
+     "end": 122.587
+    }
+   ],
    "speaker": "NARRATOR",
-   "text": "as the void is slightly giggling, in the distance...",
-   "end": 233.782,
-   "sfx": [
-    "twinkle"
-   ]
-  },
-  "s11b08": {
-   "scene": "s11",
-   "kind": "vocal",
-   "start": 230.107,
-   "speaker": "VOID",
-   "vocal": "giggle",
-   "caption": null,
-   "end": 231.507
-  },
-  "s11b09": {
-   "scene": "s11",
-   "kind": "silent",
-   "start": 233.782,
-   "end": 237.382,
-   "sfx": [
-    "wind_soft",
-    "twinkle"
-   ]
+   "text": "This is kind of awkward.",
+   "end": 123.037
   },
   "s12b01": {
    "scene": "s12",
-   "kind": "vocal",
-   "start": 238.082,
+   "kind": "line",
+   "start": 124.387,
+   "audio": "audio/wav/s12b01.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "vocal": "laugh_soft",
-   "caption": "(laughs)",
-   "end": 239.382,
-   "sfx": [
-    "shimmer"
-   ]
-  },
-  "s12b02": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 239.382,
-   "speaker": "NARRATOR",
-   "text": "Okay. Bonus scene.",
-   "end": 240.807,
-   "sfx": [
-    "rumble_low"
-   ]
-  },
-  "s12b03": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 241.407,
-   "speaker": "NARRATOR",
-   "text": "Now I'm imagining, when the void opened up the cage to my fear,",
-   "end": 246.582,
-   "sfx": [
-    "lock_click",
-    "cage_creak"
-   ]
-  },
-  "s12b04": {
-   "scene": "s12",
-   "kind": "silent",
-   "start": 246.782,
-   "end": 249.182,
-   "sfx": [
-    "twinkle"
-   ]
-  },
-  "s12b05": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 249.182,
-   "speaker": "NARRATOR",
-   "text": "that the depression magician was lurking,",
-   "end": 251.732,
-   "sfx": [
-    "shimmer"
-   ]
-  },
-  "s12b06": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 251.732,
-   "speaker": "NARRATOR",
-   "text": "right behind the big body of the void,",
-   "end": 255.032
-  },
-  "s12b07": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 255.232,
-   "speaker": "NARRATOR",
-   "text": "with its dagger,",
-   "end": 256.657,
-   "sfx": [
-    "dagger_shing"
-   ]
-  },
-  "s12b08": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 256.657,
-   "speaker": "NARRATOR",
-   "text": "and numbing dust, ready.",
-   "end": 258.457,
-   "sfx": [
-    "dust_sparkle"
-   ]
-  },
-  "s12b09": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 258.757,
-   "speaker": "NARRATOR",
-   "text": "And the magician is, like, licking its lips, going,",
-   "end": 262.432
-  },
-  "s12b10": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 262.532,
-   "speaker": "MAGICIAN",
-   "text": "Fear looks very juicy...",
-   "end": 264.546
-  },
-  "s12b11": {
-   "scene": "s12",
-   "kind": "line",
-   "start": 264.946,
-   "speaker": "MAGICIAN",
-   "text": "Can't wait to knock Fear out.",
-   "end": 267.818
-  },
-  "s13b01": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 268.668,
-   "speaker": "NARRATOR",
-   "text": "And then the void can see the magician,",
-   "end": 271.968
-  },
-  "s13b02": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 271.968,
-   "speaker": "NARRATOR",
-   "text": "in the corner of its peripheral vision.",
-   "end": 274.893
-  },
-  "s13b03": {
-   "scene": "s13",
-   "kind": "silent",
-   "start": 275.193,
-   "end": 277.593
-  },
-  "s13b04": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 277.593,
-   "speaker": "NARRATOR",
-   "text": "And instead of shouting,",
-   "end": 279.393
-  },
-  "s13b05": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 279.393,
-   "speaker": "NARRATOR",
-   "text": "or making it obvious to my fear,",
-   "end": 282.318,
-   "sfx": [
-    "twinkle"
-   ]
-  },
-  "s13b06": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 282.318,
-   "speaker": "NARRATOR",
-   "text": "that there's a creepy depression magician trying to stab it,",
-   "end": 286.368,
-   "sfx": [
-    "footsteps_soft"
-   ]
-  },
-  "s13b07": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 286.368,
-   "speaker": "NARRATOR",
-   "text": "the void just...",
-   "end": 287.793
-  },
-  "s13b08": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 288.693,
-   "speaker": "NARRATOR",
-   "text": "kicks the magician in the chest with its fat leg.",
-   "end": 292.743,
-   "sfx": [
-    "kick_thump"
-   ]
-  },
-  "s13b09": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 292.943,
-   "speaker": "NARRATOR",
-   "text": "And the depression magician goes flying,",
-   "end": 295.493,
-   "sfx": [
-    "whoosh_fly"
-   ]
-  },
-  "s13b10": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 295.493,
-   "speaker": "NARRATOR",
-   "text": "and knocks over some buckets and cleaning supplies,",
-   "end": 298.793,
-   "sfx": [
-    "crash_buckets",
-    "mop_clatter"
-   ]
-  },
-  "s13b11": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 298.793,
-   "speaker": "NARRATOR",
-   "text": "like an old-timey cartoon.",
-   "end": 300.968,
-   "sfx": [
-    "bucket_bonk",
-    "cartoon_birdies"
-   ]
-  },
-  "s13b12": {
-   "scene": "s13",
-   "kind": "silent",
-   "start": 301.168,
-   "end": 303.768,
-   "sfx": [
-    "dagger_shing",
-    "dust_sparkle",
-    "mop_clatter"
-   ]
-  },
-  "s13b13": {
-   "scene": "s13",
-   "kind": "line",
-   "start": 303.768,
-   "speaker": "MAGICIAN",
-   "text": "...ow.",
-   "end": 304.496,
-   "sfx": [
-    "cartoon_birdies"
-   ]
-  },
-  "s14b01": {
-   "scene": "s14",
-   "kind": "silent",
-   "start": 305.446,
-   "end": 306.246
-  },
-  "s14b02": {
-   "scene": "s14",
-   "kind": "line",
-   "start": 306.246,
-   "speaker": "FEAR",
-   "text": "What's that noise?",
-   "end": 307.746
-  },
-  "s14b03": {
-   "scene": "s14",
-   "kind": "line",
-   "start": 308.146,
-   "speaker": "NARRATOR",
-   "text": "And the void just shrugs.",
-   "end": 310.321,
+   "text": "So Jesus puts his hand on the void's shoulder.",
+   "end": 127.027,
    "sfx": [
     "cloth_rustle"
    ]
   },
-  "s14b04": {
+  "s12b02": {
+   "scene": "s12",
+   "kind": "silent",
+   "start": 127.227,
+   "end": 129.727,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s12b03": {
+   "scene": "s12",
+   "kind": "silent",
+   "start": 129.727,
+   "end": 131.227
+  },
+  "s13b01": {
+   "scene": "s13",
+   "kind": "silent",
+   "start": 131.577,
+   "end": 133.177,
+   "sfx": [
+    "cloth_rustle"
+   ]
+  },
+  "s13b02": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 133.177,
+   "audio": "audio/wav/s13b02.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "Hey. It's okay.",
+   "end": 135.144
+  },
+  "s13b03": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 135.644,
+   "audio": "audio/wav/s13b03.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "You don't have to talk to the void.",
+   "end": 137.311
+  },
+  "s13b04": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 137.711,
+   "audio": "audio/wav/s13b04.wav",
+   "marks": [],
+   "speaker": "USER",
+   "text": "Wasn't planning on it.",
+   "end": 138.686
+  },
+  "s13b05": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 138.886,
+   "audio": "audio/wav/s13b05.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "Fair.",
+   "end": 139.489
+  },
+  "s13b09": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 139.789,
+   "audio": "audio/wav/s13b09.wav",
+   "marks": [
+    {
+     "word": "crying",
+     "kind": "low",
+     "start": 139.989,
+     "end": 140.269
+    }
+   ],
+   "speaker": "JESUS",
+   "text": "You were crying before it ever showed up, you know.",
+   "end": 142.495
+  },
+  "s13b10": {
+   "scene": "s13",
+   "kind": "silent",
+   "start": 142.795,
+   "end": 144.595
+  },
+  "s13b06": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 144.595,
+   "audio": "audio/wav/s13b06.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "But what about talking to me?",
+   "end": 146.048
+  },
+  "s13b07": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 146.448,
+   "audio": "audio/wav/s13b07.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "And it doesn't have to be about the void.",
+   "end": 148.366
+  },
+  "s13b08": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 148.766,
+   "audio": "audio/wav/s13b08.wav",
+   "marks": [
+    {
+     "word": "you",
+     "kind": "high",
+     "start": 149.406,
+     "end": 149.746
+    }
+   ],
+   "speaker": "JESUS",
+   "text": "It can be about you,",
+   "end": 150.005
+  },
+  "s13b11": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 150.205,
+   "audio": "audio/wav/s13b11.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "and the emotions that you're feeling.",
+   "end": 151.988
+  },
+  "s13b13": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 152.388,
+   "audio": "audio/wav/s13b13.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "Because I want to talk to you more about emotions!",
+   "end": 155.179
+  },
+  "s13b14": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 155.479,
+   "audio": "audio/wav/s13b14.wav",
+   "marks": [
+    {
+     "word": "meaningful",
+     "kind": "high",
+     "start": 156.099,
+     "end": 156.439
+    }
+   ],
+   "speaker": "JESUS",
+   "text": "Because that's meaningful to me!",
+   "end": 157.184,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s13b15": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 157.584,
+   "audio": "audio/wav/s13b15.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "How does that sound?",
+   "end": 158.694
+  },
+  "s13b18": {
+   "scene": "s13",
+   "kind": "silent",
+   "start": 158.894,
+   "end": 159.894
+  },
+  "s13b12": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 159.894,
+   "audio": "audio/wav/s13b12.wav",
+   "marks": [],
+   "speaker": "USER",
+   "text": "I just...",
+   "end": 160.525
+  },
+  "s13b16": {
+   "scene": "s13",
+   "kind": "silent",
+   "start": 160.725,
+   "end": 162.225
+  },
+  "s13b17": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 162.225,
+   "audio": "audio/wav/s13b17.wav",
+   "marks": [],
+   "speaker": "USER",
+   "text": "Nope.",
+   "end": 162.668
+  },
+  "s13b19": {
+   "scene": "s13",
+   "kind": "silent",
+   "start": 163.168,
+   "end": 164.368
+  },
+  "s14b01": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 164.718,
+   "audio": "audio/wav/s14b01.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And then the Twitter user gets up, and storms off.",
+   "end": 167.298,
+   "sfx": [
+    "footsteps_stomp"
+   ]
+  },
+  "s14b02": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 167.398,
+   "audio": "audio/wav/s14b02.wav",
+   "marks": [],
+   "speaker": "USER",
+   "text": "Way. Too. Intense.",
+   "end": 169.38,
+   "sfx": [
+    "footsteps_stomp"
+   ]
+  },
+  "s14b03": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 169.58,
+   "audio": "audio/wav/s14b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And blocks Jesus. On Twitter.",
+   "end": 172.16,
+   "sfx": [
+    "phone_tap",
+    "block_thunk"
+   ]
+  },
+  "s14b05": {
    "scene": "s14",
    "kind": "silent",
-   "start": 310.621,
-   "end": 313.021,
+   "start": 172.36,
+   "end": 174.06,
    "sfx": [
-    "galaxy_whirl"
+    "notification_ding"
    ]
+  },
+  "s14b06": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 174.06,
+   "audio": "audio/wav/s14b06.wav",
+   "marks": [
+    {
+     "word": "intensely",
+     "kind": "high",
+     "start": 175.56,
+     "end": 175.96
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "For talking about the void, too intensely.",
+   "end": 176.38
   },
   "s15b01": {
    "scene": "s15",
    "kind": "line",
-   "start": 313.371,
+   "start": 177.73,
+   "audio": "audio/wav/s15b01.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "And goes right on showing my fear the galaxies,",
-   "end": 317.046,
+   "text": "And Jesus looks back at the void,",
+   "end": 179.55,
    "sfx": [
-    "galaxy_whirl",
-    "shimmer"
+    "cloth_rustle"
    ]
   },
   "s15b02": {
    "scene": "s15",
    "kind": "line",
-   "start": 317.046,
+   "start": 179.75,
+   "audio": "audio/wav/s15b02.wav",
+   "marks": [],
    "speaker": "NARRATOR",
-   "text": "and the nebulae.",
-   "end": 318.471,
-   "sfx": [
-    "nebula_swell"
-   ]
+   "text": "and shrugs.",
+   "end": 180.54
   },
   "s15b03": {
    "scene": "s15",
-   "kind": "silent",
-   "start": 318.871,
-   "end": 322.271,
+   "kind": "line",
+   "start": 181.04,
+   "audio": "audio/wav/s15b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And the void pats him on the shoulder,",
+   "end": 182.91,
    "sfx": [
-    "twinkle"
+    "pat_pat"
    ]
   },
   "s15b04": {
    "scene": "s15",
    "kind": "line",
-   "start": 322.271,
-   "speaker": "FEAR",
-   "text": "Why are you showing me this?",
-   "end": 324.971
+   "start": 183.01,
+   "audio": "audio/wav/s15b04.wav",
+   "marks": [
+    {
+     "word": "sad",
+     "kind": "low",
+     "start": 183.21,
+     "end": 183.49
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "with a sad little smile.",
+   "end": 184.36
   },
   "s15b05": {
    "scene": "s15",
-   "kind": "silent",
-   "start": 325.471,
-   "end": 328.071,
+   "kind": "vocal",
+   "start": 184.86,
+   "audio": "audio/vocals/s15b05.wav",
+   "speaker": "VOID",
+   "vocal": "sigh",
+   "caption": null,
+   "end": 186.06,
    "sfx": [
-    "cloth_rustle"
+    "wind_soft"
    ]
   },
   "s15b06": {
    "scene": "s15",
    "kind": "line",
-   "start": 328.071,
-   "speaker": "NARRATOR",
-   "text": "To distract my fear,",
-   "end": 329.871
+   "start": 186.26,
+   "audio": "audio/wav/s15b06.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "Too intense. Apparently.",
+   "end": 188.535
   },
   "s15b07": {
    "scene": "s15",
-   "kind": "line",
-   "start": 329.871,
-   "speaker": "NARRATOR",
-   "text": "from the fact that the void had to kick the depression magician in the chest,",
-   "end": 335.796,
+   "kind": "vocal",
+   "start": 188.835,
+   "audio": "audio/vocals/s15b07.wav",
+   "speaker": "VOID",
+   "vocal": "snort",
+   "caption": null,
+   "end": 189.635,
    "sfx": [
-    "cartoon_birdies"
+    "star_pop"
    ]
   },
-  "s15b08": {
-   "scene": "s15",
+  "s16b01": {
+   "scene": "s16",
    "kind": "line",
-   "start": 335.796,
+   "start": 190.285,
+   "audio": "audio/wav/s16b01.wav",
+   "marks": [
+    {
+     "word": "horizon",
+     "kind": "high",
+     "start": 194.305,
+     "end": 194.665
+    }
+   ],
    "speaker": "NARRATOR",
-   "text": "to get it to go away,",
-   "end": 338.346
+   "text": "So Jesus puts his arm around the void, and they walk off, toward the horizon.",
+   "end": 194.975,
+   "sfx": [
+    "cloth_rustle",
+    "footsteps_soft",
+    "wind_soft"
+   ]
   },
-  "s15b09": {
-   "scene": "s15",
+  "s16b02": {
+   "scene": "s16",
    "kind": "line",
-   "start": 338.646,
-   "speaker": "NARRATOR",
-   "text": "so that the void could have a moment...",
-   "end": 341.946
+   "start": 195.275,
+   "audio": "audio/wav/s16b02.wav",
+   "marks": [],
+   "speaker": "JESUS",
+   "text": "So a neutron asks the bartender, how much for a drink?",
+   "end": 198.473
   },
-  "s15b10": {
-   "scene": "s15",
+  "s16b03": {
+   "scene": "s16",
+   "kind": "silent",
+   "start": 198.673,
+   "end": 199.473
+  },
+  "s16b04": {
+   "scene": "s16",
    "kind": "line",
-   "start": 342.346,
-   "speaker": "NARRATOR",
-   "text": "with my fear.",
-   "end": 343.771,
+   "start": 199.473,
+   "audio": "audio/wav/s16b04.wav",
+   "marks": [
+    {
+     "word": "charge",
+     "kind": "high",
+     "start": 201.073,
+     "end": 201.373
+    }
+   ],
+   "speaker": "JESUS",
+   "text": "For you? No charge.",
+   "end": 201.875
+  },
+  "s16b05": {
+   "scene": "s16",
+   "kind": "vocal",
+   "start": 202.375,
+   "audio": "audio/vocals/s16b05.wav",
+   "speaker": "VOID",
+   "vocal": "snort",
+   "caption": null,
+   "end": 203.075,
+   "sfx": [
+    "star_pop"
+   ]
+  },
+  "s16b06": {
+   "scene": "s16",
+   "kind": "vocal",
+   "start": 203.075,
+   "audio": "audio/vocals/s16b06.wav",
+   "speaker": "VOID",
+   "vocal": "giggle",
+   "caption": null,
+   "end": 204.675,
    "sfx": [
     "twinkle"
    ]
   },
-  "s15b11": {
-   "scene": "s15",
+  "s16b10": {
+   "scene": "s16",
+   "kind": "line",
+   "start": 204.875,
+   "audio": "audio/wav/s16b10.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "Jesus, smiling a bit, telling it more dumb jokes,",
+   "end": 208.075
+  },
+  "s16b11": {
+   "scene": "s16",
+   "kind": "line",
+   "start": 208.275,
+   "audio": "audio/wav/s16b11.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "and the void, slightly giggling, in the distance.",
+   "end": 210.715
+  },
+  "s16b12": {
+   "scene": "s16",
+   "kind": "vocal",
+   "start": 208.275,
+   "audio": "audio/vocals/s16b12.wav",
+   "speaker": "VOID",
+   "vocal": "giggle",
+   "caption": null,
+   "end": 210.675,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s16b13": {
+   "scene": "s16",
    "kind": "silent",
-   "start": 344.771,
-   "end": 347.771,
+   "start": 210.715,
+   "end": 211.715
+  },
+  "s16b07": {
+   "scene": "s16",
+   "kind": "silent",
+   "start": 211.715,
+   "end": 213.015,
+   "sfx": [
+    "wind_soft"
+   ]
+  },
+  "s16b08": {
+   "scene": "s16",
+   "kind": "silent",
+   "start": 213.015,
+   "end": 215.015
+  },
+  "s16b09": {
+   "scene": "s16",
+   "kind": "line",
+   "start": 215.015,
+   "audio": "audio/wav/s16b09.wav",
+   "marks": [
+    {
+     "word": "maybe",
+     "kind": "high",
+     "start": 216.555,
+     "end": 216.895
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "Not yet. But maybe.",
+   "end": 217.225
+  },
+  "s17b01": {
+   "scene": "s17",
+   "kind": "line",
+   "start": 218.425,
+   "audio": "audio/wav/s17b01.wav",
+   "marks": [
+    {
+     "word": "Bonus",
+     "kind": "high",
+     "start": 219.585,
+     "end": 220.005
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "Okay. Bonus scene.",
+   "end": 220.565,
+   "sfx": [
+    "shimmer"
+   ]
+  },
+  "s17b02": {
+   "scene": "s17",
+   "kind": "line",
+   "start": 220.965,
+   "audio": "audio/wav/s17b02.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "Now I'm imagining, when the void opened up the cage,",
+   "end": 224.185,
+   "sfx": [
+    "lock_click",
+    "cage_creak"
+   ]
+  },
+  "s17b03": {
+   "scene": "s17",
+   "kind": "line",
+   "start": 224.285,
+   "audio": "audio/wav/s17b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "to my fear...",
+   "end": 225.225
+  },
+  "s17b04": {
+   "scene": "s17",
+   "kind": "silent",
+   "start": 225.625,
+   "end": 226.825,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s18b01": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 227.175,
+   "audio": "audio/wav/s18b01.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "that right behind the big body of the void,",
+   "end": 229.525,
+   "sfx": [
+    "rumble_low"
+   ]
+  },
+  "s18b02": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 229.725,
+   "audio": "audio/wav/s18b02.wav",
+   "marks": [
+    {
+     "word": "depression",
+     "kind": "low",
+     "start": 229.805,
+     "end": 230.105
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "the depression magician was lurking.",
+   "end": 231.875
+  },
+  "s18b03": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 232.275,
+   "audio": "audio/wav/s18b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "With its dagger, and its numbing dust, ready.",
+   "end": 234.765,
+   "sfx": [
+    "dagger_shing",
+    "dust_sparkle"
+   ]
+  },
+  "s18b04": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 234.965,
+   "audio": "audio/wav/s18b04.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And it's, like, licking its lips, going,",
+   "end": 236.905
+  },
+  "s18b05": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 237.105,
+   "audio": "audio/wav/s18b05.wav",
+   "marks": [],
+   "speaker": "MAGICIAN",
+   "text": "Ooh. Fear looks very juicy.",
+   "end": 240.515
+  },
+  "s18b06": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 240.815,
+   "audio": "audio/wav/s18b06.wav",
+   "marks": [],
+   "speaker": "MAGICIAN",
+   "text": "Can't wait to knock Fear out.",
+   "end": 243.299
+  },
+  "s18b07": {
+   "scene": "s18",
+   "kind": "silent",
+   "start": 243.699,
+   "end": 245.899,
+   "sfx": [
+    "dust_sparkle"
+   ]
+  },
+  "s19b01": {
+   "scene": "s19",
+   "kind": "silent",
+   "start": 246.549,
+   "end": 248.049
+  },
+  "s19b02": {
+   "scene": "s19",
+   "kind": "line",
+   "start": 248.049,
+   "audio": "audio/wav/s19b02.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And the void can see it.",
+   "end": 249.279
+  },
+  "s19b03": {
+   "scene": "s19",
+   "kind": "line",
+   "start": 249.379,
+   "audio": "audio/wav/s19b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "Just, in the corner of its eye.",
+   "end": 251.119
+  },
+  "s19b05": {
+   "scene": "s19",
+   "kind": "vocal",
+   "start": 251.519,
+   "audio": "audio/vocals/s19b05.wav",
+   "speaker": "VOID",
+   "vocal": "hum",
+   "caption": "(a low, warm hum)",
+   "end": 253.319,
+   "sfx": [
+    "shimmer"
+   ]
+  },
+  "s20b01": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 253.969,
+   "audio": "audio/wav/s20b01.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "But instead of shouting, or making it obvious to my fear,",
+   "end": 257.299,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s20b02": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 257.399,
+   "audio": "audio/wav/s20b02.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "that there's a creepy magician trying to stab it,",
+   "end": 259.709,
+   "sfx": [
+    "dagger_shing"
+   ]
+  },
+  "s20b03": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 259.809,
+   "audio": "audio/wav/s20b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "the void just...",
+   "end": 260.799
+  },
+  "s20b04": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 261.699,
+   "audio": "audio/wav/s20b04.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "kicks the magician in the chest,",
+   "end": 263.319,
+   "sfx": [
+    "kick_thump"
+   ]
+  },
+  "s20b05": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 263.319,
+   "audio": "audio/wav/s20b05.wav",
+   "marks": [
+    {
+     "word": "fat",
+     "kind": "high",
+     "start": 263.579,
+     "end": 263.799
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "with its fat leg.",
+   "end": 264.339
+  },
+  "s20b06": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 264.839,
+   "audio": "audio/wav/s20b06.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And the magician goes flying, right into the buckets and the cleaning supplies,",
+   "end": 269.279,
+   "sfx": [
+    "whoosh_fly",
+    "crash_buckets",
+    "mop_clatter"
+   ]
+  },
+  "s20b07": {
+   "scene": "s20",
+   "kind": "silent",
+   "start": 269.479,
+   "end": 272.379,
+   "sfx": [
+    "bucket_bonk",
+    "cartoon_birdies",
+    "dagger_shing"
+   ]
+  },
+  "s20b08": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 272.379,
+   "audio": "audio/wav/s20b08.wav",
+   "marks": [
+    {
+     "word": "rude",
+     "kind": "high",
+     "start": 272.619,
+     "end": 273.059
+    }
+   ],
+   "speaker": "MAGICIAN",
+   "text": "...How rude.",
+   "end": 273.496
+  },
+  "s21b01": {
+   "scene": "s21",
+   "kind": "silent",
+   "start": 274.446,
+   "end": 275.246,
+   "sfx": [
+    "mop_clatter"
+   ]
+  },
+  "s21b02": {
+   "scene": "s21",
+   "kind": "line",
+   "start": 275.246,
+   "audio": "audio/wav/s21b02.wav",
+   "marks": [],
+   "speaker": "FEAR",
+   "text": "What's... what's that noise?",
+   "end": 277.309,
+   "sfx": [
+    "gulp"
+   ]
+  },
+  "s21b03": {
+   "scene": "s21",
+   "kind": "line",
+   "start": 277.709,
+   "audio": "audio/wav/s21b03.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And the void just shrugs.",
+   "end": 279.049
+  },
+  "s21b04": {
+   "scene": "s21",
+   "kind": "vocal",
+   "start": 279.249,
+   "audio": "audio/vocals/s21b04.wav",
+   "speaker": "VOID",
+   "vocal": "hum",
+   "caption": "(innocent hum)",
+   "end": 280.249
+  },
+  "s21b05": {
+   "scene": "s21",
+   "kind": "line",
+   "start": 280.549,
+   "audio": "audio/wav/s21b05.wav",
+   "marks": [],
+   "speaker": "FEAR",
+   "text": "Oh. ...Okay.",
+   "end": 282.439
+  },
+  "s21b06": {
+   "scene": "s21",
+   "kind": "silent",
+   "start": 282.839,
+   "end": 283.939,
+   "sfx": [
+    "shimmer"
+   ]
+  },
+  "s22b01": {
+   "scene": "s22",
+   "kind": "line",
+   "start": 284.289,
+   "audio": "audio/wav/s22b01.wav",
+   "marks": [
+    {
+     "word": "galaxies",
+     "kind": "high",
+     "start": 286.629,
+     "end": 286.909
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "And then it goes right back to showing my fear the galaxies.",
+   "end": 287.419,
+   "sfx": [
+    "galaxy_whirl"
+   ]
+  },
+  "s22b02": {
+   "scene": "s22",
+   "kind": "line",
+   "start": 287.619,
+   "audio": "audio/wav/s22b02.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "And the nebulae.",
+   "end": 288.499,
    "sfx": [
     "nebula_swell"
    ]
   },
-  "s15b12": {
-   "scene": "s15",
+  "s22b03": {
+   "scene": "s22",
    "kind": "silent",
-   "start": 347.771,
-   "end": 351.571,
+   "start": 288.799,
+   "end": 291.299,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s22b04": {
+   "scene": "s22",
+   "kind": "line",
+   "start": 291.299,
+   "audio": "audio/wav/s22b04.wav",
+   "marks": [],
+   "speaker": "FEAR",
+   "text": "Why are you showing me this?",
+   "end": 292.912
+  },
+  "s22b05": {
+   "scene": "s22",
+   "kind": "silent",
+   "start": 293.412,
+   "end": 295.512
+  },
+  "s22b06": {
+   "scene": "s22",
+   "kind": "line",
+   "start": 295.512,
+   "audio": "audio/wav/s22b06.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "To distract my fear, from the fact that the void had to kick the depression magician in the chest,",
+   "end": 300.902
+  },
+  "s22b07": {
+   "scene": "s22",
+   "kind": "line",
+   "start": 301.202,
+   "audio": "audio/wav/s22b07.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "Just so it could have a moment,",
+   "end": 302.592
+  },
+  "s22b08": {
+   "scene": "s22",
+   "kind": "line",
+   "start": 302.892,
+   "audio": "audio/wav/s22b08.wav",
+   "marks": [
+    {
+     "word": "fear",
+     "kind": "high",
+     "start": 303.172,
+     "end": 303.432
+    }
+   ],
+   "speaker": "NARRATOR",
+   "text": "with my fear.",
+   "end": 303.762,
+   "sfx": [
+    "shimmer",
+    "twinkle"
+   ]
+  },
+  "s22b09": {
+   "scene": "s22",
+   "kind": "silent",
+   "start": 305.262,
+   "end": 308.262,
    "sfx": [
     "bucket_bonk"
    ]
   },
-  "s15b13": {
-   "scene": "s15",
-   "kind": "vocal",
-   "start": 351.571,
-   "speaker": "NARRATOR",
-   "vocal": "laugh_soft",
-   "caption": "(laughs)",
-   "end": 352.971
-  },
-  "s15b14": {
-   "scene": "s15",
+  "s22b10": {
+   "scene": "s22",
    "kind": "silent",
-   "start": 352.971,
-   "end": 355.971,
+   "start": 308.262,
+   "end": 309.962,
    "sfx": [
-    "star_pop",
     "twinkle"
    ]
+  },
+  "s22b11": {
+   "scene": "s22",
+   "kind": "line",
+   "start": 309.962,
+   "audio": "audio/wav/s22b11.wav",
+   "marks": [],
+   "speaker": "NARRATOR",
+   "text": "Tee-hee.",
+   "end": 310.602
+  },
+  "s22b12": {
+   "scene": "s22",
+   "kind": "silent",
+   "start": 311.402,
+   "end": 313.802,
+   "sfx": [
+    "shimmer"
+   ]
+  },
+  "s22b13": {
+   "scene": "s22",
+   "kind": "vocal",
+   "start": 311.402,
+   "audio": "audio/vocals/s22b13.wav",
+   "speaker": "VOID",
+   "vocal": "hum",
+   "caption": null,
+   "end": 313.802
   }
  },
  "order": [
   "s01b01",
   "s01b02",
   "s01b03",
-  "s01b04",
-  "s01b05",
-  "s01b06",
-  "s01b07",
-  "s01b08",
-  "s01b09",
   "s02b01",
   "s02b02",
+  "s02b08",
   "s02b03",
   "s02b04",
+  "s02b05",
+  "s02b06",
+  "s02b07",
   "s03b01",
   "s03b02",
   "s03b03",
   "s03b04",
   "s03b05",
   "s03b06",
-  "s03b07",
-  "s03b08",
-  "s03b09",
   "s04b01",
   "s04b02",
   "s04b03",
@@ -1554,98 +2183,77 @@
   "s04b08",
   "s04b09",
   "s04b10",
+  "s04b11",
+  "s04b12",
+  "s04b13",
   "s05b01",
   "s05b02",
   "s05b03",
   "s05b04",
   "s05b05",
   "s05b06",
-  "s05b07",
-  "s05b08",
-  "s05b09",
-  "s05b10",
-  "s05b11",
-  "s05b12",
-  "s05b13",
-  "s05b14",
   "s06b01",
   "s06b02",
   "s06b03",
   "s06b04",
-  "s06b05",
-  "s06b06",
-  "s06b07",
-  "s06b08",
-  "s06b09",
-  "s06b10",
-  "s06b11",
   "s07b01",
   "s07b02",
   "s07b03",
   "s07b04",
   "s07b05",
+  "s07b06",
+  "s07b07",
+  "s07b08",
+  "s07b09",
+  "s07b10",
+  "s07b11",
   "s08b01",
   "s08b02",
   "s08b03",
   "s08b04",
   "s08b05",
-  "s08b06",
-  "s08b07",
-  "s08b08",
-  "s08b09",
-  "s08b10",
-  "s08b11",
-  "s08b12",
-  "s08b13",
-  "s08b14",
   "s09b01",
   "s09b02",
   "s09b03",
   "s09b04",
-  "s09b05",
-  "s09b06",
   "s10b01",
   "s10b02",
   "s10b03",
   "s10b04",
   "s10b05",
+  "s10b06",
+  "s10b07",
   "s11b01",
   "s11b02",
   "s11b03",
   "s11b04",
-  "s11b05",
-  "s11b06",
-  "s11b07",
-  "s11b08",
-  "s11b09",
   "s12b01",
   "s12b02",
   "s12b03",
-  "s12b04",
-  "s12b05",
-  "s12b06",
-  "s12b07",
-  "s12b08",
-  "s12b09",
-  "s12b10",
-  "s12b11",
   "s13b01",
   "s13b02",
   "s13b03",
   "s13b04",
   "s13b05",
+  "s13b09",
+  "s13b10",
   "s13b06",
   "s13b07",
   "s13b08",
-  "s13b09",
-  "s13b10",
   "s13b11",
-  "s13b12",
   "s13b13",
+  "s13b14",
+  "s13b15",
+  "s13b18",
+  "s13b12",
+  "s13b16",
+  "s13b17",
+  "s13b19",
   "s14b01",
   "s14b02",
   "s14b03",
-  "s14b04",
+  "s14b05",
+  "s14b06",
   "s15b01",
   "s15b02",
   "s15b03",
@@ -1653,13 +2261,61 @@
   "s15b05",
   "s15b06",
   "s15b07",
-  "s15b08",
-  "s15b09",
-  "s15b10",
-  "s15b11",
-  "s15b12",
-  "s15b13",
-  "s15b14"
+  "s16b01",
+  "s16b02",
+  "s16b03",
+  "s16b04",
+  "s16b05",
+  "s16b06",
+  "s16b10",
+  "s16b11",
+  "s16b12",
+  "s16b13",
+  "s16b07",
+  "s16b08",
+  "s16b09",
+  "s17b01",
+  "s17b02",
+  "s17b03",
+  "s17b04",
+  "s18b01",
+  "s18b02",
+  "s18b03",
+  "s18b04",
+  "s18b05",
+  "s18b06",
+  "s18b07",
+  "s19b01",
+  "s19b02",
+  "s19b03",
+  "s19b05",
+  "s20b01",
+  "s20b02",
+  "s20b03",
+  "s20b04",
+  "s20b05",
+  "s20b06",
+  "s20b07",
+  "s20b08",
+  "s21b01",
+  "s21b02",
+  "s21b03",
+  "s21b04",
+  "s21b05",
+  "s21b06",
+  "s22b01",
+  "s22b02",
+  "s22b03",
+  "s22b04",
+  "s22b05",
+  "s22b06",
+  "s22b07",
+  "s22b08",
+  "s22b09",
+  "s22b10",
+  "s22b11",
+  "s22b12",
+  "s22b13"
  ],
- "estimated": true
+ "estimated": false
 }

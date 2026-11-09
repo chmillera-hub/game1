@@ -42,7 +42,7 @@ def parse_marks(text):
     """Strip ^/~ marks. Returns (clean_text, [(word_index, word, 'high'|'low')])."""
     marks, out = [], []
     for i, tok in enumerate(text.split()):
-        m = re.match(r"^([\"'(]*)([\^~])(.+)$", tok)
+        m = re.match(r"^([\"'(.…]*)([\^~])(.+)$", tok)
         if m:
             marks.append((i, re.sub(r"[^A-Za-z']", "", m.group(3)), "high" if m.group(2) == "^" else "low"))
             tok = m.group(1) + m.group(3)

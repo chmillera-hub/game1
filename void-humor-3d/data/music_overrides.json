@@ -1,0 +1,23 @@
+{
+ "_help": "Composer edits applied on top of the automatically derived cue plan (audio/music.py) every time the plan is derived, so they survive screenplay revisions. Keys: a scene id ('s02') = the cue that starts with that scene; 'sXX:mood' = the cue of that mood containing the scene. Values: any cue field (from, to, mood, key, bpm, intensity, ramp, transition_in, ending, melody_stem, layers_off, gain_db, prog, hits) or 'hits+' to append hits to the cue containing the scene. Hits: {t | sfx+scene(+offset), kind: sting|stop|swell|wahwah|tada|creep|pluck|ping, len | until, stab, notes}. Missing beat references are skipped with a warning. Editing this file re-derives data/music_plan.json (the previous plan is kept as a timestamped backup).",
+ "scenes": {
+  "s02": {"from": "s02b02-0.1", "transition_in": "cut",
+          "_why": "the chase stops dead for the cue: wind and footsteps only for the empty-path pause; the music re-enters with a harp glissando landing on 'Now'"},
+  "s04": {"from": "s04b02", "transition_in": "cut",
+          "_why": "a held breath (nothing) before the snort; the comic eruption starts on the snort"},
+  "s05": {"hits+": [{"t": "s05b06", "kind": "ping"}, {"t": "s05b06+0.28", "kind": "ping"}],
+          "_why": "a two-note glockenspiel 'tee-hee' doubling Jesus"},
+  "s06": {"hits+": [{"t": "s06b01.end+0.12", "kind": "wahwah", "notes": 1}],
+          "_why": "a single muted-trumpet 'doink' right after the bleep"},
+  "s09": {"hits+": [{"t": "s09b02", "kind": "sting"}],
+          "_why": "a pizzicato 'nope' on 'Hell no'"},
+  "s13": {"hits+": [{"t": "s13b18", "kind": "stop", "until": "s13.end", "stab": false}],
+          "_why": "the music cuts out under the silence after 'How does that sound?'"},
+  "s14": {"hits+": [{"sfx": "block_thunk", "scene": "s14", "kind": "stop", "until": "s14.end", "stab": false}],
+          "_why": "a dead stop on the block: the wah-wah, the ding and 'too intensely' play in the silence"},
+  "s20": {"hits+": [{"t": "s20b03+0.5", "kind": "stop", "until": "s20b04", "stab": false}],
+          "_why": "a dead stop on 'the void just...' (the kick then hits with its own stop-time and stab)"},
+  "s22": {"hits+": [{"sfx": "bucket_bonk", "scene": "s22", "kind": "pluck", "offset": 0.15}],
+          "_why": "one tiny comic pizzicato for the bucket"}
+ }
+}
