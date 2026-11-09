@@ -58,7 +58,7 @@ export default {
     for (let i = 0; i < 4; i++) {
       mag.update(c.contact - 0.01, { ...magPose(st, c.contact - 0.01, 0) });
       const C = A(mag.anchor('chest'));
-      vd.update(c.contact, { pos: M.V, yaw: M.yV, body: { lean: 0.12 }, head: { pitch: 0.25, yaw: 0.3 }, extra: { kick: 1.0, kickSide: 'L', kickTarget: C, kickLevel: 1 } });
+      vd.update(c.contact, { pos: M.V, yaw: M.yV, body: { lean: 0.12, pitch: -0.17 }, head: { pitch: 0.25, yaw: 0.3 }, extra: { kick: 1.0, kickSide: 'L', kickTarget: C, kickLevel: 1 } });
       F = A(vd.anchor('kickFoot'));
       st.magRoot = [st.magRoot[0] + 0.9 * (F[0] - C[0]), 0, st.magRoot[2] + 0.9 * (F[2] - C[2])];
       st.contactErr = Math.hypot(F[0] - C[0], F[1] - C[1], F[2] - C[2]);
@@ -110,7 +110,7 @@ export default {
       const head = { pitch: 0.25, yaw: shot >= 3 ? 0.3 : 0.08, roll: 0.03 };
       return {
         pos: vs.pos, yaw: vs.yaw,
-        body: { lean: 0.12, breathe: 0.9 - 0.6 * pulse(t, c.B3, c.contact + 0.2, 0.4, 0.3), breathRate: 0.2 },
+        body: { lean: 0.12, pitch: -0.17 * Math.min(kP, 1), breathe: 0.9 - 0.6 * pulse(t, c.B3, c.contact + 0.2, 0.4, 0.3), breathRate: 0.2 },
         head,
         gaze: pass ? fe : null,
         face,
@@ -383,7 +383,7 @@ function frameShot(st, t, shot, c, M) {
       return aim(pos, mh, 420, 420, 38, { drift: 0.1 });
     }
     case 3: { // KICK wide, locked: the Void 3/4 (head cheat), Fear lower-left, the magician bent over the camera-side hem
-      return aim(ROOM.W(1.85, 1.3, 7.0), ROOM.W(1.95, 2.0, 0.3), 372, 420, 50, { drift: 0 });
+      return aim(ROOM.W(1.85, 1.3, 7.0), ROOM.W(1.95, 2.0, 0.3), 372, 445, 50, { drift: 0 });
     }
     case 4: { // the floor insert at the back hem: the retracting fat leg, the foot's wiggle, the hem bounce
       const vs = voidSpot(t);

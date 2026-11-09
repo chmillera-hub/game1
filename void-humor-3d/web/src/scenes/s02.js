@@ -441,12 +441,14 @@ function jesusPose(t, st, J, JW, ue, vEyes, shot) {
     // "one sec": the palm on the user's side floats out palm-down toward the user's head height (pick the side the
     // user is actually on in his own frame)
     const onLeft = jesus.root.worldToLocal(uEyes.clone()).x > 0, side = onLeft ? 'L' : 'R';
-    const sh = jesus.anchor('shoulder' + side), ut = uEyes.clone().add(V3(0, 0.22, 0));
-    const tgt = sh ? sh.clone().lerp(ut, 0.62).add(V3(0, -0.1, 0)) : ut;
-    const gest = sec > 0.01 ? { preset: 'stop', target: tgt.toArray(), reach: sec, palm: [0, -1, 0], hand: { curl: 0.06, spread: 0.22, cup: 0.15 } } : { preset: 'rest' };
+    // the user sits right at his hip: a palm-down "stay there, one sec" held out to that side at chest height
+    // (reads as a silhouette from behind), head turning to the user with a nod
+    const sh = jesus.anchor('shoulder' + side);
+    const sideW = V3(onLeft ? 1 : -1, 0, 0).transformDirection(jesus.root.matrixWorld), fwdW = V3(0, 0, 1).transformDirection(jesus.root.matrixWorld);
+    const tgt = sh ? sh.clone().addScaledVector(sideW, 0.42).addScaledVector(fwdW, 0.12).add(V3(0, -0.22, 0)) : uEyes;
+    const gest = sec > 0.01 ? { preset: 'stop', target: tgt.toArray(), reach: sec, palm: [0, -1, 0], fingers: sideW.clone().addScaledVector(fwdW, 0.3).normalize().toArray(), hand: { curl: 0.06, spread: 0.25, cup: 0.12 } } : { preset: 'rest' };
     P.armL = onLeft ? gest : { preset: 'rest' };
     P.armR = onLeft ? { preset: 'rest' } : gest;
-    console.log('W7dbg', t.toFixed(2), onLeft, jesus.root.worldToLocal(uEyes.clone()).toArray().map((v) => v.toFixed(2)).join(','), tgt.toArray().map((v) => v.toFixed(2)).join(','), sh && sh.toArray().map((v) => v.toFixed(2)).join(','), sec.toFixed(2));
     return P;
   };
   return { pre, full };
