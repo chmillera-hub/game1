@@ -20,7 +20,7 @@ import { JX } from '../chars/jesus.js';
 import { UX } from '../chars/user.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, gazeSched, scopeVisible, ensureLittleGalaxy, drawSkyGalaxy, faceSeq, fmix } from './edgeprops.js';
 import { fitShot } from './armour_shared.js';
-import { M, W, WDIR, speechSafe, aroundTarget, defendTarget } from './kit_s05_07.js';
+import { M, W, WDIR, speechSafe, aroundTarget, defendTarget, camKeys, vAxes, dbg, mouthFrame, coverMouth } from './kit_s05_07.js';
 
 const DEBUG = false;
 const BELLY = { curl: 0.62, spread: 0.12, cup: 0.5, thumb: 0.4 };
@@ -46,17 +46,18 @@ function times() {
 // ---------------------------------------------------------------------------------------------------------- cameras
 function cams(S, R) {
   const e = 1e-3;
-  const ucu = (ref, d, scr, yaw = 108) => EDGE.shot(EDGE.L(ref), { dist: d, yaw, pitch: 4, fov: 33, screenY: sy(scr), drift: 0.1 });
+  const uyR = EDGE.Y(M.U.yaw), uRt = V3(-Math.cos(uyR), 0, Math.sin(uyR));
+  const ucu = (ref, d, scr, yaw = 108, off = 0.06) => EDGE.shot(EDGE.L(toV(ref).addScaledVector(uRt, off)), { dist: d, yaw, pitch: 4, fov: 33, screenY: sy(scr), drift: 0.1 });
   const u0 = ucu(R.uEyes0, 1.75, 440, 116), u1 = ucu(R.uEyes1, 1.72, 430, 116), u1b = ucu(R.uEyes1, 1.62, 430, 116);
-  const v3a = EDGE.shot(EDGE.L(R.vEyes3), { dist: 2.9, yaw: -32, pitch: -4, fov: 33, screenY: sy(330), drift: 0.12 });
-  const v3b = EDGE.shot(EDGE.L(R.vEyes3), { dist: 2.75, yaw: -32, pitch: -4, fov: 33, screenY: sy(330), drift: 0.12 });
-  const u4 = { ...ucu(R.uEyes4, 1.6, 430), drift: 0 };          // locked off
-  return [
+  const v3a = EDGE.shot(EDGE.L(R.vEyes3), { dist: 2.9, yaw: -32, pitch: -12, fov: 33, screenY: sy(330), drift: 0.12 });
+  const v3b = EDGE.shot(EDGE.L(R.vEyes3), { dist: 2.75, yaw: -32, pitch: -12, fov: 33, screenY: sy(330), drift: 0.12 });
+  const u4 = { ...ucu(R.uEyes4, 1.6, 430, 108, 0.03), drift: 0 };          // locked off
+  return camKeys('s06', [
     [S.s, u0], [S.whatW + 0.06, u0], [S.whatW + 0.42, u1, 'inOut'], [S.cut3 - e, u1b, 'linear'],     // the operator follows the lunge
     [S.cut3, v3a], [S.cut4 - e, v3b, 'linear'],
     [S.cut4, u4], [S.cut4b - e, u4],
     [S.cut4b, R.two], [S.end, R.twoB, 'out'],
-  ];
+  ]);
 }
 
 // ---------------------------------------------------------------------------------------------------------- module
@@ -87,7 +88,8 @@ export default {
     R.two = fitShot([[a5.jE, 250, 480], [a5.vE, 500, 255]], 44, c0, a5.jE, { free: [0, 0, 0], drift: 0.15 });
     R.twoB = fitShot([[a5.jE, 248, 470], [a5.vE, 505, 240]], 41, c0.clone().addScaledVector(toPair, 0.12), a5.jE, { free: [0, 0, 0], drift: 0.15 });
     // the star's path across the locked USER_CU frame (built in that camera's screen axes, pure)
-    const u4 = EDGE.shot(EDGE.L(R.uEyes4), { dist: 1.6, yaw: 108, pitch: 4, fov: 33, screenY: sy(430) });
+    const uy0 = EDGE.Y(M.U.yaw);
+    const u4 = EDGE.shot(EDGE.L(R.uEyes4.clone().add(V3(-Math.cos(uy0), 0, Math.sin(uy0)).multiplyScalar(0.03))), { dist: 1.6, yaw: 108, pitch: 4, fov: 33, screenY: sy(430) });
     const cp = toV(u4.pos), fwd = toV(u4.look).sub(cp).normalize();
     const rt = V3().crossVectors(fwd, V3(0, 1, 0)).normalize(), up = V3().crossVectors(rt, fwd).normalize();
     const base = R.uEyes4.clone().addScaledVector(fwd, -0.25);          // a plane a little in front of the face
@@ -117,6 +119,7 @@ export default {
     set.update(t, { tod: todAt(t), voidSky: voidSkyAt(t) * 0.85, voidPos: vd.root.position.toArray(), shadowAt: W([0, 0, 0]),
       sunGlow: (t < S.cut3 || (t >= S.cut4 && t < S.cut4b)) ? 0.6 : 1 });
     st.look = lookFor('s06', set.look);
+    dbg('s06', st);
     if (DEBUG) {
       const pxs = (v) => px(app.camera, v).join(',');
       console.log('handR', pxs(user.anchor('handR')));
@@ -141,7 +144,8 @@ function poseAll(t, S, st) {
   const { jesus, vd, user } = st;
   user.update(t, userPose(t, S, st, false));
   jesus.update(t, jesusPose(t, S, st, null));
-  vd.update(t, voidPose(t, S, st));
+  vd.update(t, voidPose(t, S, st));                         // pre-pass: this frame's mouth (for the covering hand)
+  vd.update(t, voidPose(t, S, st, mouthFrame(vd)));
   jesus.update(t, jesusPose(t, S, st, vd));
   user.update(t, userPose(t, S, st, true));
 }
@@ -184,9 +188,11 @@ function jesusPose(t, S, st, vd) {
 }
 
 // ---------------------------------------------------------------------------------------------------------- the Void
-function voidPose(t, S, st) {
+function voidPose(t, S, st, cup = null) {
   const { jesus, user } = st;
-  const P = { pos: W(M.V.p), yaw: EDGE.Y(M.V.yaw), body: {}, head: {}, extra: { stars: 1.2 }, armL: { preset: 'belly', hand: BELLY }, armR: { preset: 'belly', hand: BELLY } };
+  const ax = vAxes(EDGE.Y(M.V.yaw));
+  const P = { pos: W(M.V.p), yaw: EDGE.Y(M.V.yaw), body: {}, head: {}, extra: { stars: 1.2 }, armL: { preset: 'belly', hand: BELLY },
+    armR: { preset: 'belly', hand: BELLY, offset: ax.lf.clone().multiplyScalar(0.24).add(V3(0, -0.12, 0)).addScaledVector(ax.fw, 0.03).toArray() } };
   const jE = jesus.anchor('eyes'), uE = user.anchor('eyes');
   const sp = speechSafe('VOID', t);
   const gig = t < S.b03 ? (sp?.open || 0) : 0;
@@ -198,7 +204,7 @@ function voidPose(t, S, st) {
   P.extra.laugh = 0.12 * (1 - ramp(t, S.b01 + 0.8, S.b03));
   // four fingers over the mouth after the first hiccup (its LEFT hand: the camera side); stays into s07's start
   const cov = ramp(t, S.hic1 + 0.08, S.hic1 + 0.3, 'out');
-  if (cov > 0) P.armL = { preset: 'cover_mouth', from: 'belly', mix: cov, hand: { curl: 0.12, cup: 0.4, spread: 0.06 }, offset: [0, 0, -0.01 * h2] };
+  if (cov > 0 && cup) P.armL = coverMouth(cup, cov, h2);
   // ---- face
   const fGig = () => {
     const f = VX('giggle', { mOpen: 0.1, lidU: 0.35, lidL: 0.95, wet: 0.7, tearL: 0.15, tearR: 0.15 });
@@ -212,7 +218,7 @@ function voidPose(t, S, st) {
   };
   const fCover = () => {
     // excuse me: lids lower, a blush, eyes slide aside
-    const f = VX([['innocent', 0.6], ['gentle', 0.4]], { mSmile: 0.3, mPress: 0.6, lidU: 0.86, lidL: 0.3, blush: 0.55, gazeYaw: 0, gazePitch: 0 });
+    const f = VX([['innocent', 0.6], ['gentle', 0.4]], { mSmile: 0.3, mPress: 0.6, lidU: 1.02, lidL: 0.22, blush: 0.55, gazeYaw: 0, gazePitch: 0 });
     f.lidU += 0.25 * h2; f.browIn += 0.25 * h2;
     return f;
   };
@@ -226,7 +232,7 @@ function voidPose(t, S, st) {
   P.face = faceSeq(t, [[S.s, fGig], [S.hic1 - 0.03, fHic, 0.05], [S.hic1 + 0.3, fCover, 0.2], [S.cut4b, fNarrow, 0.25]]);
   P.face.saccade = 0;
   // gaze: the user (offscreen, giggling at them) -> straight out at the hiccup -> aside (excuse me) -> Jesus -> user
-  const aside = () => jE.clone().lerp(uE, 0.5).add(V3(0, -0.6, 0)).addScaledVector(WDIR(1, 0.3), 1.6);
+  const aside = () => jE.clone().lerp(uE, 0.5).add(V3(0, -0.15, 0)).addScaledVector(WDIR(1, 0.3), 1.8);
   P.gaze = gazeSched(t, [
     [S.s, uE], [S.hic1, () => jE.clone().lerp(uE, 0.5), 0.05], [S.hic2 + 0.15, aside, 0.28],
     [S.cut4b + 0.08, jE, 0.12], [S.cut4b + 0.36, uE, 0.16],
@@ -259,17 +265,31 @@ function userPose(t, S, st, final) {
   P.body.flinch = 0.5 * flinch;
   P.body.pant = t < S.b04 ? 0.5 : 0.15;
   P.body.tremble = t < S.b04 ? 0.3 : 0.12;
-  // ---- the raised RIGHT hand: flaps once at the pair on "actual", snaps back; then heads for the glasses
-  // (the hand comes in closer to the face as they lunge: in frame for the flap and the glasses)
-  const flap = pulse(t, S.actualW - 0.04, 0.12, 0.05, 0.2);
+  // ---- the raised RIGHT hand: forward of the face plane and outboard (never into the hair / glasses); on "actual" it
+  // flings out at the pair (≈20 cm of travel, palm up-and-out) and snaps back; after the bleep the index heads for the
+  // bridge of the glasses; once they're pushed home (b04, locked CU) the hand drops OUT of frame (down, not past the
+  // ear), and comes back up to s04's raised 'defend' while the two-shot holds the pair (offscreen for s07's start)
+  const flap = pulse(t, S.actualW - 0.06, 0.13, 0.06, 0.24);
   const tp = toV(R.toPair).setY(0).normalize();
-  const closer = toV(R.userShoulderR).add(V3(0, 0.12, 0)).addScaledVector(tp, 0.3);
-  const cw = ramp(t, S.s + 0.05, S.whatW + 0.15) * (1 - ramp(t, S.b04 + 0.3, S.b04 + 0.65));
   const uyR = EDGE.Y(M.U.yaw), uRight = V3(-Math.cos(uyR), 0, Math.sin(uyR));       // their right = outward, clear of the face
-  const tg = defendTarget(R).lerp(closer, cw).addScaledVector(uRight, 0.12 * flap).addScaledVector(tp, 0.05 * flap).add(V3(0, 0.05 * flap, 0));
-  P.armR = { preset: 'defend', tremble: 0.4, flap, target: tg, reach: 1, palm: R.toPair };
-  const toG = ramp(t, S.bleep + 0.24, S.cut3 + 0.05) * (t < S.b04 ? 0.75 : 1) * (1 - ramp(t, S.b04 + 0.24, S.b04 + 0.55));
+  const shR = toV(R.userShoulderR);
+  // A: raised, forward of the shoulder and outboard (frame-left edge, mouth height, ~80 px clear of the hair)
+  const A = shR.clone().add(V3(0, 0.06, 0)).addScaledVector(tp, 0.34).addScaledVector(uRight, 0.11);
+  // B: the fling — out at the pair under the chin, palm up (wrist target; the hand reaches on toward them)
+  const B = shR.clone().add(V3(0, -0.08, 0)).addScaledVector(tp, 0.43).addScaledVector(uRight, -0.1);
+  const cw = ramp(t, S.s + 0.05, S.whatW + 0.15);
+  // (the return swings low, under the jaw line, instead of sweeping back across the face)
+  const ret = t > S.actualW + 0.13 ? Math.sin(Math.PI * flap) : 0;
+  const tg = defendTarget(R).lerp(A, cw).lerp(B, flap).add(V3(0, -0.07 * ret, 0)).addScaledVector(uRight, 0.04 * ret);
+  const palmF = toV(R.toPair).lerp(V3(0, 1, 0).addScaledVector(tp, 0.25).addScaledVector(uRight, 0.35).normalize(), flap).normalize();
+  const fingF = V3(0, 1, 0).addScaledVector(tp, 0.35).normalize().lerp(tp.clone().addScaledVector(uRight, -0.25).add(V3(0, 0.1, 0)).normalize(), flap).normalize();
+  P.armR = { preset: 'defend', tremble: 0.4 * (1 - flap), target: tg, reach: 1, palm: palmF.toArray(), fingers: fingF.toArray(),
+    pole: V3(0, -1, 0).addScaledVector(uRight, 0.7).normalize().toArray(), hand: flap > 0.3 ? { curl: 0.12, spread: 0.6, splay: 0.4, thumb: 0.8, cup: 0.15 } : undefined };
+  // (the index travels to the bridge while we're on the Void: at the b04 cut it is already there, pushing)
+  const toG = ramp(t, S.cut3 + 0.02, S.cut3 + 0.5) * (1 - ramp(t, S.b04 + 0.22, S.b04 + 0.4));
+  const drop = ramp(t, S.b04 + 0.22, S.b04 + 0.5) * (1 - ramp(t, S.cut4b + 0.1, S.end - 0.15));
   if (toG > 0) P.armR = { preset: [['defend', 1 - toG], ['glasses', toG]], tremble: 0.2 * (1 - toG), target: toG < 0.5 ? tg : undefined, reach: 1 };
+  else if (drop > 0) P.armR = { preset: [['defend', 1 - drop], ['knee', drop]], tremble: 0.1, target: drop < 0.5 ? defendTarget(R) : undefined, reach: 1, palm: drop < 0.5 ? R.toPair : undefined };
   // ---- glasses: knocked down the nose by the scrunch, pushed home at the start of b04
   const slip = k(t, [[S.bleep, 0], [S.bleep + 0.08, 0.9, 'out'], [S.b04 + 0.04, 0.9], [S.b04 + 0.2, 0, 'inOut']]);
   P.extra.glassesSlip = slip;

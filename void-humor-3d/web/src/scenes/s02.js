@@ -163,6 +163,17 @@ function userBlock(t, hipL) {
   return o;
 }
 
+/** event times for the cue file, from the same functions that drive the animation (stage-local timing) */
+export function cueTimesS02(hipL = [0, -0.2]) {
+  const UT = userTimes(), out = { userSteps: [], voidSteps: [], jesus: jesusFootfalls(), UT };
+  const step = (fn, t0, t1, keep) => { const r = []; for (let f = Math.round(t0 * 240); f < Math.round(t1 * 240); f++) { const a = fn(f / 240), b = fn((f + 1) / 240); if (Math.floor(b * 2) > Math.floor(a * 2) && keep((f + 1) / 240)) r.push(+((f + 1) / 240).toFixed(3)); } return r; };
+  out.userSteps = step((t) => userBlock(t, hipL).phase, UT.tR - 0.02, UT.tF + 0.12, (t) => userBlock(t, hipL).run > 0.5);
+  out.voidSteps = step((t) => voidAt(t).phase, T('s02b04'), T('s02b06'), (t) => voidAt(t).amt > 0.5);
+  const V = voidAt(T('s02b05'));
+  out.voidStop = V.tS; out.voidPlant = V.tPlant; out.voidBack = V.tB;
+  return out;
+}
+
 // ------------------------------------------------------------------------------------------------ shots / timing
 const T7B = () => T('s02b07+0.72');                 // W7A -> W7B (Void single)
 function shotOf(t) {
@@ -232,7 +243,9 @@ export default {
 
     // ============================================================================ camera (before rig updates)
     let shotDef = null;
-    if (shot === 'BEND') shotDef = { ...EDGE.cam('BEND'), drift: 0.15 };
+    // BEND: the verified preset raised 12 cm (from the preset height a terrain pixel on the lilac hill's silhouette at the
+    // left edge flares into a bloom blob — an EDGE shader firefly; this angle never hits it)
+    if (shot === 'BEND') { const c = EDGE.CAM.BEND; shotDef = { ...EDGE.at([c.pos[0], c.pos[1] + 0.12, c.pos[2]], c.look, c.fov), drift: 0.15 }; }
     else if (shot === 'ARRIVE') shotDef = arriveShot(t, st);
     else if (shot === 'REV') {
       // low angle from just behind the user's raised right hand up to the Void (fitted), a very slow push
@@ -261,9 +274,10 @@ export default {
     const jPre = { pos: JW, yaw: EDGE.Y(J.yaw), walk: { amount: J.amt, style: J.style, phase: J.phase } };
     if (jesusIn) jesus.update(t, jPre);
     // ============================================================================ VOID (pose; updated even when off-cast for anchors)
+    // (perf: rigs that are off-cast this frame only get what their partners need — the Void's eyes as a mark)
     const vEyesGuess = V3(VW[0], VW[1] + 2.16, VW[2]);
-    vd.update(t, voidPose(t, st, VV, VW, ue0 || vEyesGuess));
-    const vEyes = vd.anchor('eyes');
+    let vEyes = vEyesGuess;
+    if (names.includes('VOID')) { vd.update(t, voidPose(t, st, VV, VW, ue0 || vEyesGuess)); vEyes = vd.anchor('eyes'); }
 
     // ============================================================================ JESUS
     const jPose = jesusPose(t, st, J, JW, ue0, vEyes);
@@ -273,12 +287,12 @@ export default {
         const u = smooth(clamp((t - T('s02b06')) / (T('s02b07') - T('s02b06'))));
         applyShot(cam, EDGE.shot(EDGE.L(eyes), { dist: lerp(1.6, 1.3, u), yaw: 110, pitch: 1, fov: 33, screenY: sy(415), drift: 0.15 }), t);
       }
-      jesus.update(t, jPose.full(jesus));
+      if (names.includes('JESUS')) jesus.update(t, jPose.full(jesus));
     }
     const jHead = jesusIn ? jesus.anchor('eyes') : null;
 
     // ============================================================================ USER (final)
-    if (t >= T('s02b03')) user.update(t, userPose(t, st, UT, B, uPos, jHead, vEyes, jesus));
+    if (t >= T('s02b03') && names.includes('USER')) user.update(t, userPose(t, st, UT, B, uPos, jHead, vEyes, jesus));
 
     // ============================================================================ FX: shimmer, sparkles, seed
     const tA = T('s02b02');

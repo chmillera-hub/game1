@@ -87,7 +87,9 @@ function statics(st) {
   user.update(that - 0.15, userPose(that - 0.15)); const holdL = wr('L');
   user.update(thing + 0.17, userPose(thing + 0.17)); const crossL = wr('L'), crossR = wr('R');
   const uy = WY(M.U);
-  out.W = { holdL, crossL, crossR, inward: V3(-Math.sin(uy), -0.3, -Math.cos(uy)).normalize() };
+  const rt = V3(-Math.cos(uy), 0, Math.sin(uy));
+  out.W = { holdL, crossL, crossR, inward: V3(-Math.sin(uy), -0.3, -Math.cos(uy)).normalize(),
+    drop: out.R.clear.clone().addScaledVector(rt, 0.07).add(V3(0, -0.34, 0)) };
   // cameras: USER_CU (room for the raised hand at frame-left and the phone jabbing in at frame-right)
   out.UCU_A = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.95, yaw: 122, pitch: 3, fov: 33, screenY: sy(400), drift: 0.2 });
   out.UCU_B = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.72, yaw: 120, pitch: 3, fov: 33, screenY: sy(405), drift: 0.2 });
@@ -147,8 +149,11 @@ function userPose(t) {
   const dA = P.armR;
   if (snap) P.armR = rX >= 1 ? { preset: 'crossed' } : dA;
   else if (rX >= 1) P.armR = { preset: 'crossed', tremble: 0.15 };
-  else if (rX > 0) P.armR = { preset: [['defend', 1 - rX + 1e-4], ['crossed', rX]], tremble: 0.3 * (1 - rX) + 0.15 * rX,
-    target: S.R.clear.clone().lerp(S.W.crossR, rX), reach: 1, palm: S.R.toVoid.clone().lerp(S.W.inward, rX).normalize() };
+  else if (rX > 0) {          // drops straight down at the side first (never across the face), then folds in
+    const tg = rX < 0.5 ? S.R.clear.clone().lerp(S.W.drop, smooth(rX * 2)) : S.W.drop.clone().lerp(S.W.crossR, smooth(rX * 2 - 1));
+    P.armR = { preset: [['defend', 1 - rX + 1e-4], ['crossed', rX]], tremble: 0.3 * (1 - rX) + 0.15 * rX,
+      target: tg, reach: 1, palm: S.R.toVoid.clone().lerp(S.W.inward, rX).normalize() };
+  }
   // ---- body
   const jabLean = pulse(t, that - 0.14, 0.18, 0.12, 0.3);
   P.body = { ...P.body,

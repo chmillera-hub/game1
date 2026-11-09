@@ -32,7 +32,6 @@ import {
 } from './kit_s20_22.js';
 
 const ID = 's20';
-globalThis.DBG20 = 1; // TEMP
 // the magician's kick pose: bent double just past the Void's back-left flank (screen-right of its silhouette in the
 // KICK wide), in profile toward Fear (screen-left), leaning out toward the camera side; the leg is stretched a little
 // (rubber hose, `kickReach`) so his head stays clear of the Void's body

@@ -18,6 +18,43 @@ export const L3 = (x, y, z) => V3(...EDGE.W(x, y, z));
 /** stage-local direction (x, z) as a world unit Vector3 */
 export const WDIR = (x, z) => { const a = EDGE.W(x, 0, z), o = EDGE.W(0, 0, 0); return V3(a[0] - o[0], 0, a[2] - o[2]).normalize(); };
 
+/**
+ * Camera key list guard: shotAt() silently mis-interpolates when key times go backwards (it keeps blending toward a
+ * later key and the cut slips). Warns once per scene and returns the keys sorted (stable) so a re-timed timeline
+ * can never break a cut.
+ */
+const _warned = new Set();
+export function camKeys(id, keys) {
+  const ts = keys.map((kk) => T(kk[0]));
+  let ok = true;
+  for (let i = 1; i < ts.length; i++) if (ts[i] < ts[i - 1]) ok = false;
+  if (ok) return keys;
+  if (!_warned.has(id)) { _warned.add(id); console.warn(`${id}: camera keys out of order`, ts.map((x) => x.toFixed(2)).join(' ')); }
+  return keys.map((kk, i) => [kk, ts[i], i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map((x) => x[0]);
+}
+
+/** the Void's local axes in world (from its mark yaw): fw = its front, lf = its LEFT */
+export function vAxes(yaw) { return { fw: V3(Math.sin(yaw), 0, Math.cos(yaw)), lf: V3(Math.cos(yaw), 0, -Math.sin(yaw)) }; }
+
+// ---------------------------------------------------------------------------------------------- the Void's hands
+/** the Void's mouth frame (world) from the current pose: centre, out-of-mouth dir, its-right dir (across the mouth) */
+export function mouthFrame(vd) {
+  const mo = vd.anchor('mouth'), md = vd.anchor('mouthDir').normalize();
+  const rt = vd.anchor('earR').sub(vd.anchor('earL')); rt.addScaledVector(md, -rt.dot(md)).normalize();
+  return { mo, md, rt };
+}
+/** its LEFT hand (camera side) politely over the mouth: palm centred on the crescent, fingers level across it */
+export function coverMouth(cup, mix, hic = 0) {
+  const { mo, md, rt } = cup;
+  const tg = mo.clone().addScaledVector(md, 0.075 + 0.01 * hic).addScaledVector(rt, 0.02).add(V3(0, -0.005, 0));
+  return { preset: 'cover_mouth', from: 'belly', mix, target: tg, reach: mix, at: 'palm', handScale: 0.86,
+    palm: md.clone().negate().toArray(), fingers: rt.clone().add(V3(0, 0.12, 0)).normalize().toArray(),
+    pole: V3(0, -1, 0).addScaledVector(rt, -0.6).addScaledVector(md, 0.3).normalize().toArray(), hand: { curl: 0.1, cup: 0.3, spread: 0.05, thumb: 0.3 } };
+}
+
+/** debug hook for probes (cheap): globalThis.__dbg[id] = state */
+export function dbg(id, st) { (globalThis.__dbg ||= {})[id] = st; }
+
 /** speechAt with NaNs scrubbed (several envelopes in data/lipsync.json end in NaN) */
 export function speechSafe(spk, t) {
   const sp = speechAt(spk, t);
@@ -50,13 +87,13 @@ export function plainDefendWrist(user, t, base) {
   return user.root.localToWorld(user.arms.R.wrist.clone());
 }
 
-/** the user's seat (U) — s07b05's 2.5 cm scoot back is kept to the end of s07 */
-export function userPosAt(t, scootT = null) {
+/** the user's seat (U) — s07b05's scoot back (dist m over dur s) is kept to the end of s07 */
+export function userPosAt(t, scootT = null, dist = 0.025, dur = 0.22) {
   const p = W(M.U.p);
   if (scootT == null) return p;
   const y = EDGE.Y(M.U.yaw);
-  const u = smooth(clamp((t - scootT) / 0.22));
-  return [p[0] - Math.sin(y) * 0.025 * u, 0, p[2] - Math.cos(y) * 0.025 * u];
+  const u = smooth(clamp((t - scootT) / dur));
+  return [p[0] - Math.sin(y) * dist * u, 0, p[2] - Math.cos(y) * dist * u];
 }
 
 // ---------------------------------------------------------------------------------------------- the iris galaxy
@@ -118,34 +155,36 @@ export function makeIrisGalaxy(user, a, b) {
 /** One glossy tear that gathers at the chin and drips off (s05b05). update(t, user) after user.update(). */
 export function makeTearDrop(scene, a, b) {
   const mat = new THREE.MeshStandardMaterial({ color: 0xdff0ff, roughness: 0.05, metalness: 0.0, transparent: true, opacity: 0.85, emissive: 0x4a6a8a, emissiveIntensity: 0.6 });
-  const m = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 14, 10), mat);
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.0068, 14, 10), mat);
   m.renderOrder = 4;
   scene.add(m);
   scopeVisible(m, a, b);
   return {
     mesh: m,
-    /** t0: the drop starts sliding from the jaw; tf: it lets go of the chin */
+    /**
+     * t0: the drop appears on the cheek (side: +1 their left, -1 their right) and slides down the skin (face
+     * surface, head-local u/v) to the point of the chin; tf: it lets go and falls.
+     */
     update(t, user, t0, tf, side = 1) {
       if (t < t0) { m.scale.setScalar(1e-4); return; }
-      const mouth = user.anchor('mouth'), head = user.anchor('head');
-      const down = mouth.clone().sub(head).normalize();
-      const right = user.anchor('earL').sub(user.anchor('earR')).normalize();
-      const fwd = mouth.clone().sub(head); fwd.addScaledVector(down, -fwd.dot(down)).normalize();
-      const chin = mouth.clone().addScaledVector(down, 0.068).addScaledVector(fwd, -0.012);
-      const jaw = chin.clone().addScaledVector(right, side * 0.034).addScaledVector(down, -0.03).addScaledVector(fwd, -0.01);
-      let p, s = 1;
+      const F = user.face, R = 0.0068;
+      F.head.updateWorldMatrix(true, false);
+      const onSkin = (u, v, lift = 0.55) => { const { p, n } = F.surface(u, v); return F.head.localToWorld(p.clone().addScaledVector(n, R * lift)); };
+      const chin = onSkin(side * 0.05, -1.06, 0.2);
+      let p, s;
       if (t < tf) {
         const u = smooth(clamp((t - t0) / Math.max(0.05, tf - t0)));
-        p = jaw.clone().lerp(chin, u);
-        s = 0.6 + 0.6 * u;                                     // gathers as it slides to the chin point
-        p.addScaledVector(down, 0.004 * s);
+        // cheek -> jaw -> chin point (a slight curve along the jaw line)
+        p = onSkin(side * lerp(0.42, 0.05, u) * (1 - 0.15 * Math.sin(Math.PI * u)), lerp(-0.52, -1.06, u));
+        s = 0.55 + 0.65 * u;                                   // gathers as it slides
+        if (u > 0.85) p.y -= 0.004 * (u - 0.85) / 0.15;        // hangs, stretching, before it lets go
       } else {
         const dt = t - tf;
-        p = chin.clone().addScaledVector(down, 0.004 * 1.2).add(V3(0, -4.9 * dt * dt, 0));
-        s = 1.2 * (1 - smooth(clamp((dt - 0.25) / 0.15)));
+        p = chin.clone().add(V3(0, -0.004 - 4.9 * dt * dt, 0));
+        s = 1.2 * (1 - smooth(clamp((dt - 0.3) / 0.15)));
       }
       m.position.copy(p);
-      m.scale.set(s, s * 1.25, s);
+      m.scale.set(s, s * (t < tf ? 1.2 : 1.45), s);
     },
   };
 }

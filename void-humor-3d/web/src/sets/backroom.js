@@ -414,12 +414,29 @@ const DOME_GLSL = `vec3 brDome(vec3 d, float cosm) {
 // the boards melt into the dome colour, continuously; the floor itself never disappears).
 const FLOOR_U = { uPudInv: { value: new THREE.Matrix4() }, uPudA: { value: 0 }, uCos: { value: 0 }, uFloorC: { value: V(1.0, 0, -1.8) },
   uKeyDir: { value: V(0, 0, 1) } };
+// The floor's shadow lookup: a 4-tap bilinear PCF on a 1.4-texel grid instead of three's 16-tap PCF-soft kernel (the
+// floor is the only big shadow receiver and those 16 fetches per pixel were its single largest cost on SwiftShader).
+function cheapShadowChunk() {
+  const src = THREE.ShaderChunk.shadowmap_pars_fragment;
+  const a = src.indexOf('#elif defined( SHADOWMAP_TYPE_PCF_SOFT )'), b = src.indexOf('#elif defined( SHADOWMAP_TYPE_VSM )', a);
+  if (a < 0 || b < 0) return null;
+  return src.slice(0, a) + `#elif defined( SHADOWMAP_TYPE_PCF_SOFT )
+			vec2 brTc = shadowCoord.xy * shadowMapSize / 1.4 - 0.5;
+			vec2 brF = fract( brTc );
+			vec2 brStep = vec2( 1.4 ) / shadowMapSize;
+			vec2 brUv = ( floor( brTc ) + 0.5 ) * brStep;
+			shadow = mix( mix( texture2DCompare( shadowMap, brUv, shadowCoord.z ), texture2DCompare( shadowMap, brUv + vec2( brStep.x, 0.0 ), shadowCoord.z ), brF.x ),
+				mix( texture2DCompare( shadowMap, brUv + vec2( 0.0, brStep.y ), shadowCoord.z ), texture2DCompare( shadowMap, brUv + brStep, shadowCoord.z ), brF.x ), brF.y );
+		` + src.slice(b);
+}
 function floorShader(mat) {
   fakeGlow(mat);
   const prev = mat.onBeforeCompile, prevKey = mat.customProgramCacheKey;
+  const shadowChunk = cheapShadowChunk();
   mat.onBeforeCompile = function (sh, r) {
     prev.call(this, sh, r);
     Object.assign(sh.uniforms, FLOOR_U);
+    if (shadowChunk) sh.fragmentShader = sh.fragmentShader.replace('#include <shadowmap_pars_fragment>', shadowChunk);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform mat4 uPudInv; uniform float uPudA, uCos; uniform vec3 uFloorC, uKeyDir;
@@ -797,7 +814,7 @@ function makeMop(M) {             // origin at the clamp, +Y along the handle; s
     const n = tg.attributes.position.count, aS = new Float32Array(n), aR = new Float32Array(n * 3), aC = new Float32Array(n * 3);
     // per-strand value/warmth variation (some strands greyer / dirtier toward the tips)
     const val = 0.8 + 0.2 * r(), dirt = 0.12 + 0.18 * r(), col = new Float32Array(n * 3);
-    for (let v = 0; v < n; v++) { const s = Math.floor(v / (RS + 1)) / TS, k = val * (1 - dirt * s * s); col.set([0.93 * k, 0.88 * k, 0.78 * k], v * 3); }
+    for (let v = 0; v < n; v++) { const s = Math.floor(v / (RS + 1)) / TS, k = val * (1 - dirt * s * s); col.set([0.9 * k, 0.87 * k, 0.8 * k], v * 3); }
     tg.setAttribute('color', new THREE.BufferAttribute(col, 3));
     for (let v = 0; v < n; v++) {
       const ring = Math.floor(v / (RS + 1)), s = ring / TS, c = curve.getPointAt(s);
@@ -1631,4 +1648,3 @@ export async function create() {
   update(0, {});
   return { scene, update, anchors, props, look, yaws, layout: LAYOUT, timing, cageBar, flightPos, name: 'BACKROOM' };
 }
-export const __dbgU = { FLOOR_U, FAKE };

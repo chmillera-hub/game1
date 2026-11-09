@@ -21,7 +21,7 @@ import { JX } from '../chars/jesus.js';
 import { UX } from '../chars/user.js';
 import { V3, toV, loadWords, wordT, pulse, ramp, gazeSched, scopeVisible, voidSurface, ensureLittleGalaxy, drawSkyGalaxy, LITTLE_GALAXY, faceSeq, fmix } from './edgeprops.js';
 import { fitShot } from './armour_shared.js';
-import { M, W, WDIR, speechSafe, aroundTarget, defendTarget, makeIrisGalaxy, makeTearDrop } from './kit_s05_07.js';
+import { M, W, WDIR, speechSafe, aroundTarget, defendTarget, makeIrisGalaxy, makeTearDrop, camKeys, vAxes, dbg } from './kit_s05_07.js';
 
 const DEBUG = false;
 const BELLY = { curl: 0.62, spread: 0.12, cup: 0.5, thumb: 0.4 };
@@ -39,13 +39,16 @@ function times() {
     b05: T('s05b05'), b06: T('s05b06'), b06e: T('s05b06.end'),
   };
   S.cut2 = S.b02 - 0.06;                 // -> JPOV
-  S.cut4 = S.b04 - 0.22;                 // -> LOWUP (the sheepish smile reads before the line)
-  S.cut5 = S.b05 - 0.18;                 // -> USER_CU
+  S.ecuLand = Math.min(S.eyesW + 0.22, S.b04 - 0.5);          // the slow push lands on "eyes" and holds
+  S.cut4 = S.b04 - 0.35;                 // -> LOWUP (8 frames of sheepish smile before the line)
+  S.cut5 = S.b05 - 0.28;                 // -> USER_CU (a held stare, then the blink)
   S.cut6 = S.b06 - 0.16;                 // -> JESUS_CU (fingertips rise as anticipation)
   S.hic = [S.s + 0.22, S.s + 0.78, S.s + 1.42, S.s + 2.25];   // the Void's giggle aftershocks
-  S.blinkU = S.b05 + 0.18;               // the user's one slow blink
-  S.dripT0 = S.b05 + 0.05, S.dripF = S.b05 + 0.62;           // the tear slides to the chin, lets go
-  S.dart = S.b06e + 0.42, S.stiff = S.b06e + 0.55, S.slowBlink = S.b06e + 0.78;
+  S.blinkU = S.cut5 + 0.4;               // the user's one blink, after 0.4 s of stare; open again 6+ frames before the cut
+  S.dripT0 = S.cut5, S.dripF = S.b05 + 0.28;                 // the tear slides cheek -> chin on camera, lets go
+  // tee-hee too long: a tiny dart, a blink on the thought, then the corners stiffen; eyes OPEN for the last ~9 frames
+  // (the eyes open on the user first, see the same face; the dart; the blink; the stiffening reads with the eyes open)
+  S.dart = S.b06e + 0.3, S.slowBlink = S.b06e + 0.5, S.stiff = S.b06e + 0.6;
   return S;
 }
 
@@ -56,16 +59,16 @@ function cams(S, R) {
   const lowA = R.lowA, lowB = R.lowB;
   const ucu = EDGE.shot(EDGE.L(R.uEyes5), { dist: 1.42, yaw: 108, pitch: 4, fov: 33, screenY: sy(420), drift: 0.12 });
   const ucu2 = EDGE.shot(EDGE.L(R.uEyes5), { dist: 1.34, yaw: 108, pitch: 4, fov: 33, screenY: sy(420), drift: 0.12 });
-  const c6a = EDGE.shot(EDGE.L(R.jEyes6), { dist: 1.7, yaw: -20, pitch: 1, fov: 33, screenY: sy(400), drift: 0.15 });
-  const c6b = EDGE.shot(EDGE.L(R.jEyes6), { dist: 1.58, yaw: -20, pitch: 1, fov: 33, screenY: sy(400), drift: 0.15 });
+  const c6a = EDGE.shot(EDGE.L(R.jEyes6), { dist: 1.7, yaw: -9, pitch: 1, fov: 33, screenY: sy(400), drift: 0.15 });
+  const c6b = EDGE.shot(EDGE.L(R.jEyes6), { dist: 1.58, yaw: -9, pitch: 1, fov: 33, screenY: sy(400), drift: 0.15 });
   const e = 1e-3;
-  return [
+  return camKeys('s05', [
     [S.s, c1a], [S.cut2 - e, c1b, 'inOut'],
-    [S.cut2, pov], [S.b03, pov], [S.b03e + 0.25, ecu, 'inOut'], [S.cut4 - e, ecu],
+    [S.cut2, pov], [S.b03, pov], [S.ecuLand, ecu, 'inOut'], [S.cut4 - e, ecu, 'linear'],
     [S.cut4, lowA], [S.cut5 - e, lowB, 'inOut'],
     [S.cut5, ucu], [S.cut6 - e, ucu2, 'linear'],
     [S.cut6, c6a], [S.end, c6b, 'out'],
-  ];
+  ]);
 }
 
 // ---------------------------------------------------------------------------------------------------------- module
@@ -85,6 +88,7 @@ export default {
     user.update(S.s, { pos: W(M.U.p), yaw: EDGE.Y(M.U.yaw), body: { sit: 1, shrug: 0.5, hunch: 0.25 } });
     const R = st.R = { userShoulderR: user.anchor('shoulderR') };
     R.toPair = V3(...W(M.V.p)).setY(1.8).sub(R.userShoulderR).normalize().toArray();
+    R.jEyesRef = V3(...W(M.JV.p)).setY(1.55);
     st.iris = makeIrisGalaxy(user, 's05b02', 's05b04');
     st.drop = makeTearDrop(set.scene, 's05b05-0.4', 's06');
     // reference anchors at fixed times (pure)
@@ -97,8 +101,8 @@ export default {
     // b01: medium on Jesus, near-frontal (between where he looks at first, the Void, and where he turns, the user),
     // the giggling Void soft behind-right of him
     const c10 = V3(...EDGE.W(-0.42, 1.62, 1.85));
-    R.c1a = fitShot([[R.jEyes1, 300, 470], [R.vEyes1, 520, 190, 0.35]], 40, c10, R.jEyes1, { posReg: 0.6, yMin: 1.4, yMax: 1.9, drift: 0.18 });
-    R.c1b = fitShot([[R.jEyes1, 300, 460], [R.vEyes1, 530, 175, 0.35]], 37, toV(R.c1a.pos).addScaledVector(R.jEyes1.clone().sub(toV(R.c1a.pos)).normalize(), 0.18), R.jEyes1, { free: [0, 0, 0], drift: 0.18 });
+    R.c1a = fitShot([[R.jEyes1, 290, 485], [R.vEyes1, 500, 215, 3]], 40, c10, R.jEyes1, { posReg: 0.12, yMin: 1.3, yMax: 1.9, drift: 0.18 });
+    R.c1b = fitShot([[R.jEyes1, 292, 478], [R.vEyes1, 505, 205, 3]], 38.5, toV(R.c1a.pos).addScaledVector(R.jEyes1.clone().sub(toV(R.c1a.pos)).normalize(), 0.07), R.jEyes1, { free: [0, 0, 0], drift: 0.18 });
     // JPOV: from Jesus's eyes (b01 reference) down the axis to the user's eyes; face y~440, the raised hand in frame
     const jp = V3(...EDGE.W(M.JV.p)).add(WDIR(-0.25, 0.25).multiplyScalar(Math.SQRT2 * 0.25)).setY(1.58);
     R.jpov = fitShot([[R.uEyes2, 425, 450], [a2.uH, 150, 360, 0.5]], 38, jp, R.uEyes2, { free: [0, 0, 0], drift: 0.12 });
@@ -134,6 +138,7 @@ export default {
     set.update(t, { tod: todAt(t), voidSky: voidSkyAt(t) * (two ? 1.0 : 0.85), voidPos: vd.root.position.toArray(), shadowAt: W([0, 0, 0]),
       sunGlow: t >= S.cut5 && t < S.cut6 ? 0.6 : 1 });
     st.look = lookFor('s05', set.look);
+    dbg('s05', st);
     if (DEBUG) {
       const pxs = (v) => px(app.camera, v).join(',');
       console.log(`t=${t.toFixed(2)} J.eyes@${pxs(jesus.anchor('eyes'))} V.eyes@${pxs(vd.anchor('eyes'))} U.eyes@${pxs(user.anchor('eyes'))} U.handR@${pxs(user.anchor('handR'))} J.handR@${pxs(jesus.anchor('handR'))}`);
@@ -197,7 +202,7 @@ function jesusPose(t, S, st, vd) {
   ];
   P.gaze = gazeSched(t, g);
   const headLook = gazeSched(t - 0.12, [[S.s, vM], [S.looksW - 0.02, uE, 0.38]]);   // the head only follows the big look
-  const follow = k(t, [[S.s, 0.22], [S.looksW, 0.22], [S.userW, 0.72, 'inOut'], [S.b04, 0.72], [S.voidsW, 0.62], [S.goodW + 0.2, 0.75]]);
+  const follow = k(t, [[S.s, 0.22], [S.looksW, 0.22], [S.userW, 0.48, 'inOut'], [S.cut4, 0.72], [S.voidsW, 0.62], [S.goodW + 0.2, 0.75], [S.cut6, 0.5]]);
   P.head = { look: headLook, follow };
   // head tilt toward the Void on "void's" (roll + = toward his left = the Void), nod on "humor", tilt on tee-hee
   const exhale = pulse(t, S.userW + 0.25, 0.22, 0.05, 0.6);
@@ -242,7 +247,7 @@ function jesusPose(t, S, st, vd) {
   };
   const fLook = () => {
     // bright, wet eyes on the user; a contented closed smile after the exhale
-    const f = JX('warm', { wet: 0.75, lidU: 0.86, mSmile: 0.72, browIn: 0.3, browOut: 0.22 });
+    const f = JX('warm', { wet: 0.75, lidU: 1.0, lidL: 0.3, mSmile: 0.72, browIn: 0.3, browOut: 0.22 });
     f.lidU -= 0.12 * exhale; f.lidL += 0.1 * exhale;
     return f;
   };
@@ -258,17 +263,22 @@ function jesusPose(t, S, st, vd) {
   const fTee = () => JX('teehee', {});
   const fHold = () => {
     // eyes open on the user: the smile holds a beat too long, then stiffens a millimetre
-    const f = JX('beam', { mOpen: 0.03, mTeethU: 0.85, lidU: 0.82, lidL: 0.55, wet: 0.45, saccade: 0, autoBlink: 0 });
+    const f = JX('beam', { mOpen: 0.03, mTeethU: 0.85, lidU: 0.98, lidL: 0.4, wet: 0.45, saccade: 0, autoBlink: 0 });
     const s = ramp(t, S.stiff, S.stiff + 0.25);
     f.mSmile -= 0.12 * s; f.mWide += 0.18 * s; f.mPress = 0.2 * s; f.lidL -= 0.18 * s; f.browIn += 0.12 * s; f.mAsym = 0.08 * s;
     return f;
   };
   P.face = faceSeq(t, [
     [S.s, fChuckle], [S.looksW, fLook, 0.3], [S.cut4, fSheep, 0], [S.voidsW - 0.05, fTalk, 0.25], [S.b04e + 0.1, fBeam, 0.3],
-    [S.b06 - 0.06, fTee, 0.12], [S.b06e + 0.18, fHold, 0.2],
+    [S.b06 - 0.06, fTee, 0.12], [S.b06e + 0.02, fHold, 0.18],
   ]);
-  P.blinkAt = [S.looksW - 0.06, S.b04 + 0.05, S.slowBlink];
-  if (t > S.b06e + 0.1) P.face.blink = pulse(t, S.slowBlink, 0.16, 0.08, 0.22);
+  // blinks on thought changes, never on a shot head: after the eyes land on the user (the lead stays visible), on the
+  // glance back from the Void; the slow blink after the dart (open again for the last ~9 frames of the scene)
+  P.blinkAt = [S.looksW + 0.15, S.prettyW - 0.05];
+  if (t > S.b06e + 0.1) P.face.blink = pulse(t, S.slowBlink, 0.1, 0.04, 0.15);
+  // singles: a gaze cheat toward screen-left so the look at the (offscreen-left) user is unmistakable
+  const cheat = (t >= S.looksW && t < S.cut2) || t >= S.cut6 ? 1 : 0;
+  if (cheat) P.face.gazeYaw = (P.face.gazeYaw ?? 0) - 0.11 * ramp(t, S.looksW, S.looksW + 0.12);
   if (!(between(t, S.b04 - 0.05, S.b04e + 0.05) || between(t, S.b06 - 0.05, S.b06e + 0.05))) P.speech = false;
   return P;
 }
@@ -294,7 +304,9 @@ function voidPose(t, S, st) {
   P.head.pitch = 0.1 * (1 - ramp(t, S.s, S.b02)) - 0.06 * straight + 0.05 * hic;
   P.head.roll = 0.05 * pulse(t, S.humorW + 0.1, 0.2, 0.3, 0.5);
   // ---- arms: RIGHT hand leaning on Jesus's shoulder (s04) slides off as he turns; LEFT hand on the belly; the flap
-  P.armR = { preset: 'belly', hand: BELLY };
+  // its RIGHT (near Jesus) belly hand slid in toward its own middle and down: never over Jesus's robe / silhouette
+  const ax = vAxes(EDGE.Y(M.V.yaw));
+  P.armR = { preset: 'belly', hand: BELLY, offset: ax.lf.clone().multiplyScalar(0.24).add(V3(0, -0.12, 0)).addScaledVector(ax.fw, 0.03).toArray() };
   P.armL = { preset: 'belly', hand: BELLY };
   const flap = ramp(t, S.humorW - 0.12, S.humorW + 0.12, 'out') * (1 - ramp(t, S.humorW + 0.75, S.humorW + 1.15));
   if (flap > 0) {
@@ -339,24 +351,35 @@ function userPose(t, S, st, final) {
     armL: { preset: 'prop' },
     extra: { phone: 0.85, tears: 0.55, glisten: 0.35 },
   };
-  // the raised RIGHT hand (s04's target), jerking higher on "hand up", trembling harder through b02-b03
-  const jerk = pulse(t, S.handW + 0.02, 0.08, 0.25, 0.4);
-  const tg = defendTarget(R).add(V3(0, 0.06 * jerk, 0));
-  P.armR = { preset: 'defend', tremble: 0.6 + 0.3 * ramp(t, S.b02, S.b02 + 0.3), target: tg, reach: 1, palm: R.toPair };
+  // the raised RIGHT hand: s04's target; through b02 (Jesus's POV) it shoots straight out at him, elbow locked, palm
+  // square to his eyes, and JERKS higher on "hand" (13 cm, overshoot, settle); back to s04's target in the ECU
+  const sh = toV(R.userShoulderR).add(V3(0, 0.02, 0));
+  const dJ = R.jEyesRef.clone().sub(sh).normalize();
+  const jerk = k(t, [[S.handW - 0.06, 0], [S.handW + 0.06, 1.2, 'out'], [S.handW + 0.18, 0.9], [S.handW + 0.32, 1.0], [S.b03e - 0.3, 1.0], [S.b04, 0.3]]);
+  const terA = ramp(t, S.b02 - 0.25, S.b02 + 0.12, 'out') * (1 - ramp(t, S.b03 + 0.2, S.b03e - 0.2));
+  const straight = sh.clone().addScaledVector(dJ, 0.455).add(V3(0, -0.03, 0));
+  const tg = defendTarget(R).lerp(straight, terA).add(V3(0, 0.13 * jerk * (0.4 + 0.6 * terA), 0));
+  const palm = toV(R.toPair).lerp(dJ, terA).normalize();
+  const fing = V3(0, 1, 0).addScaledVector(dJ, -0.25).normalize();
+  P.armR = { preset: 'defend', tremble: 0.6 + 0.35 * ramp(t, S.b02, S.b02 + 0.3), target: tg, reach: 1, palm: palm.toArray(),
+    fingers: terA > 0.01 ? fing.toArray() : undefined, pole: terA > 0.01 ? V3(0, -1, 0).addScaledVector(dJ.clone().cross(V3(0, 1, 0)).normalize(), -0.4).normalize().toArray() : undefined };
   // eyes: on the pair (s04 end) -> locked on Jesus once he looks at them; no blinking through the terror close-ups
   const jE = final ? jesus.anchor('eyes') : V3(...EDGE.W(0.0, 1.55, -0.55)), vE = final ? vd.anchor('eyes') : V3(...EDGE.W(0.85, 2.05, -0.9));
   P.gaze = gazeSched(t, [[S.s, () => jE.clone().lerp(vE, 0.5)], [S.looksW + 0.25, () => jE, 0.08]]);
   P.head = { follow: 0.3, pitch: -0.04 };
-  P.body.shrug += 0.1 * jerk;
+  // terror posture in b02-b03: shoulders up at the ears, hunched behind the arm
+  const hunchT = ramp(t, S.b02 - 0.3, S.b02 + 0.2) * (1 - ramp(t, S.b04, S.b05));
+  P.body.shrug = lerp(P.body.shrug, 0.9, hunchT) + 0.08 * pulse(t, S.handW - 0.04, 0.08, 0.1, 0.3);
+  P.body.hunch = lerp(P.body.hunch, 0.45, hunchT);
   // face: terror (b02-b03 pushes it to the limit), the b05 stare
-  const ter = ramp(t, S.b02, S.terrorW + 0.2);
-  const f = UX('terror', { pupil: lerp(0.5, 0.33, ter), lidU: lerp(1.38, 1.5, ter), mOpen: lerp(0.3, 0.38, ter), browIn: 1.0, browSq: 0.6, wet: 1 });
+  const ter = ramp(t, S.b02, S.terrorW + 0.2), ter0 = ramp(t, S.b02 - 0.4, S.b02);
+  const f = UX('terror', { pupil: lerp(lerp(0.5, 0.37, ter0), 0.32, ter), lidU: lerp(lerp(1.38, 1.46, ter0), 1.5, ter), mOpen: lerp(0.3, 0.38, ter), browIn: 1.0, browSq: 0.6, wet: 1 });
   f.lidL = 0.06 + 0.05 * noise1(t * 9.0, 41) * ter + 0.025 * Math.sin(t * 2 * Math.PI * 7.3) * ter;   // quivering lower lids (low: whites all round)
   f.autoBlink = 0; f.saccade = 0.1;
   // b05: the stare (mouth closes a little: past screaming)
   const stare = ramp(t, S.b04, S.b05);
   f.mOpen = lerp(f.mOpen, 0.2, stare); f.mTremble = lerp(0.6, 0.35, stare);
-  f.blink = pulse(t, S.blinkU, 0.22, 0.1, 0.32);
+  f.blink = pulse(t, S.blinkU, 0.12, 0.06, 0.18);
   P.face = f;
   P.extra.tears = lerp(0.55, 0.75, ter);
   P.speech = false;

@@ -23,10 +23,9 @@ import { ensureBonusDecals } from './kit_bonus.js';
 import { loadLines, W, A, add, sub, mix3, LD, pulse, stamp, own, live, solve, aim, blendShot, pix, marks, times, voidSpot, wreckPose, cornerOpts, bookPoint, bookArms, FEAR_LYAW, FEAR_TURN } from './kit_s20_22.js';
 
 const ID = 's22';
-globalThis.DBG22 = 1; // TEMP
 // Fear's stage-local facing: s21's end (toward the Void's hands) -> 3/4 to the camera side -> a little more open at the end
 const YF_S = FEAR_LYAW + FEAR_TURN, YF_MID = 0.75, YF_END = 0.32;
-const STEP = 0.16;   // the small step back off the Void's hem during b02
+const STEP = 0.1;   // the small step back off the Void's hem during b02
 
 export default {
   id: ID,
@@ -60,11 +59,14 @@ export default {
     st.shot = shot;
     const vs = voidSpot(t);
     const fp = fearPos(t, L, c, M, vs);
-    const reveal = k(t, [[c.galRise - 0.2, 0], [c.galaxies, 0.12, 'inOut'], [L.B2, 0.3, 'linear'], [L.B3, 0.8, 'linear'], [L.B3 + 1.8, 1, 'out']]);
+    const reveal = k(t, [[c.galRise - 0.2, 0], [c.galaxies, 0.12, 'inOut'], [L.B2, 0.3, 'linear'], [L.B3, 0.85, 'linear'], [L.B3 + 0.9, 1, 'out']]);
     const corner = add(M.CRASH, [0, 0.55, 0]);
     const lg = littleGalaxy(t, L, c, M, vs);
     // the Void closes (b05 open, the button, the lens): no eye glare
-    const voidClose = shot === 2 || shot === 3 || shot === 4 || shot === 6 || shot === 8 || shot === 9 || (shot === 10 && t < L.B12);
+    const pullU = k(t, [[L.cutJ, 0], [L.B12 + 1.6, 0.7, 'inOut'], [L.E, 1, 'out']]);
+    const voidClose = shot === 2 || shot === 3 || shot === 4 || shot === 6 || shot === 8 || shot === 9 || (shot === 10 && pullU < 0.6);
+    // near-lens velvet (the Void's arm sweeping past the close, its sleeve beside Fear): a softer rim, no lavender glare
+    const rimV = shot === 1 ? 0.4 : shot === 2 && t < L.B5 + 1.9 ? 0.55 : 1;
     // book camera direction (the palms tip toward the lens, as at the end of s21)
     if (!st.camDir) st.camDir = sub(ROOM.W(0.55, 0.9, 3.25), bookPoint(vs));
 
@@ -100,7 +102,7 @@ export default {
       // arms: the open book (as s21 ended) -> the arms lift slowly into 'open', pouring nebulae -> settle -> LEFT hand
       // comes down onto Fear's near (left) shoulder and stays; the right hand rests on its belly
       const unbook = k(t, [[L.B2 - 0.45, 0], [L.B3 - 0.25, 1, 'inOut']]);
-      const open = k(t, [[L.B2 - 0.45, 0], [L.B3 - 0.2, 1, 'inOut'], [L.B4, 1], [L.B5 - 0.2, 0.55, 'inOut']]);
+      const open = k(t, [[L.B2 - 0.45, 0], [L.B3 - 0.2, 1, 'inOut'], [L.B3 + 0.25, 1], [L.B3 + 1.3, 0.45, 'inOut']]);
       const onSh = k(t, [[L.hand0, 0], [L.hand1, 1, 'inOut']]);
       let armL, armR;
       if (unbook < 1) {
@@ -125,15 +127,17 @@ export default {
       const bend = smooth(onSh);
       const hum = pulse(t, L.B12, T(ID + '.end') + 1, 0.6, 0.6);
       return {
-        pos: vs.pos, yaw: vs.yaw,
-        body: { lean: 0.16 + 0.34 * bend, crouch: 0.14 * bend, breathe: 1, tilt: 0.02 * Math.sin(t * 1.4) * hum + 0.13 * bend, twist: 0.14 * bend },
-        head: { pitch: 0.3 + 0.06 * bend, yaw: 0.14 + 0.08 * bend, roll: 0.04 + 0.03 * Math.sin(t * 1.4) * hum },
+        pos: add(vs.pos, rotY([0, 0, 0.14 * bend], vs.yaw)), yaw: vs.yaw,
+        walk: { amount: 0.5 * pulse(t, L.hand0 - 0.1, L.hand1 + 0.1, 0.2, 0.25), phase: (t - L.hand0) * 1.0, style: 'waddle' },
+        body: { lean: 0.16 + 0.5 * bend, crouch: 0.3 * bend, breathe: 1, tilt: 0.02 * Math.sin(t * 1.4) * hum + 0.16 * bend, twist: 0.16 * bend },
+        // the bow lowers its shoulder to Fear; the hood tips back against it so the face still reads, cheated to camera
+        head: { pitch: 0.3 - 0.62 * bend, yaw: 0.14 + 0.22 * bend, roll: 0.04 - 0.1 * bend + 0.03 * Math.sin(t * 1.4) * hum },
         gaze: pass ? gaze : null,
         face,
-        blinkAt: [L.B1 + 0.6, L.B4 + 0.9, L.flick + 0.7, L.B8 + 1.9, L.B9 + 2.55, T(ID + '.end') - 1.4],
+        blinkAt: [L.B1 + 0.6, L.B4 + 0.9, L.flick + 0.75, L.B8 + 0.95, L.B9 + 2.55, T(ID + '.end') - 1.4],
         armL, armR,
         extra: { cosmos: smooth(clamp(reveal * 1.2)), stars: 1.4 + 0.5 * reveal + 0.25 * Math.sin(t * 2.6) * hum, motes: 0.9,
-          eyeGlow: voidClose ? 0.72 : 1 + 0.12 * reveal, browGlow: voidClose ? 0.8 : 1 },
+          eyeGlow: voidClose ? 0.72 : 1 + 0.12 * reveal, browGlow: voidClose ? 0.8 : 1, rim: rimV },
       };
     };
 
@@ -172,31 +176,34 @@ export default {
     const closeUp = shot === 1 || shot === 3 || shot === 6 || shot === 8 || shot === 9;
     const endW = shot === 10 ? smooth(clamp((t - L.B12) / 1.5)) : 0;
     cos.update(t, { reveal, center, source: reveal < 0.3 ? bookPoint(vs) : A(vd.anchor('chest')), radius: 11, height: 8, lift: 1.5, drift: 1,
-      glyphs: closeUp ? 0 : 1 - 0.6 * endW, puffs: closeUp ? 0.6 : 1, nebula: 1 - 0.3 * endW });
+      glyphs: closeUp || (shot === 10 && pullU < 0.7) ? 0 : 1 - 0.6 * endW, puffs: closeUp ? 0.6 : 1, nebula: 1 - 0.5 * endW });
 
     // ------------------------------------------------------------------ particles
     const cam = app.camera;
-    const vE = pix(cam, vd.anchor('eyes'));
-    // a sprite near the Void's eyes / up its hood is faded out (galaxies must never sit on its face)
+    const vE = pix(cam, vd.anchor('eyes')), vH = pix(cam, vd.anchor('hoodTop'));
+    const hoodR = Math.max(60, Math.hypot(vH[0] - vE[0], vH[1] - vE[1]));   // the hood's size on screen (px)
+    // a sprite on the Void's face / hood is faded out (galaxies must never sit on it): an ellipse around the eyes that
+    // reaches up over the hood, scaled with the hood's size in this shot
     const faceSafe = (p, size) => {
       const q = pix(cam, p), q2 = pix(cam, add(p, A(new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion).multiplyScalar(size))));
       const r = Math.hypot(q2[0] - q[0], q2[1] - q[1]);
       const dx = q[0] - vE[0], dy = q[1] - vE[1];
-      const d = Math.hypot(dx, dy < 0 ? dy * 0.5 : dy) - r;
-      return smooth(clamp((d - 110) / 90));
+      const d = Math.hypot(dx * 0.9, dy < 0 ? dy * 0.62 : dy * 1.2) - r;
+      return smooth(clamp((d - 0.95 * hoodR) / (0.45 * hoodR)));
     };
     fx.begin(); fxS.begin(); fxD.begin();
     drawGalaxies(fx, t, L, c, vs, lg, faceSafe, vd);
     // nebulae pour from its sleeves (b02): distinct luminous plumes leaving both cuffs, then a faint ongoing breath
     const hl = vd.anchor('handL'), hr = vd.anchor('handR');
-    const smokeA = 0.3 * pulse(t, L.B2 - 0.35, L.B4 + 0.5, 0.4, 1.6) + 0.06 * smooth(clamp((t - L.B4) / 1));
+    // (not in Fear's close-up: big additive plumes right by the lens cost a lot and are not the subject there)
+    const smokeA = shot === 1 || shot === 3 || shot >= 5 ? 0 : 0.3 * pulse(t, L.B2 - 0.35, L.B4 + 0.5, 0.4, 1.6) + 0.06 * smooth(clamp((t - L.B4) / 1));
     if (smokeA > 0.005) {
       for (const [i, h] of [[0, hl], [1, hr]]) {
         if (!h) continue;
         const o = A(h);
         const out = sub(o, vs.pos); const ol = Math.hypot(out[0], out[2]) || 1;
-        fxS.stream({ t, seed: 2201 + i, t0: L.B2 - 0.4, t1: L.B5, rate: 3.2, life: 3.4, origin: o, vel: [out[0] / ol * 0.22, 0.4, out[2] / ol * 0.22], spread: [0.12, 0.08, 0.12], drag: 0.45,
-          size: [0.42, 0.7], grow: 2.8, color: [0x9a6cff, 0x58d6e8, 0xff8fc6, 0x7f8cff], alpha: smokeA, fade: [0.2, 0.55], cell: CELL.nebula, spin: 0.25 });
+        fxS.stream({ t, seed: 2201 + i, t0: L.B2 - 0.4, t1: L.B5, rate: 3.6, life: 3.4, origin: o, vel: [out[0] / ol * 0.25, 0.42, out[2] / ol * 0.25], spread: [0.1, 0.07, 0.1], drag: 0.45,
+          size: [0.5, 0.85], grow: 2.8, color: [0xb48cff, 0x7ae6f2, 0xffa6d4, 0x9aa6ff], alpha: smokeA * 1.5, fade: [0.15, 0.55], cell: CELL.nebula, spin: 0.25 });
       }
       fxS.stream({ t, seed: 2203, t0: L.B2 - 0.1, t1: L.B4, rate: 1.6, life: 3.5, origin: (tb) => add(vs.pos, rotY([Math.sin(tb * 7.1) * 0.9, 0.9, 0.55], vs.yaw)), vel: [0, 0.3, 0],
         spread: [0.4, 0.1, 0.4], drag: 0.5, size: [0.5, 0.8], grow: 2.4, color: [0x7a5cff, 0x3fc2d6, 0xe27bd0], alpha: smokeA * 0.6, fade: [0.25, 0.55], cell: CELL.nebula, spin: 0.2 });
@@ -208,17 +215,17 @@ export default {
     if (shot === 10) {
       const a = endW;
       const camP = cam.position;
-      const dir = new THREE.Vector3(0, 0.36, -1).applyQuaternion(cam.quaternion).normalize();
-      for (let i = 0; i < 3; i++) {
-        const p = A(camP.clone().addScaledVector(dir, 9.2 + 0.4 * i).add(new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion).multiplyScalar((i - 1) * 2.6)));
-        fxD.add(p, 4.2, 0x0c0718, 0.55 * a, 0.3 * i, CELL.puff);
+      const dir = new THREE.Vector3(0, 0.38, -1).applyQuaternion(cam.quaternion).normalize();
+      for (let i = 0; i < 3; i++) {   // three soft dark puffs side by side across the band (kept small: fill cost)
+        const p = A(camP.clone().addScaledVector(dir, 9.4 + 0.3 * i).add(new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion).multiplyScalar((i - 1) * 2.5)));
+        fxD.add(p, 4.2, 0x0a0614, 0.8 * a, 0.3 * i, CELL.puff);
       }
     }
     fx.end(); fxS.end(); fxD.end();
 
     if (globalThis.DBG22) {
       console.log('DBG22', t.toFixed(2), 'shot', shot, 'rev', reveal.toFixed(2), JSON.stringify({ v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), hand: pix(cam, vd.anchor('handL')), sh: pix(cam, fear.anchor('shoulderL')),
-        handToSh: +vd.anchor('handL').distanceTo(fear.anchor('shoulderL')).toFixed(3), shToSh: +vd.anchor('shoulderL').distanceTo(fear.anchor('shoulderL')).toFixed(3), scarf: pix(cam, fear.anchor('scarf')), m: pix(cam, mag.anchor('head')), crash: pix(cam, M.CRASH), lg: pix(cam, lg.pos) }));
+        handToSh: +vd.anchor('handL').distanceTo(fear.anchor('shoulderL')).toFixed(3), shToSh: +vd.anchor('shoulderL').distanceTo(fear.anchor('shoulderL')).toFixed(3), scarf: pix(cam, fear.anchor('scarf')), chestF: pix(cam, fear.anchor('chest')), star: ls ? pix(cam, ls.pos) : null, m: pix(cam, mag.anchor('head')), crash: pix(cam, M.CRASH), lg: pix(cam, lg.pos) }));
     }
     // look: s21's look -> the cosmos look as the room dissolves; the Void closes keep its eyes out of the bloom
     const a = lookFor('s21', set.look), b = cos.blendLook(lookFor(ID, set.look), 0.5);
@@ -353,7 +360,7 @@ function littleGalaxy(t, L, c, M, vs) {
   const fwd = rotY([0, 0, 1], yaw);
   const fp = fearPos(t, L, c, M, vs);
   const chest = add(fp, [fwd[0] * 0.2, 0.42, fwd[2] * 0.2]);
-  const held = add(fp, [fwd[0] * 0.2, 0.5, fwd[2] * 0.2]);
+  const held = add(fp, [fwd[0] * 0.27, 0.38, fwd[2] * 0.27]);
   const raised = add(fp, [fwd[0] * 0.24, 0.72, fwd[2] * 0.24]);
   const drift = add(fp, add(rotY([0.3, 0, 0.35], yaw), [0, 1.0 + 0.08 * Math.sin(t * 0.9), 0]));
   const p = k(t, [[c.galaxies + 0.2, add(M.FOUT, [0.5, 1.2, -0.3])], [L.B3, drift, 'inOut'], [L.B6 + 1.2, drift], [L.B6 + 2.6, add(chest, [0, 0.25, 0]), 'inOut'], [L.B7 - 0.1, held, 'inOut'],
@@ -367,7 +374,11 @@ function lastStar(t, L, fear) {
   if (t < t0) return null;
   const sc = fear.anchor('scarf');
   if (!sc) return null;
-  const knot = add(A(sc), [0.0, 0.035, 0.0]);
+  // on the front of the scarf, a little toward Fear's right (screen-left), clear of the big hand on its other shoulder
+  const eR = fear.anchor('earR'), eL = fear.anchor('earL');
+  let rt = [0, 0, 0];
+  if (eR && eL) { const d = sub(A(eR), A(eL)); const dl = Math.hypot(d[0], d[2]) || 1; rt = [d[0] / dl, 0, d[2] / dl]; }
+  const knot = add(A(sc), [rt[0] * 0.07 + rt[2] * 0.07, 0.03, rt[2] * 0.07 - rt[0] * 0.07]);   // + forward: on the scarf's surface
   const u = clamp((t - t0) / (t1 - t0));
   const e = ease.out(u);
   const p = add(knot, [0.12 * Math.sin(u * 5) * (1 - e), 0.9 * (1 - e), 0.06 * (1 - e)]);
@@ -437,23 +448,23 @@ function frameShot(st, t, shot, L, c, M, vs, lg) {
     }
     case 1: { // FEAR_CU from the Void side, a touch above its eye line (face y~560, nebula light): tears of awe, the question
       const push = smooth(clamp((t - L.B3) / (L.B4e - L.B3)));
-      return ROOM.shot(ROOM.L(fe), { dist: 2.15 - 0.2 * push, yaw: 46, pitch: 7, fov: 40, screenY: sy(560), drift: 0.06 });
+      return ROOM.shot(ROOM.L(fe), { dist: 2.15 - 0.2 * push, yaw: 34, pitch: 7, fov: 40, screenY: sy(560), drift: 0.06 });
     }
     case 2: { // close on the Void -> widen to the two-shot (hand on Fear's shoulder) -> pull back until the corner shows (b06)
       const closeV = ROOM.shot(ROOM.L(ve), { dist: 3.8, yaw: -28, pitch: -6, fov: 36, screenY: sy(330), drift: 0.08 });
-      const two = twoShot(ve, fe, 0);
+      const two = twoShot(ve, fe, 0, 1.06);
       const far = aim(ROOM.W(-0.6, 2.0, 8.2), ve, 228, 340, 52, { drift: 0.1 });
       const u1 = k(t, [[L.B5 + 0.75, 0], [L.B5 + 1.9, 1, 'inOut']]);
       const u2 = k(t, [[L.B6 + 0.4, 0], [T('s22b06.end') + 0.2, 1, 'inOut']]);
       return blendShot(blendShot(closeV, two, u1), far, u2);
     }
     case 3: { // VOID_LOW from in front of Fear, low: up at the Void (eyes y~330), Fear's cupped palms + the little galaxy at the lower edge
-      const pos = add(A(lg.pos), LD(0.2, 0.02, 1.15));
-      return aim(pos, ve, 400, 330, 50, { drift: 0.06 });
+      const pos = add(A(lg.pos), LD(0.62, -0.02, 2.7));
+      return aim(pos, mix3(ve, A(lg.pos), 0.5), 410, 500, 52, { drift: 0.06 });
     }
     case 4: { // two-shot from Fear's front, a slow 3-4 degree orbit through the long pause
       const o = k(t, [[L.B8, -0.18], [L.B9, 0.14]]);
-      return twoShot(ve, fe, o, 0.92);
+      return twoShot(ve, fe, o, 1.15);
     }
     case 5: case 7: { // the corner: the bucket on the magician's head
       const ht = A(mag.anchor('headTop') || add(M.CRASH, [0, 1, 0]));
@@ -467,7 +478,7 @@ function frameShot(st, t, shot, L, c, M, vs, lg) {
       // (y 110-300) sits over the calm dark eye-level band of the sky; Fear 3/4 to camera with its galaxy held up
       const u = k(t, [[L.cutJ, 0], [L.B12 + 1.6, 0.7, 'inOut'], [L.E, 1, 'out']]);
       const start = ROOM.shot(ROOM.L(ve), { dist: 4.0, yaw: -58, pitch: -3, fov: 34, screenY: sy(370), drift: 0.04 });
-      const end = ROOM.shot([1.25, 1.05, 0.55], { dist: 8.6, yaw: -24, pitch: 14, fov: 54, screenY: sy(600), drift: 0.12 });
+      const end = ROOM.shot([1.25, 1.05, 0.55], { dist: 8.6, yaw: -24, pitch: 18, fov: 54, screenY: sy(600), drift: 0.12 });
       return blendShot(start, end, u);
     }
   }
@@ -475,5 +486,5 @@ function frameShot(st, t, shot, L, c, M, vs, lg) {
 }
 /** the two-shot from Fear's front: Fear 3/4 (lower left), the Void 3/4 above-right, the hand on Fear's shoulder between */
 function twoShot(ve, fe, o = 0, near = 1) {
-  return aim(ROOM.W(0.95 + o, 1.5, 3.85 * near - 0.1 * o), mix3(ve, fe, 0.5), 350, 470, 46, { drift: 0.06 });
+  return aim(ROOM.W(0.95 + o, 1.55, 3.85 * near - 0.1 * o), mix3(ve, fe, 0.5), 350, 480, 48, { drift: 0.06 });
 }

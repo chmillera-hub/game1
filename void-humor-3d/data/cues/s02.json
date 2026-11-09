@@ -1,136 +1,164 @@
 {
  "sfx": [
   {
-   "t": "s02",
+   "t": "s02b01-0.35",
    "name": "wind_soft",
    "until": "s02.end",
    "gain_db": 0,
    "pan": 0
   },
   {
-   "t": "s02b01+0.250",
+   "t": "s02b01+0.260",
    "name": "footsteps_run",
-   "until": "s02b01+0.400",
    "gain_db": -20.0,
-   "pan": 0.9
+   "pan": 0.9,
+   "until": "s02b01+0.410"
   },
   {
    "t": "s02b01+0.620",
    "name": "footsteps_run",
-   "until": "s02b01+0.770",
    "gain_db": -18.8,
-   "pan": 0.87
+   "pan": 0.87,
+   "until": "s02b01+0.770"
   },
   {
-   "t": "s02b01+0.990",
+   "t": "s02b01+0.980",
    "name": "footsteps_run",
-   "until": "s02b01+1.140",
-   "gain_db": -17.6,
-   "pan": 0.84
+   "gain_db": -17.7,
+   "pan": 0.84,
+   "until": "s02b01+1.130"
   },
   {
-   "t": "s02b01+1.360",
+   "t": "s02b01+1.340",
    "name": "footsteps_run",
-   "until": "s02b01+1.510",
    "gain_db": -16.5,
-   "pan": 0.82
+   "pan": 0.81,
+   "until": "s02b01+1.490"
   },
   {
-   "t": "s02b01+1.730",
+   "t": "s02b01+1.700",
    "name": "footsteps_run",
-   "until": "s02b01+1.880",
    "gain_db": -15.3,
-   "pan": 0.79
+   "pan": 0.78,
+   "until": "s02b01+1.850"
   },
   {
-   "t": "s02b01+2.100",
+   "t": "s02b01+2.060",
    "name": "footsteps_run",
-   "until": "s02b01+2.250",
-   "gain_db": -14.1,
-   "pan": 0.76
+   "gain_db": -14.2,
+   "pan": 0.75,
+   "until": "s02b01+2.210"
   },
   {
-   "t": "s02b01+2.470",
+   "t": "s02b01+2.420",
    "name": "footsteps_run",
-   "until": "s02b01+2.620",
-   "gain_db": -12.9,
-   "pan": 0.73
+   "gain_db": -13.0,
+   "pan": 0.73,
+   "until": "s02b01+2.570"
   },
   {
-   "t": "s02b01+2.840",
+   "t": "s02b01+2.780",
    "name": "footsteps_run",
-   "until": "s02b01+2.990",
-   "gain_db": -11.7,
-   "pan": 0.71
+   "gain_db": -11.8,
+   "pan": 0.7,
+   "until": "s02b01+2.930"
   },
   {
-   "t": "s02b01+3.210",
+   "t": "s02b02+0.150",
    "name": "footsteps_run",
-   "until": "s02b01+3.360",
-   "gain_db": -10.6,
-   "pan": 0.68
+   "gain_db": -10.7,
+   "pan": 0.67,
+   "until": "s02b02+0.300"
   },
   {
-   "t": "s02b01+3.580",
+   "t": "s02b02+0.510",
    "name": "footsteps_run",
-   "until": "s02b01+3.730",
-   "gain_db": -9.4,
-   "pan": 0.65
+   "gain_db": -9.5,
+   "pan": 0.64,
+   "until": "s02b02+0.660"
   },
   {
-   "t": "s02b01+3.950",
+   "t": "s02b08+0.110",
    "name": "footsteps_run",
-   "until": "s02b01+4.100",
-   "gain_db": -8.2,
-   "pan": 0.62
+   "gain_db": -8.3,
+   "pan": 0.61,
+   "until": "s02b08+0.260"
   },
   {
-   "t": "s02b01+4.320",
+   "t": "s02b08+0.470",
    "name": "footsteps_run",
-   "until": "s02b01+4.470",
-   "gain_db": -7.0,
-   "pan": 0.6
+   "gain_db": -7.2,
+   "pan": 0.58,
+   "until": "s02b08+0.620"
   },
   {
-   "t": "s02b01+4.690",
+   "t": "s02b08+0.830",
    "name": "footsteps_run",
-   "until": "s02b01+4.840",
-   "gain_db": -5.8,
-   "pan": 0.57
+   "gain_db": -6.0,
+   "pan": 0.55,
+   "until": "s02b08+0.980"
   },
   {
-   "t": "s02b02",
+   "t": "s02b08+1.190",
+   "name": "footsteps_run",
+   "gain_db": -1,
+   "pan": 0.05,
+   "until": "s02b03+0.140"
+  },
+  {
+   "t": "s02b03+0.307",
+   "name": "footsteps_run",
+   "gain_db": -1,
+   "pan": 0.05,
+   "until": "s02b03+0.457"
+  },
+  {
+   "t": "s02b03+0.677",
+   "name": "footsteps_run",
+   "gain_db": -1,
+   "pan": 0.35,
+   "until": "s02b04+0.027"
+  },
+  {
+   "t": "s02b02+0.000",
    "name": "sparkle_appear",
    "gain_db": 0,
    "pan": 0
   },
   {
-   "t": "s02b02+0.326",
+   "t": "s02b02+0.329",
    "name": "footsteps_soft",
-   "until": "s02b02+0.826",
    "gain_db": -3,
-   "pan": 0
+   "pan": 0,
+   "until": "s02b08+0.069"
   },
   {
-   "t": "s02b02+1.233",
+   "t": "s02b08+0.473",
    "name": "footsteps_soft",
-   "until": "s02b02+1.733",
    "gain_db": -3,
-   "pan": 0
+   "pan": 0,
+   "until": "s02b08+0.973"
   },
   {
-   "t": "s02b03+0.333",
-   "name": "footsteps_run",
-   "until": "s02b03+0.483",
-   "gain_db": -1,
-   "pan": 0.35
+   "t": "s02b07+0.576",
+   "name": "footsteps_soft",
+   "gain_db": -2,
+   "pan": -0.1,
+   "until": "s02b07+1.076"
   },
   {
-   "t": "s02b03+0.750",
-   "name": "footsteps_run",
-   "until": "s02b03+0.900",
-   "gain_db": -1,
-   "pan": 0.35
+   "t": "s02b07+1.076",
+   "name": "footsteps_soft",
+   "gain_db": -2,
+   "pan": -0.1,
+   "until": "s02b07+1.576"
+  },
+  {
+   "t": "s02b07+1.576",
+   "name": "footsteps_soft",
+   "gain_db": -2,
+   "pan": -0.1,
+   "until": "s02b07+2.076"
   },
   {
    "t": "s02b04+0.050",
@@ -139,110 +167,101 @@
    "pan": 0.25
   },
   {
-   "t": "s02b04+0.600",
+   "t": "s02b04+0.620",
    "name": "thud_sit",
    "gain_db": 0,
    "pan": 0.1
   },
   {
-   "t": "s02b04+0.900",
+   "t": "s02b04+0.780",
    "name": "cloth_rustle",
    "gain_db": -2,
    "pan": 0.1
   },
   {
-   "t": "s02b04+1.420",
+   "t": "s02b04+1.280",
    "name": "cloth_rustle",
    "gain_db": -5,
    "pan": 0.05
   },
   {
-   "t": "s02b04+1.730",
+   "t": "s02b04+1.600",
    "name": "cloth_rustle",
    "gain_db": -5,
    "pan": 0.05
   },
   {
-   "t": "s02b04+1.980",
+   "t": "s02b04+1.900",
    "name": "pat_pat",
    "gain_db": -10,
    "pan": -0.1
   },
   {
-   "t": "s02b05-2.290",
+   "t": "s02b04+0.390",
    "name": "footsteps_stomp",
-   "until": "s02b05-1.870",
    "gain_db": -11.0,
-   "pan": 0.55
+   "pan": 0.55,
+   "until": "s02b04+0.810"
   },
   {
-   "t": "s02b05-1.813",
+   "t": "s02b04+0.865",
    "name": "footsteps_stomp",
-   "until": "s02b05-1.393",
    "gain_db": -8.5,
-   "pan": 0.55
+   "pan": 0.55,
+   "until": "s02b04+1.285"
   },
   {
-   "t": "s02b05-1.337",
+   "t": "s02b04+1.340",
    "name": "footsteps_stomp",
-   "until": "s02b05-0.917",
    "gain_db": -6.0,
-   "pan": 0.55
+   "pan": 0.55,
+   "until": "s02b04+1.760"
   },
   {
-   "t": "s02b05-0.861",
+   "t": "s02b04+1.819",
    "name": "footsteps_stomp",
-   "until": "s02b05-0.441",
    "gain_db": -3.5,
-   "pan": 0.55
+   "pan": 0.55,
+   "until": "s02b05+0.039"
   },
   {
-   "t": "s02b05-0.385",
+   "t": "s02b05+0.094",
    "name": "footsteps_stomp",
-   "until": "s02b05+0.035",
    "gain_db": -1.0,
-   "pan": 0.55
-  },
-  {
-   "t": "s02b05+0.091",
-   "name": "footsteps_stomp",
-   "until": "s02b05+0.511",
-   "gain_db": -4,
-   "pan": 0.0
+   "pan": 0.55,
+   "until": "s02b05+0.514"
   },
   {
    "t": "s02b05+0.740",
    "name": "footsteps_stomp",
-   "until": "s02b05+1.160",
    "gain_db": -5,
-   "pan": 0.0
+   "pan": 0.0,
+   "until": "s02b05+1.160"
   },
   {
    "t": "s02b05+1.460",
    "name": "footsteps_stomp",
-   "until": "s02b05+1.880",
-   "gain_db": -11,
-   "pan": 0.0
+   "gain_db": -12,
+   "pan": 0.0,
+   "until": "s02b06+0.180"
   },
   {
-   "t": "s02b07+0.575",
-   "name": "footsteps_soft",
-   "until": "s02b07+1.075",
-   "gain_db": -2,
-   "pan": -0.1
-  },
-  {
-   "t": "s02b07+1.075",
-   "name": "footsteps_soft",
-   "until": "s02b07+1.575",
-   "gain_db": -2,
-   "pan": -0.1
-  },
-  {
-   "t": "s02b07+0.600",
+   "t": "s02b07+0.250",
    "name": "cloth_rustle",
    "gain_db": -9,
    "pan": 0.2
+  },
+  {
+   "t": "s02b07+0.780",
+   "name": "whoosh",
+   "gain_db": -16,
+   "pan": 0.15
+  },
+  {
+   "t": "s02b07+1.300",
+   "name": "cloth_rustle",
+   "gain_db": -12,
+   "pan": 0.1
   }
  ],
  "hits": [
@@ -257,7 +276,7 @@
    "kind": "sting"
   },
   {
-   "t": "s02b04+1.980",
+   "t": "s02b04+1.900",
    "kind": "pluck"
   }
  ]

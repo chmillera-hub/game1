@@ -48,7 +48,9 @@ export default {
     cast(app, st.scene, ['VOID', 'FEAR', 'MAGICIAN']);
     const shot = DBG().cam || shotAt(t);
     applyShot(app.camera, shot, t, 17);
-    set.update(t, { latch: latchAt(t), cageDoor: doorAt(t), tagSwing: 0.3 * pulse(t, S.T.click + 0.2, 0.3, 0.6, 0.9) });
+    // b01: the bare bulb sits just left of the hood in the far wide: soften its glass/halo so its bloom doesn't touch the
+    // rim (no 'third eye'); full strength from the insert on
+    set.update(t, { latch: latchAt(t), cageDoor: doorAt(t), tagSwing: 0.3 * pulse(t, S.T.click + 0.2, 0.3, 0.6, 0.9), lights: { bulb: t < S.T.cutIns ? 0.62 : 1 } });
     fear.update(t, fearPoseFn(t));
     vd.update(t, voidPose(t, st));
     mag.update(t, magPose(t, st));

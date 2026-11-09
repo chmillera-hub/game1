@@ -1424,6 +1424,8 @@ class User extends Character {
       if (!isPhone) { acc.hand.spread = lerp(acc.hand.spread, 0.9, f); acc.hand.splay = lerp(acc.hand.splay, 0.8, f); acc.hand.curl = lerp(acc.hand.curl, 0, f); }
     }
     if (A.hand) for (const k of HAND_KEYS) if (A.hand[k] != null) acc.hand[k] = A.hand[k];
+    // opt-in: thumb tip toward a hand-local point (e.g. wrapped over the curled fingers of a fist); phone grips override it
+    if (A.hand && A.hand.thumbTo) { acc.hand.thumbTo = toV(A.hand.thumbTo); acc.hand.thumbW = A.hand.thumbW ?? 1; }
     // gestures: flap (a small push of the raised hand toward the threat / along the palm, wrist flicks forward), tremble
     if (A.flap) { const pd = acc.palm.clone().normalize(); acc.t.addScaledVector(pd, 0.05 * A.flap); acc.fing.normalize().addScaledVector(pd, 0.4 * A.flap); }
     const tr = (A.tremble ?? 0) + ctx.tremble * 0.5;

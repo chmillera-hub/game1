@@ -103,21 +103,23 @@ function statics(st) {
   vd.update(K.b6 + 1.2, { ...v6, gaze: null });
   out.vEyesSit = vd.anchor('eyes'); out.vBackSit = vd.anchor('back'); out.vHeadSit = vd.anchor('head'); out.vHoodSit = vd.anchor('hoodTop');
   out.vSit = toV(W(M.VSIT));
-  const vMid = toV(W(M.V)).lerp(out.vSit, 0.5);
+  const vMid = toV(W(M.V)).lerp(out.vSit, 0.25);
   // cameras. b01 VOID_CU -> b02/b03 easing back for the hood top + the seed (yaw cheated so Jesus stays out of frame)
   out.VCU_A = EDGE.shot(EDGE.L(out.vEyes), { dist: 3.5, yaw: -30, pitch: -4, fov: 33, screenY: sy(385), drift: 0.2 });
-  out.VCU_B = EDGE.shot(EDGE.L(out.vEyes), { dist: 5.6, yaw: -19, pitch: -3, fov: 33, screenY: sy(600), drift: 0.2 });
+  out.VCU_M = EDGE.shot(EDGE.L(out.vEyes), { dist: 4.6, yaw: -24, pitch: -3, fov: 33, screenY: sy(560), drift: 0.2 });
+  out.VCU_B = EDGE.shot(EDGE.L(out.vEyes), { dist: 5.6, yaw: -19, pitch: -3, fov: 33, screenY: sy(690), drift: 0.2 });
   // b04-b05 wide: the master's angle, panned + pulled back so the whole Void (2.2 m wide) stays in frame through the
   // turn, the rise and the plop; user lower-left, Jesus centre
   const MS = EDGE.cam('MASTER', { drift: 0.2 });
   const jE = V3(...EDGE.W(-0.45, 1.55, -0.06));
   const vL = vMid.clone().add(V3(0, 1.2, 0)), vTop = vMid.clone().add(V3(0, 3.1, 0));
-  out.MASTER = fitShot([[jE, 320, 430, 0.6], [vL, 510, 520, 1], [vTop, 525, 150, 0.5], [out.uEyes, 140, 680, 0.6]], 44, MS.pos, MS.look, { posReg: 0.02, drift: 0.2 });
-  out.MASTER_B = fitShot([[jE, 320, 440, 0.6], [out.vSit.clone().add(V3(0, 1.0, 0)), 520, 560, 1], [out.vSit.clone().add(V3(0, 2.4, 0)), 520, 330, 0.4], [out.uEyes, 140, 700, 0.6]], 44, MS.pos, MS.look, { posReg: 0.02, drift: 0.15 });
+  // (lowered to ~1.35 m so the fat feet read under the lifting hem on each stomp)
+  out.MASTER = fitShot([[jE, 315, 430, 0.6], [vL, 450, 560, 1], [vTop, 465, 170, 0.5], [out.uEyes, 135, 700, 0.6]], 44, MS.pos, MS.look, { posReg: 0.02, yMin: 1.2, yMax: 1.45, drift: 0.2 });
+  out.MASTER_B = fitShot([[jE, 320, 440, 0.6], [out.vSit.clone().add(V3(0, 1.0, 0)), 510, 590, 1], [out.vSit.clone().add(V3(0, 2.4, 0)), 510, 360, 0.4], [out.uEyes, 140, 710, 0.6]], 44, MS.pos, MS.look, { posReg: 0.02, yMin: 1.2, yMax: 1.45, drift: 0.15 });
   // b06 the cut round: starts medium-wide (the big hand picking at the grass reads above the subtitle band), pushes in
   // to the face for "a lot". Camera a little above the eye line so the hood's lower lining stays tucked
-  out.ROUND = EDGE.shot(EDGE.L(out.vEyesSit), { dist: 5.6, yaw: 128, pitch: 8, fov: 40, screenY: sy(300), drift: 0.2 });
-  out.ROUND_B = EDGE.shot(EDGE.L(out.vEyesSit), { dist: 3.6, yaw: 122, pitch: 7, fov: 33, screenY: sy(380), drift: 0.15 });
+  out.ROUND = EDGE.shot(EDGE.L(out.vEyesSit), { dist: 5.6, yaw: 128, pitch: -2, fov: 40, screenY: sy(300), drift: 0.2 });
+  out.ROUND_B = EDGE.shot(EDGE.L(out.vEyesSit), { dist: 3.6, yaw: 124, pitch: -5, fov: 33, screenY: sy(380), drift: 0.15 });
   // b07: close 3/4 on the user looking off frame-right at the Void's back (the Void sits 3.3 m straight ahead of the
   // user, so no portrait frame holds both a readable face and its back: the face wins — the guilt flicker must read)
   out.LOST = EDGE.shot(EDGE.L(out.uEyes), { dist: 1.55, yaw: 108, pitch: 4, fov: 33, screenY: sy(420), drift: 0.15 });
@@ -132,9 +134,9 @@ function statics(st) {
 // ------------------------------------------------------------------------------------------------ camera
 function shotAt(t) {
   const K = KT();
-  if (t < K.b4 - 0.04) {
-    const u = ramp(t, K.b3 - 0.25, K.huffB + 0.2, 'inOut');
-    return { ...mixShot(S.VCU_A, S.VCU_B, u), vsk: 1.0 };
+  if (t < K.b4 - 0.04) {      // close on the roll; eases back so the first puff is already in frame; then a bit more
+    if (t < K.huffA + 0.25) return { ...mixShot(S.VCU_A, S.VCU_M, ramp(t, K.rollB - 0.25, K.huffA + 0.25, 'inOut')), vsk: 1.0 };
+    return { ...mixShot(S.VCU_M, S.VCU_B, ramp(t, K.huffA + 0.25, K.huffB + 0.25, 'out')), vsk: 1.0 };
   }
   if (t < K.b6 - 0.03) return mixShot(S.MASTER, S.MASTER_B, ramp(t, K.plant[2], K.b6, 'inOut'));
   if (t < K.b7 - 0.12) return { ...mixShot(S.ROUND, S.ROUND_B, ramp(t, K.pushA, K.lot + 0.3, 'inOut')), sunGlow: 0.7 };
@@ -161,7 +163,7 @@ function voidPose(t) {
   const walk = { amount: wAmt, phase: (t - K.plant[0]) * 1.0, style: 'stomp' };
   let hem = 0, squash = 0, swing = 0;
   K.plant.forEach((p, i) => {
-    hem = Math.max(hem, pulse(t, p - 0.36, 0.22, 0.12, 0.3));          // the hem lifts as the foot swings + plants
+    hem = Math.max(hem, pulse(t, p - 0.38, 0.24, 0.14, 0.3));          // the hem lifts as the foot swings + plants
     squash += pulse(t, p - 0.01, 0.05, 0.03, 0.22);                    // the body drops onto the planted foot
     swing += (i % 2 ? -1 : 1) * pulse(t, p - 0.2, 0.2, 0.05, 0.4);     // the hem swings with the step
   });
@@ -181,22 +183,25 @@ function voidPose(t) {
   // ---- b06 picking at the grass, b07 deflate
   const pick = ramp(t, K.b6 + 0.15, K.b6 + 0.6) * (1 - ramp(t, K.b7 - 0.1, K.b7 + 0.5));
   const deflate = ramp(t, K.b7 + 0.1, K.b7 + 0.8);
+  const cutR = ramp(t, K.b6 - 0.06, K.b6 - 0.03);                     // posture change hidden in the cut round
   const body = {
     sit,
     swell: 0.35 * puff - 0.12 * bl,
     shrug: 0.18 * puff + 0.12 * (1 - tp) * ramp(t, K.b4, K.b4 + 0.2) * (1 - ramp(t, K.plant[2], K.plant[2] + 0.4)) - 0.15 * deflate,
     stretch: 0.03 * rise - 0.07 * Math.max(0, jig) * (t > K.contact ? 1 : 0) - 0.035 * squash,
     bounce: 0.04 * rise - 0.03 * jig * (t > K.contact ? 1 : 0) - 0.03 * squash,
-    lean: -0.06 * puff + 0.08 * bl + 0.04 * ramp(t, K.contact, K.contact + 0.5) + 0.05 * pick,
+    // (from the cut round on: no forward lean and little slump — both tip the hood's lower brim up into a lit band under
+    // the mouth for the front camera; the sadness is in the eyes and brows)
+    lean: -0.06 * puff + 0.08 * bl + 0.04 * ramp(t, K.contact, K.contact + 0.5) * (1 - cutR),
     tilt: 0.04 * swing,
-    slump: 0.22 * ramp(t, K.contact + 0.2, K.contact + 0.8) + 0.25 * deflate,
+    slump: 0.22 * ramp(t, K.contact + 0.2, K.contact + 0.8) * (1 - 0.8 * cutR) + 0.25 * deflate,
     breathe: t < K.b4 ? 0.6 : 1,
   };
   // ---- head (the post-plop nod kept small: a deep nod opens the hood's lower lining to the cut-round camera)
   const headUp = ramp(t, K.b4 - 0.1, K.b4 + 0.3) * (1 - ramp(t, K.contact, K.contact + 0.35));
   const head = {
     pitch: -0.14 * (t < K.b4 ? 1 : 0) * (1 - ramp(t, K.rollA - 0.4, K.rollA)) - 0.13 * roll - 0.06 * puff + 0.05 * bl
-      - 0.18 * headUp + 0.1 * ramp(t, K.contact + 0.05, K.contact + 0.6) - 0.06 * ramp(t, K.b6 + 0.2, K.b6 + 1.2) + 0.04 * deflate,
+      - 0.18 * headUp + 0.1 * ramp(t, K.contact + 0.05, K.contact + 0.6) * (1 - cutR) - 0.04 * cutR + 0.04 * deflate,
     yaw: 0.3 * headUp * (1 - tp * 0.5) + 0.18 * ramp(t, K.rollB, K.rollB + 0.3) * (1 - ramp(t, K.b4, K.b4 + 0.4)),
     roll: 0.07 * roll + 0.06 * headUp,
   };
@@ -221,7 +226,7 @@ function voidPose(t) {
     return f;
   };
   let face;
-  const wH = ramp(t, K.rollB - 0.02, K.rollB + 0.2, 'inOut');          // the roll's end face melts into the huff base
+  const wH = ramp(t, K.rollB - 0.06, K.rollB + 0.24, 'inOut');         // the roll's end face melts into the huff base
   if (t < K.b4 + 0.05) {
     face = wH <= 0 ? faceRoll(t) : wH >= 1 ? faceHuff() : mixFace(faceRoll(Math.min(t, K.rollB)), faceHuff(), wH);
     face.autoBlink = 0; face.saccade = 0;
@@ -258,7 +263,7 @@ function voidPose(t) {
         handScale: 0.8, hand: { point: pick, curl: lerp(0.42, curl, pick), thumb: 0.3, spread: 0.06, cup: 0.3 } };
     };
   }
-  const extra = { motes: t > K.contact - 0.1 && t < K.contact + 0.5 ? 0 : 1, stars: t > K.b6 ? 0.8 : 1, hem: 0.75 * hem };
+  const extra = { motes: t > K.contact - 0.1 && t < K.contact + 0.5 ? 0 : 1, stars: t > K.b6 ? 0.8 : 1, hem: hem };
   return { pos, yaw, walk, body, head, face, armL: { preset: 'crossed' }, armR: { preset: 'crossed' }, fold, extra, blinkAt: [] };
 }
 function ease3(u) { return u * u * (1.6 - 0.6 * u); }   // accelerate into the plop (gravity), no slow-down
@@ -273,7 +278,7 @@ function groundPick(t, K, yaw, pos) {
   // grass just outside its RIGHT foot, toward the cut-round camera: hand + finger in plain view
   const f = V3(Math.sin(yaw), 0, Math.cos(yaw)), r = V3(-Math.cos(yaw), 0, Math.sin(yaw));
   const pl = pluck(t, K);
-  return toV(pos).addScaledVector(f, 0.92).addScaledVector(r, 0.78).add(V3(0, 0.03 + 0.07 * pl, 0)).addScaledVector(f, -0.03 * pl);
+  return toV(pos).addScaledVector(f, 1.22).addScaledVector(r, 0.98).add(V3(0, 0.03 + 0.07 * pl, 0)).addScaledVector(f, -0.03 * pl);
 }
 function voidGazeOf(t, user) {
   const K = KT();
@@ -289,15 +294,17 @@ function voidGazeOf(t, user) {
  */
 function puffP(i, seed, amp, age) {
   const h1 = hash1(seed * 31 + i), h2 = hash1(seed * 17 + i * 3), h3 = hash1(seed * 7 + i * 11);
-  const v0 = (0.85 + 0.35 * h2) * amp, kk = 2.6;
-  const rise = v0 * (1 - Math.exp(-age * kk)) / kk + 0.06 * age;
+  const v0 = (0.72 + 0.25 * h2) * amp, kk = 2.8;
+  const rise = v0 * (1 - Math.exp(-age * kk)) / kk + 0.035 * age;
   const side = (h3 - 0.5) * 0.55 * amp * (1 - Math.exp(-age * 1.8));
-  const p = S.hoodTop.clone().addScaledVector(S.camFwd, 0.12).add(V3(0, -0.05 + rise, 0)).addScaledVector(S.camRight, side);
+  // born just above the top of the hood, on the camera side of the peak (so the hood doesn't hide the first wisps)
+  const p = S.hoodTop.clone().addScaledVector(S.camFwd, -0.16).add(V3(0, 0.1 + rise, 0)).addScaledVector(S.camRight, side);
   return { p, h1, h2, h3, rise };
 }
 function huffPuffs(t, ps, fx) {
   const K = KT();
   const blasts = [[K.huffA, 1, 11], [K.huffB, 1.25, 23], [K.huffC, 0.55, 37]];
+  if (t > K.b4 - 0.04) return;           // the wide would only show the last wisps in the phone-UI band: gone at the cut
   for (const [a, amp, seed] of blasts) {
     if (t < a - 0.02 || t > a + 2.4) continue;
     const n = Math.round(3 + 2 * amp);
@@ -310,12 +317,12 @@ function huffPuffs(t, ps, fx) {
       const u = age / life;
       const size = (0.22 + 0.62 * amp * Math.sqrt(u)) * (0.8 + 0.4 * q.h1);
       const fade = smooth(u / 0.08) * (1 - smooth((u - 0.35) / 0.65));
-      ps.add(q.p.toArray(), size, i % 2 ? 0x7d5fd6 : 0x6a52c4, 0.62 * fade, q.h1 * 6.28 + age * 0.4 * (q.h2 - 0.5), i % 3 === 0 ? CELL.nebula : CELL.puff);
-      fx.add(q.p.toArray(), size * 0.7, i % 2 ? 0x9a7cff : 0x56c9d8, 0.42 * fade, q.h2 * 6.28 - age * 0.3, CELL.nebula);   // glowing core
+      ps.add(q.p.toArray(), size, i % 2 ? 0x8a4fd0 : 0x7446c4, 0.62 * fade, q.h1 * 6.28 + age * 0.4 * (q.h2 - 0.5), CELL.puff);
+      fx.add(q.p.toArray(), size * 0.6, i % 2 ? 0xc68cff : 0x4fd8e6, 0.6 * fade, q.h2 * 6.28 - age * 0.3, CELL.nebula);   // glowing violet/teal core
       if (i < 3) {                                                    // star specks inside the cloud
-        const sp = q.p.clone().addScaledVector(S.camRight, (q.h2 - 0.5) * size * 0.6).add(V3(0, (q.h1 - 0.5) * size * 0.4, 0));
+        const sp = q.p.clone().addScaledVector(S.camRight, (q.h2 - 0.5) * size * 0.6).add(V3(0, (q.h1 - 0.5) * size * 0.4, 0)).addScaledVector(S.camFwd, -0.1);
         const tw = 0.75 + 0.25 * Math.sin(age * 9 + i * 2);
-        fx.add(sp.toArray(), 0.075 + 0.03 * q.h3, 0xfff6e0, 0.95 * fade * tw, q.h2 * 6, CELL.star);
+        fx.add(sp.toArray(), 0.1 + 0.035 * q.h3, 0xfff6e0, fade * tw, q.h2 * 6, CELL.star);
       }
     }
   }
@@ -341,10 +348,10 @@ function plopMotes(t, fx) {
 function seedState(t) {
   const K = KT();
   const t0 = K.huffA - 0.5, hang = K.huffA + 0.25;
-  const hit = K.huffB + 0.3;                                   // the 2nd puff's front reaches ~0.35 m by now
+  const hit = K.huffB + 0.28;                                  // the 2nd puff's front (centre + half its size) arrives
   if (t < t0 || t > hit + 1.4 || t > K.b4) return { p: V3(), a: 0, rot: 0 };
   const R = S.camRight;
-  const spot = S.hoodTop.clone().addScaledVector(S.camFwd, 0.12).add(V3(0, 0.42, 0)).addScaledVector(R, 0.06);
+  const spot = S.hoodTop.clone().addScaledVector(S.camFwd, -0.16).add(V3(0, 0.42, 0)).addScaledVector(R, 0.06);
   const u = smooth(clamp((t - t0) / (hang - t0)));
   const p = spot.clone().addScaledVector(R, 0.75 * (1 - u)).add(V3(0, 0.12 * (1 - u) + 0.025 * Math.sin(t * 1.9), 0));
   let rot = 0.15 * Math.sin(t * 1.3);
@@ -387,7 +394,7 @@ function userPose(t, statOnly = false) {
     armL: { preset: 'crossed', tremble: 0.1 },
     armR: { preset: 'crossed', tremble: 0.1 },
     head: { follow: 0.4 * (1 - ta.chin), pitch: -0.12 * (1 - phoneUp) - 0.14 * ta.chin + 0.2 * phoneUp },
-    extra: { phone: lerp(0.85, 0.4, phoneUp), phoneUp: 0.85 * phoneUp, screen: 'feed', scroll: Math.max(0, t - phoneT) * 0.6 },
+    extra: { phone: lerp(0.85, 0.4, phoneUp), phoneUp: 0.72 * phoneUp, screen: 'feed', scroll: Math.max(0, t - phoneT) * 0.6 },
   };
   if (!statOnly && phoneUp > 0.3) P.screenGaze = true;              // eyes on the screen (second pass in update)
   if (t > phoneA + 0.2) { P.extra.thumb = 1; P.extra.tap = pulse(t, K.b7 + 0.8, 0.06, 0.03, 0.1); }   // one "checking" tap

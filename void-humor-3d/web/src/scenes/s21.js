@@ -24,7 +24,6 @@ import { loadLines, W, A, add, sub, mix3, LD, pulse, jiggle, stamp, own, solve, 
 
 const ID = 's21';
 // in b05 Fear turns from the star (camera side) toward the Void and keeps that facing into s22 (kit FEAR_TURN)
-globalThis.DBG21 = 1; // TEMP
 
 export default {
   id: ID,
@@ -188,8 +187,7 @@ export default {
     if (globalThis.DBG21) {
       const cam = app.camera;
       const bb = new THREE.Vector3(); set.props.bucketB.getWorldPosition(bb);
-      const cands = {}; for (const [x, z] of [[3.98, -4.18], [3.0, -3.8], [3.3, -2.8], [3.4, -1.8], [3.2, -1.0], [2.6, -1.6], [2.2, -2.6], [1.99, -4.07]]) cands[x + ',' + z] = pix(cam, [x, 0.15, z]);
-      console.log('DBG21', t.toFixed(2), 'shot', shot, JSON.stringify({ cands, bucket: pix(cam, bb), bw: [bb.x.toFixed(2), bb.z.toFixed(2)], v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), star: pix(cam, starAt(t).pos), m: pix(cam, mag.anchor('head')) }));
+      console.log('DBG21', t.toFixed(2), 'shot', shot, JSON.stringify({ bucket: pix(cam, bb), bw: [bb.x.toFixed(2), bb.z.toFixed(2)], v: pix(cam, vd.anchor('eyes')), f: pix(cam, fear.anchor('eyes')), star: pix(cam, starAt(t).pos), m: pix(cam, mag.anchor('head')) }));
     }
     st.look = lookFor(ID, set.look);
   },

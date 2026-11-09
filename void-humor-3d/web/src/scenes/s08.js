@@ -95,23 +95,23 @@ function computeStatics(st) {
   // at frame-left, Jesus at JV between them and the Void, the whole Void towering. Line test > 0.6.
   const lowA = uE.clone().addScaledVector(towardPair, -1.35).addScaledVector(right, 0.62).setY(0.92);
   const lowB = lowA.clone().addScaledVector(towardPair, 0.75).addScaledVector(right, -0.08).setY(0.98);
-  out.LOWUP_A = fitShot([[vE, 430, 245], [out.jEyesJV, 300, 470, 0.25]], 52, lowA, vE, { free: [0, 0, 0] });
-  out.LOWUP_B = fitShot([[vE, 420, 232], [out.jEyesJV, 285, 470, 0.15]], 46, lowB, vE, { free: [0, 0, 0] });
+  const mp = out.MOTE.p;
+  out.LOWUP_A = fitShot([[vE, 430, 245], [out.jEyesJV, 300, 470, 0.25], [mp, 560, 330, 0.3]], 52, lowA, vE, { free: [0, 0, 0] });
+  out.LOWUP_B = fitShot([[vE, 420, 232], [out.jEyesJV, 285, 470, 0.15], [mp, 570, 330, 0.3]], 46, lowB, vE, { free: [0, 0, 0] });
   // Jesus medium (b02/b03): 30 deg off the Void->Jesus line toward the camera side (line test ok), the Void looming
   // behind-right of him; the frozen mote by its shoulder kept in frame; dollies with his step so the framing holds
   const sD = jesusStep(T('s08b02')), yD = jesusYawAt(T('s08b02'));
   out.jEyesD = jEye(sD.pos, yD);
-  const mp = out.MOTE.p;
-  out.JMED_A = fitShot([[out.jEyesD, 280, 470], [vE, 560, 200, 0.06], [mp, 600, 330, 0.12]], 38, EDGE.W(-2.06, 1.25, 2.0), out.jEyesD, { free: [0, 0, 0] });
-  out.JMED_B = fitShot([[jM, 280, 465], [vE, 620, 230, 0.06], [mp, 640, 360, 0.12]], 38, EDGE.W(-2.0, 1.3, 2.5), jM, { free: [0, 0, 0] });
+  out.JMED_A = fitShot([[out.jEyesD, 270, 450], [vE, 520, 200, 0.1], [mp, 630, 330, 0.8]], 46, EDGE.W(-1.85, 1.3, 2.2), out.jEyesD, { free: [0, 0, 0] });
+  out.JMED_B = fitShot([[jM, 270, 450], [vE, 560, 220, 0.1], [mp, 640, 350, 0.8]], 46, EDGE.W(-1.8, 1.3, 2.7), jM, { free: [0, 0, 0] });
   // VOID_CU (b04): yaw cheated toward its left so Jesus (at JM, screen-left) is fully out of frame
   out.VCU_A = EDGE.shot(EDGE.L(vE), { dist: 3.8, yaw: -30, pitch: -4, fov: 33, screenY: sy(345) });
   out.VCU_B = EDGE.shot(EDGE.L(vE), { dist: 3.45, yaw: -29, pitch: -5, fov: 33, screenY: sy(340) });
   // OTS (b05), tight: over the user's raised right hand (soft, lower-left), Jesus's face big enough to read the wince,
   // the Void's scowl above-right of him: one hopeful smile, one scowl
   const otsP = uE.clone().addScaledVector(towardPair, -1.15).addScaledVector(right, 0.42).setY(1.42);
-  out.OTS_A = fitShot([[jM, 300, 455], [vE, 470, 250, 0.5], [out.uHandR, 120, 760, 0.12]], 30, otsP, jM, { posReg: 0.08, yMin: 1.25, yMax: 1.7, drift: 0.2 });
-  out.OTS_B = fitShot([[jM, 300, 450], [vE, 480, 235, 0.5], [out.uHandR, 100, 790, 0.08]], 27, otsP, jM, { posReg: 0.08, yMin: 1.25, yMax: 1.7, drift: 0.15 });
+  out.OTS_A = fitShot([[jM, 290, 455], [vE, 470, 250, 0.5], [mp, 630, 340, 0.4], [out.uHandR, 120, 760, 0.12]], 30, otsP, jM, { posReg: 0.08, yMin: 1.25, yMax: 1.7, drift: 0.2 });
+  out.OTS_B = fitShot([[jM, 290, 450], [vE, 480, 235, 0.5], [mp, 640, 330, 0.4], [out.uHandR, 100, 790, 0.08]], 27, otsP, jM, { posReg: 0.08, yMin: 1.25, yMax: 1.7, drift: 0.15 });
   return out;
 }
 

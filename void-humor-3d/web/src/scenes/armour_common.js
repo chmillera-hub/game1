@@ -155,7 +155,7 @@ export function computeMote(vd, gaze) {
   const vy = WY(M.V), vl = V3(Math.cos(vy), 0, -Math.sin(vy)), vf = V3(Math.sin(vy), 0, Math.cos(vy));
   const sh = vd.anchor('shoulderL');
   const start = sh.clone().addScaledVector(vf, 0.16).addScaledVector(vl, -0.04).add(V3(0, 0.03, 0));   // on the capelet
-  const p = sh.clone().addScaledVector(vl, 0.16).addScaledVector(vf, 0.42).add(V3(0, 0.38, 0));       // its hang point
+  const p = sh.clone().addScaledVector(vl, -0.38).addScaledVector(vf, 0.62).add(V3(0, 0.3, 0));       // its hang point
   return { p, start, tf };
 }
 /** { p: Vector3, a: alpha 0..1, s: scale mult } — rises off the shoulder, stops dead at the breath hold, falls on "scary". */
@@ -207,8 +207,9 @@ export function defendRef(user, t) {
   user.update(t, { ...base, armR: { preset: 'defend' } });
   const plain = user.root.localToWorld(user.arms.R.wrist.clone());
   const sh = user.anchor('shoulderR');
-  const uy = WY(M.U), a = uy - 0.95;
-  const clear = sh.clone().add(V3(Math.sin(a) * 0.3, 0.17, Math.cos(a) * 0.3));
+  // hand up beside the face (elbow bent down, palm out at the Void): forward 14 cm, out 7 cm, up 30 cm from the shoulder
+  const uy = WY(M.U), f = V3(Math.sin(uy), 0, Math.cos(uy)), rt = V3(-Math.cos(uy), 0, Math.sin(uy));
+  const clear = sh.clone().addScaledVector(f, 0.14).addScaledVector(rt, 0.07).add(V3(0, 0.3, 0));
   const toVoid = toV(W(M.V)).add(V3(0, 1.9, 0)).sub(clear).normalize();
   return { plain, clear, toVoid };
 }
