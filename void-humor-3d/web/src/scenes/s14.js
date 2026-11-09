@@ -61,18 +61,19 @@ export default {
     const tPiv0 = tRise1 + 0.02, tPiv1 = tPiv0 + 0.5;              // about-face (face sweeps past the wide camera)
     const tGo = Math.min(tPiv1 - 0.12, tStorms + 0.1);             // first stomp
     const tHover = tBlocks - 0.02, tStab1 = tHover + 0.27, tStab2 = tStab1 + 0.3;   // 6 trembling frames, stab, stab
-    const tShow0 = tTwit - 0.75, tShow1 = B5 + 0.35;               // phone held up over the shoulder, screen back
+    const cutD = Math.max(tStab2 + 0.95, B3e - 0.95);              // over Jesus's shoulder ("...On Twitter.")
+    const tShow0 = cutD + 0.12, tShow1 = B5 + 0.35;                // phone held up over the shoulder, screen back
     const tDing = B5 + 0.14;                                       // the cheerful ding from the sash
-    const tCrest = B6e + 0.06, tLook0 = tCrest + 0.12, tLook1 = tLook0 + 0.55, tOver = tLook1 + 0.04;
+    const tVoidE = W('s14b06', 'void', { alt: ['void,'], end: true, frac: 0.42 });
+    const tCrest = tVoidE - 0.08, tLook0 = tCrest + 0.1, tLook1 = tLook0 + 0.42, tOver = tLook1 + 0.02;
     // Jesus
     const tPat1 = tDing + 0.3, tPat2 = tPat1 + 0.22, tPull0 = tPat2 + 0.16, tPull1 = tPull0 + 0.38;
-    const tTuck0 = tToo6 + 0.12, tTuck1 = tTuck0 + 0.3, tSmooth0 = tTuck1 - 0.02, tSmooth1 = Math.min(tSmooth0 + 0.45, B6e - 0.04), tExhale = B6e - 0.3;
+    const cutR = tVoidE + 0.05, cutJ3 = Math.max(cutR + 0.6, tToo6 + 0.3);   // the glance-back cutaway, inside b06
+    const tTuck0 = cutJ3 + 0.32, tTuck1 = tTuck0 + 0.3, tSmooth0 = tTuck1 - 0.02, tSmooth1 = tSmooth0 + 0.5, tExhale = tSmooth1 + 0.04;
 
     // ================================================================ shot list (cut times)
-    const cutD = B3e - 1.25;                                       // over Jesus's shoulder on "...On Twitter."
-    const cutG = B6e;                                              // the user's glance back from the rise (cutaway ends the scene)
     const SHOTS = [[S, 'WIDE'], [B2 - 0.12, 'TRACK'], [B3 - 0.1, 'UINS'], [cutD, 'OVER'], [tDing + 0.1, 'JST'],
-      [tPull1 + 0.06, 'JINS'], [B6 + 0.5, 'JST'], [cutG, 'RISE']];
+      [tPull1 + 0.06, 'JINS'], [B6 + 0.28, 'JST'], [cutR, 'RISE'], [cutJ3, 'JST']];
     let si = 0; for (let i = 0; i < SHOTS.length; i++) if (t >= SHOTS[i][0]) si = i;
     const shot = SHOTS[si][1], shotT0 = SHOTS[si][0], shotT1 = SHOTS[si + 1] ? SHOTS[si + 1][0] : E;
 
@@ -102,16 +103,16 @@ export default {
       const uE = ue ? arr(ue) : SW(-1.3, 0.9, 1.4);
       const face = (() => {
         const Fgive = JX('rueful', { mSmile: 0.22, mPress: 0.55, browIn: 0.55, browOut: 0.1, lidU: 0.86, lidL: 0.3 });
-        const Fhope = JX('hopeful', { mSmile: 0.3, mOpen: 0.02, mTeethU: 0, browIn: 0.62, browOut: 0.4, lidU: 1.05 });
-        const Foh = JX('oh', { mOpen: 0.13, mRound: 0.55, browIn: 0.7, browOut: 0.42, lidU: 1.06 });
-        const Fsoft = JX('concerned', { mSmile: 0.04, mPress: 0.2, browIn: 0.6, lidU: 0.92 });
-        const Fsquint = JX('reading', { lidU: 0.86, lidL: 0.36, browSq: 0.2, mPress: 0.2, mSmile: 0.06, browIn: 0.3, browOut: 0.15 });
-        const Fding = JX('surprised', { lidU: 1.18, browIn: 0.7, browOut: 0.8, mOpen: 0.06, mRound: 0.5, mSmile: 0.12 });
-        const Fcur = JX('curious', { lidU: 1.05, browIn: 0.45, browOut: 0.55, mSmile: 0.18, mRound: 0.2, mOpen: 0.03 });
-        const Fread = JX('reading', { lidU: 0.88, lidL: 0.22, browSq: 0.12, browIn: 0.32, browOut: 0.22, mPress: 0.18, mSmile: 0.08 });
+        const Fhope = JX('hopeful', { mSmile: 0.34, mOpen: 0.03, mTeethU: 0, browIn: 0.7, browOut: 0.45, lidU: 1.1, lidL: 0.1 });
+        const Foh = JX('oh', { mOpen: 0.15, mRound: 0.7, mSmile: 0.0, browIn: 0.95, browOut: 0.2, browSq: 0.1, lidU: 1.08, lidL: 0.05, lidSad: 0.2 });
+        const Fsoft = JX('concerned', { mSmile: 0.04, mPress: 0.2, browIn: 0.7, lidU: 1.0 });
+        const Fsquint = JX('reading', { lidU: 0.92, lidL: 0.36, browSq: 0.2, mPress: 0.2, mSmile: 0.06, browIn: 0.3, browOut: 0.15 });
+        const Fding = JX('surprised', { lidU: 1.2, browIn: 0.85, browOut: 0.95, mOpen: 0.08, mRound: 0.55, mSmile: 0.12 });
+        const Fcur = JX('curious', { lidU: 1.08, browIn: 0.6, browOut: 0.7, mSmile: 0.18, mRound: 0.2, mOpen: 0.03 });
+        const Fread = JX('reading', { lidU: 0.96, lidL: 0.2, browSq: 0.1, browIn: 0.42, browOut: 0.3, mPress: 0.18, mSmile: 0.08 });
         const Fclimb = JX('reading', { lidU: 0.98, lidL: 0.15, browSq: 0.1, browIn: 0.55, browOut: 0.6, mPress: 0.15 });
         const Foh2 = JX('oh', { mOpen: 0.16, mRound: 0.75, browIn: 0.78, browOut: 0.78, lidU: 1.14, pupil: 1.1 });
-        const Fwince = JX([['wince', 0.7], ['rueful', 0.3]], { mSmile: 0.22, mClench: 0.75, mOpen: 0.12, mWide: 0.7, mAsym: 0.25, lidU: 0.74, lidL: 0.45, browIn: 0.95, browOut: 0.3, browSq: 0.2, saccade: 0 });
+        const Fwince = JX([['awkward', 0.65], ['wince', 0.35]], { mSmile: 0.3, mClench: 1, mOpen: 0.3, mWide: 1, mAsym: 0.2, mTeethU: 1, lidU: 0.82, lidL: 0.72, browIn: 1.15, browOut: 0.1, browSq: 0.3, lidSad: 0.3, saccade: 0 });
         const Fdign = JX('serene', { mSmile: 0.28, mPress: 0.5, lidU: 0.55, lidL: 0.3, browIn: 0.35, browOut: 0.1 });
         const Fexh = JX('rueful', { mSmile: 0.42, mPress: 0.6, mAsym: 0.4, lidU: 0.5, lidL: 0.45, browIn: 0.45, browOut: 0.3 });
         return k(t, [
@@ -148,7 +149,7 @@ export default {
       })();
       const look = t < tDing + 0.05 ? uE : gz;
       // ---- head: follows the user out (eyes lead); the ding tips the chin to the chest; reading posture
-      const follow = k(t, [['s14', 0.55], [tDing, 0.55], [tDing + 0.3, 0.75], [B6e + 0.5, 0.75], [tSmooth1, 0.3]]);
+      const follow = k(t, [['s14', 0.6], [tDing, 0.6], [tDing + 0.3, 0.35], [cutJ3, 0.35], [tSmooth1, 0.3]]);
       const nod = 0.06 * pulse(t, tExhale - 0.05, tExhale + 0.5, 0.1, 0.3) - 0.1 * pulse(t, tVoid6 - 0.04, tToo6 - 0.1, 0.1, 0.16);
       const tilt = k(t, [['s14', 0.06], [tDing, 0.06], [tDing + 0.2, 0.13, 'out'], [tPull1, 0.1], [B6 + 0.6, 0.04], [tVoid6, 0.1], [B6e + 0.3, -0.04], [tSmooth1, 0.03]]);
       // ---- arms: from s13's open palms -> hands settle on the thigh/knee; the aborted little reach ("wait—")
@@ -156,7 +157,7 @@ export default {
       const wait = pulse(t, tPiv0 + 0.05, tGo + 0.95, 0.25, 0.45);
       const armL = { preset: [['knee_rest', 0.65 + 0.35 * settle], ['open', 0.35 * (1 - settle) + 1e-3]], hand: { splay: 0.05, cup: 0.4 } };
       let armR = { preset: [['open', Math.max(1e-3, 1 - settle)], ['rest', Math.max(1e-3, settle)]], hand: { splay: 0.06, cup: 0.4 } };
-      if (wait > 0.001) armR = { preset: [['open', Math.max(1e-3, (1 - settle) * (1 - wait))], ['rest', Math.max(1e-3, settle * (1 - wait))], ['reach', wait * 0.55 + 1e-3]], hand: { curl: 0.3, spread: 0.15, cup: 0.4 } };
+      if (wait > 0.001) armR = { preset: [['open', Math.max(1e-3, (1 - settle) * (1 - wait))], ['rest', Math.max(1e-3, settle * (1 - wait))], ['offer', wait * 0.6 + 1e-3]], hand: { curl: 0.08, spread: 0.32, splay: 0.08, thumb: 0.55, cup: 0.2 } };
       // the ding: pat-pat on the sash (right hand flat on the chest), pull the phone out and hold it up
       const toChest = ramp(t, tDing + 0.1, tPat1 - 0.02) * (1 - ramp(t, tPull0, tPull0 + 0.2));
       const hold = ramp(t, tPull0, tPull1) * (1 - ramp(t, tTuck0, tTuck0 + 0.25));
@@ -194,7 +195,7 @@ export default {
         pos: EDGE.W(KP), yaw: EDGE.Y(KY),
         body: { kneel: 1, lean: 0.08 + 0.05 * ramp(t, tRise0, tRise0 + 0.4) * (1 - ramp(t, tPiv0, tPiv1)) + 0.04 * hold, shrug: 0.05 * pulse(t, tDing, tDing + 0.35, 0.06, 0.25) - 0.04 * exhale + 0.22 * eek,
           breathe: 1 + 0.6 * exhale, sway: 0.5, recoil: 0.04 * pulse(t, tDing, tDing + 0.4, 0.06, 0.3) },
-        head: { look: look, follow, pitch: 0.12 * hold + nod, roll: -tilt + 0.12 * eek, talk: 0 },
+        head: { look: look, follow, pitch: 0.04 * hold + nod, roll: -tilt + 0.12 * eek, talk: 0 },
         gaze: pass ? gz : null,
         face: { ...face, autoBlink: shot === 'JINS' ? 0 : 1 },
         blinkAt: [tPiv0 + 0.3, B2 + 0.75, tDing + 0.45, tPull1 + 0.05, tVoid6 + 0.45, tTuck0 + 0.05, tExhale + 0.02],
@@ -310,7 +311,7 @@ export default {
           s = aim(p, L, 520, 38, { drift: 0.12 });
           break;
         }
-        case 'JST': s = EDGE.shot(JEYE, { dist: 1.45, yaw: -31, pitch: 1, fov: 33, screenY: sy(400), drift: 0.15 }); break;
+        case 'JST': s = EDGE.shot(JEYE, { dist: 1.5, yaw: -30, pitch: -10, fov: 34, screenY: sy(390), drift: 0.15 }); break;
         case 'RISE': {   // long lens over Jesus's shoulder toward the sun: the user tiny on the crest of the rise
           const fw = SV(...FWD_K), rt = SV(-Math.cos(KY), 0, Math.sin(KY));
           const head = SW(...JEYE);

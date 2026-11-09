@@ -16,12 +16,13 @@ export async function setup(app) {
   const dome = a.set.scene.children.find((o) => o.isMesh && o.geometry.type === 'SphereGeometry' && o.geometry.parameters.radius === 70);
   const basicF = new THREE.MeshBasicMaterial({ map: a.set.props.floor.material.map, color: 0x606060 });
   const basicW = new THREE.MeshBasicMaterial({ color: 0x302830 });
+  const basicC = new THREE.MeshBasicMaterial({ color: 0x402830 });
   const walls = []; a.set.props.room.traverse((o) => { if (o.isMesh) walls.push(o); });
   return { a, b, c, empty, dome, basicF, basicW, walls, fMat: a.set.props.floor.material, scene: a.scene, look: a.look };
 }
 export async function update(t, app, S) {
   let st;
-  S.dome.visible = true; S.a.set.props.floor.material = S.fMat; for (const w of S.walls) if (w.userData.wMat) w.material = w.userData.wMat;
+  S.a.set.props.key.shadow.autoUpdate = true; S.a.set.props.floor.material = S.fMat; S.a.set.props.floor.receiveShadow = true; for (const w of S.walls) if (w.userData.wMat) w.material = w.userData.wMat;
   if (t < 1000) { st = S.a; await BR.update(t, app, st); }
   else if (t < 2000) { st = S.b; await FT.update(t - 1000, app, st); }
   else if (t < 5000) { st = S.c; await BR.update(t - 3000, app, st); }
@@ -33,11 +34,12 @@ export async function update(t, app, S) {
     if (v === 0) P.room.visible = false;
     if (v === 1) P.floor.visible = false;
     if (v === 2) st.set.update(tt, { shafts: 0, dust: 0 });
-    if (v === 3) S.dome.visible = false;
+    if (v === 3) P.key.shadow.autoUpdate = false;
     if (v === 4) { P.corner.visible = false; P.cage.visible = false; }
     if (v === 5) { P.room.visible = false; P.floor.visible = false; }
-    if (v === 7 || v === 9) P.floor.material = S.basicF;
-    if (v === 8 || v === 9) for (const w of S.walls) { w.userData.wMat = w.material; w.material = S.basicW; }
+    if (v === 7) P.floor.receiveShadow = false;
+    if (v === 8) P.floor.material = S.basicF;
+    if (v === 9) P.floor.material = S.basicC;
     if (v === 6) { P.key.castShadow = P.key.castShadow; st.set.scene.traverse((o) => { if (o.isMesh && o.material && o.material.transparent) o.visible = false; }); }
   }
   S.scene = st.scene; S.look = st.look; st.scene.add(app.camera);

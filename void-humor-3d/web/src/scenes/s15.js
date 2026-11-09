@@ -220,7 +220,7 @@ export default {
       return {
         pos: voidPos15(t), yaw: EDGE.Y(VY) - 0.08 * patR,
         walk: { amount: 0.7 * pulse(t, tReach0 - 0.35, tReach1 - 0.2, 0.15, 0.2), phase: 1.1 * (t - tReach0), style: 'waddle' },
-        body: { lean: 0.13 + 0.26 * patR - 0.1 * settle, shrug: 0.35 * sigh + 0.12 * snort, breathe: 1 + 0.6 * sigh, breathRate: 0.2, recoil: 0.06 * snort, swell: 0.05 * sigh, twist: 0.1 - 0.32 * patR + 0.1 * settle, tilt: 0.05 * patR },
+        body: { lean: 0.13 + 0.2 * patR - 0.08 * settle, shrug: 0.35 * sigh + 0.12 * snort, breathe: 1 + 0.6 * sigh, breathRate: 0.2, recoil: 0.06 * snort, swell: 0.05 * sigh, twist: 0.1 - 0.32 * patR + 0.1 * settle, tilt: 0.05 * patR },
         head: { pitch: 0.24 + 0.02 * patR - 0.04 * sigh, yaw: 0.32 + 0.3 * patR + 0.06 * slide, roll: 0.04 * patR },
         gaze, face,
         blinkAt: [tFind + 0.45, tSlide1 + 0.3, B5e + 0.05],
@@ -252,16 +252,16 @@ export default {
           break;
         }
         case 'JUP': s = jup(380, 430, 50, 0.25 + 0.1 * ramp(t, shotT0, shotT1)); break;
-        case 'JUP2': s = jup(372, 420, 44, 0.1 + 0.1 * ramp(t, shotT0, shotT1), 0.34); break;
+        case 'JUP2': s = jup(372, 420, 44, 0.1 + 0.1 * ramp(t, shotT0, shotT1), 0.44); break;
         case 'VPAT': {   // from behind Jesus (his back lower-left): the big hand reaching down onto his shoulder, its fingers
           //               over his shoulder and half his back; the Void's face above (it reads: its hood points here)
           const u = ramp(t, shotT0, tPatEnd + 0.4);
-          s = frame(vE, { dist: lerp(4.1, 3.7, u), yaw: EDGE.CY(-24), pitch: 3, fov: 44, screenY: sy(260), drift: 0.1 });
+          s = frame(vE, { dist: lerp(4.1, 3.7, u), yaw: EDGE.CY(-24), pitch: 9, fov: 44, screenY: sy(270), drift: 0.1 });
           break;
         }
         case 'VCU': case 'VCU2': {   // close on the Void over his head, wide enough for its hand on his shoulder + his head
           const u = ramp(t, shotT0, shotT1);
-          s = frame(vE, { dist: shot === 'VCU' ? lerp(3.1, 2.85, u) : 2.8, yaw: EDGE.CY(-24), pitch: 4, fov: 40, screenY: sy(shot === 'VCU' ? 300 : 320), drift: 0.1 });
+          s = frame(vE, { dist: shot === 'VCU' ? lerp(3.1, 2.85, u) : 2.8, yaw: EDGE.CY(-24), pitch: 7, fov: 40, screenY: sy(shot === 'VCU' ? 300 : 320), drift: 0.1 });
           break;
         }
         default: s = two(4.6, 430);
@@ -275,6 +275,7 @@ export default {
       clear: [[POS.V15[0], POS.V15[2], 1.3], [POS.K[0], POS.K[2], 0.7]],
     });
     solve(t, [[jesus, jPose], [vd, vPose]], cam);
+    if (shot === 'JUP' || shot === 'JUP2') cam();       // re-aim on the final (head-up) face
 
     // ---- particles: the lilac sigh-wisp leaving the hood; the tiny star that pops out of the hood on the snort
     const mo = vd.anchor('mouth'), md = vd.mouthDir();

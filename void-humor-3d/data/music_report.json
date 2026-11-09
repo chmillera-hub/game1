@@ -93,7 +93,7 @@
    "key": "F",
    "bpm": 126.0,
    "start": 38.28,
-   "cal_db": 1.8,
+   "cal_db": -1.3,
    "end": 53.05,
    "intensity": 0.65,
    "transition_in": "cut",
@@ -106,7 +106,8 @@
     "pizz": 30,
     "strings": 19,
     "timpani": 37,
-    "orchkit": 34
+    "orchkit": 34,
+    "slowstr": 5
    },
    "chords": [
     "38.28:F@F",
@@ -127,14 +128,14 @@
    "key": "F",
    "bpm": 84.0,
    "start": 53.05,
-   "cal_db": 7.8,
+   "cal_db": 8.5,
    "end": 70.14,
    "intensity": 0.25,
    "transition_in": "cut",
    "phrases": 2,
    "ending_at": null,
    "notes": {
-    "violin": 3,
+    "violin": 2,
     "pad": 9,
     "pizz": 2,
     "bassoon": 2
@@ -226,16 +227,16 @@
    "key": "Dm",
    "bpm": 108.0,
    "start": 104.28,
-   "cal_db": 7.9,
+   "cal_db": 8.1,
    "end": 115.36,
    "intensity": 0.35,
    "transition_in": "crossfade",
    "phrases": 0,
    "ending_at": null,
    "notes": {
-    "bassoon": 20,
-    "pizzlow": 20,
-    "pizz": 3
+    "bassoon": 18,
+    "pizzlow": 18,
+    "pizz": 2
    },
    "chords": [
     "104.28:Dm@D",
@@ -330,16 +331,16 @@
    "key": "Dm",
    "bpm": 108.0,
    "start": 164.37,
-   "cal_db": 5.5,
+   "cal_db": 5.6,
    "end": 177.38,
    "intensity": 0.45,
    "transition_in": "cut",
    "phrases": 0,
    "ending_at": null,
    "notes": {
-    "bassoon": 10,
-    "pizzlow": 10,
-    "timpani": 5
+    "bassoon": 11,
+    "pizzlow": 11,
+    "timpani": 6
    },
    "chords": [
     "164.37:Dm@D",
@@ -475,7 +476,7 @@
    "key": "Dm",
    "bpm": 72.0,
    "start": 246.2,
-   "cal_db": 1.7,
+   "cal_db": -5.1,
    "end": 261.7,
    "intensity": 0.425,
    "transition_in": "crossfade",
@@ -485,7 +486,8 @@
     "tremolo": 5,
     "pizz": 17,
     "cello": 3,
-    "pad": 5
+    "pad": 5,
+    "slowstr": 6
    },
    "chords": [
     "246.2:Dm(add9)@D",
@@ -499,7 +501,7 @@
    "key": "Dm",
    "bpm": 84.0,
    "start": 261.7,
-   "cal_db": -3.1,
+   "cal_db": -2.7,
    "end": 274.1,
    "intensity": 0.55,
    "transition_in": "crossfade",
@@ -553,7 +555,7 @@
    "key": "D",
    "bpm": 63.0,
    "start": 283.94,
-   "cal_db": 1.7,
+   "cal_db": -5.0,
    "end": 316.3,
    "intensity": 0.55,
    "transition_in": "crossfade",
@@ -562,10 +564,10 @@
    "notes": {
     "harp": 56,
     "celesta": 28,
-    "slowstr": 38,
+    "slowstr": 67,
     "lowstr": 16,
-    "choir": 29,
-    "glass": 16,
+    "choir": 58,
+    "glass": 18,
     "piano": 5
    },
    "chords": [
@@ -917,6 +919,105 @@
  ],
  "hits": [
   {
+   "t": 6.4399999999999995,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s01.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c01"
+  },
+  {
+   "t": 9.5,
+   "kind": "stop",
+   "len": 1.1,
+   "src": "data/cues/s02.json",
+   "stab": false,
+   "notes": 4,
+   "placed": false
+  },
+  {
+   "t": 12.75,
+   "kind": "sting",
+   "len": 2.0,
+   "src": "data/cues/s02.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c02"
+  },
+  {
+   "t": 15.41,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s02.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c02"
+  },
+  {
+   "t": 23.799999999999997,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s03.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c03"
+  },
+  {
+   "t": 33.121,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s03.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c03"
+  },
+  {
+   "t": 38.381,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s04.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c04"
+  },
+  {
+   "t": 39.480999999999995,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s04.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c04"
+  },
+  {
+   "t": 40.381,
+   "kind": "sting",
+   "len": 2.0,
+   "src": "data/cues/s04.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c04"
+  },
+  {
+   "t": 49.271,
+   "kind": "swell",
+   "len": 2.0,
+   "src": "data/cues/s04.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c04"
+  },
+  {
    "t": 63.7,
    "kind": "ping",
    "len": 2.0,
@@ -937,6 +1038,16 @@
    "cue": "c05"
   },
   {
+   "t": 64.504,
+   "kind": "stop",
+   "len": 0.95,
+   "src": "data/cues/s05.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c05"
+  },
+  {
    "t": 67.763,
    "kind": "wahwah",
    "len": 2.0,
@@ -945,6 +1056,46 @@
    "notes": 1,
    "placed": true,
    "cue": "c05"
+  },
+  {
+   "t": 68.94300000000001,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s06.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c05"
+  },
+  {
+   "t": 72.09299999999999,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s07.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c06"
+  },
+  {
+   "t": 75.803,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s07.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c06"
+  },
+  {
+   "t": 89.119,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s08.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c07"
   },
   {
    "t": 99.57,
@@ -957,10 +1108,80 @@
    "cue": "c08"
   },
   {
+   "t": 110.663,
+   "kind": "stop",
+   "len": 0.9,
+   "src": "data/cues/s10.json",
+   "stab": true,
+   "notes": 4,
+   "placed": true,
+   "cue": "c09"
+  },
+  {
+   "t": 118.103,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s11.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c10"
+  },
+  {
+   "t": 118.51299999999999,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s11.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c10"
+  },
+  {
+   "t": 118.93299999999999,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s11.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c10"
+  },
+  {
+   "t": 120.753,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s11.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c10"
+  },
+  {
    "t": 158.894,
    "kind": "stop",
    "len": 5.4739999999999895,
    "src": "plan:c12",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c12"
+  },
+  {
+   "t": 160.725,
+   "kind": "stop",
+   "len": 3.6430000000000007,
+   "src": "data/cues/s13.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c12"
+  },
+  {
+   "t": 162.92499999999998,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s13.json",
    "stab": false,
    "notes": 4,
    "placed": true,
@@ -977,9 +1198,9 @@
    "cue": "c12"
   },
   {
-   "t": 169.73,
+   "t": 169.95,
    "kind": "stop",
-   "len": 7.650000000000006,
+   "len": 7.430000000000007,
    "src": "plan:c13",
    "stab": false,
    "notes": 4,
@@ -987,7 +1208,7 @@
    "cue": "c13"
   },
   {
-   "t": 169.98,
+   "t": 170.2,
    "kind": "wahwah",
    "len": 2.0,
    "src": "auto:block_thunk",
@@ -995,6 +1216,126 @@
    "notes": 4,
    "placed": true,
    "cue": "c13"
+  },
+  {
+   "t": 172.36,
+   "kind": "stop",
+   "len": 1.6999999999999886,
+   "src": "data/cues/s14.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c13"
+  },
+  {
+   "t": 172.5,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s14.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c13"
+  },
+  {
+   "t": 179.89,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s15.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c14"
+  },
+  {
+   "t": 188.975,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s15.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c14"
+  },
+  {
+   "t": 202.445,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s16.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c15"
+  },
+  {
+   "t": 222.965,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s17.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c16"
+  },
+  {
+   "t": 226.025,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s17.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c16"
+  },
+  {
+   "t": 228.175,
+   "kind": "creep",
+   "len": 2.0,
+   "src": "data/cues/s18.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c17"
+  },
+  {
+   "t": 245.199,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s18.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c17"
+  },
+  {
+   "t": 247.049,
+   "kind": "creep",
+   "len": 2.0,
+   "src": "data/cues/s19.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c18"
+  },
+  {
+   "t": 250.539,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s19.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c18"
+  },
+  {
+   "t": 251.519,
+   "kind": "swell",
+   "len": 2.0,
+   "src": "data/cues/s19.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c18"
   },
   {
    "t": 260.309,
@@ -1007,9 +1348,9 @@
    "cue": "c18"
   },
   {
-   "t": 261.779,
+   "t": 261.879,
    "kind": "stop",
-   "len": 9.119999999999994,
+   "len": 9.04000000000001,
    "src": "auto:kick_thump",
    "stab": true,
    "notes": 4,
@@ -1017,10 +1358,90 @@
    "cue": "c19"
   },
   {
-   "t": 305.532,
+   "t": 267.379,
+   "kind": "sting",
+   "len": 2.0,
+   "src": "data/cues/s20.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c19"
+  },
+  {
+   "t": 269.61899999999997,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s20.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c19"
+  },
+  {
+   "t": 271.959,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s20.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c19"
+  },
+  {
+   "t": 273.64599999999996,
+   "kind": "wahwah",
+   "len": 2.0,
+   "src": "data/cues/s20.json",
+   "stab": false,
+   "notes": 1,
+   "placed": true,
+   "cue": "c19"
+  },
+  {
+   "t": 278.409,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s21.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c20"
+  },
+  {
+   "t": 287.619,
+   "kind": "swell",
+   "len": 4.0,
+   "src": "data/cues/s22.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c21"
+  },
+  {
+   "t": 307.562,
+   "kind": "pluck",
+   "len": 2.0,
+   "src": "data/cues/s22.json",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c21"
+  },
+  {
+   "t": 307.712,
    "kind": "pluck",
    "len": 2.0,
    "src": "plan:c21",
+   "stab": false,
+   "notes": 4,
+   "placed": true,
+   "cue": "c21"
+  },
+  {
+   "t": 309.292,
+   "kind": "ping",
+   "len": 2.0,
+   "src": "data/cues/s22.json",
    "stab": false,
    "notes": 4,
    "placed": true,
@@ -1031,14 +1452,14 @@
   "seconds": 316.302,
   "peak_db": -1.01,
   "true_peak_db": -1.0,
-  "rms_db": -21.03,
-  "lufs": -18.0,
+  "rms_db": -21.04,
+  "lufs": -18.03,
   "dc": 0.0,
   "nan": 0,
-  "max_jump": 0.3639,
-  "click_score": 4.3,
+  "max_jump": 0.5379,
+  "click_score": 4.2,
   "start_abs": 0.0,
   "end_abs": 0.0
  },
- "gain_db": 1.55
+ "gain_db": 1.21
 }
