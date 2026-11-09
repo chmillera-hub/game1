@@ -28,7 +28,7 @@ import { V3, toV, loadWords, wordT, pulse, ramp, gazeSched, scopeVisible, voidSu
 import { fitShot, mixShot } from './armour_shared.js';
 import { M, W, WDIR, speechSafe, defendTarget, plainDefendWrist, userPosAt } from './kit_s05_07.js';
 
-const DEBUG = false;
+const DEBUG = true;
 const JY0 = -0.32, JY1 = -0.5;          // Jesus's local facing: s06's -> s08's (WY(M.JV))
 const DEPTH = 1.15;                      // whisperPose depth (STAGING: mouth just above his left ear)
 const HEADYAW = 0.6;                    // fraction of whisperPose's hood yaw kept (the face stays readable to camera)
@@ -123,8 +123,8 @@ export default {
     // b09 / b11 JESUS_CU, the hood edge soft in the right foreground
     const a9 = at(S.b09 + 1.0);
     const j9p = V3(...EDGE.shot(EDGE.L(a9.jE), { dist: 1.9, yaw: -8, pitch: 1, fov: 33, screenY: sy(400) }).pos);
-    R.j9 = fitShot([[a9.jE, 290, 400], [a9.jH, 520, 620, 0.6]], 33, j9p, a9.jE, { free: [0, 0, 0], drift: 0.1 });
-    R.j9b = fitShot([[a9.jE, 292, 395], [a9.jH, 525, 620, 0.6]], 31, j9p, a9.jE, { free: [0, 0, 0], drift: 0.1 });
+    R.j9 = fitShot([[a9.jE, 290, 400], [a9.jH, 520, 760, 0.5]], 36, j9p, a9.jE, { free: [0, 0, 0], drift: 0.1 });
+    R.j9b = fitShot([[a9.jE, 292, 395], [a9.jH, 525, 760, 0.5]], 34, j9p, a9.jE, { free: [0, 0, 0], drift: 0.1 });
     const a11 = at(S.b11 + 0.3);
     R.j11 = EDGE.shot(EDGE.L(a11.jE), { dist: 1.6, yaw: -20, pitch: 1, fov: 33, screenY: sy(420), drift: 0.1 });
     R.j11b = EDGE.shot(EDGE.L(a11.jE), { dist: 1.52, yaw: -20, pitch: 1, fov: 33, screenY: sy(420), drift: 0.1 });
@@ -272,7 +272,7 @@ function jesusPose(t, S, st, vd) {
     const rest = ramp(t, S.knowW + 0.05, S.knowW + 0.55) * (1 - ramp(t, S.unbend + 0.05, S.unbend + 0.5));
     if (patW > 0 || rest > 0) {
       // (his LEFT hand: the velvet is right beside his left shoulder; his right would have to reach ~0.8 m across)
-      const vn = velvetNear(vd, st.jesus.anchor('shoulderL').addScaledVector(toVd, 0.3).add(V3(0, -0.12, 0)));
+      const vn = velvetNear(vd, st.jesus.anchor('shoulderL').addScaledVector(toVd, 0.3).add(V3(0, 0.02, 0)), 0.012, 1.75);
       const w = Math.max(patW, rest);
       const bob = patW > 0 ? 0.03 * Math.max(0, Math.sin((t - S.pat) * 2 * Math.PI * 2.0)) * ramp(t, S.pat - 0.05, S.pat + 0.05) * (1 - ramp(t, S.pat + 0.5, S.pat + 0.6)) : 0;
       const pat2 = 0.02 * pulse(t, S.askW + 0.02, 0.08, 0, 0.12);
