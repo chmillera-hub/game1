@@ -30,7 +30,7 @@ import { VX } from '../chars/void.js';
 import { UX } from '../chars/user.js';
 import { EDGE, todAt, voidSkyAt, lookFor, galaxyAt, galaxySpin } from './marks.js';
 import { loadLines, W, add, arr, own, stamp, solve, pulse, V3, toV, ramp, bump, aimXY, pathPose, pathS, rollFor, hideDuring } from './kit_s14_16.js';
-import { S15 } from './s15.js';
+import { S15, patHand, voidPos15 } from './s15.js';
 
 const M = EDGE.M;
 const SIDE_J = 0.62, SIDE_V = -0.62;          // metres left (+) of the path: Jesus on the hill side, the Void on the other
@@ -50,20 +50,20 @@ function unblockCanvas() {
   g.beginPath(); g.moveTo(Wc / 2 - 7, 41); g.lineTo(Wc / 2 - 10, 50); g.lineTo(Wc / 2, 42); g.fill();
   g.fillStyle = '#d8dde5'; g.fillRect(0, 68, Wc, 2);
   // small avatar + name
-  g.fillStyle = '#ffffff'; g.beginPath(); g.arc(Wc / 2, 128, 40, 0, 7); g.fill();
-  g.save(); g.beginPath(); g.arc(Wc / 2, 128, 35, 0, 7); g.clip();
-  g.fillStyle = '#f3dfb8'; g.fillRect(Wc / 2 - 35, 93, 70, 70);
-  g.fillStyle = '#4a2c1b'; g.beginPath(); g.ellipse(Wc / 2, 126, 22, 28, 0, 0, 7); g.fill();
-  g.fillStyle = '#c99872'; g.beginPath(); g.ellipse(Wc / 2, 129, 15, 18, 0, 0, 7); g.fill();
-  g.fillStyle = '#4a2c1b'; g.beginPath(); g.ellipse(Wc / 2, 139, 15, 10, 0, 0, Math.PI); g.fill();
+  g.fillStyle = '#ffffff'; g.beginPath(); g.arc(Wc / 2, 112, 34, 0, 7); g.fill();
+  g.save(); g.beginPath(); g.arc(Wc / 2, 112, 30, 0, 7); g.clip();
+  g.fillStyle = '#f3dfb8'; g.fillRect(Wc / 2 - 30, 82, 60, 60);
+  g.fillStyle = '#4a2c1b'; g.beginPath(); g.ellipse(Wc / 2, 110, 19, 24, 0, 0, 7); g.fill();
+  g.fillStyle = '#c99872'; g.beginPath(); g.ellipse(Wc / 2, 113, 13, 15, 0, 0, 7); g.fill();
+  g.fillStyle = '#4a2c1b'; g.beginPath(); g.ellipse(Wc / 2, 121, 13, 9, 0, 0, Math.PI); g.fill();
   g.restore();
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = '#1e2430'; g.font = 'bold 28px sans-serif'; g.fillText('Jesus', Wc / 2, 196);
-  g.fillStyle = '#5d6573'; g.font = '19px sans-serif'; g.fillText('You blocked Jesus.', Wc / 2, 236);
-  // THE button: big, filled, centred
-  g.fillStyle = '#3d7be0'; rr(26, 300, Wc - 52, 104, 30); g.fill();
-  g.fillStyle = '#ffffff'; g.font = 'bold 44px sans-serif'; g.fillText('Unblock', Wc / 2, 353);
-  g.fillStyle = '#dfe3ea'; for (let i = 0; i < 3; i++) { rr(18, 470 + i * 62, Wc - 36, 46, 12); g.fill(); }
+  g.fillStyle = '#1e2430'; g.font = 'bold 26px sans-serif'; g.fillText('Jesus', Wc / 2, 168);
+  g.fillStyle = '#5d6573'; g.font = '19px sans-serif'; g.fillText('You blocked Jesus.', Wc / 2, 200);
+  // THE button: big, filled, in the upper middle (the thumb hovers below it, so the word stays readable)
+  g.fillStyle = '#3d7be0'; rr(24, 232, Wc - 48, 96, 30); g.fill();
+  g.fillStyle = '#ffffff'; g.font = 'bold 44px sans-serif'; g.fillText('Unblock', Wc / 2, 281);
+  g.fillStyle = '#dfe3ea'; for (let i = 0; i < 4; i++) { rr(18, 380 + i * 62, Wc - 36, 46, 12); g.fill(); }
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4;
   return tx;
 }
@@ -129,7 +129,7 @@ export default {
     const tSnort = B5 + 0.03, tSlap = tSnort + 0.06, tPoint = tSnort + 0.2;
     const tLaugh = B6 + 0.08, tPat1 = B6 + 0.6, tPat2 = tPat1 + 0.32;
     // the user's close: "maybe" lands and holds >= 12 frames before the cut over their shoulder
-    const tFm = tBut + 0.05, tMaybeIn = Math.max(tFm + 0.3, W('s16b09', 'maybe', { alt: ['maybe.'], frac: 0.7 }) - 0.02);
+    const tFm = tBut - 0.12, tMaybeIn = Math.max(tFm + 0.3, W('s16b09', 'maybe', { alt: ['maybe.'], frac: 0.7 }) - 0.02);
     const cutOver = Math.max(tMaybeIn + 0.55, W('s16b09', 'maybe', { alt: ['maybe.'], end: true, frac: 0.9 }) + 0.18);
 
     // ================================================================ shot list
@@ -163,12 +163,13 @@ export default {
     const LEAD_J = 0.36, LAG_V = -0.24;                              // Jesus half a step ahead (their faces level)
     const fV = pathPose(set, S0 + LAG_V, SIDE_V), fJ = pathPose(set, S0 + LEAD_J, SIDE_J);   // the formation marks
     const farK = t < tFar ? 0 : 1;                                 // in the finale lens: a little air between the silhouettes
-    const pV = pathPose(set, sMid + LAG_V, SIDE_V + 0.1 * farK), pJ = pathPose(set, sMid + LEAD_J, SIDE_J + 0.3 * farK);
+    const cheatU = shot === 'XWIDE' || shot === 'OVER' ? 0.45 : 0;  // (a lateral cheat in the user's long lens)
+    const pV = pathPose(set, sMid + LAG_V, SIDE_V + 0.1 * farK + cheatU), pJ = pathPose(set, sMid + LEAD_J, SIDE_J + 0.3 * farK + cheatU);
     const unwrap = (a, ref) => { while (a - ref > Math.PI) a -= 2 * Math.PI; while (a - ref < -Math.PI) a += 2 * Math.PI; return a; };
     // the stop: half-turned toward each other for the punchline and the laugh
     const faceIn = pulse(t, tStop - 0.6, tGo2 + 0.45, 0.55, 0.5);
     // ---- the Void: from V15 into the formation (a few waddle steps), then the path
-    const v15 = EDGE.W(M.V15.p), vYaw15 = EDGE.Y(S15.VY);
+    const v15 = voidPos15(S), vYaw15 = EDGE.Y(S15.VY);
     const uV = ramp(t, tV0, tV1);
     const vPos = t < tW0 ? lerpA(v15, fV.pos, uV) : pV.pos;
     const vYawPath = unwrap(pV.yaw, vYaw15);
@@ -224,12 +225,12 @@ export default {
       const jab = 0.06 * bump(t, tTada - 0.05, 0.28);
       const looking = ramp(t, tStep1 - 0.3, tStep1 + 0.2);
       // ---- arms: RIGHT round the Void's flank; LEFT free (ordering at a bar, ta-da, see?, chest pats, sketching)
-      const rel = 1 - ramp(t, S, S + 0.3);                                          // s15's hand-over-hand lets go
+      const rel = 1 - ramp(t, S, S + 0.3);                                          // s15's hand-over-hand (his RIGHT) lets go
       const hug = ramp(t, tHug0, tHug1);
       const squeeze = bump(t, tSqueeze, 0.4);
       let armR;
-      if (hug > 0.001) armR = { preset: 'around', surface: vd, reach: hug, height: jPos[1] + 1.18, span: 0.5, hand: { curl: 0.35 + 0.15 * squeeze, cup: 0.6, spread: 0.18 } };
-      else if (rel > 0.001 && pass) { const vh = vd.anchor('handL'); armR = vh ? { preset: 'shoulder', target: add(arr(vh), [0, 0.04, 0]), reach: rel, palm: [0, -1, 0] } : { preset: 'rest' }; }
+      if (rel > 0.001 && pass && hug <= 0.001) { const vh = vd.anchor('handL'); armR = vh ? { preset: 'shoulder', target: add(arr(vh), [0, 0.05, 0]), reach: rel, palm: [0, -1, 0] } : { preset: 'rest' }; }
+      else if (hug > 0.001) armR = { preset: 'around', surface: vd, reach: hug, height: jPos[1] + 1.16, span: 0.36, hand: { curl: 0.35 + 0.15 * squeeze, cup: 0.6, spread: 0.18 } };
       else armR = { preset: 'rest' };
       const order = pulse(t, B2 + 0.12, tDrink + 0.35, 0.3, 0.35);
       const tada = pulse(t, tTada - 0.14, tTada + 0.75, 0.12, 0.35);
@@ -241,7 +242,7 @@ export default {
         gesture: 1 + 0.5 * order, hand: tada > 0.5 ? { curl: 0.05, spread: 0.45, thumb: 0.7, splay: 0.12 } : undefined };
       if (pass && tada > 0.01) {              // the little ta-da: the palm opens up and out to his side, toward the camera
         const sh = jesus.anchor('shoulderL');
-        if (sh) { armL.target = add(arr(sh), [left[0] * 0.2 + fwd[0] * 0.36, -0.27 + 0.06 * tada, left[2] * 0.2 + fwd[2] * 0.36]); armL.reach = tada; armL.palm = [fwd[0] * 0.25 + left[0] * 0.2, 0.95, fwd[2] * 0.25 + left[2] * 0.2]; }
+        if (sh) { armL.target = add(arr(sh), [left[0] * 0.06 + fwd[0] * 0.4, -0.3 + 0.06 * tada, left[2] * 0.06 + fwd[2] * 0.4]); armL.reach = tada; armL.palm = [fwd[0] * 0.25 + left[0] * 0.2, 0.95, fwd[2] * 0.25 + left[2] * 0.2]; }
       }
       if (pass && point > 0.01) {             // see? — the index finger toward its face (across, up)
         const hl = jesus.anchor('handL');
@@ -254,7 +255,7 @@ export default {
         walk: { amount: jAmt, phase: jPhase, style: 'stroll' },
         body: { lean: 0.02, tilt: -(0.03 + 0.05 * leanIn + 0.06 * squeeze), shrug: 0.12 * laugh * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 4.2)) + 0.08 * squeeze,
           recoil: 0.2 * laugh, bounce: 0.008 * laugh * Math.sin(t * 2 * Math.PI * 4.2) + 0.006 * leanIn * Math.max(0, Math.sin((t - B11) * 2 * Math.PI * 1.1)), breathe: 1 },
-        head: { yaw: lead * (1 - looking), look: pass && looking > 0.01 ? vE : undefined, follow: (0.32 - 0.12 * laugh) * looking, pitch: -0.3 * laugh + jab - 0.03,
+        head: { yaw: lead * (1 - looking), look: pass && looking > 0.01 ? vE : undefined, follow: (0.32 + 0.3 * faceIn - 0.22 * laugh) * looking, pitch: -0.3 * laugh + jab - 0.03,
           roll: -(0.06 + wiggle + 0.14 * leanIn), talk: 0.8 },
         gaze: pass ? (looking < 0.5 ? add(arr(jesus.anchor('eyes') || V3(...jPos)), [fwd[0] * 3 - left[0] * 1.5, 0.1, fwd[2] * 3 - left[2] * 1.5]) : laugh > 0.5 ? add(vE, [0, 0.7, 0]) : vE) : null,
         face, speech,
@@ -297,24 +298,24 @@ export default {
       const around = ramp(t, tLean0 - 0.1, tLean1 + 0.15);
       let armL = { preset: 'rest' };
       const jfw = [Math.sin(jYaw), 0, Math.cos(jYaw)], jlf = [Math.cos(jYaw), 0, -Math.sin(jYaw)];
-      if (off < 1) {
-        const shR = jesus.anchor('shoulderR');
-        if (shR) {
-          const tg = add(arr(shR), [-jlf[0] * 0.07, -0.06 + 0.12 * off, -jlf[2] * 0.07]);
-          armL = { preset: 'pat', target: tg, reach: 1 - off, palm: [jlf[0], -0.25, jlf[2]], pole: [0, -1, 0], handScale: 0.66, hand: { curl: 0.22, cup: 0.55, spread: 0.14, thumb: 0.3 } };
-        }
-      } else if (around > 0.001) {
+      if (around > 0.001) {
         const shL = jesus.anchor('shoulderL');
         if (shL) {
           const r = around, arc = Math.sin(Math.PI * clamp(r));
           const tg = add(arr(shL), [jlf[0] * 0.07 + jfw[0] * 0.03, -0.08, jlf[2] * 0.07 + jfw[2] * 0.03]);
-          armL = { preset: 'around', target: tg, reach: r, at: 'palm', handScale: 0.6,
+          armL = { preset: 'around', target: tg, reach: r, at: 'palm', handScale: 0.52,
             palm: V3(-jlf[0] * 0.85, -0.5, -jlf[2] * 0.85).normalize().toArray(),            // into the outside of his shoulder
             fingers: V3(jfw[0] * 0.35, -0.85, jfw[2] * 0.35).normalize().toArray(),          // draped down his upper arm
             pole: V3(-jfw[0], -0.15, -jfw[2]).normalize().toArray(),                         // elbow behind his back
             offset: [-jfw[0] * 0.45 * arc, 0.1 * arc, -jfw[2] * 0.45 * arc],                 // the hand travels round behind him
             hand: { curl: 0.3, cup: 0.65, spread: 0.1, thumb: 0.35 } };
         }
+      }
+      // LEFT: s15's hand on his right shoulder lifts off as he turns (the same arm later goes round him);
+      // RIGHT: down from the snort-covered mouth
+      if (off < 1 && around <= 0.001) {
+        const P = patHand(jesus, jYaw, off);
+        if (P) armL = { preset: 'pat', target: P.target, reach: 1 - off, palm: P.palm, fingers: P.fingers, pole: P.pole, handScale: 0.58, hand: { curl: 0.25, cup: 0.6, spread: 0.12, thumb: 0.3 } };
       }
       const down = ramp(t, S, S + 0.45);
       let armR = down < 1 ? { preset: 'cover_mouth', from: 'belly', mix: 1 - down, offset: [0, 0.14 * (1 - down), 0] } : { preset: 'rest' };
@@ -323,7 +324,7 @@ export default {
       return {
         pos: vPos, yaw: vYaw,
         walk: { amount: vAmt, phase: vPhase, style: 'waddle' },
-        body: { lean: 0.08 + 0.1 * bend, tilt: 0.1 * leanIn + 0.06 * bend + 0.06 * headOn, twist: 0.08 * bend,
+        body: { lean: 0.08 + 0.1 * bend + 0.25 * (1 - ramp(t, S, S + 0.7)), tilt: 0.1 * leanIn + 0.06 * bend + 0.06 * headOn, twist: 0.08 * bend,
           shrug: 0.22 * gig * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 4.6)) + 0.15 * snort, recoil: 0.07 * snort, breathe: 1.05 },
         head: { yaw: 0.28 * leanIn + 0.08 * bend + 0.3 * (1 - ramp(t, S, tV1)), pitch: 0.14 + 0.12 * bend + 0.05 * leanIn, roll: 0.1 * leanIn + 0.14 * headOn, track: 0 },
         gaze: pass ? jE : null,
@@ -343,7 +344,7 @@ export default {
       const Fwatch = UX('notquite', { mSmile: 0.0, lidU: 0.92, browIn: 0.55, wet: 0.7 });
       const Fphone = UX('soften', { lidU: 0.88, mOpen: 0.02, mTremble: 0.15, wet: 0.8 });
       const Ftorn = UX('tremble', { mTremble: 0.4, wet: 0.9 });
-      const Fexh = UX('guilt', { lidU: 0.72, mOpen: 0.08, wet: 0.85, browIn: 0.6 });
+      const Fexh = UX('soften', { lidU: 0.9, lidL: 0.2, mOpen: 0.07, mSmile: 0.05, wet: 0.9, browIn: 0.7, browOut: -0.1 });
       const Fmaybe = UX('notquite', { mSmile: 0.42, mAsym: 0.3, browIn: 0.8, browOut: 0.12, lidU: 0.88, lidL: 0.46, wet: 1, mTremble: 0.1, pupil: 1.12 });
       const face = k(t, [['s16b07', Fwatch], [B7 + 0.7, Fwatch], [B7 + 1.1, Fphone, 'inOut'], [B8 + 0.6, Fphone], [B8 + 1.2, Ftorn, 'inOut'],
         [tNot + 0.2, Ftorn], [tNot + 0.6, Fexh, 'inOut'], [tFm, Fexh], [tMaybeIn, Fmaybe, 'inOut']]);
@@ -357,8 +358,8 @@ export default {
       const touch = bump(t, tTouch, 4 / 24) * 0.6;
       const near = ramp(t, tTouch - 0.25, tTouch) * (1 - ramp(t, tTouch + 0.17, tTouch + 0.4));
       const lift = ramp(t, tTouch + 0.2, tTouch + 0.5);
-      const tAt = [lerp(0.72, 0.58, ramp(t, B8 + 0.3, B8 + 1.0)) + 0.004 * Math.sin(t * 41) * hov,
-        lerp(0.98, 0.8, ramp(t, B8 + 0.3, B8 + 1.0)) - 0.2 * near + 0.1 * lift + 0.003 * Math.sin(t * 37 + 1) * hov];
+      const tAt = [lerp(0.7, 0.56, ramp(t, B8 + 0.3, B8 + 1.0)) + 0.004 * Math.sin(t * 41) * hov,
+        lerp(0.85, 0.66, ramp(t, B8 + 0.3, B8 + 1.0)) - 0.17 * near + 0.12 * lift + 0.003 * Math.sin(t * 37 + 1) * hov];
       const lower = ramp(t, tNot + 0.15, tYet + 0.55);
       const chin = ramp(t, tFm - 0.1, tMaybeIn + 0.1);
       const breath = pulse(t, tNot + 0.3, tFm + 0.1, 0.3, 0.5);
@@ -384,30 +385,32 @@ export default {
       switch (shot) {
         case 'TWO': {   // front two-shot (camera down the path, the low sun behind it), a slow push on the squeeze/grin
           const m = pathPose(set, S0, 0);
-          const D = lerp(5.4, 4.7, ramp(t, tArm - 0.2, tWalk - 0.1));
+          const D = lerp(5.4, 4.3, ramp(t, tArm - 0.2, tWalk - 0.1));
           const P = add(m.pos, [m.dir[0] * D + m.left[0] * 1.9, 1.5, m.dir[2] * D + m.left[2] * 1.9]);
           s = aimXY(P, add(m.pos, [m.dir[0] * 0.3 + m.left[0] * 0.25, 1.82, m.dir[2] * 0.3 + m.left[2] * 0.25]), 362, 350, 42, { drift: 0.1 });
           break;
         }
         case 'BACK': {  // wide from behind down the path: the pair right of the sun, the hill at left, the galaxy above
           const m = pathPose(set, S0, 0);
-          const P = add(m.pos, [-m.dir[0] * 12.5 - m.left[0] * 1.0, 0, -m.dir[2] * 12.5 - m.left[2] * 1.0]);
-          P[1] = set.groundAt(P[0], P[2]) + 1.55 + 0.1 * u;
-          const L = add(m.pos, [m.dir[0] * 1.0 + m.left[0] * 0.3, 1.8, m.dir[2] * 1.0 + m.left[2] * 0.3]);
-          s = aimXY(P, L, 285, 500, 40, { drift: 0.15 });
+          // (from up the path on their LEFT, a little high: Jesus nearer, the sun clear above the lilac hill's crest)
+          const P = add(m.pos, [-m.dir[0] * 13.5 + m.left[0] * 2.9, 0, -m.dir[2] * 13.5 + m.left[2] * 2.9]);
+          P[1] = set.groundAt(P[0], P[2]) + 2.5 + 0.1 * u;
+          const L = add(m.pos, [m.dir[0] * 1.0, 1.8, m.dir[2] * 1.0]);
+          s = aimXY(P, L, 470, 600, 44, { drift: 0.15 });
           break;
         }
-        case 'TRACK': case 'TRACK2': {   // dead-front tracking medium: backing up the path ahead of them
+        case 'TRACK': case 'TRACK2': {   // front-3/4 tracking medium from Jesus's side: backing up the path ahead of them
           const m = pathPose(set, sMid, 0);
-          const P = add(m.pos, [m.dir[0] * 4.0 + m.left[0] * 1.6, 0, m.dir[2] * 4.0 + m.left[2] * 1.6]);
-          P[1] = Math.max(set.groundAt(P[0], P[2]), m.pos[1]) + 1.62;
-          s = aimXY(P, lerpA(jE, vE, 0.5), 360, 370, 42, { drift: 0.1 });
+          const k2 = shot === 'TRACK2' ? 1 : 0;
+          const P = add(m.pos, [m.dir[0] * (4.0 + 0.3 * k2) + m.left[0] * (1.6 - 0.35 * k2), 0, m.dir[2] * (4.0 + 0.3 * k2) + m.left[2] * (1.6 - 0.35 * k2)]);
+          P[1] = Math.max(set.groundAt(P[0], P[2]) + 0.25 * k2, m.pos[1]) + 1.62 - 0.25 * k2;
+          s = aimXY(P, lerpA(jE, vE, 0.5), 360 - 25 * k2, 370, 42, { drift: 0.1 });
           break;
         }
         case 'JCU': {   // Jesus, half-turned toward it: the deadpan, the ta-da, the corner breaking
           const jf = [Math.sin(jYaw), 0, Math.cos(jYaw)], jl = [Math.cos(jYaw), 0, -Math.sin(jYaw)];
-          const P = add(jE, [jf[0] * 2.2 + jl[0] * 0.75, -0.12, jf[2] * 2.2 + jl[2] * 0.75]);
-          s = aimXY(P, jE, 290, 430, 38, { drift: 0.08 });
+          const P = add(jE, [jf[0] * 2.25 + jl[0] * 0.95, -0.16, jf[2] * 2.25 + jl[2] * 0.95]);
+          s = aimXY(P, jE, 320, 420, 40, { drift: 0.08 });
           break;
         }
         case 'REACT': { // tighter two-shot for its reaction + his laugh
@@ -495,9 +498,9 @@ export default {
         color: [0xfff1c8, 0xd8c0ff, 0xbfe8ff], alpha: 0.85, fade: [0.14, 0.45], cell: CELL.star, spin: 1.5 });
     }
     if (top) {
-      for (const [a, b, sd, rate, sz] of [[B6, B6e, 1602, 3.0, [0.06, 0.1]], [B11, B13 + 0.8, 1603, 2.4, [0.16, 0.26]]]) {
+      for (const [a, b, sd, rate, sz] of [[B6, B6e, 1602, 3.0, [0.06, 0.1]], [B11, B13 + 0.8, 1603, 2.6, [0.3, 0.42]]]) {
         fx.stream({ t, seed: sd, t0: a, t1: b, rate, life: 2.6, origin: (tb) => add(arr(top), [0.25 * Math.sin(tb * 7.1), -0.25, 0.25 * Math.cos(tb * 5.3)]),
-          vel: [0, 0.4, 0], spread: [0.08, 0.06, 0.08], drag: 0.2, size: sz, grow: 0.6, color: [0xfff1c8, 0xd8c0ff], alpha: 0.9,
+          vel: [0, 0.4 + 0.25 * (sd === 1603 ? 1 : 0), 0], spread: [0.08, 0.06, 0.08], drag: 0.2, size: sz, grow: 0.6, color: sd === 1603 ? [0xd8c0ff, 0xbfe8ff] : [0xfff1c8, 0xd8c0ff], alpha: 0.9,
           fade: [0.15, 0.5], cell: CELL.star, spin: 0.8, wobble: 0.05, twinkle: true });
       }
     }

@@ -86,7 +86,9 @@ function floorTexture() {           // 4 m x 4 m tile: 12 wide boards (0.33 m) r
     g.fillStyle = 'rgba(26,14,18,0.55)'; g.fillRect(i * bw, 0, 3, S);         // long seam
     g.fillStyle = 'rgba(255,220,200,0.05)'; g.fillRect(i * bw + 3, 0, 2, S);   // bevel catch
   }
-  const t = ctex(c, { repeat: true }); t.anisotropy = 2; return t;
+  // no anisotropic / trilinear filtering: bilinear within the nearest mip halves the floor's texture cost on SwiftShader
+  // (the boards are low contrast: no visible mip banding)
+  const t = ctex(c, { repeat: true }); t.minFilter = THREE.LinearMipmapNearestFilter; return t;
 }
 
 function plasterTexture() {         // 3 m tile, soft water stains (low contrast)
@@ -100,7 +102,9 @@ function plasterTexture() {         // 3 m tile, soft water stains (low contrast
       g.fillStyle = gr; g.fillRect(x + ox - rr, y + oy - rr, rr * 2, rr * 2);
     }
   }
-  return ctex(c, { repeat: true });
+  const t = ctex(c, { repeat: true });
+  t.generateMipmaps = false; t.minFilter = THREE.LinearFilter;   // only soft low-frequency blotches: no mips needed (cheaper)
+  return t;
 }
 
 function rustTextures() {           // brass bars: x = along the bar (0 = bottom), y = around. Rust gathers low.
@@ -262,9 +266,10 @@ function makeMaterials(env) {
   const M = {
     // the floor is the biggest per-pixel surface in every shot: Phong (much cheaper than PBR on SwiftShader) with a
     // modest, fairly tight sheen (no grey haze toward the far key); fake bulb pool, puddle and cosmos dissolve in-shader
-    floor: pho({ color: 0xffffff, map: floorTexture(), specular: 0x1c1a18, shininess: 30 }),
+    floor: lam({ color: 0xffffff, map: floorTexture() }),
     // big matte surfaces use Lambert (much cheaper per pixel on SwiftShader with several lights)
     wall: lam({ color: 0x8e95ad, map: plasterTexture(), vertexColors: true }),
+    wallV: null,     // = wall, vertex-lit (the three big wall planes); set below
     wains: lam({ color: 0x4e3a2e, vertexColors: true }),
     pipe: pho({ color: 0x4a4246, specular: 0x6a6266, shininess: 40, vertexColors: true, envMap: env, reflectivity: 0.3, combine: THREE.AddOperation }),
     cardboard: lam({ color: 0x7e6349 }),
@@ -299,18 +304,27 @@ function makeMaterials(env) {
     // water drops of the splash (normal blending, warm glints from the corner bulb)
     water: pho({ color: 0x9cbcd8, specular: 0xffffff, shininess: 90, transparent: true, opacity: 0.6, depthWrite: false, envMap: env, reflectivity: 0.6, combine: THREE.AddOperation }),
     mop: lam({ color: 0xffffff, vertexColors: true }),
+    propL: lam({ color: 0xffffff, vertexColors: true }),                                     // merged vertex-coloured props
+    propP: pho({ color: 0xffffff, vertexColors: true, specular: 0x6a665e, shininess: 40 }),
     mopCotton: lam({ color: 0xc8bfa8 }),
   };
   M.rag = [0x6e9896, 0xd8ccae, 0xb88680, 0x7a88a2, 0x9b8b6f].map((c) => lam({ color: c }));
-  floorShader(M.floor); fakeGlow(M.wall); fakeGlow(M.wains);
+  M.wallV = M.wall.clone();
+  floorShader(M.floor); vertexLit(M.floor, { dirPixel: true, sheen: 0.03, shin: 36 });
+  fakeGlow(M.wall); fakeGlow(M.wains); vertexLit(fakeGlow(M.wallV));
   // corner props catch the corner bulb's (faked) warm pool too: wrap-lit diffuse + a cheap Blinn glint on the metals
   fakeGlow(M.galv, { wrap: 0.62, spec: 0.7, shin: 40 }); fakeGlow(M.galvDark, { wrap: 0.75, spec: 0.35, shin: 30 });
   for (const m of [M.wood, M.woodPale, M.mopCotton, M.straw, M.bristle, M.red, M.rubber, M.label, M.signEdge, ...M.rag]) fakeGlow(m, { wrap: 1.0 });
   for (const m of [M.sign, M.plasticW, M.sprayA, M.sprayB]) fakeGlow(m, { wrap: 1.0, spec: 0.35, shin: 30 });
+  fakeGlow(M.propL, { wrap: 1.0 }); fakeGlow(M.propP, { wrap: 0.8, spec: 0.35, shin: 34 });
   fakeGlow(M.water, { wrap: 0.8, spec: 2.2, shin: 60 });
   // room materials are OPAQUE (cheap, early-z); a transparent twin is swapped in only while opts.cosmos fades the room
-  M.fadeable = [M.wall, M.wains, M.pipe, M.cardboard, M.tape, M.sheet, M.doorway];
-  for (const m of M.fadeable) { const t = m.clone(); t.transparent = true; t.depthWrite = true; m.userData.twin = t; if (m === M.wall || m === M.wains) fakeGlow(t); }
+  M.fadeable = [M.wall, M.wallV, M.wains, M.pipe, M.cardboard, M.tape, M.sheet, M.doorway];
+  for (const m of M.fadeable) {
+    const t = m.clone(); t.transparent = true; t.depthWrite = true; m.userData.twin = t;
+    if (m === M.wall || m === M.wains || m === M.wallV) fakeGlow(t);
+    if (m === M.wallV) vertexLit(t);
+  }
   return M;
 }
 
@@ -402,6 +416,61 @@ function fakeGlow(mat, o = {}) {
   return mat;
 }
 
+// VERTEX-LIT big surfaces (walls, floor): the scene's lights (ambient, hemisphere, point, spot, directional) are summed
+// per VERTEX with three's own light functions on a finely subdivided grid (~0.4 m) and only interpolated per pixel —
+// smooth plaster/boards under soft, distant lights look the same, at a fraction of the per-pixel light loop's cost on
+// SwiftShader. With opts.dirPixel (the floor) the FIRST directional light (the shadow-casting far key) stays per pixel
+// with its shadow, plus a tight Blinn sheen (opts.sheen / opts.shin). Applies to MeshLambertMaterial (chains patches).
+function vertexLit(mat, o = {}) {
+  const prev = mat.onBeforeCompile !== _P.onBeforeCompile ? mat.onBeforeCompile : null;
+  const prevKey = mat.customProgramCacheKey !== _P.customProgramCacheKey ? mat.customProgramCacheKey : null;
+  const dp = !!o.dirPixel, sheen = (o.sheen ?? 0).toFixed(4), shin = (o.shin ?? 40).toFixed(1);
+  mat.onBeforeCompile = function (sh, r) {
+    if (prev) prev.call(this, sh, r);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
+        #include <lights_pars_begin>
+        varying vec3 vBrIrr;`)
+      .replace('#include <fog_vertex>', `{
+          vec3 brP = mvPosition.xyz, brN = normalize(transformedNormal);
+          vec3 brI = getAmbientLightIrradiance(ambientLightColor);
+          IncidentLight brL;
+          #if NUM_HEMI_LIGHTS > 0
+            for (int i = 0; i < NUM_HEMI_LIGHTS; i++) brI += getHemisphereLightIrradiance(hemisphereLights[i], brN);
+          #endif
+          #if NUM_POINT_LIGHTS > 0
+            for (int i = 0; i < NUM_POINT_LIGHTS; i++) { getPointLightInfo(pointLights[i], brP, brL); brI += brL.color * max(dot(brN, brL.direction), 0.0); }
+          #endif
+          #if NUM_SPOT_LIGHTS > 0
+            for (int i = 0; i < NUM_SPOT_LIGHTS; i++) { getSpotLightInfo(spotLights[i], brP, brL); brI += brL.color * max(dot(brN, brL.direction), 0.0); }
+          #endif
+          #if NUM_DIR_LIGHTS > 0
+            for (int i = ${dp ? 1 : 0}; i < NUM_DIR_LIGHTS; i++) { getDirectionalLightInfo(directionalLights[i], brL); brI += brL.color * max(dot(brN, brL.direction), 0.0); }
+          #endif
+          vBrIrr = brI;
+        }
+        #include <fog_vertex>`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vBrIrr;')
+      .replace('#include <lights_fragment_maps>', '').replace('#include <lights_fragment_end>', '')
+      .replace('#include <lights_fragment_begin>', `
+        reflectedLight.indirectDiffuse += vBrIrr * BRDF_Lambert(material.diffuseColor);
+        ${dp ? `#if NUM_DIR_LIGHTS > 0
+          {
+            float brSh = 1.0;
+            #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+              DirectionalLightShadow brS = directionalLightShadows[0];
+              brSh = receiveShadow ? getShadow(directionalShadowMap[0], brS.shadowMapSize, brS.shadowIntensity, brS.shadowBias, brS.shadowRadius, vDirectionalShadowCoord[0]) : 1.0;
+            #endif
+            vec3 brLd = directionalLights[0].direction; float brNL = max(dot(normal, brLd), 0.0);
+            reflectedLight.directDiffuse += directionalLights[0].color * (brNL * brSh) * BRDF_Lambert(material.diffuseColor);
+            vec3 brH = normalize(brLd + normalize(vViewPosition));
+            totalEmissiveRadiance += directionalLights[0].color * (brNL * brSh * ${sheen} * pow(max(dot(normal, brH), 0.0), ${shin}));
+          }
+        #endif` : ''}`);
+  };
+  mat.customProgramCacheKey = function () { return (prevKey ? prevKey.call(this) : '') + `|brVLit${dp ? 'D' : ''}${sheen}/${shin}`; };
+  return mat;
+}
+
 // The dark sky dome's colour as a function of direction (shared by the dome and the floor's cosmos dissolve).
 const DOME_GLSL = `vec3 brDome(vec3 d, float cosm) {
   float h = d.y; vec3 c = mix(vec3(0.0085, 0.0075, 0.017), vec3(0.002, 0.002, 0.005), smoothstep(-0.05, 0.6, h));
@@ -447,7 +516,8 @@ function floorShader(mat) {
           return length(q.xz) / k;
         }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
-        float pudR = uPudA > 0.0 ? brPudR(vFGW) : 9.0;
+        float pudR = 9.0;
+        if (uPudA > 0.0) pudR = brPudR(vFGW);    // a real (uniform) branch: no puddle math on frames without a puddle
         float pudM = uPudA * (1.0 - smoothstep(0.95, 1.0, pudR));                       // crisp water edge
         float pudRing = uPudA * smoothstep(0.89, 0.95, pudR) * (1.0 - smoothstep(0.96, 1.0, pudR));   // meniscus line
         diffuseColor.rgb *= 1.0 - 0.72 * pudM;   // wet boards: much darker`)
@@ -522,24 +592,35 @@ function tubeGeo(points, radius, segs = 24, radial = 6, closed = false) {
 const cagePt = (th, y, R = CAGE.R) => V(R * Math.sin(th), y, R * Math.cos(th));
 function arcPts(th0, th1, y, n, R = CAGE.R) { const a = []; for (let i = 0; i <= n; i++) a.push(cagePt(lerp(th0, th1, i / n), y, R)); return a; }
 function shiftUV(geo, du, dv) { const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) + du, uv.getY(i) + dv); return geo; }
+// draw-call diet: a prop's rigid parts are merged into ONE vertex-coloured mesh (col = sRGB hex, or [r,g,b] linear)
+const _pc = new THREE.Color();
+function paint(geo, col) {
+  const g = ni(geo), n = g.attributes.position.count, c = new Float32Array(n * 3);
+  if (Array.isArray(col)) _pc.setRGB(col[0], col[1], col[2]); else _pc.set(col);
+  for (let i = 0; i < n; i++) { c[i * 3] = _pc.r; c[i * 3 + 1] = _pc.g; c[i * 3 + 2] = _pc.b; }
+  g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+  return g;
+}
 
 // ------------------------------------------------------------------------------------------------ ROOM
 function buildRoom(M) {
   const g = new THREE.Group(); g.name = 'backroom.room';
   // floor
-  const fg = new THREE.PlaneGeometry(46, 46); fg.rotateX(-Math.PI / 2);
+  const fg = new THREE.PlaneGeometry(46, 46, 115, 115); fg.rotateX(-Math.PI / 2);   // 0.4 m grid: vertex-lit
   planarUV(fg, 0, 2, -4); // 4 m tile, boards along Z
   // NOT in the room group: the floor stays through the cosmos fade (it turns deep violet and melts into the dome far out)
-  const floor = new THREE.Mesh(fg, M.floor); floor.position.set(-2, 0, 7); floor.receiveShadow = true; floor.name = 'backroom.floor';
+  // drawn AFTER the other opaque things (walls, props, characters): early-z then skips the floor pixels hidden behind
+  // the walls (the plane runs far past them, for the cosmos) and under props/characters, instead of shading them first
+  const floor = new THREE.Mesh(fg, M.floor); floor.position.set(-2, 0, 7); floor.receiveShadow = true; floor.name = 'backroom.floor'; floor.renderOrder = 1;
   // cutaway groups: wall dressing that would block a camera standing beyond the (single-sided) right / back wall
   const cutR = new THREE.Group(), cutB = new THREE.Group(), cutC = new THREE.Group();
   cutR.name = 'backroom.cutRight'; cutB.name = 'backroom.cutBack'; cutC.name = 'backroom.cutCorner'; g.add(cutR, cutB, cutC);
   // walls (vertex-colour fade to darkness upward)
   const H = WALL_H;
   const mkWall = (w, cx, cz, rotY) => {
-    const geo = new THREE.PlaneGeometry(w, H, 1, 10); geo.translate(0, H / 2, 0);
+    const geo = new THREE.PlaneGeometry(w, H, Math.ceil(w / 0.4), 14); geo.translate(0, H / 2, 0);   // ~0.4 m grid: vertex-lit
     planarUV(geo, 0, 1, 3); vcolFade(geo, wallFade);
-    const m = new THREE.Mesh(geo, M.wall); m.rotation.y = rotY; m.position.set(cx, 0, cz); g.add(m); return m;
+    const m = new THREE.Mesh(geo, M.wallV); m.rotation.y = rotY; m.position.set(cx, 0, cz); g.add(m); return m;
   };
   mkWall(RIGHT_X - LEFT_X, (RIGHT_X + LEFT_X) / 2, BACK_Z, 0);
   mkWall(FRONT_Z - BACK_Z, RIGHT_X, (FRONT_Z + BACK_Z) / 2, -Math.PI / 2);
@@ -728,15 +809,16 @@ function makeBucket(M, { rB = 0.115, rT = 0.155, h = 0.285, ribs = [0.34, 0.68],
       c[i * 3] = k; c[i * 3 + 1] = k * 0.995; c[i * 3 + 2] = k * 0.985;
     }
     geo.setAttribute('color', new THREE.BufferAttribute(c, 3)); }
-  const body = new THREE.Mesh(geo, M.galv); body.castShadow = true; body.receiveShadow = true; g.add(body);
+  // buckets cast the key's shadow (they fly / roll into the room) but don't receive it (contact shadows do that job;
+  // saves the 16-tap shadow lookup on every bucket pixel)
   const ly = h - 0.035, lr = lerp(rB, rT, ly / h) + 0.005;
   const lug = new THREE.CylinderGeometry(0.013, 0.013, 0.01, 10); lug.rotateZ(Math.PI / 2);
-  g.add(new THREE.Mesh(merge([lug.clone().translate(lr, ly, 0), lug.clone().translate(-lr, ly, 0)]), M.galvDark));
+  const lugs = [lug.clone().translate(lr, ly, 0), lug.clone().translate(-lr, ly, 0)].map((q) => paint(q, [0.72, 0.72, 0.71]));
+  const body = new THREE.Mesh(mergeGeometries([ni(geo), ...lugs]), M.galv); body.castShadow = true; g.add(body);
   const bail = new THREE.Group(); bail.position.y = ly; g.add(bail);
   const br = lr + 0.006;
-  bail.add(new THREE.Mesh(new THREE.TorusGeometry(br, 0.0042, 5, 26, Math.PI), M.galvDark));
   const grip = new THREE.CylinderGeometry(0.0115, 0.0115, 0.085, 10); grip.rotateZ(Math.PI / 2); grip.translate(0, br, 0);
-  bail.add(new THREE.Mesh(grip, M.wood));
+  bail.add(new THREE.Mesh(mergeGeometries([paint(new THREE.TorusGeometry(br, 0.0042, 5, 26, Math.PI), 0x9c988f), paint(grip, 0xa06d42)]), M.propP));
   return { group: g, bail, h, rT, rB };
 }
 // gravity-hung bail (pure: from the bucket's current world orientation)
@@ -760,7 +842,7 @@ function makeWringerBucket(M) {
     const w = new THREE.SphereGeometry(0.026, 10, 8); w.translate(x, 0.026, z); cg.push(w);
     const st = new THREE.CylinderGeometry(0.007, 0.007, 0.03, 6); st.translate(x, 0.05, z); cg.push(st);
   }
-  const casters = new THREE.Mesh(merge(cg.map((q) => ni(q))), M.rubber); g.add(casters);
+  const wparts = cg.map((q) => paint(q, 0x1c1a1c));
   // wringer press sitting on the back half of the rim + a lever with a red grip
   const H = 0.06 + 0.32, wg = [];
   for (const x of [-0.13, 0.13]) { const p = new RoundedBoxGeometry(0.016, 0.17, 0.15, 1, 0.005); p.translate(x, H + 0.06, -0.1); wg.push(p); }
@@ -768,9 +850,9 @@ function makeWringerBucket(M) {
   const back = new RoundedBoxGeometry(0.25, 0.15, 0.012, 1, 0.004); back.translate(0, H + 0.05, -0.165); wg.push(back);
   const axle = new THREE.CylinderGeometry(0.012, 0.012, 0.3, 10); axle.rotateZ(Math.PI / 2); axle.translate(0, H + 0.13, -0.1); wg.push(axle);
   const lev = new THREE.CylinderGeometry(0.0125, 0.0125, 0.52, 10); lev.translate(0, 0.26, 0); lev.rotateX(-0.42); lev.translate(0.14, H + 0.13, -0.1); wg.push(lev);
-  const wr = new THREE.Mesh(merge(wg), M.galvDark); wr.castShadow = true; g.add(wr);
   const gripG = new THREE.CylinderGeometry(0.019, 0.019, 0.13, 12); gripG.translate(0, 0.46, 0); gripG.rotateX(-0.42); gripG.translate(0.14, H + 0.13, -0.1);
-  g.add(new THREE.Mesh(gripG, M.red));
+  // casters + press + lever + red grip: one vertex-coloured mesh (no key shadow: against the wall it would fall on the wall)
+  g.add(new THREE.Mesh(mergeGeometries([...wparts, ...wg.map((q) => paint(q, 0x9c988f)), paint(gripG, 0xa8382e)]), M.propP));
   return { group: g, bucket: b };
 }
 
@@ -795,11 +877,11 @@ function wigPoint(az, s, root, i) {
 function makeMop(M) {             // origin at the clamp, +Y along the handle; strands spray out below (-Y)
   const g = new THREE.Group();
   const hg = new THREE.CylinderGeometry(0.0135, 0.0135, 1.42, 10); hg.translate(0, 0.06 + 0.71, 0);
-  const handle = new THREE.Mesh(hg, M.woodPale); handle.castShadow = true; g.add(handle);
   const cap = new THREE.CylinderGeometry(0.016, 0.016, 0.07, 10); cap.translate(0, 1.47, 0);
-  g.add(new THREE.Mesh(cap, M.red));
   const cl = new THREE.CylinderGeometry(0.03, 0.037, 0.08, 14); cl.translate(0, 0.03, 0);
-  const clamp_ = new THREE.Mesh(cl, M.galvDark); clamp_.castShadow = true; g.add(clamp_);
+  const bunchG = new THREE.SphereGeometry(0.058, 14, 10); bunchG.scale(1, 0.7, 1); bunchG.translate(0, -0.02, 0);
+  // handle + cap + clamp + cotton bunch: one vertex-coloured mesh
+  g.add(new THREE.Mesh(mergeGeometries([paint(hg, 0xb08a62), paint(cap, 0xa8382e), paint(cl, 0x9c988f), paint(bunchG, 0xc8bfa8)]), M.propL));
   const r = rng(5), geos = [];
   const N = 64, TS = 8, RS = 7;          // 7-sided strands (smooth tube normals): soft cotton cords, not faceted noodles
   for (let i = 0; i < N; i++) {
@@ -835,8 +917,6 @@ function makeMop(M) {             // origin at the clamp, +Y along the handle; s
   }
   const mat = fakeGlow(droopMaterial(M.mop), { wrap: 1.0 });
   const head = new THREE.Mesh(merge(geos), mat); head.frustumCulled = false; g.add(head);
-  const bunch = new THREE.SphereGeometry(0.058, 14, 10); bunch.scale(1, 0.7, 1); bunch.translate(0, -0.02, 0);
-  g.add(new THREE.Mesh(bunch, M.mopCotton));
   return { group: g, head, droop: mat.userData.droop };
 }
 
@@ -851,25 +931,23 @@ function makeCornBroom(M) {       // origin: centre of the straw's bottom edge; 
     c[i * 3] = 0.86 * k; c[i * 3 + 1] = 0.64 * k; c[i * 3 + 2] = 0.3 * k;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(c, 3)); geo.computeVertexNormals();
-  const head = new THREE.Mesh(geo, M.straw); head.castShadow = true; g.add(head);
   const bands = [];
   for (const t of [0.6, 0.8]) { const b = new THREE.BoxGeometry(w(t) + 0.008, 0.014, d(t) + 0.008); b.translate(0, t * 0.42, 0); bands.push(b); }
   const nk = new THREE.CylinderGeometry(0.02, 0.026, 0.06, 10); nk.translate(0, 0.43, 0); bands.push(nk);
-  g.add(new THREE.Mesh(merge(bands.map((q) => ni(q))), M.red));
   const hd = new THREE.CylinderGeometry(0.0125, 0.0125, 1.16, 10); hd.translate(0, 0.42 + 0.58, 0);
-  const handle = new THREE.Mesh(hd, M.wood); handle.castShadow = true; g.add(handle);
-  const cap = new THREE.CylinderGeometry(0.014, 0.014, 0.06, 10); cap.translate(0, 1.56, 0); g.add(new THREE.Mesh(cap, M.red));
+  const cap = new THREE.CylinderGeometry(0.014, 0.014, 0.06, 10); cap.translate(0, 1.56, 0);
+  // straw head + red bands + handle + cap: one vertex-coloured mesh (straw material); it casts the key's shadow
+  const all = mergeGeometries([ni(geo), ...bands.map((q) => paint(q, 0xa8382e)), paint(hd, 0xa06d42), paint(cap, 0xa8382e)]);
+  const head = new THREE.Mesh(all, M.straw); head.castShadow = true; g.add(head);
   return { group: g, len: 1.6, halfW: 0.17 };
 }
 function makePushBroom(M) {       // origin: centre of the bristle bottom; +Y = handle; block along X
   const g = new THREE.Group();
   const br = new THREE.BoxGeometry(0.42, 0.085, 0.056, 6, 1, 1); br.translate(0, 0.0425, 0);
-  const bm = new THREE.Mesh(br, M.bristle); bm.castShadow = true; g.add(bm);
   const blk = new RoundedBoxGeometry(0.45, 0.05, 0.078, 2, 0.012); blk.translate(0, 0.11, 0);
-  const bk = new THREE.Mesh(blk, M.wood); bk.castShadow = true; g.add(bk);
-  const brk = new THREE.CylinderGeometry(0.02, 0.026, 0.05, 10); brk.translate(0, 0.155, 0); g.add(new THREE.Mesh(brk, M.galvDark));
+  const brk = new THREE.CylinderGeometry(0.02, 0.026, 0.05, 10); brk.translate(0, 0.155, 0);
   const hd = new THREE.CylinderGeometry(0.0125, 0.0125, 1.28, 10); hd.translate(0, 0.17 + 0.64, 0);
-  const handle = new THREE.Mesh(hd, M.woodPale); handle.castShadow = true; g.add(handle);
+  g.add(new THREE.Mesh(mergeGeometries([paint(br, 0x2c2726), paint(blk, 0xa06d42), paint(brk, 0x9c988f), paint(hd, 0xb08a62)]), M.propL));
   return { group: g, len: 1.45, halfW: 0.225 };
 }
 function makeSpray(M, mat, col) {  // origin at the bottle's centre (pivot for tumbling); bottle 0.25 m tall
@@ -878,15 +956,14 @@ function makeSpray(M, mat, col) {  // origin at the bottle's centre (pivot for t
   const geo = new THREE.LatheGeometry(P, 24), p = geo.attributes.position, c = new Float32Array(p.count * 3), base = new THREE.Color(col);
   for (let i = 0; i < p.count; i++) { const k = p.getY(i) < 0.105 ? 0.72 : 1.08; c[i * 3] = base.r * k; c[i * 3 + 1] = base.g * k; c[i * 3 + 2] = base.b * k; }
   geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
-  const body = new THREE.Mesh(geo, mat); body.castShadow = true; inner.add(body);
   const lab = new THREE.CylinderGeometry(0.0478, 0.0478, 0.055, 24, 1, true); lab.translate(0, 0.068, 0);
-  inner.add(new THREE.Mesh(lab, M.label));
   const hg = [];
   const head = new RoundedBoxGeometry(0.03, 0.04, 0.075, 2, 0.01); head.translate(0, 0.222, 0.016); hg.push(head);
   const noz = new THREE.CylinderGeometry(0.008, 0.009, 0.02, 8); noz.rotateX(Math.PI / 2); noz.translate(0, 0.226, 0.062); hg.push(noz);
   const trig = new RoundedBoxGeometry(0.014, 0.05, 0.012, 1, 0.004); trig.rotateX(0.35); trig.translate(0, 0.19, 0.04); hg.push(trig);
   const collar = new THREE.CylinderGeometry(0.02, 0.02, 0.02, 12); collar.translate(0, 0.205, 0); hg.push(collar);
-  inner.add(new THREE.Mesh(merge(hg), M.plasticW));
+  // bottle + label band + trigger head: one vertex-coloured mesh
+  inner.add(new THREE.Mesh(mergeGeometries([ni(geo), paint(lab, 0xe8e0cc), ...hg.map((q) => paint(q, 0xeae4d8))]), mat));
   return { group: g };
 }
 function makeRag(M, i) {
@@ -894,7 +971,7 @@ function makeRag(M, i) {
   const geo = new RoundedBoxGeometry(w, 0.034, d, 2, 0.014), p = geo.attributes.position;
   for (let k = 0; k < p.count; k++) { const x = p.getX(k), z = p.getZ(k); p.setY(k, p.getY(k) + 0.006 * Math.sin(x * 23 + i) * Math.cos(z * 19 - i) + 0.004 * Math.sin(x * 7 + z * 9)); }
   geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, M.rag[i % M.rag.length]); m.castShadow = true; m.receiveShadow = true;
+  const m = new THREE.Mesh(geo, M.rag[i % M.rag.length]);   // (5 cm high: the contact shadow is enough)
   const g = new THREE.Group(); g.add(m);
   return { group: g, w, d };
 }
@@ -910,18 +987,19 @@ function makeSign(M) {           // A-frame; origin on the floor under the hinge
   // cap samples the plain-yellow left margin of the texture (no mirrored text inside the A-frame)
   { const uv = geo.attributes.uv, nr = geo.attributes.normal, g0 = geo.groups[0];
     for (let i = 0; i < uv.count; i++) {
-      const inCap = i >= g0.start && i < g0.start + g0.count;
-      uv.setXY(i, inCap && nr.getZ(i) < 0 ? 0.035 : uv.getX(i) / W + 0.5, uv.getY(i) / Hh);
-    } }
+      const outer = i >= g0.start && i < g0.start + g0.count && nr.getZ(i) > 0;
+      uv.setXY(i, outer ? uv.getX(i) / W + 0.5 : 0.035, uv.getY(i) / Hh);     // edges + inner cap: plain yellow margin
+    }
+    geo.clearGroups(); }
   geo.translate(0, -Hh, 0);     // hinge at the top edge
   const feet = []; for (const x of [-W / 2 + 0.03, W / 2 - 0.03]) { const f = new RoundedBoxGeometry(0.05, 0.02, 0.025, 1, 0.006); f.translate(x, -Hh + 0.008, 0.006); feet.push(f); }
-  const feetG = merge(feet);
+  for (const f of feet) { const uv = f.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.09, 0.81); }   // the black CAUTION band
+  const panelG = mergeGeometries([ni(geo), ...feet.map((f) => { const q = ni(f); q.deleteAttribute('normal'); q.computeVertexNormals(); return q; })]);
   const hinge = new THREE.Group(); hinge.position.y = Hh * Math.cos(0.2) + 0.01; g.add(hinge);
   const panels = [];
   for (const s of [1, -1]) {
     const pv = new THREE.Group(); hinge.add(pv);
-    const m = new THREE.Mesh(geo, [M.sign, M.signEdge]); m.castShadow = true; pv.add(m);
-    pv.add(new THREE.Mesh(feetG, M.rubber));
+    const m = new THREE.Mesh(panelG, M.sign); m.castShadow = true; pv.add(m);   // printed panel + rubber feet: one draw
     panels.push({ pv, s });
   }
   const pin = new THREE.CylinderGeometry(0.01, 0.01, W - 0.06, 8); pin.rotateZ(Math.PI / 2);
@@ -975,7 +1053,7 @@ export async function create() {
         #include <colorspace_fragment>
       }`,
   }));
-  dome.renderOrder = 1; dome.position.set(0, 0, 4); scene.add(dome);   // drawn after the opaque room: early-z skips hidden sky
+  dome.renderOrder = 2; dome.position.set(0, 0, 4); scene.add(dome);   // drawn after the opaque room + floor: early-z skips hidden sky
 
   // --- room
   const room = buildRoom(M); scene.add(room.group, room.floor);
@@ -1300,13 +1378,17 @@ export async function create() {
   // Wall dressing that would stand between a camera placed beyond the single-sided right / back wall and the set is
   // hidden for that render only (decided from the camera actually rendering this scene, so it does not matter whether
   // a scene calls update() before or after placing its camera; frames stay pure).
-  const _cp = V();
+  // The 70 m sky dome is only drawn where it shows something the flat fog-coloured background doesn't: looking toward the
+  // far screen (+Z), steeply up, or during the cosmos fade (otherwise it is near-black above the 5.6 m walls anyway).
+  const _cp = V(), _cf = V();
   const prevOBR = scene.onBeforeRender;
   scene.onBeforeRender = function (r, sc, cam, rt) {
     if (cam) {
       _cp.setFromMatrixPosition(cam.matrixWorld);
       const outR = _cp.x > RIGHT_X - 0.05, outB = _cp.z < BACK_Z + 0.05;
       room.cutR.visible = !outR; room.cutB.visible = !outB; room.cutC.visible = !(outR || outB);
+      cam.getWorldDirection(_cf);
+      dome.visible = domeU.uCos.value > 0 || _cf.z > 0.2 || _cf.y > 0.5;
     }
     if (prevOBR && prevOBR !== THREE.Object3D.prototype.onBeforeRender) prevOBR.call(this, r, sc, cam, rt);
   };
@@ -1584,7 +1666,7 @@ export async function create() {
   // particles for the crash: dust puffs, water splash, little debris
   // crash particles: a soft dust puff + a little debris (normal blending: no additive sparkle) + the water SPLASH
   function crashFX(t, tc, w) {
-    drops.count = 0; crown.visible = false;
+    drops.count = 0; drops.visible = false; crown.visible = false;
     if (w <= 0 || tc <= 0 || tc > 6) return;
     fxN.burst({ t: tc, at: 0.0, count: 12, seed: 41, life: 1.6, jitter: 0.12, origin: [CRASH.x + 0.1, 0.35, CRASH.z - 0.1], vel: [-0.3, 0.55, 0.3], spread: [0.9, 0.35, 0.9], drag: 2.2,
       size: [0.25, 0.45], grow: 2.2, color: [0x8d8494, 0x7e7488, 0x9a90a0], alpha: 0.32 * w, fade: [0.1, 0.6], cell: CELL.puff, spin: 0.6 });
@@ -1632,7 +1714,7 @@ export async function create() {
       }
       _dm.compose(_dp, _dq, _ds); drops.setMatrixAt(n++, _dm);
     }
-    drops.count = n; drops.instanceMatrix.needsUpdate = true;
+    drops.count = n; drops.visible = n > 0; drops.instanceMatrix.needsUpdate = true;
     const u = (tc - WR.gush - 0.1) / 0.42;
     if (u > 0 && u < 1) {
       crown.visible = true; crown.position.copy(DROPS.land); crown.quaternion.identity();

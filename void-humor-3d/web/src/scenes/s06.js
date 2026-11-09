@@ -45,7 +45,7 @@ function times() {
 
 // ---------------------------------------------------------------------------------------------------------- cameras
 function cams(S, R) {
-  const e = 1e-3;
+  const e = 1e-5;                        // cut = two keys e apart (a frame can't land inside 10 us)
   const uyR = EDGE.Y(M.U.yaw), uRt = V3(-Math.cos(uyR), 0, Math.sin(uyR));
   const ucu = (ref, d, scr, yaw = 108, off = 0.06) => EDGE.shot(EDGE.L(toV(ref).addScaledVector(uRt, off)), { dist: d, yaw, pitch: 4, fov: 33, screenY: sy(scr), drift: 0.1 });
   const u0 = ucu(R.uEyes0, 1.75, 440, 116), u1 = ucu(R.uEyes1, 1.72, 430, 116), u1b = ucu(R.uEyes1, 1.62, 430, 116);

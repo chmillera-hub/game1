@@ -58,7 +58,9 @@ export function own(obj, id = 'default') {
   obj.traverse((o) => {
     if (!o.isMesh && !o.isPoints && !o.isSprite) return;
     const prev = o.onBeforeRender;
-    o.onBeforeRender = function (...a) { if (CTX.t !== STAMPS[id]) this.matrixWorld.copy(ZERO); if (prev) prev.apply(this, a); };
+    // (instanced billboards — core Particles — offset their corners in VIEW space, so a zero matrix would draw every
+    //  stale particle at the world origin: draw zero instances instead; the owner's next end() restores the count)
+    o.onBeforeRender = function (...a) { if (CTX.t !== STAMPS[id]) { this.matrixWorld.copy(ZERO); if (this.geometry && this.geometry.isInstancedBufferGeometry) this.geometry.instanceCount = 0; } if (prev) prev.apply(this, a); };
   });
   return obj;
 }

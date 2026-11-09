@@ -1,8 +1,9 @@
 {
- "_note": "s05 a_pretty_good_sense_of_humor — cues matched to web/src/scenes/s05.js: the Void's two giggle-hiccup stars, Jesus's presenting palm, the Void's 'oh stop it' flap, the tee-hee twinkle, and a held-breath stop-time while his smile holds a beat too long.",
+ "_note": "s05 a_pretty_good_sense_of_humor — cues matched to web/src/scenes/s05.js: the Void's two giggle-hiccup stars, the user's terror hand jerking higher on 'hand' (JPOV), Jesus's presenting palm, the Void's 'oh stop it' flap, the tee-hee twinkle, and a held-breath stop-time while his smile holds a beat too long (no stab).",
  "sfx": [
   {"t": "s05.start+0.25", "name": "star_pop", "gain_db": -12, "pan": 0.35},
   {"t": "s05.start+0.81", "name": "twinkle", "gain_db": -14, "pan": 0.35},
+  {"t": "s05b02+1.53", "name": "cloth_rustle", "gain_db": -13, "pan": -0.2, "variant": 3},
   {"t": "s05b04+0.0", "name": "cloth_rustle", "gain_db": -14, "pan": -0.1},
   {"t": "s05b04+1.85", "name": "cloth_rustle", "gain_db": -10, "pan": 0.3, "variant": 2},
   {"t": "s05b06+0.05", "name": "twinkle", "gain_db": -6, "pan": 0.0}

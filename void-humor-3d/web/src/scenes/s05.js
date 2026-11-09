@@ -61,7 +61,7 @@ function cams(S, R) {
   const ucu2 = EDGE.shot(EDGE.L(R.uEyes5), { dist: 1.34, yaw: 108, pitch: 4, fov: 33, screenY: sy(420), drift: 0.12 });
   const c6a = EDGE.shot(EDGE.L(R.jEyes6), { dist: 1.7, yaw: -9, pitch: 1, fov: 33, screenY: sy(400), drift: 0.15 });
   const c6b = EDGE.shot(EDGE.L(R.jEyes6), { dist: 1.58, yaw: -9, pitch: 1, fov: 33, screenY: sy(400), drift: 0.15 });
-  const e = 1e-3;
+  const e = 1e-5;                        // cut = two keys e apart (a frame can't land inside 10 us)
   return camKeys('s05', [
     [S.s, c1a], [S.cut2 - e, c1b, 'inOut'],
     [S.cut2, pov], [S.b03, pov], [S.ecuLand, ecu, 'inOut'], [S.cut4 - e, ecu, 'linear'],
@@ -301,7 +301,8 @@ function voidPose(t, S, st) {
   P.body.swell = 0.08 * straight * (1 - ramp(t, S.b04e, S.b05 + 0.5));
   P.extra.laugh = k(t, [[S.s, 0.12], [S.b01e, 0.0]]);
   P.extra.motes = 0.8;
-  P.head.pitch = 0.1 * (1 - ramp(t, S.s, S.b02)) - 0.06 * straight + 0.05 * hic;
+  // (no forward nod on the hiccups: a nodding hood shows its lit lower brim as a second 'mouth' under the crescent)
+  P.head.pitch = 0.02 * (1 - ramp(t, S.s, S.b02)) - 0.06 * straight - 0.04 * hic;
   P.head.roll = 0.05 * pulse(t, S.humorW + 0.1, 0.2, 0.3, 0.5);
   // ---- arms: RIGHT hand leaning on Jesus's shoulder (s04) slides off as he turns; LEFT hand on the belly; the flap
   // its RIGHT (near Jesus) belly hand slid in toward its own middle and down: never over Jesus's robe / silhouette
@@ -357,8 +358,10 @@ function userPose(t, S, st, final) {
   const dJ = R.jEyesRef.clone().sub(sh).normalize();
   const jerk = k(t, [[S.handW - 0.06, 0], [S.handW + 0.06, 1.2, 'out'], [S.handW + 0.18, 0.9], [S.handW + 0.32, 1.0], [S.b03e - 0.3, 1.0], [S.b04, 0.3]]);
   const terA = ramp(t, S.b02 - 0.25, S.b02 + 0.12, 'out') * (1 - ramp(t, S.b03 + 0.2, S.b03e - 0.2));
-  const straight = sh.clone().addScaledVector(dJ, 0.455).add(V3(0, -0.03, 0));
-  const tg = defendTarget(R).lerp(straight, terA).add(V3(0, 0.13 * jerk * (0.4 + 0.6 * terA), 0));
+  // (shielding: a little in toward their midline, below the eye line, so the eyes stare past the splayed fingers)
+  const uyU = EDGE.Y(M.U.yaw), uLeft = V3(Math.cos(uyU), 0, -Math.sin(uyU));
+  const straight = sh.clone().addScaledVector(dJ, 0.455).add(V3(0, -0.1, 0)).addScaledVector(uLeft, 0.0);
+  const tg = defendTarget(R).lerp(straight, terA).add(V3(0, 0.12 * jerk * (0.4 + 0.6 * terA), 0));
   const palm = toV(R.toPair).lerp(dJ, terA).normalize();
   const fing = V3(0, 1, 0).addScaledVector(dJ, -0.25).normalize();
   P.armR = { preset: 'defend', tremble: 0.6 + 0.35 * ramp(t, S.b02, S.b02 + 0.3), target: tg, reach: 1, palm: palm.toArray(),
