@@ -1579,7 +1579,7 @@
   "src": "data/cues/s07.json"
  },
  {
-  "t": 71.293,
+  "t": 70.993,
   "name": "cloth_rustle",
   "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
@@ -2001,7 +2001,7 @@
   "src": "data/cues/s12.json"
  },
  {
-  "t": 128.377,
+  "t": 128.177,
   "name": "twinkle",
   "file": "audio/sfx/twinkle_3.wav",
   "sync": 0.02,
@@ -2011,9 +2011,29 @@
   "src": "data/cues/s12.json"
  },
  {
-  "t": 131.227,
+  "t": 130.807,
+  "name": "cloth_rustle",
+  "file": "audio/sfx/cloth_rustle_3.wav",
+  "sync": 0.0,
+  "gain_db": -12.0,
+  "pan": 0.1,
+  "beat": "s12b03",
+  "src": "data/cues/s12.json"
+ },
+ {
+  "t": 131.167,
   "name": "footsteps_soft",
   "file": "audio/sfx/footsteps_soft_3.wav",
+  "sync": 0.03,
+  "gain_db": -13.0,
+  "pan": 0.1,
+  "beat": "s12b03",
+  "src": "data/cues/s12.json"
+ },
+ {
+  "t": 131.437,
+  "name": "footsteps_soft",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -11.0,
   "pan": 0.1,
@@ -2021,9 +2041,9 @@
   "src": "data/cues/s13.json"
  },
  {
-  "t": 131.887,
+  "t": 131.917,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -13.0,
   "pan": 0.1,
@@ -2031,9 +2051,9 @@
   "src": "data/cues/s13.json"
  },
  {
-  "t": 132.257,
+  "t": 132.757,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -6.0,
   "pan": 0.05,
@@ -2043,7 +2063,7 @@
  {
   "t": 142.915,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -12.0,
   "pan": -0.15,
@@ -2093,7 +2113,7 @@
  {
   "t": 162.725,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -4.0,
   "pan": -0.1,
@@ -2103,7 +2123,7 @@
  {
   "t": 165.138,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -5.0,
   "pan": -0.15,
@@ -2113,7 +2133,7 @@
  {
   "t": 165.958,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -7.0,
   "pan": -0.2,
@@ -2124,7 +2144,7 @@
  {
   "t": 166.278,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -7.0,
   "pan": -0.2,
@@ -2213,7 +2233,7 @@
  {
   "t": 172.8,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -10.0,
   "pan": -0.05,
@@ -2224,7 +2244,7 @@
  {
   "t": 173.02,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -10.0,
   "pan": -0.05,
@@ -2235,7 +2255,7 @@
  {
   "t": 173.18,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -8.0,
   "pan": -0.05,
@@ -2258,7 +2278,7 @@
  {
   "t": 176.11,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -9.0,
   "pan": 0.0,
@@ -2268,7 +2288,7 @@
  {
   "t": 176.38,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -11.0,
   "pan": 0.0,
@@ -2279,7 +2299,7 @@
  {
   "t": 176.66,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -13.0,
   "pan": 0.0,
@@ -2290,7 +2310,7 @@
  {
   "t": 177.53,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -6.0,
   "pan": -0.1,
@@ -2300,7 +2320,7 @@
  {
   "t": 178.09,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -9.0,
   "pan": -0.1,
@@ -2311,7 +2331,7 @@
  {
   "t": 178.36,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -10.0,
   "pan": -0.1,
@@ -2322,7 +2342,7 @@
  {
   "t": 178.67,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -11.0,
   "pan": -0.1,
@@ -2335,7 +2355,7 @@
  {
   "t": 179.77,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -6.0,
   "pan": -0.1,
@@ -2345,7 +2365,7 @@
  {
   "t": 180.49,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.1,
@@ -2383,7 +2403,7 @@
  {
   "t": 185.28,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -11.0,
   "pan": -0.05,
@@ -2430,7 +2450,7 @@
  {
   "t": 190.035,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -9.0,
   "pan": 0.05,
@@ -2438,22 +2458,22 @@
   "src": "data/cues/s16.json"
  },
  {
-  "t": 190.035,
+  "t": 190.235,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -11.0,
   "pan": -0.05,
   "beat": null,
   "src": "data/cues/s16.json",
-  "until": 191.235,
+  "until": 191.135,
   "fade": 0.15,
   "loop": true
  },
  {
   "t": 191.165,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -6.0,
   "pan": -0.05,
@@ -2463,7 +2483,7 @@
  {
   "t": 191.955,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -8.0,
   "pan": 0.0,
@@ -2474,7 +2494,7 @@
  {
   "t": 192.135,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -9.0,
   "pan": 0.05,
@@ -2485,7 +2505,7 @@
  {
   "t": 192.925,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.0,
@@ -2529,7 +2549,7 @@
  {
   "t": 204.625,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -11.0,
   "pan": 0.0,
@@ -2542,7 +2562,7 @@
  {
   "t": 208.275,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -24.0,
   "pan": 0.0,
@@ -2599,7 +2619,7 @@
  {
   "t": 221.265,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -9.0,
   "pan": 0.35,
@@ -2651,7 +2671,7 @@
  {
   "t": 228.075,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -12.0,
   "pan": 0.35,
@@ -2701,7 +2721,7 @@
  {
   "t": 244.039,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -11.0,
   "pan": 0.3,
@@ -2721,7 +2741,7 @@
  {
   "t": 244.439,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.2,
@@ -2731,7 +2751,7 @@
  {
   "t": 244.809,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.1,
@@ -2741,7 +2761,7 @@
  {
   "t": 246.999,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -14.0,
   "pan": 0.55,
@@ -2751,7 +2771,7 @@
  {
   "t": 247.239,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -14.0,
   "pan": 0.55,
@@ -2761,7 +2781,7 @@
  {
   "t": 247.449,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -14.0,
   "pan": 0.5,
@@ -2771,7 +2791,7 @@
  {
   "t": 247.699,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -13.0,
   "pan": 0.5,
@@ -2811,7 +2831,7 @@
  {
   "t": 256.169,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -14.0,
   "pan": -0.3,
@@ -2824,7 +2844,7 @@
  {
   "t": 257.499,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft.wav",
+  "file": "audio/sfx/footsteps_soft_2.wav",
   "sync": 0.03,
   "gain_db": -10.0,
   "pan": 0.35,
@@ -2847,7 +2867,7 @@
  {
   "t": 261.399,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -8.0,
   "pan": 0.15,
@@ -2865,7 +2885,7 @@
   "src": "data/cues/s20.json"
  },
  {
-  "t": 261.939,
+  "t": 262.099,
   "name": "whoosh_fly",
   "file": "audio/sfx/whoosh_fly.wav",
   "sync": 0.02,
@@ -2875,7 +2895,7 @@
   "src": "data/cues/s20.json"
  },
  {
-  "t": 262.729,
+  "t": 262.749,
   "name": "whoosh",
   "file": "audio/sfx/whoosh.wav",
   "sync": 0.28,
@@ -2949,7 +2969,7 @@
  {
   "t": 270.079,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_3.wav",
+  "file": "audio/sfx/cloth_rustle.wav",
   "sync": 0.0,
   "gain_db": -9.0,
   "pan": 0.3,
@@ -3009,7 +3029,7 @@
  {
   "t": 278.209,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_2.wav",
+  "file": "audio/sfx/footsteps_soft_3.wav",
   "sync": 0.03,
   "gain_db": -9.0,
   "pan": 0.15,
@@ -3022,7 +3042,7 @@
  {
   "t": 278.309,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle.wav",
+  "file": "audio/sfx/cloth_rustle_2.wav",
   "sync": 0.0,
   "gain_db": -7.0,
   "pan": 0.1,
@@ -3084,7 +3104,7 @@
  {
   "t": 287.189,
   "name": "footsteps_soft",
-  "file": "audio/sfx/footsteps_soft_3.wav",
+  "file": "audio/sfx/footsteps_soft.wav",
   "sync": 0.03,
   "gain_db": -17.0,
   "pan": -0.2,
@@ -3105,7 +3125,7 @@
   "src": "data/cues/s22.json"
  },
  {
-  "t": 289.199,
+  "t": 289.479,
   "name": "twinkle",
   "file": "audio/sfx/twinkle.wav",
   "sync": 0.02,
@@ -3117,7 +3137,7 @@
  {
   "t": 294.962,
   "name": "cloth_rustle",
-  "file": "audio/sfx/cloth_rustle_2.wav",
+  "file": "audio/sfx/cloth_rustle_3.wav",
   "sync": 0.0,
   "gain_db": -12.0,
   "pan": -0.1,
