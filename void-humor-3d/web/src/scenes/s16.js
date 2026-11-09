@@ -1,7 +1,7 @@
 // s16 into_the_horizon — STAGING side: Jesus walks on the Void's LEFT (the hill side of the path), his RIGHT arm round
 // its flank (as far as it goes), its LEFT arm round his shoulders (routed behind his back, hand cupping his far
 // shoulder from the outside, below his head).
-//   TWO   front two-shot down the path: the Void's hands come off (s15's pat / its snort-covered mouth); Jesus turns
+//   TWO   front two-shot down the path: its hand comes down from its snort-covered mouth; Jesus turns
 //         (face sweeping round toward the lens) and steps round to its left; "arm around": his arm goes round it, a
 //         side-squeeze, a crooked grin up at it; no startle: it leans in, lids lowering, its arm settles round him.
 //   BACK  on "walk off": the wide from behind, down the path to the enormous low sun, the laughed-up galaxy over the
@@ -30,7 +30,7 @@ import { VX } from '../chars/void.js';
 import { UX } from '../chars/user.js';
 import { EDGE, todAt, voidSkyAt, lookFor, galaxyAt, galaxySpin } from './marks.js';
 import { loadLines, W, add, arr, own, stamp, solve, pulse, V3, toV, ramp, bump, aimXY, pathPose, pathS, rollFor, hideDuring } from './kit_s14_16.js';
-import { S15, patHand, voidPos15 } from './s15.js';
+import { S15, voidPos15 } from './s15.js';
 
 const M = EDGE.M;
 const SIDE_J = 0.62, SIDE_V = -0.62;          // metres left (+) of the path: Jesus on the hill side, the Void on the other
@@ -114,7 +114,6 @@ export default {
     const tNot = W('s16b09', 'not', { frac: 0.02 }), tYet = W('s16b09', 'yet', { alt: ['yet,', 'yet.'], frac: 0.15 });
     const tBut = W('s16b09', 'but', { frac: 0.55 }), tMaybe = W('s16b09', 'maybe', { alt: ['maybe.'], frac: 0.7 });
     // b01 choreography
-    const tOff = S + 0.3;                                          // the Void's hands come off (shoulder pat, mouth)
     const tTurn0 = S - 0.2, tTurn1 = S + 0.9;                      // Jesus turns (decreasing yaw: face round to the lens)
     const tStep0 = S + 0.05, tStep1 = S + 1.05;                    // ...and steps round to its left
     const tV0 = S + 0.25, tV1 = tArm - 0.05;                       // it waddles into the formation
@@ -225,12 +224,10 @@ export default {
       const jab = 0.06 * bump(t, tTada - 0.05, 0.28);
       const looking = ramp(t, tStep1 - 0.3, tStep1 + 0.2);
       // ---- arms: RIGHT round the Void's flank; LEFT free (ordering at a bar, ta-da, see?, chest pats, sketching)
-      const rel = 1 - ramp(t, S, S + 0.3);                                          // s15's hand-over-hand (his RIGHT) lets go
       const hug = ramp(t, tHug0, tHug1);
       const squeeze = bump(t, tSqueeze, 0.4);
       let armR;
-      if (rel > 0.001 && pass && hug <= 0.001) { const vh = vd.anchor('handL'); armR = vh ? { preset: 'shoulder', target: add(arr(vh), [0, 0.05, 0]), reach: rel, palm: [0, -1, 0] } : { preset: 'rest' }; }
-      else if (hug > 0.001) armR = { preset: 'around', surface: vd, reach: hug, height: jPos[1] + 1.16, span: 0.36, hand: { curl: 0.35 + 0.15 * squeeze, cup: 0.6, spread: 0.18 } };
+      if (hug > 0.001) armR = { preset: 'around', surface: vd, reach: hug, height: jPos[1] + 1.16, span: 0.36, hand: { curl: 0.35 + 0.15 * squeeze, cup: 0.6, spread: 0.18 } };
       else armR = { preset: 'rest' };
       const order = pulse(t, B2 + 0.12, tDrink + 0.35, 0.3, 0.35);
       const tada = pulse(t, tTada - 0.14, tTada + 0.75, 0.12, 0.35);
@@ -291,10 +288,9 @@ export default {
       const gig = pulse(t, B6, B6e + 0.2, 0.15, 0.4) + 0.7 * pulse(t, B11 + 0.3, B13 + 0.3, 0.3, 0.6);
       const snort = bump(t, tSnort - 0.02, 0.24);
       const headOn = ramp(t, B13 - 0.5, B13 + 0.4);                         // its head leans against his
-      // ---- arms: LEFT (s15's hand on his shoulder) lifts off, then settles round his shoulders (behind his back,
+      // ---- arms: LEFT (home since s15b06) settles round his shoulders (behind his back,
       //      cupping his far shoulder from the outside, below his head); RIGHT: from the covered mouth down to its belly,
       //      slapped over the mouth again on the snort
-      const off = ramp(t, S, tOff);
       const around = ramp(t, tLean0 - 0.1, tLean1 + 0.15);
       let armL = { preset: 'rest' };
       const jfw = [Math.sin(jYaw), 0, Math.cos(jYaw)], jlf = [Math.cos(jYaw), 0, -Math.sin(jYaw)];
@@ -311,12 +307,7 @@ export default {
             hand: { curl: 0.3, cup: 0.65, spread: 0.1, thumb: 0.35 } };
         }
       }
-      // LEFT: s15's hand on his right shoulder lifts off as he turns (the same arm later goes round him);
-      // RIGHT: down from the snort-covered mouth
-      if (off < 1 && around <= 0.001) {
-        const P = patHand(jesus, jYaw, off);
-        if (P) armL = { preset: 'pat', target: P.target, reach: 1 - off, palm: P.palm, fingers: P.fingers, pole: P.pole, handScale: 0.58, hand: { curl: 0.25, cup: 0.6, spread: 0.12, thumb: 0.3 } };
-      }
+      // RIGHT: down from the snort-covered mouth (its LEFT came home from his shoulder in s15b06)
       const down = ramp(t, S, S + 0.45);
       let armR = down < 1 ? { preset: 'cover_mouth', from: 'belly', mix: 1 - down, offset: [0, 0.14 * (1 - down), 0] } : { preset: 'rest' };
       const slap = ramp(t, tSlap - 0.05, tSlap + 0.08, (u) => 1 - Math.pow(1 - u, 3)) * (1 - ramp(t, B6e + 0.15, B6e + 0.65));
@@ -324,7 +315,7 @@ export default {
       return {
         pos: vPos, yaw: vYaw,
         walk: { amount: vAmt, phase: vPhase, style: 'waddle' },
-        body: { lean: 0.08 + 0.1 * bend + 0.25 * (1 - ramp(t, S, S + 0.7)), tilt: 0.1 * leanIn + 0.06 * bend + 0.06 * headOn, twist: 0.08 * bend,
+        body: { lean: 0.08 + 0.1 * bend, tilt: 0.1 * leanIn + 0.06 * bend + 0.06 * headOn, twist: 0.08 * bend,
           shrug: 0.22 * gig * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 4.6)) + 0.15 * snort, recoil: 0.07 * snort, breathe: 1.05 },
         head: { yaw: 0.28 * leanIn + 0.08 * bend + 0.3 * (1 - ramp(t, S, tV1)), pitch: 0.14 + 0.12 * bend + 0.05 * leanIn, roll: 0.1 * leanIn + 0.14 * headOn, track: 0 },
         gaze: pass ? jE : null,
@@ -455,7 +446,7 @@ export default {
           const P = add(U, [-fU[0] * 0.85 - lU[0] * 0.32, 0.2, -fU[2] * 0.85 - lU[2] * 0.32]);
           const el = lerp(6.2, 0.6, todAt(t)) * Math.PI / 180, az = -0.14 + OVER_SHIFT;
           const sunPt = add(P, [Math.sin(az) * Math.cos(el) * 300, Math.sin(el) * 300, -Math.cos(az) * Math.cos(el) * 300]);
-          s = aimXY(P, sunPt, 330, 598, 36, { drift: 0.02 });
+          s = aimXY(P, sunPt, 316, 616, 36, { drift: 0.02 });
           break;
         }
         default: s = EDGE.cam('MASTER');

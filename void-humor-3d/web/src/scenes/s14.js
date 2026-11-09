@@ -205,7 +205,7 @@ export default {
         pos: EDGE.W(KP), yaw: EDGE.Y(KY),
         body: { kneel: 1, lean: 0.08 + 0.05 * ramp(t, tRise0, tRise0 + 0.4) * (1 - ramp(t, tPiv0, tPiv1)) + 0.04 * hold, shrug: 0.05 * pulse(t, tDing, tDing + 0.35, 0.06, 0.25) - 0.04 * exhale + 0.22 * eek,
           breathe: 1 + 0.6 * exhale, sway: 0.5, recoil: 0.04 * pulse(t, tDing, tDing + 0.4, 0.06, 0.3) },
-        head: { look: look, follow, pitch: 0.04 * hold + nod, roll: -tilt + 0.12 * eek, talk: 0 },
+        head: { look: look, follow, pitch: 0.04 * hold + nod, roll: -tilt + 0.12 * eek + (shot === 'OVER' ? 0.12 : 0), talk: 0 },   // (OVER: a hair cheat off his right shoulder)
         gaze: pass ? gz : null,
         face: { ...face, autoBlink: shot === 'JINS' ? 0 : 1 },
         blinkAt: [tPiv0 + 0.3, B2 + 0.75, tDing + 0.45, tPull1 + 0.05, tVoid6 + 0.45, tTuck0 + 0.05, tExhale + 0.02],
@@ -325,7 +325,7 @@ export default {
           const p = add(head, [-fw[0] * 1.45 + rt[0] * 0.42, 0.2, -fw[2] * 1.45 + rt[2] * 0.42]);
           const tgt = add(uWalk.pos, [0, 1.1, 0]);
           const L = lerpA(add(head, [fw[0] * 4, 0.1, fw[2] * 4]), tgt, 0.6);
-          s = aimXY(p, L, 430, 520, 40, { drift: 0.12 });
+          s = aimXY(p, L, 405, 500, 40, { drift: 0.12 });
           break;
         }
         case 'JST': s = EDGE.shot(JEYE, { dist: 1.5, yaw: -30, pitch: -10, fov: 34, screenY: sy(390), drift: 0.15 }); break;

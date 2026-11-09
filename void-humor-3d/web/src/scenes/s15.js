@@ -1,17 +1,16 @@
 // s15 fair_enough — no hard feelings. Jesus gets up off his knee (half up, a bend and two swipes at the dusty right
 // knee, then upright), turns — eyes first — and has to tip his head way back: the Void is RIGHT THERE (it got up and
 // shuffled over while he wasn't looking), hands clasped at its middle, soft lids, brow-wisps up in the middle; one
-// slow blink. Seen from its eyeline (over its shoulder, his face full in the lens): a big honest shrug ("eh: you win
-// some"), a rueful smile up at it. Side two-shot: the Void reaches DOWN (elbow up and out, clear of his face) and
-// pats the top of his right shoulder, pat, pat, its fingers over his back; he rocks with each pat. Close on it: the
-// sad little smile (small, closed, pressed, a wobble; the eyes don't follow) — its eyes slide to the rise where the
-// user vanished, and back; a slow blink: it has done this before. A long sigh, a lilac wisp leaving the hood, and
-// (two-shot) Jesus lays his hand over the big one. Its eyeline again: "Too intense. Apparently." — deadpan, until the
-// mouth corner gives him away. Its eyes widen; a surprised snort, one little star pops out of the hood, eyes crinkle
-// into arcs, a big hand over its mouth.
-// Staging (STAGING s15): K <-> V15 line, Jesus screen-left / Void screen-right in the side two-shots. Faces that must
-// read (the look-up, the shrug, the deadpan + corner) play in JUP: over the Void's LEFT shoulder (camera side), down
-// at his face; the Void's face in VCU over his head.
+// slow blink. From its eyeline (JUP: over its left shoulder, his face full in the lens): the find, a big honest shrug
+// ("eh: you win some"), a rueful smile up at it. VPAT, from behind him (the Void's face above): it shuffles in, bends
+// and reaches down, and its LEFT hand pats the top of his RIGHT shoulder, pat, pat, the fingers over his shoulder and
+// half his back; he rocks with each pat. VCU (same side, closer): the sad little smile (small, closed, pressed, a
+// wobble; the eyes don't follow) — its eyes slide to the rise where the user vanished, and back; a slow blink; a long
+// sigh, a lilac wisp leaving the hood's rim, and Jesus lays his hand over the big one. The hands part as he starts:
+// JUP2 "Too intense. Apparently." — deadpan, until the mouth corner gives him away (the face and lip-sync clear). VCU2:
+// its eyes widen; a surprised snort, one little star pops out of the hood, eyes crinkle into arcs, a hand over its mouth.
+// Staging: K <-> V15 line, every camera on the camera side. The side two-shot of STAGING is replaced by the two
+// over-the-shoulder angles: from the side its patting arm always crossed his face (see the s14-16 report).
 import * as THREE from 'three';
 import { T, k } from '../core/timeline.js';
 import { applyShot } from '../core/camera.js';
@@ -92,7 +91,8 @@ export default {
     // sad smile, the look to the rise, slow blink
     const tSS = tSad - 0.05, tSlide0 = tSmile + 0.05, tSlide1 = tSlide0 + 0.6;
     // sigh: shoulders up and settle, the wisp; hand over hand
-    const tSigh = B5 + 0.05, tWisp = B5 + 0.12, tHand0 = B5 + 0.42, tHand1 = tHand0 + 0.5;
+    const tSigh = B5 + 0.05, tWisp = B5 + 0.12, tHand0 = B5 + 0.22, tHand1 = tHand0 + 0.48;
+    const tRel0 = B6 - 0.3, tRel1 = B6 + 0.25;                         // the hands part (its hand back home) as he starts his line
     // the corner, the widening, the snort
     const tCorner = tAppEnd + 0.04, tWiden = tAppEnd + 0.3;
     const tSnort = B7 + 0.04, tCover = tSnort + 0.08, tStar = tSnort + 0.1;
@@ -142,7 +142,7 @@ export default {
       const lead = -0.5 * pulse(t, tTurn0 - 0.25, tTurn1, 0.2, 0.35);            // the head leads the turn (to his right)
       // ---- arms: brush the knee on the way up; shrug; RIGHT hand over the big hand on his right shoulder
       const shrug = ramp(t, tSh0, tSh1, (u) => 1 - Math.pow(1 - u, 2.5)) * (1 - ramp(t, tSh2, tSh3));
-      const handOn = ramp(t, tHand0, tHand1);
+      const handOn = ramp(t, tHand0, tHand1) * (1 - ramp(t, tRel0, tRel1));
       let armR = { preset: [['rest', Math.max(1e-3, 1 - shrug)], ['shrug', Math.max(1e-3, shrug)]] };
       let armL = { preset: [['rest', Math.max(1e-3, 1 - shrug)], ['shrug', Math.max(1e-3, shrug)]] };
       const brush = pulse(t, tBr1 - 0.16, tBr2 + 0.28, 0.14, 0.2);
@@ -200,13 +200,13 @@ export default {
       const gaze = pass ? lerpA(jE, rise, slide) : null;
       // ---- body: bends toward him; leans in to pat; the sigh lifts and settles the shoulders
       const sigh = pulse(t, tSigh, B5e + 0.2, 0.5, 0.6);
-      const patR = ramp(t, tReach0, tReach1, (u) => 1 - Math.pow(1 - u, 2));
+      const patR = ramp(t, tReach0, tReach1, (u) => 1 - Math.pow(1 - u, 2)) * (1 - ramp(t, tRel0 + 0.05, tRel1));
       const snort = bump(t, tSnort - 0.02, 0.22);
       // ---- arms: hands clasped at the middle; LEFT (camera side) reaches DOWN onto his RIGHT shoulder, pats, stays;
       //      RIGHT covers the mouth on the snort
       const patAmt = pulse(t, tReach1 - 0.03, tPatEnd, 0.03, 0.12);
       const settle = ramp(t, tPatEnd + 0.2, tPatEnd + 1.3);                     // after the pats it straightens a little (hand stays)
-      let armL = { preset: 'belly', hand: { curl: 0.42, spread: 0.04 } };
+      let armL = { preset: t > tReach0 ? 'rest' : 'belly', hand: { curl: 0.42, spread: 0.04 } };
       if (patR > 0.001) {     // (Jesus is solved first in each pass, so his anchors are this frame's)
         const P = patHand(jesus, jYawW);
         if (P) {
@@ -220,7 +220,7 @@ export default {
       return {
         pos: voidPos15(t), yaw: EDGE.Y(VY) - 0.08 * patR,
         walk: { amount: 0.7 * pulse(t, tReach0 - 0.35, tReach1 - 0.2, 0.15, 0.2), phase: 1.1 * (t - tReach0), style: 'waddle' },
-        body: { lean: 0.13 + 0.2 * patR - 0.08 * settle, shrug: 0.35 * sigh + 0.12 * snort, breathe: 1 + 0.6 * sigh, breathRate: 0.2, recoil: 0.06 * snort, swell: 0.05 * sigh, twist: 0.1 - 0.32 * patR + 0.1 * settle, tilt: 0.05 * patR },
+        body: { lean: 0.13 + patR * (0.2 - 0.08 * settle), shrug: 0.35 * sigh + 0.12 * snort, breathe: 1 + 0.6 * sigh, breathRate: 0.2, recoil: 0.06 * snort, swell: 0.05 * sigh, twist: 0.1 + patR * (-0.32 + 0.1 * settle), tilt: 0.05 * patR },
         head: { pitch: 0.24 + 0.02 * patR - 0.04 * sigh, yaw: 0.32 + 0.3 * patR + 0.06 * slide, roll: 0.04 * patR },
         gaze, face,
         blinkAt: [tFind + 0.45, tSlide1 + 0.3, B5e + 0.05],
@@ -236,10 +236,10 @@ export default {
       const vE = ve ? arr(ve) : SW(VP[0], 2.0, VP[2]), jE = je ? arr(je) : SW(KP[0], 1.5, KP[2]);
       const two = (dist, py, w = 0.45, fov = 40, yaw = 40) => frame(lerpA(jE, vE, w), { dist, yaw: EDGE.CY(yaw), pitch: 4, fov, screenY: sy(py), drift: 0.12 });
       // its eyeline: over its LEFT shoulder (camera side) / just off its eyes (once its arm is on him), down at his face
-      const jup = (px, py, fov, back = 0, sideK = 0.72) => {
+      const jup = (px, py, fov, back = 0, sideK = 0.72, upK = -0.12) => {
         const vdir = toV(jE).sub(toV(vE)).setY(0).normalize();
         const side = toV(SV(0.73, 0, 0.68)).normalize();
-        let P = add(vE, [side.x * sideK + vdir.x * (0.32 - back), -0.12, side.z * sideK + vdir.z * (0.32 - back)]);
+        let P = add(vE, [side.x * sideK + vdir.x * (0.32 - back), upK, side.z * sideK + vdir.z * (0.32 - back)]);
         const dv = toV(P).sub(toV(jE)), dl = dv.length();
         if (dl < 1.15) P = toV(jE).addScaledVector(dv.normalize(), 1.15).toArray();     // never closer than 1.15 m to his face
         return aimXY(P, jE, px, py, fov, { drift: 0.08 });
@@ -252,7 +252,7 @@ export default {
           break;
         }
         case 'JUP': s = jup(380, 430, 50, 0.25 + 0.1 * ramp(t, shotT0, shotT1)); break;
-        case 'JUP2': s = jup(372, 420, 44, 0.1 + 0.1 * ramp(t, shotT0, shotT1), 0.44); break;
+        case 'JUP2': s = jup(375, 420, 46, 0.2 + 0.12 * ramp(t, shotT0, shotT1)); break;
         case 'VPAT': {   // from behind Jesus (his back lower-left): the big hand reaching down onto his shoulder, its fingers
           //               over his shoulder and half his back; the Void's face above (it reads: its hood points here)
           const u = ramp(t, shotT0, tPatEnd + 0.4);
@@ -292,8 +292,8 @@ export default {
     wisp.begin();
     if (mo) {   // out of the hood's upper rim, drifting up and out (never across the face)
       wisp.burst({ t, seed: 1509, at: tWisp, count: 3, life: 1.8, jitter: 0.25, origin: add(arr(mo), [md.x * 0.42, 0.42, md.z * 0.42]),
-        vel: [md.x * 0.3, 0.32, md.z * 0.3], spread: [0.05, 0.03, 0.05], drag: 0.5, size: [0.18, 0.26], grow: 2.0,
-        color: [0xc8a2ff, 0xd9b8ff], alpha: 0.3, fade: [0.3, 0.6], cell: CELL.nebula, spin: 0.4 });
+        vel: [md.x * 0.3, 0.32, md.z * 0.3], spread: [0.05, 0.03, 0.05], drag: 0.5, size: [0.22, 0.3], grow: 2.0,
+        color: [0xc8a2ff, 0xd9b8ff], alpha: 0.42, fade: [0.3, 0.6], cell: CELL.nebula, spin: 0.4 });
     }
     wisp.end();
     st.look = lookFor('s15', set.look);
