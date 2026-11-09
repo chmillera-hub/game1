@@ -10,13 +10,15 @@ const SEG = 2;
 const JP = [-0.45, 0, 0.35], VP = [1.25, 0, -0.45];
 const SHOTS = [
   ['two-shot tod0', () => framed([0.35, 1.75, 0], { dist: 5.2, yaw: 3, pitch: 2, fov: 32, screenY: 0.4 }), { tod: 0 }],
-  ['jesus MCU tod0', () => framed([JP[0], 1.55, JP[2]], { dist: 1.5, yaw: 10, pitch: 1, fov: 30, screenY: 0.34 }), { tod: 0 }],
+  ['jesus MCU tod0 (sunShift .12, sunGlow .6)', () => framed([JP[0], 1.55, JP[2]], { dist: 1.5, yaw: 10, pitch: 1, fov: 30, screenY: 0.34 }), { tod: 0, sunShift: 0.12, sunGlow: 0.6 }],
   ['void low MCU voidSky .7', () => ({ pos: [0.6, 0.9, 3.4], look: [1.1, 2.15, -0.4], fov: 34 }), { tod: 0, voidSky: 0.7 }],
   ['jesus MCU tod1', () => framed([JP[0], 1.55, JP[2]], { dist: 1.5, yaw: -12, pitch: 1, fov: 30, screenY: 0.34 }), { tod: 1 }],
   ['reverse OTS tod.5', () => ({ pos: [1.6, 2.1, -3.6], look: [-0.5, 1.4, 0.9], fov: 32 }), { tod: 0.5 }],
   ['wide tod.3', () => ({ pos: [0.5, 1.6, 9.5], look: [0.0, 1.5, -10], fov: 38 }), { tod: 0.3 }],
   ['high on jesus kneel', () => ({ pos: [0.2, 3.2, 2.8], look: [-0.5, 0.6, 0.3], fov: 34 }), { tod: 0.2 }],
   ['walk-off tod1', () => ({ pos: [0.4, 1.85, 7.0], look: [-0.8, 1.5, -30], fov: 30 }), { tod: 1, walk: true }],
+  ['finale tod1', (S) => S.shots.finale, { tod: 1, walk: true, s0: 31 }],
+  ['finale tod.7 beyond', (S) => S.shots.finale, { tod: 0.7, walk: true, s0: 38.5 }],
 ];
 export async function setup(app) {
   const set = await app.set('EDGE');
@@ -28,9 +30,9 @@ export async function setup(app) {
 export async function update(t, app, s) {
   const i = clamp(Math.floor(t / SEG), 0, SHOTS.length - 1);
   const [, shot, o] = SHOTS[i];
-  applyShot(app.camera, shot(), t);
+  applyShot(app.camera, shot(s.set), t);
   if (o.walk) {
-    const a = s.set.pathAt(10 + t * 0.2), b = s.set.pathAt(10.3 + t * 0.2);
+    const s0 = (o.s0 ?? 10) + (t - i * SEG) * 0.9; const a = s.set.pathAt(s0), b = s.set.pathAt(s0 + 0.3);
     const side = [a.dir[2], 0, -a.dir[0]];
     s.set.update(t, { ...o, shadowAt: a.pos });
     s.jesus.update(t, { pos: [a.pos[0] - side[0] * 0.5, a.pos[1], a.pos[2] - side[2] * 0.5], yaw: a.yaw, walk: { amount: 1, phase: t * 0.85 } });

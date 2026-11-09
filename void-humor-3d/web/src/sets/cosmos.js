@@ -34,25 +34,23 @@ const col = (hex) => new THREE.Color(hex);
 // Convention: camera usually at +Z looking toward -Z at the characters, so "behind the characters" is -Z.
 const SKY_AXIS = nrm(0.18, 1, 0.12);            // slow drift rotation axis of the whole sky
 const SKY_RATE = 0.0045;                        // rad/s at drift 1 (about 8° per 30 s)
+const SKY_SWING = 0.14;                         // max drift away from the designed layout (rad, ~8°)
 const KEY_DIR = nrm(0.30, 0.62, -0.72);         // hero galaxy direction = starlight key light
 // galaxies: dir (sky space), angular half-size (tan), inclination (rad), position angle, spin rad/s, tint, bake variant
 const GALAXIES = [
   { dir: KEY_DIR, size: 0.24, incl: 0.62, pa: 0.5, spin: 0.022, tint: 0xffffff, v: 0, delay: 0.0 },
-  { dir: nrm(-0.78, 0.40, -0.50), size: 0.15, incl: 1.08, pa: -0.8, spin: -0.03, tint: 0xf4fbff, v: 1, delay: 0.12 },
+  { dir: nrm(-0.113, 0.375, -0.92), size: 0.10, incl: 1.0, pa: -0.8, spin: -0.03, tint: 0xf4fbff, v: 1, delay: 0.12 },
   { dir: nrm(0.88, 0.16, 0.05), size: 0.13, incl: 1.28, pa: 2.2, spin: 0.028, tint: 0xfff0f4, v: 2, delay: 0.22 },
   { dir: nrm(-0.22, 0.96, 0.12), size: 0.19, incl: 0.30, pa: 1.1, spin: 0.018, tint: 0xffffff, v: 3, delay: 0.3 },
   { dir: nrm(-0.42, 0.28, 0.86), size: 0.16, incl: 0.85, pa: -2.0, spin: -0.024, tint: 0xfff8ec, v: 1, delay: 0.38 },
 ];
 // world-space nebula puffs (mid layer, unit-dome space): dir, distance (0..1 of dome), size m, colour, alpha, channel
 const PUFFS = [
-  { dir: nrm(0.05, 0.42, -1), d: 0.78, s: 5.5, c: 0x8a5cff, a: 0.20, ch: 0 },
-  { dir: nrm(-0.8, 0.7, -0.6), d: 0.72, s: 4.6, c: 0x2fd2c8, a: 0.17, ch: 1 },
-  { dir: nrm(0.95, 0.35, -0.3), d: 0.74, s: 4.2, c: 0xff6fa8, a: 0.16, ch: 2 },
-  { dir: nrm(0.3, 0.95, -0.35), d: 0.66, s: 4.8, c: 0xffc46b, a: 0.12, ch: 3 },
-  { dir: nrm(-0.45, 0.9, 0.45), d: 0.7, s: 5.0, c: 0x6a7dff, a: 0.15, ch: 0 },
-  { dir: nrm(-0.15, 0.45, 1), d: 0.74, s: 5.0, c: 0xff7fb0, a: 0.14, ch: 2 },
-  { dir: nrm(-0.95, 0.3, 0.35), d: 0.75, s: 4.4, c: 0x34c6d0, a: 0.15, ch: 3 },
-  { dir: nrm(0.75, 0.5, 0.6), d: 0.72, s: 4.4, c: 0x9a6cff, a: 0.15, ch: 1 },
+  { dir: nrm(-0.15, 0.62, -0.95), d: 0.80, s: 4.2, c: 0x8a5cff, a: 0.12, ch: 0 },
+  { dir: nrm(-0.95, 0.52, -0.40), d: 0.76, s: 3.6, c: 0x2fd2c8, a: 0.12, ch: 1 },
+  { dir: nrm(0.35, 0.35, -0.95), d: 0.80, s: 3.2, c: 0xff7fb0, a: 0.10, ch: 2 },
+  { dir: nrm(-0.30, 0.38, 1.0), d: 0.78, s: 3.8, c: 0x6a7dff, a: 0.11, ch: 3 },
+  { dir: nrm(0.80, 0.40, 0.45), d: 0.76, s: 3.4, c: 0xff7fb0, a: 0.10, ch: 1 },
 ];
 const GLYPHS = ['heart', 'sun', 'note', 'house', 'hand', 'pencil'];
 const GLYPH_COLS = [0xff8fb8, 0xffd27a, 0x7fe8e0, 0xffc890, 0xffb0a0, 0xffe08a];
@@ -74,14 +72,16 @@ float fbm(vec3 p, int oct){ float s = 0.0, a = 0.5, n = 0.0;
 // and the camera-ray / sky-ellipsoid exit distance
 const COMMON = /* glsl */`
 uniform vec3 uSrc, uDomeC, uDomeR;
-uniform float uFront, uSoft;
+uniform float uFront, uFrontN, uSoft;
 float cosmosHalfDiag(mat4 P){ float tv = 1.0 / P[1][1]; float th = 1.0 / P[0][0]; return atan(sqrt(tv * tv + th * th)); }
-float cosmosMask(vec3 rd, float hd, float jit){
-  if (uFront > 500.0) return 1.0;
-  vec3 sd = normalize(uSrc - cameraPosition);
-  float a = acos(clamp(dot(rd, sd), -1.0, 1.0)) / hd;
-  return 1.0 - smoothstep(uFront - uSoft, uFront, a + jit);
-}
+float cosmosAcos(float x){ float ax = abs(x);
+  float r = sqrt(max(0.0, 1.0 - ax)) * (1.5707288 + ax * (-0.2121144 + ax * (0.0742610 - 0.0187293 * ax)));
+  return x < 0.0 ? 3.14159265 - r : r; }
+// angle between a view ray and the ray to the source, in units of the frame half-diagonal
+float cosmosAng(vec3 rd, float hd){ return cosmosAcos(clamp(dot(rd, normalize(uSrc - cameraPosition)), -1.0, 1.0)) / hd; }
+float cosmosMaskA(float a, float jit, float front){ return front > 500.0 ? 1.0 : 1.0 - smoothstep(front - uSoft, front, a + jit); }
+float cosmosMaskF(vec3 rd, float hd, float jit, float front){ return front > 500.0 ? 1.0 : cosmosMaskA(cosmosAng(rd, hd), jit, front); }
+float cosmosMask(vec3 rd, float hd, float jit){ return cosmosMaskF(rd, hd, jit, uFront); }
 float cosmosRay(vec3 O, vec3 D){
   vec3 o = (O - uDomeC) / uDomeR, d = D / uDomeR;
   float a = dot(d, d), b = dot(o, d), c = dot(o, o) - 1.0, disc = b * b - a * c;
@@ -93,55 +93,69 @@ vec3 cosmosBase(vec3 d){
   vec3 c = mix(hor, top, smoothstep(0.0, 0.85, d.y));
   return mix(c, low, smoothstep(0.0, -0.6, d.y));
 }
-vec4 cosmosSky(sampler2D tex, vec3 d){
-  vec2 uv = vec2(atan(d.z, d.x) * 0.15915494 + 0.5, asin(clamp(d.y, -1.0, 1.0)) * 0.31830989 + 0.5);
-  return texture2D(tex, uv);
-}
+vec4 cosmosSky(samplerCube tex, vec3 d){ return texture(tex, d); }
 `;
 
 const QUAD_VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 
-// Nebula sky map (equirect, rgb = nebula + band light (linear HDR), a = smooth edge noise for the reveal front)
+// Nebula sky map (equirect, rgb = nebula + band light (linear HDR), a = smooth edge noise for the reveal front).
+// Designed as a few distinct cloud complexes separated by deep dark space (so shapes read and faces have calm
+// darker sky behind them at eye level in the default front view toward -Z).
+const SKY_BAKE_VS = `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const SKY_BAKE_FS = /* glsl */`
 precision highp float;
-varying vec2 vUv;
+varying vec3 vDir;
 ${NOISE}
 float env(vec3 d, vec3 c, float rad){ return exp(-(1.0 - dot(d, normalize(c))) / (rad * rad * 0.5)); }
+vec3 cplx(vec3 d, vec3 dir, float rad, float n, float m, vec3 c1, vec3 c2, vec3 hot, float lo, float hi, float amp){
+  float e = env(d, dir, rad);
+  float dens = smoothstep(lo, hi, n);
+  vec3 c = mix(c1, c2, smoothstep(0.3, 0.7, m));
+  float core = env(d, dir, rad * 0.38) * dens * dens;
+  return (c * (0.035 + dens) + hot * core * 0.9) * e * amp;
+}
 void main(){
-  float th = (vUv.x - 0.5) * 6.2831853, ph = (vUv.y - 0.5) * 3.1415927;
-  vec3 d = vec3(cos(ph) * cos(th), sin(ph), cos(ph) * sin(th));
-  vec3 w = vec3(fbm(d * 1.3 + vec3(1.7, 9.2, 3.1), 4), fbm(d * 1.3 + vec3(8.3, 2.8, 5.4), 4), fbm(d * 1.3 + vec3(4.1, 6.6, 0.7), 4)) - 0.5;
-  vec3 q = d + w * 0.6;
-  float n1 = fbm(q * 2.0 + 3.0, 5);
-  float n2 = fbm(q * 2.5 + 11.0, 5);
-  float n3 = fbm(q * 1.5 + 23.0, 4);
-  float rid = 1.0 - abs(2.0 * fbm(q * 3.0 + 31.0, 4) - 1.0);
-  vec3 dq = normalize(d + w * 0.45);
-  float c1 = smoothstep(0.38, 0.78, n1), c2 = smoothstep(0.40, 0.80, n2), c3 = smoothstep(0.42, 0.75, n3);
-  float fil = pow(rid, 4.0);
-  vec3 VIO = vec3(0.36, 0.17, 0.95), TEAL = vec3(0.06, 0.55, 0.60), ROSE = vec3(0.95, 0.25, 0.50), GOLD = vec3(1.0, 0.62, 0.25), BLUE = vec3(0.16, 0.30, 0.95);
+  vec3 d = normalize(vDir);
+  vec3 w = vec3(fbm(d * 1.25 + vec3(1.7, 9.2, 3.1), 4), fbm(d * 1.25 + vec3(8.3, 2.8, 5.4), 4), fbm(d * 1.25 + vec3(4.1, 6.6, 0.7), 4)) - 0.5;
+  vec3 q = d + w * 0.7;
+  float n1 = fbm(q * 2.1 + 3.0, 5);
+  float n2 = fbm(q * 2.6 + 11.0, 5);
+  float n3 = fbm(q * 1.7 + 23.0, 5);
+  float m1 = fbm(q * 1.2 + 61.0, 3);
+  float rid = 1.0 - abs(2.0 * fbm(q * 3.4 + 31.0, 4) - 1.0);
+  vec3 dq = normalize(d + w * 0.5);
+  vec3 VIO = vec3(0.30, 0.13, 0.85), MAG = vec3(0.62, 0.14, 0.70), TEAL = vec3(0.04, 0.48, 0.52), BLUE = vec3(0.10, 0.22, 0.85),
+       ROSE = vec3(0.90, 0.22, 0.45), GOLD = vec3(1.0, 0.58, 0.22), PEACH = vec3(1.0, 0.62, 0.48), WHITE = vec3(1.0, 0.9, 0.95);
   vec3 c = vec3(0.0);
-  // big cloud complexes (envelope x warped density + faint haze + filaments)
-  float e;
-  e = env(dq, vec3(0.10, 0.28, -1.0), 0.75);  c += VIO  * e * (0.10 + 0.55 * c1 + 0.25 * fil * c1);
-  e = env(dq, vec3(-0.9, 0.55, -0.6), 0.62);  c += TEAL * e * (0.08 + 0.55 * c2 + 0.25 * fil);
-  e = env(dq, vec3(0.95, 0.15, -0.35), 0.55); c += ROSE * e * (0.07 + 0.50 * c1 * c2 + 0.30 * c2);
-  e = env(dq, vec3(0.3, 0.9, -0.45), 0.42);   c += GOLD * e * (0.06 + 0.40 * c3);
-  e = env(dq, vec3(-0.3, 0.85, 0.5), 0.70);   c += BLUE * e * (0.06 + 0.40 * c2 + 0.2 * fil);
-  e = env(dq, vec3(-0.2, 0.25, 1.0), 0.70);   c += ROSE * e * (0.05 + 0.40 * c3) + GOLD * e * 0.12 * c1;
-  e = env(dq, vec3(-0.85, -0.1, 0.55), 0.60); c += TEAL * e * (0.05 + 0.40 * c1);
-  e = env(dq, vec3(0.7, -0.05, 0.75), 0.55);  c += VIO  * e * (0.06 + 0.45 * c3);
-  e = env(dq, vec3(0.2, -0.75, -0.3), 0.8);   c += VIO * e * (0.03 + 0.25 * c2) + TEAL * e * 0.12 * c1;
-  // soft galactic band (tilted great circle), warm core, dust lane
-  vec3 nb = normalize(vec3(0.62, 0.42, 0.66));
-  float bd = dot(d, nb) + (n2 - 0.5) * 0.14 + (n1 - 0.5) * 0.06;
-  float band = exp(-bd * bd / 0.020), core = exp(-bd * bd / 0.0045);
-  float patchy = 0.45 + 0.9 * n3;
-  vec3 bandCol = mix(vec3(0.42, 0.30, 0.70), vec3(1.0, 0.80, 0.62), core);
-  float dust = smoothstep(0.45, 0.75, fbm(q * 4.0 + 51.0, 4)) * core;
-  c += bandCol * band * patchy * 0.22 * (1.0 - 0.75 * dust);
-  // overall gentle low-frequency breathing of brightness
-  c *= 0.75 + 0.5 * fbm(d * 0.9 + 70.0, 3);
+  // A: violet-magenta complex, high behind the characters (keeps the eye-level sky behind faces darker)
+  c += cplx(dq, vec3(-0.25, 0.62, -0.95), 0.62, n1, m1, VIO, MAG, mix(WHITE, ROSE, 0.4), 0.42, 0.80, 0.75);
+  // B: teal complex, left
+  c += cplx(dq, vec3(-0.95, 0.45, -0.30), 0.55, n2, m1, TEAL, BLUE, vec3(0.6, 1.0, 0.95), 0.40, 0.80, 0.85);
+  // C: warm gold-peach glow beside the hero galaxy (slightly offset so the galaxy sits on darker sky)
+  c += cplx(dq, vec3(-0.05, 0.94, -0.30), 0.30, n3, n3, MAG, ROSE, vec3(1.0, 0.72, 0.42), 0.42, 0.80, 0.65);
+  // W: small warm luminous cloud (gold core, rose edges) right of / above the Void in the default front view
+  c += cplx(dq, vec3(0.30, 0.36, -0.88), 0.22, n3, n1, ROSE, vec3(1.0, 0.52, 0.28), vec3(1.0, 0.60, 0.20), 0.34, 0.74, 0.62);
+  // D: rose complex, right / low
+  c += cplx(dq, vec3(0.98, 0.12, -0.05), 0.50, n1, n2, ROSE, MAG, vec3(1.0, 0.68, 0.40), 0.42, 0.80, 0.7);
+  // E: blue-teal behind the camera
+  c += cplx(dq, vec3(-0.35, 0.30, 1.0), 0.58, n2, n3, BLUE, TEAL, vec3(0.7, 0.9, 1.0), 0.42, 0.82, 0.7);
+  // F: violet-rose behind the camera, right
+  c += cplx(dq, vec3(0.70, 0.35, 0.65), 0.48, n3, m1, ROSE, VIO, vec3(1.0, 0.8, 0.9), 0.44, 0.82, 0.6);
+  // G: faint teal-blue veil overhead
+  c += cplx(dq, vec3(-0.15, 1.0, 0.25), 0.55, n1, n3, TEAL, BLUE, vec3(0.7, 1.0, 1.0), 0.46, 0.85, 0.45);
+  // H: dim violet low behind the characters (eye-level glow, kept soft)
+  c += cplx(dq, vec3(0.35, 0.02, -1.0), 0.42, n2, m1, BLUE, TEAL, vec3(0.6, 0.85, 1.0), 0.46, 0.88, 0.45);
+  // filaments (fine light threads on cloud edges) and dark dust lanes
+  c *= 1.0 + 0.6 * pow(rid, 6.0);
+  float dust = smoothstep(0.52, 0.78, fbm(q * 3.6 + 51.0, 4));
+  c *= 1.0 - 0.62 * dust;
+  // faint galactic band (tilted great circle)
+  vec3 nb = normalize(vec3(-0.55, 0.35, 0.75));
+  float bd = dot(d, nb) + (n2 - 0.5) * 0.12;
+  float band = exp(-bd * bd / 0.016) * (0.4 + 0.8 * n3);
+  c += mix(vec3(0.34, 0.32, 0.62), vec3(0.70, 0.66, 0.85), exp(-bd * bd / 0.004)) * band * 0.06 * (1.0 - 0.7 * dust);
+  // below the horizon: deeper, calmer
+  c *= mix(1.0, 0.42, smoothstep(0.05, -0.45, d.y));
   gl_FragColor = vec4(c, fbm(d * 2.2 + 40.0, 3));
 }`;
 
@@ -160,26 +174,26 @@ void main(){
   float n2 = fbm(vec3(p * 6.5, uSeed + 3.1), 4);
   float lr = log(max(r, 0.03));
   float ph = uArms * (th - lr / uPitch) + (n - 0.5) * 2.4 + uTwist;
-  float arm = pow(0.5 + 0.5 * cos(ph), 2.6);
+  float arm = pow(0.5 + 0.5 * cos(ph), 1.9);
   float armMask = smoothstep(0.06 + 0.1 * uBar, 0.24, r) * (1.0 - smoothstep(0.55, 0.95, r));
   float armI = arm * armMask * (0.5 + 0.9 * n2);
   float disk = exp(-r * 3.6) * (1.0 - smoothstep(0.6, 1.0, r));
   // bar (stretched bulge) for barred variants
   vec2 pb = vec2(p.x, p.y * mix(1.0, 3.2, uBar));
   float rb = length(pb);
-  float bulge = exp(-r * r / 0.010) * 2.6 + exp(-rb * rb / 0.05) * (0.55 + 0.5 * uBar);
+  float bulge = exp(-r * r / 0.007) * 1.35 + exp(-rb * rb / 0.05) * (0.5 + 0.45 * uBar);
   float dust = pow(0.5 + 0.5 * cos(ph - 0.85), 7.0) * smoothstep(0.08, 0.3, r) * (1.0 - smoothstep(0.5, 0.9, r)) * (0.6 + 0.6 * n);
   vec3 armCol = mix(uArm, uArm2, smoothstep(0.25, 0.8, r));
-  vec3 c = uCore * bulge + armCol * (armI * 0.95 + disk * 0.35);
-  float knots = smoothstep(0.66, 0.84, n2) * arm * armMask;
-  c += uKnot * knots * 1.1;
-  // resolved stars sprinkled over arms and disk
-  vec2 g = p * 46.0; vec2 gi = floor(g); vec2 gf = fract(g) - 0.5;
+  vec3 c = uCore * bulge + armCol * (armI * 0.8 + disk * 0.3) + uCore * exp(-r * r / 0.09) * 0.25;
+  float knots = smoothstep(0.62, 0.82, n2) * pow(arm, 1.5) * armMask * smoothstep(0.2, 0.4, r);
+  c += uKnot * knots * 1.3;
+  // a few resolved bright stars along the arms (sparse, soft)
+  vec2 g = p * 30.0; vec2 gi = floor(g); vec2 gf = fract(g) - 0.5;
   vec2 off = vec2(h12(gi + uSeed * 7.0), h12(gi + uSeed * 7.0 + 19.1)) - 0.5;
-  float sd = length(gf - off * 0.6);
-  float st = step(0.8, h12(gi + uSeed * 3.0 + 5.0)) * exp(-sd * sd * 40.0) * (arm * armMask + disk * 0.7);
-  c += vec3(0.85, 0.92, 1.0) * st * 0.9;
-  c *= 1.0 - 0.6 * dust;
+  float sd = length(gf - off * 0.5);
+  float st = step(0.9, h12(gi + uSeed * 3.0 + 5.0)) * exp(-sd * sd * 22.0) * arm * armMask;
+  c += vec3(0.85, 0.92, 1.0) * st * 0.45;
+  c *= 1.0 - 0.55 * dust;
   c *= 1.0 - smoothstep(0.72, 1.0, r);
   gl_FragColor = vec4(c, 1.0);
 }`;
@@ -213,19 +227,32 @@ void main(){
 }`;
 const DOME_FS = /* glsl */`
 ${COMMON}
-uniform sampler2D uSky; uniform mat3 uSkyRot;
-uniform float uIntensity, uNebula, uFringe, uAlpha;
-uniform vec3 uFringeA, uFringeB;
+uniform samplerCube uSky; uniform mat3 uSkyRot;
+uniform float uIntensity, uNebula, uFringe, uAlpha, uBloomA, uBloomR;
+uniform vec3 uFringeA, uFringeB, uBloomC1, uBloomC2, uBloomC3;
 varying vec3 vWorld; varying float vHD;
 void main(){
   vec3 rd = normalize(vWorld - cameraPosition);
   vec3 d = rd * uSkyRot;                 // world -> sky space (uSkyRot is sky -> world)
   vec4 s = cosmosSky(uSky, d);
-  float m = cosmosMask(rd, vHD, (s.a - 0.5) * uSoft * 1.8) * uAlpha;
-  vec3 c = (cosmosBase(d) + s.rgb * uNebula) * uIntensity;
-  float fr = m * (1.0 - m) * 4.0;
-  vec3 fc = mix(uFringeA, uFringeB, s.a) * fr * uFringe;
-  gl_FragColor = vec4(c * m + fc, m);
+  vec3 c;
+  float m = uAlpha;
+  if (uFront > 500.0) c = cosmosBase(d) + s.rgb * uNebula;  // fully revealed: no masking work
+  else {
+    float an = cosmosAng(rd, vHD);
+    float jit = (s.a - 0.5) * uSoft * 1.8;
+    m *= cosmosMaskA(an, jit, uFront);                         // walls dissolve into deep space ...
+    float mn = cosmosMaskA(an, jit * 1.4, uFrontN);            // ... then the nebulae bloom open behind that front
+    float bl = mn * (1.0 - mn) * 4.0;
+    c = cosmosBase(d) * m + s.rgb * uNebula * mn * (1.0 + 0.8 * bl * uFringe);
+    // reveal bloom: soft cloudy light unfurling outward from behind the source
+    float x = an / uBloomR;
+    float g = uBloomA * exp(-x * x) * (0.3 + 1.1 * s.a * s.a) * m;
+    c += mix(mix(uBloomC1, uBloomC2, smoothstep(0.35, 0.65, s.a)), uBloomC3, smoothstep(0.3, 1.0, x)) * g;
+    float fr = m * (1.0 - m) * 4.0; fr *= fr;
+    c += mix(uFringeA, uFringeB, s.a) * fr * uFringe;
+  }
+  gl_FragColor = vec4(c * uIntensity, m);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
@@ -233,21 +260,37 @@ void main(){
 // --- floor veil (sky continuation over a host floor + light pool)
 const FLOOR_FS = /* glsl */`
 ${COMMON}
-uniform sampler2D uSky; uniform mat3 uSkyRot;
-uniform float uIntensity, uNebula, uR0, uR1, uInner, uCover, uGlow;
+uniform samplerCube uSky; uniform mat3 uSkyRot;
+uniform float uIntensity, uNebula, uR0, uR1, uInner, uCover, uGlow, uStars;
+// procedural star field by direction (continues the far star layer over the host floor, which hides the points)
+float hs13(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
+vec3 cosmosStars(vec3 d, float pa){
+  vec3 g = d * 38.0; vec3 gi = floor(g);
+  float h = hs13(gi);
+  if (h < 0.55) return vec3(0.0);
+  vec3 sp = normalize(gi + 0.5 + (vec3(hs13(gi + 1.7), hs13(gi + 5.3), hs13(gi + 9.1)) - 0.5) * 0.6) * 38.0;
+  float dpx = length(g - sp) / 38.0 / max(pa, 1e-5);
+  float L = pow(hs13(gi + 3.3), 6.0);
+  float b = (0.25 + 3.0 * L) * exp(-dpx * dpx * 0.9);
+  return mix(vec3(1.0, 0.95, 0.9), vec3(0.75, 0.85, 1.0), hs13(gi + 7.7)) * b;
+}
 uniform vec3 uCenter, uGlowA, uGlowB;
 varying vec3 vWorld; varying float vHD;
 void main(){
   vec3 rd = normalize(vWorld - cameraPosition);
   vec3 d = rd * uSkyRot;
   vec4 s = cosmosSky(uSky, d);
-  float m = cosmosMask(rd, vHD, (s.a - 0.5) * uSoft * 1.8);
-  vec3 sky = (cosmosBase(d) + s.rgb * uNebula) * uIntensity;
+  float m = 1.0, mn = 1.0;
+  if (uFront < 500.0) {
+    float an = cosmosAng(rd, vHD), jit = (s.a - 0.5) * uSoft * 1.8;
+    m = cosmosMaskA(an, jit, uFront); mn = cosmosMaskA(an, jit * 1.4, uFrontN);
+  }
+  vec3 sky = (cosmosBase(d) + s.rgb * uNebula * mn) * uIntensity;
   vec2 dx = vWorld.xz - uCenter.xz; float r = length(dx);
   float cov = mix(uInner, 1.0, smoothstep(uR0, uR1, r)) * uCover * m;
-  float pool = exp(-r * r / (uR0 * uR0 * 0.35)) * 0.8 + exp(-r * r / (uR0 * uR0 * 1.6)) * 0.35;
-  float ring = exp(-pow((r - uR0 * 0.95) / (uR0 * 0.18), 2.0)) * 0.25;
-  vec3 g = mix(uGlowA, uGlowB, clamp(r / uR0, 0.0, 1.0)) * (pool + ring) * uGlow * m;
+  sky += cosmosStars(d, length(fwidth(rd))) * uIntensity * uStars;
+  float pool = exp(-r * r / (uR0 * uR0 * 0.25)) * 0.22 + exp(-r * r / (uR0 * uR0 * 1.2)) * 0.08;
+  vec3 g = mix(uGlowA, uGlowB, clamp(r / uR0, 0.0, 1.0)) * pool * uGlow * m;
   gl_FragColor = vec4(sky * cov + g, cov);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -347,7 +390,7 @@ varying vec2 vUv; varying vec4 vCol; varying vec4 vCh;
 void main(){
   vec4 wc = modelMatrix * vec4(iPos, 1.0);
   vec4 mv = viewMatrix * wc;
-  float m = iMisc.w < -5.0 ? 1.0 : cosmosMask(normalize(wc.xyz - cameraPosition), cosmosHalfDiag(projectionMatrix), iMisc.w);
+  float m = iMisc.w < -5.0 ? 1.0 : cosmosMaskF(normalize(wc.xyz - cameraPosition), cosmosHalfDiag(projectionMatrix), iMisc.w, uFrontN);
   float c = cos(iMisc.y), s = sin(iMisc.y);
   vec2 q = vec2(c * position.x - s * position.y, s * position.x + c * position.y) * iMisc.x * mix(1.0 - uSwell, 1.0, m);
   mv.xy += q;
@@ -371,6 +414,7 @@ varying vec2 vUv; varying vec4 vCol; varying vec4 vCh;
 void main(){
   vec4 t = texture2D(map, vUv);
   float a = dot(t, vCh);
+  if (a * vCol.a < 0.003) discard;
   gl_FragColor = vec4(vCol.rgb * (uIntensity * a * vCol.a), 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -394,6 +438,21 @@ function bake(renderer, fs, w, h, uniforms = {}, { mip = false, wrapS = THREE.Cl
   renderer.setClearColor(prevClear, prevA);
   mat.dispose(); quad.geometry.dispose();
   return rt.texture;
+}
+
+// bake a direction -> colour shader into a cube map (CubeCamera at the origin inside a big inverted sphere)
+function bakeCube(renderer, vs, fs, size) {
+  const crt = new THREE.WebGLCubeRenderTarget(size, { type: THREE.HalfFloatType, generateMipmaps: false,
+    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+  const mat = new THREE.ShaderMaterial({ vertexShader: vs, fragmentShader: fs, side: THREE.BackSide, depthTest: false, depthWrite: false });
+  const sph = new THREE.Mesh(new THREE.SphereGeometry(10, 96, 64), mat); sph.frustumCulled = false;
+  const sc = new THREE.Scene(); sc.add(sph);
+  const cc = new THREE.CubeCamera(0.1, 100, crt);
+  const prev = renderer.getRenderTarget();
+  cc.update(renderer, sc);
+  renderer.setRenderTarget(prev);
+  mat.dispose(); sph.geometry.dispose();
+  return crt.texture;
 }
 
 function glyphAtlas() {
@@ -453,7 +512,7 @@ class CosmosSet {
   constructor() {
     const renderer = CTX.renderer;
     if (!renderer) throw new Error('COSMOS: CTX.renderer is not set (create the set after main.js init)');
-    this.skyTex = bake(renderer, SKY_BAKE_FS, 2048, 1024, {}, { wrapS: THREE.RepeatWrapping });
+    this.skyTex = bakeCube(renderer, SKY_BAKE_VS, SKY_BAKE_FS, 640);
     this.puffTex = bake(renderer, PUFF_BAKE_FS, 256, 256, {}, { mip: true });
     const GV = [   // galaxy bake variants
       { uArms: 2, uPitch: 0.36, uSeed: 1.3, uBar: 0.0, uTwist: 0.0, uCore: 0xffd9a0, uArm: 0xb4c6ff, uArm2: 0x8a7cff, uKnot: 0xff7fb4 },
@@ -463,7 +522,7 @@ class CosmosSet {
     ];
     this.galTex = GV.map((o) => {
       const u = {};
-      for (const k in o) u[k] = { value: typeof o[k] === 'number' && k.startsWith('uC') || k === 'uArm' || k === 'uArm2' || k === 'uKnot' ? col(o[k]) : o[k] };
+      for (const k in o) u[k] = { value: ['uCore', 'uArm', 'uArm2', 'uKnot'].includes(k) ? col(o[k]) : o[k] };
       return bake(renderer, GAL_BAKE_FS, 512, 512, u, { mip: true });
     });
     this.glyphTex = glyphAtlas();
@@ -476,14 +535,15 @@ class CosmosSet {
     // shared uniforms (same objects referenced by every cosmos material)
     this.U = {
       uSrc: { value: V3(0, 1.6, 0) }, uDomeC: { value: V3(0, 1.5, 0) }, uDomeR: { value: V3(7.5, 6.5, 7.5) },
-      uFront: { value: 1e3 }, uSoft: { value: 0.3 },
+      uFront: { value: 1e3 }, uFrontN: { value: 1e3 }, uSoft: { value: 0.3 },
       uSkyRot: { value: new THREE.Matrix3() }, uTime: { value: 0 },
     };
     const U = this.U;
 
     // sky shell
     this.domeU = { ...U, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uFringe: { value: 1 },
-      uAlpha: { value: 1 }, uFringeA: { value: col(0x7a5cff).multiplyScalar(0.6) }, uFringeB: { value: col(0x3fe0d0).multiplyScalar(0.5) } };
+      uAlpha: { value: 1 }, uBloomA: { value: 0 }, uBloomR: { value: 1 }, uBloomC1: { value: col(0x9a6cff) }, uBloomC2: { value: col(0xff7fb8) },
+      uBloomC3: { value: col(0x3fd8d0) }, uFringeA: { value: col(0x9a7cff).multiplyScalar(0.07) }, uFringeB: { value: col(0x6fe0e8).multiplyScalar(0.05) } };
     this.dome = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 40), new THREE.ShaderMaterial({
       uniforms: this.domeU, vertexShader: DOME_VS, fragmentShader: DOME_FS, side: THREE.BackSide, transparent: true,
       depthWrite: false, blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
@@ -495,7 +555,7 @@ class CosmosSet {
     // floor veil
     this.floorU = { ...U, uSky: { value: this.skyTex }, uIntensity: { value: 1 }, uNebula: { value: 1 }, uR0: { value: 2.2 },
       uR1: { value: 5.5 }, uInner: { value: 0 }, uCover: { value: 1 }, uGlow: { value: 0.5 }, uCenter: { value: V3() },
-      uGlowA: { value: col(0x8f7cff).multiplyScalar(0.55) }, uGlowB: { value: col(0x35c8d8).multiplyScalar(0.35) } };
+      uGlowA: { value: col(0x8f7cff).multiplyScalar(0.55) }, uGlowB: { value: col(0x35c8d8).multiplyScalar(0.35) }, uStars: { value: 1 } };
     const fg = new THREE.CircleGeometry(1, 96); fg.rotateX(-Math.PI / 2);
     this.floor = new THREE.Mesh(fg, new THREE.ShaderMaterial({
       uniforms: this.floorU, vertexShader: DOME_VS, fragmentShader: FLOOR_FS, transparent: true, depthWrite: false,
@@ -548,7 +608,7 @@ class CosmosSet {
     this.nearGroup.add(this.glyphs.mesh);
     const r = rng(777);
     this.glyphDefs = Array.from({ length: 9 }, (_, i) => ({
-      cell: i % 6, col: col(GLYPH_COLS[i % 6]), a0: r() * TAU, rad: 1.3 + r() * 1.5, h: -0.6 + r() * 2.2, sp: (0.035 + r() * 0.03) * (r() < 0.5 ? -1 : 1),
+      cell: i % 6, col: col(GLYPH_COLS[i % 6]), a0: r() * TAU, rad: 1.9 + r() * 1.6, h: 0.2 + r() * 2.0, sp: (0.035 + r() * 0.03) * (r() < 0.5 ? -1 : 1),
       size: 0.11 + r() * 0.06, ph: r() * TAU, th: 0.62 + 0.3 * (i / 9),
     }));
 
@@ -566,7 +626,7 @@ class CosmosSet {
     this.props = { dome: this.dome, floor: this.floor, far: this.far.pts, mid: this.mid.pts, near: this.near.pts, puffs: this.puffs.mesh,
       galaxies: this.gals.map((g) => g.m), glyphs: this.glyphs.mesh, hemi: this.hemi, key: this.key, skyTex: this.skyTex };
     this._q = new THREE.Quaternion(); this._m4 = new THREE.Matrix4();
-    this.update(0, {});
+    this.update(0, { eyeLight: 0 });
   }
 
   // ---- star generation (deterministic)
@@ -586,7 +646,7 @@ class CosmosSet {
   }
   _farStars(n) {
     const r = rng(4242), pos = new Float32Array(n * 3), cl = new Float32Array(n * 4), misc = new Float32Array(n * 4);
-    const nb = nrm(0.62, 0.42, 0.66), c = new THREE.Color(), d = V3();
+    const nb = nrm(-0.55, 0.35, 0.75), c = new THREE.Color(), d = V3();
     let i = 0, guard = 0;
     while (i < n && guard++ < n * 20) {
       const z = r() * 2 - 1, a = r() * TAU, s = Math.sqrt(1 - z * z);
@@ -673,15 +733,19 @@ class CosmosSet {
     this.nearGroup.position.set(src[0], src[1], src[2]);
 
     // sky rotation (sky -> world)
-    this._q.setFromAxisAngle(SKY_AXIS, clock * SKY_RATE);
+    // bounded drift: starts at SKY_RATE rad/s and never wanders more than ±SKY_SWING from the designed layout,
+    // so compositions (which galaxy is where) do not depend on absolute film time
+    const ang = SKY_SWING * Math.sin(clock * SKY_RATE / SKY_SWING);
+    this._q.setFromAxisAngle(SKY_AXIS, ang);
     U.uSkyRot.value.setFromMatrix4(this._m4.makeRotationFromQuaternion(this._q));
-    this.midGroup.quaternion.setFromAxisAngle(SKY_AXIS, clock * SKY_RATE * 0.7);
+    this.midGroup.quaternion.setFromAxisAngle(SKY_AXIS, ang * 0.7);
 
     // reveal stages
     const kindle = clamp(reveal / 0.3);
-    const ub = clamp((reveal - 0.12) / 0.78);
-    const front = ub >= 0.999 || reveal >= 0.999 ? 1e3 : 0.55 * ub / (1 - ub);
-    U.uFront.value = front;
+    const fr = (u) => (u >= 0.999 || reveal >= 0.999 ? 1e3 : 0.55 * u / (1 - u));
+    const ub = clamp((reveal - 0.12) / 0.72), un = clamp((reveal - 0.24) / 0.72);
+    const front = fr(ub);
+    U.uFront.value = front; U.uFrontN.value = un <= 0 ? -1 : fr(un);
     U.uSoft.value = 0.22 + 0.22 * Math.min(front, 3);
     const galStage = clamp((reveal - 0.5) / 0.5);
     const glyphStage = clamp((reveal - 0.6) / 0.4);
@@ -692,7 +756,7 @@ class CosmosSet {
     D.uAlpha.value = smooth(ub * 6);
     this.dome.visible = reveal > 0.11;
     const F = this.floorU, fo = opts.floor || {};
-    F.uIntensity.value = I; F.uNebula.value = opts.nebula ?? 1;
+    F.uIntensity.value = I; F.uNebula.value = opts.nebula ?? 1; F.uStars.value = opts.stars ?? 1;
     F.uCenter.value.set(c[0], c[1], c[2]);
     const r0 = fo.r0 ?? 2.2;
     const h = lift;   // shell centre above the floor plane
@@ -700,7 +764,8 @@ class CosmosSet {
     F.uR0.value = Math.min(r0, rInt * 0.6); F.uR1.value = Math.min(fo.r1 ?? 5.5, rInt * 0.97);
     F.uInner.value = fo.inner ?? 0; F.uCover.value = fo.cover ?? (standalone ? 0 : 1);
     F.uGlow.value = (fo.glow ?? (standalone ? 1 : 0.35)) * I * smooth(reveal * 2);
-    this.floor.position.set(c[0], c[1] + 0.004, c[2]); this.floor.scale.setScalar(rInt * 1.02);
+    this.floor.position.set(c[0], c[1] + 0.004, c[2]);
+    this.floor.scale.setScalar(F.uCover.value > 0 || F.uInner.value > 0 ? rInt * 1.02 : Math.min(rInt, F.uR0.value * 1.9));
     this.floor.visible = reveal > 0.11;
 
     // stars
@@ -709,7 +774,8 @@ class CosmosSet {
     this.mid.mat.uniforms.uIntensity.value = I * S;
     this.near.mat.uniforms.uIntensity.value = I * S;
     this.near.mat.uniforms.uKindle.value = kindle;
-    this.far.pts.visible = reveal > 0.11; this.mid.pts.visible = reveal > 0.11;
+    this.far.pts.visible = this.mid.pts.visible = reveal > 0.11 && S > 0;
+    this.near.pts.visible = reveal > 0.005 && S > 0;
     // near stars orbit the source very slowly
     this.nearGroup.rotation.set(0, clock * 0.02, 0);
 
@@ -723,7 +789,12 @@ class CosmosSet {
       this.puffs.add(pp, p.s, pc, p.a, i * 1.7 + clock * 0.004 * (i % 2 ? 1 : -1), p.ch, 0.0);
     });
     this.puffs.end();
-    this.puffs.mesh.visible = reveal > 0.11;
+    this.puffs.mesh.visible = reveal > 0.2 && (opts.puffs ?? 1) * (opts.nebula ?? 1) > 0;
+
+    // reveal bloom (stage .14 -> .72), drawn by the sky shell itself
+    const bs = clamp((reveal - 0.14) / 0.58);
+    D.uBloomR.value = lerp(0.35, 2.4, 1 - Math.pow(1 - bs, 2));
+    D.uBloomA.value = bs > 0 && bs < 1 ? 0.30 * Math.pow(Math.sin(Math.PI * bs), 1.2) * (opts.bloom ?? 1) * (opts.nebula ?? 1) : 0;
 
     // galaxies: spin, drift in, fade in (staggered)
     const Gm = opts.galaxies ?? 1;
@@ -737,7 +808,7 @@ class CosmosSet {
       aAxis.copy(g.dir0).cross(SKY_AXIS).normalize();
       g.u.uGDir.value.copy(g.dir0).applyAxisAngle(aAxis, (1 - a) * 0.11).normalize();
       g.u.uGSize.value = g.G.size * (0.8 + 0.2 * a);
-      g.m.visible = a > 0.001;
+      g.m.visible = a > 0.001 && Gm > 0;
     }
 
     // glyphs
@@ -756,6 +827,7 @@ class CosmosSet {
       }
     }
     this.glyphs.end();
+    this.glyphs.mesh.visible = this.glyphs.n > 0 && (opts.glyphs ?? 1) > 0;
 
     // lights
     const L = (opts.light ?? 1) * smooth(reveal * 1.3);

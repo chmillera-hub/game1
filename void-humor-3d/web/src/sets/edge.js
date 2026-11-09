@@ -5,8 +5,8 @@
 //
 // Layout (metres, Y up, camera usually at +Z looking toward -Z):
 //   - a flat soft-grass clearing (y = 0 exactly for r < 7.5 m) where the characters act,
-//   - a pale winding PATH that comes from behind the camera (+Z), runs through the clearing (x ≈ -0.35 at z = 0)
-//     and winds away over rolling pastel hills, climbs a gentle crest (~46 m out: anchors.pathFar) and then
+//   - a pale winding PATH that sweeps in from behind the camera on the left (-X,+Z), passes ~2.5 m BEHIND the
+//     acting line (closest to the origin at ≈ (-0.6, 0, -2.6) = anchors.pathStart) and winds away over rolling hills, climbs a gentle crest (~46 m out: anchors.pathFar) and then
 //     reappears on the far hills, converging into a gap in the far ridge right under the low sun,
 //   - a sky dome (gold -> peach -> lilac -> indigo zenith, belt-of-Venus pink on the anti-sun side), a huge soft
 //     sun glow ~8° left of -Z, backlit billboard clouds, a few early stars, and an optional Void "cosmic bleed",
@@ -46,8 +46,8 @@ const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= TAU; while (
 
 // ------------------------------------------------------------------------------------------- the path
 // control points (x, z): from behind the camera, through the clearing, over the crest, into the sun gap
-const PATH_CTRL = [[5.0, 36], [2.8, 19], [1.0, 8.5], [-0.2, 2.4], [-0.5, -3], [-1.5, -9], [-1.6, -15.5], [-0.4, -22],
-  [1.2, -29], [0.6, -37], [-1.0, -46], [-3.0, -56], [-3.8, -68], [-5.6, -86], [-9.0, -110], [-13.5, -140],
+const PATH_CTRL = [[-15, 30], [-9.5, 15], [-5.6, 4.6], [-2.6, -1.0], [-0.2, -3.0], [1.1, -6.4], [0.5, -11], [-1.1, -16], [-0.9, -22],
+  [0.9, -29], [0.6, -37], [-1.0, -46], [-3.0, -56], [-3.8, -68], [-5.6, -86], [-9.0, -110], [-13.5, -140],
   [-19.5, -175], [-27.0, -215], [-35.0, -255], [-42.0, -298], [-46.0, -322]];
 const PATH = (() => {
   const curve = new THREE.CatmullRomCurve3(PATH_CTRL.map(([x, z]) => V3(x, 0, z)), false, 'centripetal');
@@ -118,9 +118,10 @@ const U = {
   uEHazeDen: { value: 0.0042 }, uEHazeMax: { value: 0.96 },
   uEVoid: { value: 0 }, uEVoidCos: { value: Math.cos(36 * DEG) }, uEVoidUp: { value: 0.32 },
   uEVoidPos: { value: V3(0, 3.2, 0) },
+  uEKeyDir: { value: V3(0, 1, 0) },
 };
 const SKY_PARS = /* glsl */`
-uniform vec3 uESunDir, uESunCol, uEHorS, uEHorA, uELowS, uELowA, uEMid, uEHigh, uEZen, uEBelt, uEShadow, uEVoidPos;
+uniform vec3 uEKeyDir, uESunDir, uESunCol, uEHorS, uEHorA, uELowS, uELowA, uEMid, uEHigh, uEZen, uEBelt, uEShadow, uEVoidPos;
 uniform float uEGlow, uEHazeDen, uEHazeMax, uEVoid, uEVoidCos, uEVoidUp, uETime;
 float eHash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
 float eNoise(vec3 x){ vec3 i = floor(x); vec3 f = fract(x); f = f * f * (3.0 - 2.0 * f);
@@ -140,11 +141,10 @@ vec3 eSkyGrad(vec3 d){
   float wa = pow(0.5 - 0.5 * ca, 2.0);
   c += uEBelt * wa * exp(-pow((hp - 0.17) / 0.08, 2.0));
   c = mix(c, uEShadow, wa * 0.6 * exp(-pow(hp / 0.06, 2.0)));
-  float dAz = acos(clamp(ca, -1.0, 1.0));
+  float dAz2 = 2.0 * (1.0 - ca);                         // ≈ azimuth difference² (no acos: cheaper on SwiftShader)
   float dEl = h - uESunDir.y;
-  float broad = exp(-(dAz * dAz / 0.5 + dEl * dEl / 0.018));
-  float ang = acos(clamp(dot(d, uESunDir), -1.0, 1.0));
-  float mid = exp(-ang * ang / 0.03);
+  float broad = exp(-(dAz2 / 0.5 + dEl * dEl / 0.018));
+  float mid = exp(-2.0 * (1.0 - dot(d, uESunDir)) / 0.03);
   c += uESunCol * uEGlow * (0.26 * broad + 0.3 * mid);
   return c;
 }
@@ -164,16 +164,16 @@ float eVoidMask(vec3 d){
  * edgify(material, opts): inject the set's atmospheric haze (+ optional grass forward-scatter / sheen, flower sway)
  * into a built-in material (Lambert / Standard / Physical / Basic), chaining an existing core `enhance()` hook.
  */
-function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze = 1, self = 0 } = {}) {
+function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze = 1, self = 0, form = 0 } = {}) {
   const prev = mat.onBeforeCompile;
   const enhanced = !!mat.userData.uniforms;
-  const L = { uEScatter: { value: scatter }, uESheen: { value: sheen }, uEHazeMul: { value: haze }, uESelf: { value: self } };
+  const L = { uEScatter: { value: scatter }, uESheen: { value: sheen }, uEHazeMul: { value: haze }, uESelf: { value: self }, uEForm: { value: form } };
   mat.userData.edge = L;
   mat.onBeforeCompile = (sh, r) => {
     if (enhanced) prev.call(mat, sh, r);
     Object.assign(sh.uniforms, U, L);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nuniform float uETime;')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nvarying vec4 vEHz;\nuniform float uEHazeMul;\n' + SKY_PARS)
       .replace('#include <begin_vertex>', sway ? `#include <begin_vertex>
         {
           float eph = 0.0;
@@ -191,14 +191,21 @@ function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze
           ewp = instanceMatrix * ewp;
         #endif
           vEW = (modelMatrix * ewp).xyz;
-        }`);
-    let fs = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nuniform float uEScatter, uESheen, uEHazeMul, uESelf;\n' + SKY_PARS)
-      .replace('#include <fog_fragment>', `{
+          // atmospheric haze, evaluated per vertex (smooth at every scale; saves a sky evaluation per pixel)
           vec3 edv = vEW - cameraPosition; float edist = length(edv); vec3 ed = edv / max(edist, 1e-3);
           float eden = uEHazeDen * (0.55 + 0.45 * exp(-max(vEW.y, 0.0) * 0.04));
           float ehz = 1.0 - exp(-pow(edist * eden, 1.3));
-          gl_FragColor.rgb = mix(gl_FragColor.rgb, eHaze(ed), clamp(ehz * uEHazeMax * uEHazeMul, 0.0, 1.0));
+          vEHz = vec4(eHaze(ed), clamp(ehz * uEHazeMax * uEHazeMul, 0.0, 1.0));
+        }`);
+    let fs = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vEW;\nvarying vec4 vEHz;\nuniform float uEScatter, uESheen, uESelf, uEForm;\nuniform vec3 uEKeyDir, uESunDir, uESunCol;\n')
+      .replace('#include <fog_fragment>', `{
+          ${grass ? `{ // hill form: slopes turned toward the (back) sun key brighten, slopes facing away darken (beyond the clearing)
+            vec3 enW = normalize((vec4(normal, 0.0) * viewMatrix).xyz);
+            float ef = clamp(1.0 + 0.9 * (dot(enW, uEKeyDir) - uEKeyDir.y), 0.7, 1.18);
+            gl_FragColor.rgb *= mix(1.0, ef, uEForm * smoothstep(8.0, 22.0, length(vEW.xz)));
+          }` : ''}
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, vEHz.rgb, vEHz.a);
         }`);
     if (grass) fs = fs.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         {
@@ -217,12 +224,12 @@ function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze
 
 // ------------------------------------------------------------------------------------------- palettes (tod 0 / tod 1)
 const PAL = [
-  { horS: 0xffcf96, horA: 0xeab2b0, lowS: 0xf7b294, lowA: 0xe4a4bc, mid: 0xd29ac4, high: 0x968ac8, zen: 0x4a4896,
-    belt: 0x3a1c24, shadow: 0xa89cd0, sun: 0xffae5c, glow: 0.95, disc: [4.2, 3.0, 1.55],
-    key: 0xffd9a8, keyI: 2.6, fill: 0xffe2d2, fillI: 2.0, hemiS: 0xb8bcff, hemiG: 0xe8b4a8, hemiI: 1.0,
+  { horS: 0xfcc088, horA: 0xeab2b0, lowS: 0xf4a88e, lowA: 0xe4a4bc, mid: 0xd29ac4, high: 0x968ac8, zen: 0x4a4896,
+    belt: 0x3a1c24, shadow: 0xa89cd0, sun: 0xffae5c, glow: 0.95, disc: [2.9, 1.9, 0.8],
+    key: 0xffd9a8, keyI: 2.3, fill: 0xffe2d2, fillI: 1.8, hemiS: 0xb8bcff, hemiG: 0xe8b4a8, hemiI: 1.0,
     cShade: 0xb092c4, cLit: 0xffc8b0, haze: 0.0042, exposure: 1.0, warm: 0.06 },
   { horS: 0xff9a58, horA: 0xd598ae, lowS: 0xf68a7c, lowA: 0xb889b8, mid: 0xa476b6, high: 0x5f4da0, zen: 0x1d1b50,
-    belt: 0x40182c, shadow: 0x8576b0, sun: 0xff7e44, glow: 1.12, disc: [4.4, 2.0, 0.75],
+    belt: 0x40182c, shadow: 0x8576b0, sun: 0xff7e44, glow: 1.12, disc: [3.2, 1.35, 0.45],
     key: 0xffa070, keyI: 2.1, fill: 0xfac0c4, fillI: 1.65, hemiS: 0x8c86e0, hemiG: 0xc890a0, hemiI: 0.9,
     cShade: 0x76609c, cLit: 0xff9a80, haze: 0.0048, exposure: 0.97, warm: 0.12 },
 ].map((p) => {
@@ -234,12 +241,12 @@ const PAL = [
 // ------------------------------------------------------------------------------------------- terrain
 function buildTerrain() {
   const radii = [0];
-  { let r = 0; while (r < TERRAIN_R) { r += Math.max(0.55, r * 0.042); radii.push(Math.min(r, TERRAIN_R)); } }
-  const NA = 240;
+  { let r = 0; while (r < TERRAIN_R) { r += Math.max(0.6, r * 0.048); radii.push(Math.min(r, TERRAIN_R)); } }
+  const NA = 208;
   const nV = 1 + (radii.length - 1) * NA;
   const pos = new Float32Array(nV * 3), colA = new Float32Array(nV * 3);
   const C = { mint: col(0x84d8b0), peach: col(0xf6b896), lilac: col(0xb6a0ee), rose: col(0xf0a0c0), cream: col(0xf0d4b6),
-    sage: col(0x96d6ae), far: col(0xc4a2d8) };
+    sage: col(0x88dcaa), far: col(0xc4a2d8) };
   const tmp = new THREE.Color();
   const setV = (i, x, z) => {
     const [dp] = pathDist(x, z);
@@ -258,7 +265,7 @@ function buildTerrain() {
     // far hills drift toward a lilac-rose
     tmp.lerp(C.far, smoothstep(90, 260, r) * 0.45);
     // worn, paler grass along the path edges
-    tmp.lerp(C.cream, Math.exp(-Math.pow(dp / 1.4, 2)) * 0.25 * (1 - smoothstep(150, 300, r)));
+    tmp.lerp(C.cream, Math.exp(-Math.pow(dp / 1.2, 2)) * 0.2 * (1 - smoothstep(150, 300, r)));
     // gentle tonal variation (2-4 m), crests a touch lighter
     const k = 1 + 0.035 * fbm2(x / 3.2, z / 3.2, 77) + 0.012 * clamp(y, -3, 6);
     colA[i * 3] = tmp.r * k; colA[i * 3 + 1] = tmp.g * k; colA[i * 3 + 2] = tmp.b * k;
@@ -287,11 +294,31 @@ function buildTerrain() {
   g.computeVertexNormals();
   // winding check: normals must point up
   if (g.attributes.normal.array[1] < 0) { const n = g.attributes.normal.array; for (let i = 0; i < n.length; i++) n[i] = -n[i]; g.index.array.reverse(); }
-  const mat = edgify(new THREE.MeshLambertMaterial({ vertexColors: true }), { grass: true, scatter: 0.22, sheen: 0.06, self: 0.16 });
-  const mesh = new THREE.Mesh(g, mat);
-  mesh.receiveShadow = true;
-  mesh.name = 'edge.terrain';
-  return mesh;
+  const mat = edgify(new THREE.MeshLambertMaterial({ vertexColors: true }), { grass: true, scatter: 0.22, sheen: 0.06, self: 0.16, form: 1 });
+  return splitByRadius(g, mat, 'edge.terrain');
+}
+// Split a ground mesh into an inner part (r < SHADOW_R: always receives the key's shadows) and an outer part (receives
+// them only when update(opts.shadowAt) moves the frustum away from the origin). PCF-soft costs 16 taps per pixel, so
+// this keeps the far ground cheap in the usual shots.
+const SHADOW_R = 18;
+function splitByRadius(g, mat, name) {
+  const p = g.attributes.position.array, ix = g.index.array, inn = [], out = [];
+  const rr = (v) => Math.hypot(p[v * 3], p[v * 3 + 2]);
+  for (let i = 0; i < ix.length; i += 3) {
+    const a = ix[i], b = ix[i + 1], c = ix[i + 2];
+    (Math.max(rr(a), rr(b), rr(c)) <= SHADOW_R ? inn : out).push(a, b, c);
+  }
+  const grp = new THREE.Group(); grp.name = name;
+  for (const [list, key] of [[inn, 'inner'], [out, 'outer']]) {
+    const sub = new THREE.BufferGeometry();
+    for (const k in g.attributes) sub.setAttribute(k, g.attributes[k]);
+    sub.setIndex(list);
+    const m = new THREE.Mesh(sub, mat);
+    m.receiveShadow = key === 'inner'; m.renderOrder = mat.transparent ? -10 : 0; m.name = name + '.' + key;
+    grp.add(m); grp.userData[key] = m;
+  }
+  grp.userData.material = mat;
+  return grp;
 }
 
 // ------------------------------------------------------------------------------------------- path ribbon
@@ -299,7 +326,7 @@ function buildPath() {
   const { X, Z, N } = PATH;
   const ACROSS = [-1, -0.55, 0, 0.55, 1], AL = [0, 0.82, 1, 0.82, 0];
   const pos = [], colA = [], idx = [];
-  const cC = col(0xf6e2c8), cE = col(0xeac8a6);
+  const cC = col(0xf4e4cc), cE = col(0xe8ceb0);
   const i0 = 0, step = 1;
   let rows = 0;
   for (let i = i0; i <= N; i += step) {
@@ -308,7 +335,7 @@ function buildPath() {
     let tx = X[ip] - X[im], tz = Z[ip] - Z[im]; const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
     const nx = -tz, nz = tx;
     const r = Math.hypot(x, z);
-    const w = (0.78 + 0.07 * noise1(i * 0.021, 3) + 0.06 * Math.sin(i * 0.013)) * lerp(1.0, 1.9, smoothstep(40, 220, r));
+    const w = (0.7 + 0.06 * noise1(i * 0.021, 3) + 0.05 * Math.sin(i * 0.013)) * lerp(1.0, 2.0, smoothstep(40, 220, r));
     const endFade = 1 - smoothstep(N - 70, N, i);
     const lift = 0.012 + r * 0.0007;
     for (let k = 0; k < ACROSS.length; k++) {
@@ -330,15 +357,13 @@ function buildPath() {
   g.computeVertexNormals();
   if (g.attributes.normal.array[1] < 0) { g.index.array.reverse(); g.computeVertexNormals(); }
   const mat = edgify(new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, depthWrite: false,
-    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), { grass: true, scatter: 0.32, sheen: 0.04, self: 0.08 });
-  const mesh = new THREE.Mesh(g, mat);
-  mesh.receiveShadow = true; mesh.renderOrder = -10; mesh.name = 'edge.path';
-  return mesh;
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), { grass: true, scatter: 0.26, sheen: 0.04, self: 0.06 });
+  return splitByRadius(g, mat, 'edge.path');
 }
 
 // ------------------------------------------------------------------------------------------- sky
 const SKY_FS = /* glsl */`
-varying vec3 vW;
+varying vec3 vW; varying vec3 vGrad;
 uniform float uEStars, uESunR;
 uniform vec3 uEDisc;
 ${SKY_PARS}
@@ -353,13 +378,15 @@ float eStar(vec3 d, float dens){
 }
 void main(){
   vec3 d = normalize(vW - cameraPosition);
-  vec3 c = eSkyGrad(d);
-  float ang = acos(clamp(dot(d, uESunDir), -1.0, 1.0));
-  c += uESunCol * uEGlow * 0.7 * exp(-ang * ang / 0.0032);
+  vec3 c = vGrad;                                         // smooth gradient: evaluated per vertex (dense near the horizon)
+  float ang2 = 2.0 * (1.0 - dot(d, uESunDir));            // ≈ angle² to the sun (small-angle exact)
+  c += uESunCol * uEGlow * 0.55 * exp(-ang2 / 0.0032);
   // a warm glowing line hugging the horizon under the sun
   vec2 dh = normalize(d.xz + vec2(1e-6, 0.0));
-  float dAz = acos(clamp(dot(dh, normalize(uESunDir.xz)), -1.0, 1.0));
-  c += uESunCol * uEGlow * 0.3 * exp(-pow(max(d.y, 0.0) / 0.018, 2.0)) * exp(-dAz * dAz / 0.12);
+  float dAz2 = 2.0 * (1.0 - dot(dh, normalize(uESunDir.xz)));
+  float hy = max(d.y, 0.0) / 0.018;
+  c += uESunCol * uEGlow * 0.3 * exp(-hy * hy - dAz2 / 0.12);
+  float ang = sqrt(max(ang2, 0.0));
   float disc = smoothstep(uESunR + 0.011, uESunR - 0.004, ang);
   c = mix(c, uEDisc, disc);
   float vm = eVoidMask(d);
@@ -374,8 +401,10 @@ void main(){
   }
   float sh = smoothstep(0.26, 0.8, d.y);
   float dens = uEStars * 0.016 * sh + vm * 0.05;
-  float st = eStar(d, dens) * (uEStars * 1.1 * sh + vm * 1.6);
-  c += vec3(0.95, 0.93, 1.0) * st * 1.8;
+  if (dens > 1e-4) {
+    float st = eStar(d, dens) * (uEStars * 1.1 * sh + vm * 1.6);
+    c += vec3(0.95, 0.93, 1.0) * st * 1.8;
+  }
   gl_FragColor = vec4(c, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -383,12 +412,27 @@ void main(){
 function buildSky() {
   const L = { uEStars: { value: 0.4 }, uESunR: { value: 0.040 }, uEDisc: { value: V3(7, 5, 2.9) } };
   const mat = new THREE.ShaderMaterial({
-    uniforms: { ...U, ...L }, side: THREE.BackSide, depthWrite: false, fog: false,
-    vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    uniforms: { ...U, ...L }, side: THREE.DoubleSide, depthWrite: false, fog: false,
+    vertexShader: `varying vec3 vW; varying vec3 vGrad;\n${SKY_PARS}\nvoid main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
+      vGrad = eSkyGrad(normalize(w.xyz - cameraPosition)); gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: SKY_FS,
   });
-  const m = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 48, 24), mat);
-  m.renderOrder = -1000; m.frustumCulled = false; m.name = 'edge.sky';
+  // lat-long dome with rings every ~1° near the horizon (where the gradient changes fastest), coarser above
+  const els = [-90, -45, -20, -10, -6, -4, -3, -2, -1.2, -0.5, 0, 0.6, 1.3, 2];
+  for (let e = 3; e <= 20; e += 1) els.push(e);
+  for (let e = 22.5; e <= 45; e += 2.5) els.push(e);
+  for (let e = 50; e <= 90; e += 5) els.push(e);
+  const NA = 160, sp = [], si = [];
+  els.forEach((e) => { for (let i = 0; i <= NA; i++) { const d = dirAzEl((i / NA) * TAU, e * DEG); sp.push(d.x * SKY_R, d.y * SKY_R, d.z * SKY_R); } });
+  for (let j = 0; j < els.length - 1; j++) for (let i = 0; i < NA; i++) {
+    const a0 = j * (NA + 1) + i, b0 = a0 + NA + 1;
+    si.push(a0, a0 + 1, b0, a0 + 1, b0 + 1, b0);
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); sg.setIndex(si);
+  const m = new THREE.Mesh(sg, mat);
+  // drawn LAST among opaques (depth-tested, no depth write): early-z skips every sky pixel hidden by terrain/props/characters
+  m.renderOrder = 1000; m.frustumCulled = false; m.name = 'edge.sky';
   m.userData.L = L;
   return m;
 }
@@ -416,7 +460,7 @@ function cloudAtlas() {
     } else if (type === 'bank') {
       for (let i = 0; i < 18; i++) { const u = (i + 0.5) / 18; const rr = 0.04 + 0.07 * Math.sin(u * Math.PI) * (0.5 + 0.7 * R()); blobs.push([0.04 + 0.92 * u, 0.28 + rr * 0.9, rr * 1.5, rr]); }
     } else {
-      for (let i = 0; i < 14; i++) { const u = (i + 0.5) / 14; const rr = 0.03 + 0.035 * Math.sin(u * Math.PI) * (0.5 + 0.7 * R()); blobs.push([0.03 + 0.94 * u, 0.42 + 0.1 * Math.sin(u * 5 + 1) + (R() - 0.5) * 0.06, rr * 3.0, rr]); }
+      for (let i = 0; i < 26; i++) { const u = R(); const env = Math.pow(Math.sin(u * Math.PI), 0.7); const rr = (0.012 + 0.04 * env * R()) * (R() < 0.25 ? 0.4 : 1); blobs.push([0.05 + 0.9 * u, 0.45 + 0.12 * Math.sin(u * 4.2 + 1) + (R() - 0.5) * 0.08 * env, rr * (2.5 + 3 * R()), rr]); }
     }
     const bottom = type === 'streak' ? 0.0 : 0.2;
     for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
@@ -434,7 +478,7 @@ function cloudAtlas() {
         const d = D[y * CW + x];
         let db = 0; for (let k = -5; k <= 5; k++) db += D[y * CW + clamp(x + k, 0, CW - 1)];
         db /= 11;
-        const cov = smoothstep(0.3, 1.1, d);
+        const cov = type === 'streak' ? smoothstep(0.05, 1.1, d) * 0.85 : smoothstep(0.22, 1.2, d);
         const thin = cov * (1 - smoothstep(0.35, 2.4, d));
         const lit = Math.exp(-acc * 0.03);
         acc += db;
@@ -448,24 +492,31 @@ function cloudAtlas() {
   tex.needsUpdate = true;
   return tex;
 }
-const CLOUD_FS = /* glsl */`
-varying vec2 vUv; varying vec3 vW; varying vec2 vCl;
-uniform sampler2D uMap; uniform vec3 uCShade, uCLit; uniform float uCOpacity;
+const CLOUD_VS = /* glsl */`
+attribute vec2 aCl; varying vec2 vUv; varying vec2 vCl; varying vec3 vBg; varying vec3 vSun;
 ${SKY_PARS}
+void main(){
+  vUv = uv; vCl = aCl;
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vec3 d = normalize(w.xyz - cameraPosition);
+  float sp = max(dot(d, uESunDir), 0.0);
+  vSun = vec3(pow(sp, 14.0), pow(sp, 3.0), eVoidMask(d));      // near-sun, sun-side, void bleed
+  vBg = eSkyGrad(d);
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`;
+const CLOUD_FS = /* glsl */`
+varying vec2 vUv; varying vec2 vCl; varying vec3 vBg; varying vec3 vSun;
+uniform sampler2D uMap; uniform vec3 uCShade, uCLit, uESunCol; uniform float uCOpacity, uEGlow;
 void main(){
   vec4 tx = texture2D(uMap, vUv);
   float a = tx.r * vCl.x * uCOpacity;
   if (a < 0.004) discard;
-  vec3 d = normalize(vW - cameraPosition);
-  float sp = max(dot(d, uESunDir), 0.0);
-  float near = pow(sp, 14.0), side = pow(sp, 3.0);
-  vec3 bg = eSkyGrad(d);
+  float near = vSun.x, side = vSun.y, vm = vSun.z;
   // lit from below by the low sun (B = light reaching this point through the cloud); backlit near the sun
   vec3 body = mix(uCShade, uCLit, tx.b);
   body = mix(body, uCShade * 0.85, near * 0.55);
-  vec3 c = mix(body, bg, 0.18);
-  c += uESunCol * uEGlow * tx.g * (0.02 + 1.4 * near + 0.1 * side) * vCl.y;
-  float vm = eVoidMask(d);
+  vec3 c = mix(body, vBg, 0.18);
+  c += uESunCol * uEGlow * tx.g * (1.4 * near + 0.06 * side) * vCl.y;
   c = mix(c, vec3(0.05, 0.035, 0.12), vm * 0.85);
   a *= 1.0 - vm * 0.6;
   gl_FragColor = vec4(c, a);
@@ -496,15 +547,20 @@ function buildClouds() {
     const hgt = w * (v === 3 ? 0.32 : v === 2 ? 0.34 : 0.5) * (0.9 + 0.2 * R());
     const flip = R() < 0.5;
     const u0 = (v % 2) * 0.5, v0 = Math.floor(v / 2) * 0.5;
-    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-    for (const [sx, sy] of corners) {
+    // subdivided quad (the sky colour behind / sun proximity are evaluated per vertex)
+    const NX = 8, NY = 4, b0 = pos.length / 3;
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+      const sx = (i / NX) * 2 - 1, sy = (j / NY) * 2 - 1;
       const p = c.clone().addScaledVector(right, sx * w / 2).addScaledVector(upv, sy * hgt / 2);
       pos.push(p.x, p.y, p.z);
       const ux = flip ? -sx : sx;
       uv.push(u0 + (ux * 0.5 + 0.5) * 0.5, v0 + (sy * 0.5 + 0.5) * 0.5);
       cl.push(op, rim);
     }
-    const b = n * 4; idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+      const q = b0 + j * (NX + 1) + i;
+      idx.push(q, q + 1, q + NX + 2, q, q + NX + 2, q + NX + 1);
+    }
   });
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -514,7 +570,7 @@ function buildClouds() {
   const L = { uMap: { value: cloudAtlas() }, uCShade: { value: new THREE.Color() }, uCLit: { value: new THREE.Color() }, uCOpacity: { value: 1 } };
   const mat = new THREE.ShaderMaterial({
     uniforms: { ...U, ...L }, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide,
-    vertexShader: 'attribute vec2 aCl; varying vec2 vUv; varying vec3 vW; varying vec2 vCl; void main(){ vUv = uv; vCl = aCl; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    vertexShader: CLOUD_VS,
     fragmentShader: CLOUD_FS,
   });
   const m = new THREE.Mesh(g, mat);
@@ -538,7 +594,7 @@ function blobCluster(R, n, spread, rMin, rMax, flatY = 0.85) {
   for (let i = 0; i < n; i++) {
     const a = R() * TAU, d = Math.sqrt(R()) * spread;
     const rr = lerp(rMin, rMax, R());
-    const g = new THREE.SphereGeometry(rr, 24, 16);
+    const g = new THREE.SphereGeometry(rr, 20, 14);
     g.scale(1, flatY, 1);
     g.translate(Math.cos(a) * d, rr * flatY * 0.75 + R() * spread * 0.35, Math.sin(a) * d);
     geos.push(g);
@@ -558,7 +614,7 @@ function buildBush(x, z, s, hue, seed) {
   const m = new THREE.Mesh(g, glowMat(hue, { glow: 0.26, rim: 0.85 }));
   m.position.set(x, groundAt(x, z) - 0.06, z);
   m.rotation.y = R() * TAU;
-  m.castShadow = true; m.receiveShadow = true;
+  m.castShadow = true;
   m.name = 'edge.bush';
   return m;
 }
@@ -569,9 +625,9 @@ function buildTree(x, z, H, hue, seed) {
   grp.position.set(x, groundAt(x, z) - 0.05, z);
   grp.rotation.y = R() * TAU;
   // trunk: a soft, slightly S-curved lathe with a flared foot
-  const th = H * 0.56;
+  const th = H * 0.5;
   const prof = [];
-  for (let i = 0; i <= 14; i++) { const u = i / 14; prof.push(new THREE.Vector2((lerp(0.17, 0.085, Math.pow(u, 0.7)) + 0.16 * Math.exp(-u * 14)) * k, u * th)); }
+  for (let i = 0; i <= 14; i++) { const u = i / 14; prof.push(new THREE.Vector2((lerp(0.24, 0.13, Math.pow(u, 0.7)) + 0.2 * Math.exp(-u * 12)) * k, u * th)); }
   const tg = new THREE.LatheGeometry(prof, 16);
   const bend = (0.25 + 0.2 * R()) * k, ph = R() * 2;
   const tp = tg.attributes.position;
@@ -583,9 +639,9 @@ function buildTree(x, z, H, hue, seed) {
   const trunk = new THREE.Mesh(tg, trunkMat); trunk.castShadow = true; grp.add(trunk);
   const top = V3(bend * Math.sin(2.4 + ph), th, 0);
   // canopy: a full, soft cluster of glowing puffs (wider than tall), with a faint light halo
-  const cg = blobCluster(R, 8, 0.95 * k, 0.48 * k, 0.86 * k, 0.88);
+  const cg = blobCluster(R, 9, 0.78 * k, 0.6 * k, 0.98 * k, 0.86);
   const canopy = new THREE.Mesh(cg, glowMat(hue, { glow: 0.34, rim: 1.1 }));
-  canopy.position.copy(top).add(V3(0, -0.45 * k, 0)); canopy.castShadow = true;
+  canopy.position.copy(top).add(V3(0, -0.6 * k, 0)); canopy.castShadow = true;
   const sway = new THREE.Group(); sway.add(canopy); grp.add(sway);
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: col(HUES[hue][1]), transparent: true, opacity: 0.22,
     blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
@@ -620,8 +676,8 @@ function buildFlowers() {
     }
   }
   const N = items.length;
-  const stemG = new THREE.CylinderGeometry(0.0035, 0.005, 0.12, 4, 1); stemG.translate(0, 0.06, 0);
-  const headG = new THREE.SphereGeometry(0.024, 10, 6); headG.scale(1, 0.6, 1); headG.translate(0, 0.125, 0);
+  const stemG = new THREE.CylinderGeometry(0.003, 0.0045, 0.085, 4, 1); stemG.translate(0, 0.0425, 0);
+  const headG = new THREE.SphereGeometry(0.036, 8, 5); headG.scale(1, 0.7, 1); headG.translate(0, 0.095, 0);
   const stems = new THREE.InstancedMesh(stemG, edgify(new THREE.MeshLambertMaterial({ color: col(0x4c9a78) }), { sway: true }), N);
   const heads = new THREE.InstancedMesh(headG, edgify(new THREE.MeshBasicMaterial({ color: 0xffffff }), { sway: true }), N);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = V3(), p = V3(), c = new THREE.Color();
@@ -631,13 +687,12 @@ function buildFlowers() {
     s.setScalar(sc);
     m4.compose(p, q, s);
     stems.setMatrixAt(i, m4); heads.setMatrixAt(i, m4);
-    heads.setColorAt(i, c.set(hue).multiplyScalar(1.15 + 0.6 * k));
+    heads.setColorAt(i, c.set(hue).multiplyScalar(0.75 + 0.35 * k));
   });
   stems.instanceMatrix.needsUpdate = heads.instanceMatrix.needsUpdate = true;
   heads.instanceColor.needsUpdate = true;
-  stems.receiveShadow = true;
   const grp = new THREE.Group(); grp.add(stems, heads); grp.name = 'edge.flowers';
-  grp.userData = { heads, stems, count: N };
+  grp.userData = { heads, stems, count: N, items, base: Float32Array.from(heads.instanceMatrix.array), clearKey: '' };
   return grp;
 }
 
@@ -711,7 +766,7 @@ class Seeds {
     const tints = [col(0xfff0d0), col(0xfff0d0), col(0xffe0b8), col(0xd8fff0), col(0xe8deff), col(0xffd8e4)];
     this.P = [];
     for (let i = 0; i < max; i++) {
-      this.P.push({ x: R(), y: R(), z: R(), sp: 0.7 + 0.6 * R(), ph: R() * TAU, f: 0.7 + 0.6 * R(), size: 0.09 + 0.07 * R(),
+      this.P.push({ x: R(), y: R(), z: R(), sp: 0.7 + 0.6 * R(), ph: R() * TAU, f: 0.7 + 0.6 * R(), size: 0.15 + 0.1 * R(),
         tint: tints[Math.floor(R() * tints.length)], b: 0.8 + 0.5 * R() });
     }
   }
@@ -734,7 +789,7 @@ class Seeds {
       if (a < 0.003) continue;
       const gy = groundAt(x, z);
       this.aPos.array.set([x, gy + y, z], k * 3);
-      this.aCol.array.set([p.tint.r * 1.5, p.tint.g * 1.5, p.tint.b * 1.5], k * 3);
+      this.aCol.array.set([p.tint.r * 1.8, p.tint.g * 1.8, p.tint.b * 1.8], k * 3);
       this.aMisc.array.set([p.size, 0.28 * Math.sin(t * 0.5 * p.f + p.ph), a], k * 3);
       k++;
     }
@@ -757,15 +812,16 @@ class EdgeSet {
     // luminous puff trees (to the sides; the column behind the faces stays calm) + round glowing bushes
     this.trees = [
       [-8.8, -13.5, 4.6, 'rose'], [10.8, -19.5, 5.4, 'peach'], [-15.5, -31, 6.0, 'mint'], [18.5, -37, 5.2, 'lilac'],
-      [15.5, -62, 6.4, 'rose'], [-24, -63, 7.2, 'peach'], [-31, -21, 6.2, 'lilac'], [27, -8, 5.8, 'mint'],
+      [15.5, -62, 6.4, 'rose'], [-24, -63, 7.2, 'peach'], [12.5, -31, 5.4, 'mint'], [-17, -41, 6.2, 'rose'], [-31, -21, 6.2, 'lilac'], [27, -8, 5.8, 'mint'],
       [-10.5, 12.5, 4.8, 'lilac'], [12.5, 15.5, 5.2, 'gold'], [-22, 26, 6.0, 'rose'], [4, 30, 5.4, 'mint'],
     ].map(([x, z, H, hue], i) => buildTree(x, z, H, hue, 300 + i * 11));
     this.trees.forEach((t) => scene.add(t));
     this.bushes = [
       [-6.9, -5.5, 1.0, 'mint'], [7.4, -8.2, 1.2, 'lilac'], [-9.8, 4.2, 0.9, 'peach'], [8.8, 3.6, 1.0, 'rose'],
-      [-5.6, -17, 0.8, 'lilac'], [6.2, -25, 0.9, 'mint'], [-12.5, -9.5, 1.1, 'rose'], [13.4, -11.5, 1.0, 'peach'],
+      [-5.6, -17, 0.8, 'lilac'], [10.5, -24, 0.9, 'mint'], [-12.5, -9.5, 1.1, 'rose'], [13.4, -11.5, 1.0, 'peach'],
       [3.6, 10.5, 0.8, 'mint'], [-4.6, 11.4, 0.9, 'lilac'], [-8.0, -14.8, 0.7, 'peach'], [11.6, -21.0, 0.8, 'rose'],
-      [-16.5, -33.5, 1.2, 'peach'], [20, -35, 1.0, 'mint'],
+      [-16.5, -33.5, 1.2, 'peach'], [20, -35, 1.0, 'mint'], [3.4, -11.5, 0.7, 'mint'], [-3.9, -15.5, 0.75, 'lilac'],
+      [11.4, -33.5, 0.9, 'peach'], [-2.6, -24, 0.6, 'rose'],
     ].map(([x, z, s, hue], i) => buildBush(x, z, s, hue, 500 + i * 7));
     this.bushes.forEach((b) => scene.add(b));
     this.flowers = buildFlowers(); scene.add(this.flowers);
@@ -784,8 +840,8 @@ class EdgeSet {
     // gentle depth haze for characters / props that are not "edgified" (very low density)
     scene.fog = new THREE.FogExp2(0xf0c8b8, 0.0055);
 
-    // path anchors: pathStart = closest path point to (0, 0, -1); pathFar = the crest (highest point 25..60 m out)
-    { let best = 1e9, bi = 0; for (let i = 0; i <= PATH.N; i++) { const d = Math.hypot(PATH.X[i], PATH.Z[i] + 1); if (d < best) { best = d; bi = i; } } S0 = bi; }
+    // path anchors: pathStart = closest path point to (0, 0, -2.5); pathFar = the crest (highest point 25..60 m out)
+    { let best = 1e9, bi = 0; for (let i = 0; i <= PATH.N; i++) { const d = Math.hypot(PATH.X[i], PATH.Z[i] + 2.5); if (d < best) { best = d; bi = i; } } S0 = bi; }
     let crestS = 45, crestY = -1e9;
     for (let s = 25; s <= 62; s += 0.5) { const y = pathAt(s).pos[1]; if (y > crestY) { crestY = y; crestS = s; } }
     this.crestS = crestS;
@@ -811,6 +867,13 @@ class EdgeSet {
       reverse: { pos: [-0.4, 1.6, -5.2], look: [0.2, 1.3, 1.5], fov: 34, drift: 0.4 },
       walkoff: { pos: [0.4, 1.9, 7.5], look: [-0.8, 1.4, -30], fov: 30, drift: 0.3 },
     };
+    // finale: a long lens from behind, lined up so the crest (pathFar) sits right in front of the low sun —
+    // the walkers top the crest silhouetted against the glow (best at tod ≈ 1)
+    {
+      const pf = this.anchors.pathFar, D = 46, sd = dirAzEl(SUN_AZ, 0);
+      const cam = [pf[0] - sd.x * D, 1.75, pf[2] - sd.z * D];
+      this.shots.finale = { pos: cam, look: [pf[0], pf[1] + 1.1, pf[2]], fov: 22, drift: 0.25 };
+    }
     this.groundAt = groundAt;
     this.pathAt = pathAt;
     this.SUN_AZ = SUN_AZ;
@@ -831,7 +894,11 @@ class EdgeSet {
    *   fillMul, keyMul, hemiMul   light intensity multipliers (default 1)
    *   eyeKey 0..1     EYE_LIGHT direction: 0 = the sun key (default 0.35 blend toward the front fill so eyes keep life)
    *   shadowAt [x,y,z] centre of the shadow frustum (default origin; move it with walking characters)
-   *   haze            haze density multiplier (default 1). glow: multiplier for tree/bush/flower glow (default 1)
+   *   haze            haze density multiplier (default 1). glow: multiplier for tree/bush glow (default 1)
+   *   sunShift        per-shot cheat: nudge the sun azimuth (rad, ±0.15 max, stays in the ridge gap) — e.g. so the
+   *                   disc never sits right behind Jesus's head (it would read as a halo)
+   *   sunGlow         sun disc/glow multiplier (default 1; ~0.5 calms close-ups with the sun behind a face)
+   *   clear           [[x, z, r], ...] hide the little flowers inside these circles (under a seated / fallen character)
    */
   update(t, o = {}) {
     const tod = clamp(o.tod ?? 0), vs = clamp(o.voidSky ?? 0);
@@ -840,16 +907,18 @@ class EdgeSet {
     const C = (k, out) => lerpC(P0[k], P1[k], tod, out);
     // --- sun + sky
     const sunEl = lerp(6.2, 0.6, tod) * DEG;
-    U.uESunDir.value.copy(dirAzEl(SUN_AZ, sunEl));
+    const sunAz = SUN_AZ + clamp(o.sunShift ?? 0, -0.15, 0.15);
+    const sg = o.sunGlow ?? 1;
+    U.uESunDir.value.copy(dirAzEl(sunAz, sunEl));
     C('sun', U.uESunCol.value);
     C('horS', U.uEHorS.value); C('horA', U.uEHorA.value); C('lowS', U.uELowS.value); C('lowA', U.uELowA.value);
     C('mid', U.uEMid.value); C('high', U.uEHigh.value); C('zen', U.uEZen.value); C('belt', U.uEBelt.value); C('shadow', U.uEShadow.value);
-    U.uEGlow.value = L('glow');
+    U.uEGlow.value = L('glow') * lerp(1, sg, 0.6);
     U.uEHazeDen.value = L('haze') * (o.haze ?? 1);
     const sl = this.sky.userData.L;
     sl.uEStars.value = lerp(0.35, 1.0, tod);
     sl.uESunR.value = lerp(0.031, 0.035, tod);
-    sl.uEDisc.value.set(...P0.disc.map((v, i) => lerp(v, P1.disc[i], tod)));
+    sl.uEDisc.value.set(...P0.disc.map((v, i) => lerp(v, P1.disc[i], tod) * sg));
     // --- void bleed
     const vp = o.voidPos || [0, 0, 0];
     U.uEVoid.value = vs;
@@ -860,9 +929,11 @@ class EdgeSet {
     C('cShade', this.clouds.userData.L.uCShade.value); C('cLit', this.clouds.userData.L.uCLit.value);
     // --- lights
     const keyEl = (o.keyElev ?? lerp(28, 18, tod)) * DEG;
-    const keyDir = dirAzEl(SUN_AZ + (o.keyYaw ?? -0.62), keyEl);
+    const keyDir = dirAzEl(sunAz + (o.keyYaw ?? -0.62), keyEl);
+    U.uEKeyDir.value.copy(keyDir);
     const sc = o.shadowAt || [0, 0, 0];
     this.key.target.position.set(sc[0], sc[1], sc[2]);
+    { const far = Math.hypot(sc[0], sc[2]) > 6; this.terrain.userData.outer.receiveShadow = far; this.path.userData.outer.receiveShadow = far; }
     this.key.position.set(sc[0], sc[1], sc[2]).addScaledVector(keyDir, 40);
     C('key', this.key.color);
     this.key.intensity = L('keyI') * (1 - 0.12 * vs) * (o.keyMul ?? 1);
@@ -884,6 +955,7 @@ class EdgeSet {
     const glow = o.glow ?? 1;
     for (const tr of this.trees) { const u = tr.userData; u.sway.rotation.z = u.amp * Math.sin(t * 0.45 + u.phase); u.sway.rotation.x = u.amp * 0.7 * Math.sin(t * 0.37 + u.phase * 1.3); }
     this._setGlow(glow);
+    this._clearFlowers(o.clear);
     const seeds = o.seeds ?? 1;
     this.seeds.update(t, seeds, (o.seedGlow ?? 1) * lerp(1.0, 1.15, tod));
     this.motes.begin();
@@ -897,6 +969,20 @@ class EdgeSet {
     // --- post look
     this.look.exposure = L('exposure'); this.look.warm = L('warm');
     return this;
+  }
+
+  // opts.clear: [[x, z, radius], ...] -> hide the flowers inside those circles (where characters stand / sit / fall)
+  _clearFlowers(clear) {
+    const F = this.flowers.userData;
+    const key = clear && clear.length ? JSON.stringify(clear) : '';
+    if (key === F.clearKey) return;
+    F.clearKey = key;
+    const hm = F.heads.instanceMatrix.array, sm = F.stems.instanceMatrix.array;
+    hm.set(F.base); sm.set(F.base);
+    if (key) F.items.forEach(([x, z], i) => {
+      if (clear.some(([cx, cz, r]) => (x - cx) * (x - cx) + (z - cz) * (z - cz) < r * r)) for (let k = 0; k < 16; k++) { if (k < 15 && k !== 12 && k !== 13 && k !== 14) hm[i * 16 + k] = sm[i * 16 + k] = 0; }
+    });
+    F.heads.instanceMatrix.needsUpdate = F.stems.instanceMatrix.needsUpdate = true;
   }
 
   _setGlow(g) {

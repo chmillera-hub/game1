@@ -77,7 +77,7 @@ const SEGMENTS = [
   ['06 reverse (look +Z)  tod .5', (u) => ({ pos: [-0.2, 1.6, -5.4 + 0.2 * u], look: [-0.6, 1.25, 1.8], fov: 34 }), () => ({ tod: 0.5 }), 'all'],
   ['07 side (look -X)  tod .5', (u) => ({ pos: [7.5, 1.6, 1.2], look: [-2, 1.4, -0.6 - u * 0.5], fov: 34 }), () => ({ tod: 0.5 }), 'all'],
   ['08 walk-off  tod 1', (u) => ({ pos: [0.4, 1.85, 7.0], look: [-0.8, 1.5, -30], fov: 30 }), () => ({ tod: 1 }), 'walk'],
-  ['09 walk-off tele  tod 1', (u) => ({ pos: [0.6, 1.7, 9], look: [-1.0, 2.5, -45], fov: 16 }), () => ({ tod: 1 }), 'walk'],
+  ['09 finale (shots.finale)  tod 1', (u, S) => S.shots.finale, () => ({ tod: 1 }), 'walk'],
   ['10 tod sweep 0->1 wide', () => ({ pos: [0.6, 1.7, 10.5], look: [-0.4, 1.8, -12], fov: 40 }), (u) => ({ tod: u }), 'all'],
   ['11 voidSky sweep 0->1', (u) => framed([0.6, 1.9, 0], { dist: 6.5, yaw: -6, pitch: 4, fov: 34, screenY: 0.4 }), (u) => ({ tod: 0.25, voidSky: smooth(u), voidPos: [1.25, 0, -0.5] }), 'jv'],
   ['12 high establishing', () => ({ pos: [6, 9, 16], look: [-2, 0, -14], fov: 42 }), () => ({ tod: 0.3 }), 'all'],
@@ -111,6 +111,8 @@ export async function update(t, app, s) {
   const u = clamp((t - i * SEG) / SEG);
   const [name, shotFn, optsFn, cast] = SEGMENTS[i];
   const opts = optsFn(u);
+  if (cast === 'all') opts.clear = [[-1.6, 1.6, 0.9]];
+  if (cast === 'walk') opts.shadowAt = s.set.pathAt(name.includes('finale') ? 33 : 9).pos;
   s.set.update(t, opts);
   // cast placement
   const { jes, usr, usrSit, vd } = s;
@@ -123,12 +125,12 @@ export async function update(t, app, s) {
   if (cast === 'walk') {
     // two figures walking away along the path toward the glow
     const S = s.set;
-    const a = S.pathAt(lerp(6, 14, u)), b = S.pathAt(lerp(6, 14, u) + 0.2);
+    const s0 = name.includes('finale') ? 33 : 9; const a = S.pathAt(s0 + 3 * u), b = S.pathAt(s0 + 3 * u + 0.25);
     const side = [a.dir[2], 0, -a.dir[0]];
     jes.visible = true; jes.position.set(a.pos[0] - side[0] * 0.45, a.pos[1], a.pos[2] - side[2] * 0.45); jes.rotation.y = a.yaw;
     vd.visible = true; vd.position.set(b.pos[0] + side[0] * 0.9, b.pos[1], b.pos[2] + side[2] * 0.9); vd.rotation.y = b.yaw; vd.scale.setScalar(1);
   }
-  applyShot(app.camera, shotFn(u), t);
+  applyShot(app.camera, shotFn(u, s.set), t);
   { const th = Math.tan(app.camera.fov * Math.PI / 360); s.label.position.set(0, -th * 0.9, -1); s.label.scale.setScalar(2 * th * app.camera.aspect); }
   s.look = { ...s.set.look };
   const txt = `${name}   t=${t.toFixed(2)}`;

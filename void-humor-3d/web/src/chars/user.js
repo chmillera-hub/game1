@@ -24,18 +24,18 @@ import { clamp, lerp, smooth, smoothstep, noise1, fbm1, hash1, schedule, rng } f
 
 // ---------------------------------------------------------------------------------------------------------
 // Palette
-const SKIN = 0xe2ad8b, HAIR_C = 0x3c2316, BROW_C = 0x2e1a10, HOODIE = 0x5f7499, JOG = 0x35373f,
+const SKIN = 0xe2ad8b, HAIR_C = 0x4a2b1b, BROW_C = 0x2e1a10, HOODIE = 0x5f7499, JOG = 0x35373f,
   SNEAK = 0xf4f1ea, SOLE = 0xe7e1d6, OUTSOLE = 0xb9b2a8, LACE = 0xd9d6cf, CASE = 0xef8e78, FRAME = 0x2a2230;
 
 // Proportions (metres). Root at the feet, facing +Z, +X = character's left.
 const HIP_Y = 0.835, WAIST_H = 0.13, CHEST_Y0 = HIP_Y + WAIST_H;     // chest pivot 0.965 at rest
 const SH = [0.172, 0.25, -0.014];                                    // left shoulder joint (chest-local) -> y 1.215
-const NECK_BASE = 0.262, NECK_LEN = 0.064, HEAD_UP = 0.137;          // head centre ~1.428
+const NECK_BASE = 0.262, NECK_LEN = 0.062, HEAD_UP = 0.14, HEAD_SCALE = 1.12;   // head centre ~1.43
 const UPPER = 0.25, FORE = 0.235, HAND_SIZE = 0.15;
-const HIP_X = 0.083, HIP_DY = -0.045, THIGH = 0.375, SHIN = 0.365, ANKLE_Y = 0.095;
+const HIP_X = 0.083, HIP_DY = -0.045, THIGH = 0.358, SHIN = 0.346, ANKLE_Y = 0.095;
 const BALL_Z = 0.125, HEEL_Z = -0.062;
 const HR = [0.138, 0.153, 0.143];                                    // skull radii
-const EYE_U = 0.40, EYE_V = 0.02, EYE_R = 0.043, MOUTH_V = -0.47, HW0 = 0.031;
+const EYE_U = 0.40, EYE_V = 0.02, EYE_R = 0.043, MOUTH_V = -0.47, HW0 = 0.035;
 const JAW = { y: -0.085, drop: 0.017, back: 0.005, soft: 0.03 };
 const MAXWRIST = 1.3;
 const PH_W = 0.071, PH_H = 0.148, PH_D = 0.0085;                     // phone slab
@@ -95,7 +95,7 @@ function phoneLit(mat, U) {
         vec3 Lp = Lv * inversesqrt(max(d2, 1e-6));
         float lam = max(dot(normalize(normal), Lp), 0.0);
         float facing = clamp(dot(-Lp, uPhDir) * 1.4 + 0.1, 0.0, 1.0);
-        float fall = 0.02 / (d2 + 0.02);
+        float fall = 0.035 / (d2 + 0.035) * smoothstep(0.0, 0.0081, d2);
         totalEmissiveRadiance += diffuseColor.rgb * uPhCol * (0.25 + 0.75 * lam) * facing * fall;
       }`);
   };
@@ -158,11 +158,11 @@ const hairline = (u) => pw(HAIRLINE, Math.abs(u));
 // ---------------------------------------------------------------------------------------------------------
 // Expressions. UX(name, overrides) like core X(); USER presets + all core EXPR names.
 export const UEXPR = {
-  idle: { lidU: 0.94, lidL: 0.08, browIn: 0.15, browSq: 0.05, mSmile: -0.06, mPress: 0.15 },
+  idle: { lidU: 1.0, lidL: 0.06, browIn: 0.18, browSq: 0.05, mSmile: -0.06, mPress: 0.15 },
   scroll: { lidU: 0.74, lidL: 0.16, browIn: 0.08, browSq: 0.12, mPress: 0.3, mSmile: -0.12, mAsym: 0.12, saccade: 0.4 },
-  sob: { lidU: 0.5, lidL: 0.85, lidSad: 0.9, browIn: 1.0, browOut: -0.4, browSq: 0.6, mOpen: 0.62, mWide: 0.8, mSmile: -0.85, mTeethU: 0.4, mTeethL: 0.75, mTremble: 0.6, wet: 1, tearL: 0.85, tearR: 0.85, blush: 0.45 },
-  terror: { lidU: 1.45, lidL: 0.32, browIn: 1.0, browOut: 0.55, browSq: 0.55, lidSad: 0.2, mOpen: 0.5, mWide: 0.75, mSmile: -0.65, mTeethL: 0.85, mTeethU: 0.5, pupil: 0.42, mTremble: 0.6, wet: 1, saccade: 0.25 },
-  scream: { lidU: 1.42, lidL: 0.15, browIn: 1, browOut: 0.75, browSq: 0.4, mOpen: 0.62, mWide: 1, mSmile: -0.45, mTeethU: 1, mTeethL: 1, mTongue: 0.2, pupil: 0.38, mTremble: 0.25 },
+  sob: { lidU: 0.2, lidL: 1, lidSad: 1, browIn: 1.0, browOut: -0.55, browSq: 0.6, mOpen: 0.78, mWide: 0.95, mSmile: -0.95, mTeethU: 0.5, mTeethL: 0.85, mTremble: 0.7, wet: 1, tearL: 0.9, tearR: 0.9, blush: 0.5, autoBlink: 0 },
+  terror: { lidU: 1.48, lidL: 0.32, browIn: 1.0, browOut: 0.55, browSq: 0.55, lidSad: 0.2, mOpen: 0.5, mWide: 0.75, mSmile: -0.65, mTeethL: 0.85, mTeethU: 0.5, pupil: 0.42, mTremble: 0.6, wet: 1, saccade: 0.25 },
+  scream: { lidU: 1.46, lidL: 0.1, browIn: 1, browOut: 0.8, browSq: 0.45, mOpen: 0.85, mWide: 1, mSmile: -0.4, mTeethU: 1, mTeethL: 1, mTongue: 0.2, pupil: 0.34, mTremble: 0.3, autoBlink: 0 },
   gasp: { lidU: 1.44, browIn: 0.85, browOut: 0.95, mOpen: 0.7, mRound: 0.85, mTeethU: 0.3, mTeethL: 0.2, pupil: 0.48 },
   wtf: { lidU: 1.32, browIn: 0.6, browOut: 1.0, browAsym: 0.55, mOpen: 0.52, mWide: 0.35, mSmile: -0.45, mAsym: -0.3, mTeethL: 0.5, mTeethU: 0.6 },
   scrunch: { lidU: 0.02, lidL: 1, squint: 1, browIn: -1, browSq: 1, browOut: 0.25, mOpen: 0.42, mWide: 1, mSmile: -0.55, mTeethU: 1, mTeethL: 1, mClench: 0.0, autoBlink: 0, blush: 0.3 },
@@ -205,8 +205,8 @@ function resolveFace(f) {
 // space: 'chest' (default; origin = waist pivot) | 'head' (head centre) | 'pelvis' | 'ground' (pelvis XZ, y on the floor)
 export const ARM = {
   rest: { t: [0.255, -0.2, 0.035], pole: [0.35, -0.1, -1], palm: [-1, 0, 0.15], fing: [0.05, -1, 0.1], hand: { curl: 0.22, spread: 0.08, thumb: 0.2, cup: 0.2 } },
-  hold: { t: [0.11, -0.07, 0.2], pole: [0.6, -0.5, -0.6], palm: [-0.15, 0.95, -0.25], fing: [-0.35, 0.2, 0.92], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
-  look: { t: [0.075, 0.27, 0.28], pole: [0.7, -1, -0.15], palm: [-0.22, 0.42, -0.88], fing: [-0.12, 0.92, 0.38], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
+  hold: { t: [0.1, -0.05, 0.215], pole: [0.6, -0.5, -0.6], palm: [-0.2, 0.72, -0.66], fing: [-0.3, 0.62, 0.72], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
+  look: { t: [0.07, 0.15, 0.29], pole: [0.7, -1, -0.15], palm: [-0.18, 0.62, -0.76], fing: [-0.12, 0.8, 0.58], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
   clutch: { t: [0.065, 0.055, 0.165], pole: [1, -0.7, 0.1], palm: [0.05, -0.05, -1], fing: [-0.45, 0.88, 0.05], hand: { curl: 0.3, spread: 0.06, thumb: 0.35, cup: 0.35 }, grip: 'flat' },
   hug: { t: [-0.055, 0.03, 0.2], pole: [1, -0.8, 0.2], palm: [0.15, 0.0, -1], fing: [-0.7, 0.68, 0.1], hand: { curl: 0.35, spread: 0.1, thumb: 0.3, cup: 0.45 } },
   defend: { t: [0.215, 0.375, 0.3], pole: [0.9, -0.75, -0.25], palm: [0.12, 0.05, 1], fing: [0.14, 1, 0.06], hand: { curl: 0.0, spread: 1, splay: 1, thumb: 1, cup: 0 } },
@@ -220,7 +220,7 @@ export const ARM = {
   hips: { t: [0.26, -0.07, 0.02], pole: [1, 0.15, -0.5], palm: [-0.4, -0.2, -1], fing: [-0.35, -0.6, 0.6], hand: { curl: 0.85, thumb: 0.2 } },
   shield: { t: [0.06, 0.29, 0.24], pole: [0.8, -1, 0], palm: [0.05, 0.05, 1], fing: [-0.25, 0.95, 0.05], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
   jab: { t: [0.11, 0.24, 0.47], pole: [1, -0.5, -0.2], palm: [0.0, 0.08, 1], fing: [-0.15, 1, 0.12], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
-  show: { t: [0.19, 0.54, -0.02], pole: [1, 0.1, 0.7], palm: [0.0, 0.1, -1], fing: [-0.2, 1, 0.05], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
+  show: { t: [0.33, 0.6, 0.02], pole: [1, -0.3, 0.3], palm: [0.2, 0.05, -1], fing: [0.05, 1, 0.1], hand: { curl: 0.12, spread: 0.05, thumb: 0.4, cup: 0.3 }, grip: 'flat' },
   point: { t: [0.2, 0.2, 0.45], pole: [1, -0.6, -0.2], palm: [-1, 0, 0], fing: [0, 0.1, 1], hand: { point: 1, curl: 0.85, thumb: 0.2 } },
   shrug: { t: [0.3, 0.02, 0.19], pole: [0.3, -1, -0.5], palm: [0.15, 1, 0.1], fing: [0.55, 0.05, 1], hand: { curl: 0.12, spread: 0.42, thumb: 0.75, splay: 0.12, cup: 0.15 } },
   strings: { t: [0.035, 0.03, 0.2], pole: [1, -0.8, -0.1], palm: [-1, 0, 0.1], fing: [-0.1, -0.2, 1], hand: { curl: 0.75, thumb: 0.6, spread: 0.05 } },
@@ -237,7 +237,7 @@ const HAND_DEF = { curl: 0.15, point: 0, spread: 0.15, thumb: 0.3, cup: 0.1, spl
 export const WALK = {
   walk: { rate: 0.95, stride: 0.92, stance: 0.62, lift: 0.075, bob: 0.017, bobPh: 0, sway: 0.016, twist: 0.12, lean: 0.04, arm: 0.14, run: 0, stomp: 0 },
   run: { rate: 1.45, stride: 1.7, stance: 0.38, lift: 0.19, bob: 0.042, bobPh: 0.16, sway: 0.014, twist: 0.2, lean: 0.2, arm: 0, run: 1, stomp: 0 },
-  stomp: { rate: 1.0, stride: 0.8, stance: 0.6, lift: 0.13, bob: 0.012, bobPh: 0, sway: 0.022, twist: 0.08, lean: 0.12, arm: 0.11, run: 0, stomp: 1 },
+  stomp: { rate: 1.0, stride: 0.8, stance: 0.6, lift: 0.14, bob: 0.012, bobPh: 0, sway: 0.024, twist: 0.1, lean: 0.17, arm: 0.17, run: 0, stomp: 1 },
   sneak: { rate: 0.6, stride: 0.55, stance: 0.66, lift: 0.06, bob: 0.01, bobPh: 0, sway: 0.01, twist: 0.06, lean: 0.14, arm: 0.04, run: 0, stomp: 0 },
 };
 function footCycle(u, S) {
@@ -424,6 +424,8 @@ function screenCanvas(mode, name) {
   return (_scr[key] = c);
 }
 const SCREEN_LUM = { feed: 0.95, block: 0.5, blocked: 0.85, profile: 0.85, off: 0 };
+// default thumb hover/tap point per screen (u right, v down): the red Block button on 'block'
+const THUMB_AT = { feed: [0.58, 0.62], block: [0.5, 0.538], blocked: [0.6, 0.84], profile: [0.5, 0.65], off: [0.5, 0.7] };
 
 // ---------------------------------------------------------------------------------------------------------
 /**
@@ -553,7 +555,7 @@ class User extends Character {
     const sk = { rim: 0.38, rimColor: 0xffc49a, wrap: 0.45, wrapColor: 0xff7058, sheen: 0.3, sheenColor: 0xffd8c0, roughness: 0.5, glow: 0.05 };
     this.headSkin = phoneLit(skin(SKIN, { ...sk, jaw: JAW }), U);
     this.bodySkin = phoneLit(skin(SKIN, sk), U);
-    this.hairMat = hairSwing(phoneLit(hair(HAIR_C, { rim: 0.5, rimColor: 0xffc890, sheenColor: 0xa87a58, roughness: 0.42 }), U), this.HS);
+    this.hairMat = hairSwing(phoneLit(hair(HAIR_C, { rim: 0.45, rimColor: 0xffc890, sheenColor: 0x9a6c4c, roughness: 0.5 }), U), this.HS);
     this.hoodieMat = phoneLit(cloth(0xffffff, { sheen: 0.55, sheenColor: 0x9fb4e0, rim: 0.3, rimColor: 0xc8d8ff, roughness: 0.88 }), U);
     this.hoodieMat.color.set(HOODIE);
     this.sleeveMat = phoneLit(cloth(HOODIE, { sheen: 0.55, sheenColor: 0x9fb4e0, rim: 0.3, rimColor: 0xc8d8ff, roughness: 0.88 }), U);
@@ -571,6 +573,7 @@ class User extends Character {
     this.decalMat = phoneLit(new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), U);
     this.tearMat = new THREE.MeshStandardMaterial({ color: 0xdff0ff, roughness: 0.06, metalness: 0.0, emissive: 0x6d8fb8, emissiveIntensity: 0.55, transparent: true, opacity: 0.9 });
     this.wetMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.25, 1.35, 1.5), transparent: true, opacity: 0, depthWrite: false });
+    for (const m of [this.jogMat, this.shoeMat, this.soleMat, this.outsoleMat, this.laceMat, this.tabMat, this.stringMat, this.caseMat]) m.sheen = 0;
     this._rims = [[this.headSkin, 0.38], [this.bodySkin, 0.38], [this.hairMat, 0.5], [this.hoodieMat, 0.3], [this.sleeveMat, 0.3]];
   }
 
@@ -584,13 +587,13 @@ class User extends Character {
     this.chestG.position.y = WAIST_H;
     this.neckG.position.set(0, NECK_BASE, -0.012);
     this.headPivot.position.set(0, NECK_LEN, 0.006);
-    this.headG.position.set(0, HEAD_UP, 0);
+    this.headG.position.set(0, HEAD_UP, 0); this.headG.scale.setScalar(HEAD_SCALE);
     for (const g of [this.pelvisG, this.chestG, this.neckG, this.headPivot]) g.rotation.order = 'YXZ';
   }
 
   // ------------------------------------------------------------------ head, nose, face
   _buildHead() {
-    const g = new THREE.SphereGeometry(1, 56, 42);
+    const g = new THREE.SphereGeometry(1, 50, 38);
     g.deleteAttribute('uv'); g.deleteAttribute('normal');
     const P = g.attributes.position, tmp = V();
     for (let i = 0; i < P.count; i++) {
@@ -625,18 +628,18 @@ class User extends Character {
     this.freckles = [];
     for (let i = 0; i < 34; i++) {
       const side = i % 2 ? 1 : -1, onNose = i < 8;
-      const u = onNose ? (r() - 0.5) * 0.26 : side * lerp(0.2, 0.62, r());
-      const v = onNose ? lerp(-0.07, -0.16, r()) : lerp(-0.07, -0.25, r()) - 0.04 * Math.abs(u);
-      this.freckles.push([u, v, lerp(0.0011, 0.0021, r()), lerp(0.3, 0.55, r())]);
+      const u = onNose ? (r() - 0.5) * 0.22 : side * lerp(0.24, 0.66, r());
+      const v = onNose ? lerp(-0.1, -0.18, r()) : lerp(-0.15, -0.3, r()) - 0.03 * Math.abs(u);
+      this.freckles.push([u, v, lerp(0.0011, 0.002, r()), lerp(0.25, 0.45, r())]);
     }
     this.face = new Face({
       head: this.headG, surface: headSurf, seed: 23,
       eyes: {
-        u: EYE_U, v: EYE_V, radius: EYE_R, sink: 0.6, splay: 0.09, lidMaterial: this.bodySkin, scale: [1, 1.05, 1],
+        u: EYE_U, v: EYE_V, radius: EYE_R, sink: 0.66, splay: 0.09, lidMaterial: this.bodySkin, scale: [1, 1.05, 1],
         iris: 0x4b6a33, iris2: 0xc39a52, irisR: 0.66, pupilR: 0.27, limbal: 0x18220f, sclera: 0xf8f4ef,
         lash: 1.4, lowerLash: 0.55, lashColor: 0x1b100b, lowRelaxed: -0.56, lowRaised: 0.22, upOpen: 0.5, upWide: 1.03, maxYaw: 0.66, maxPitch: 0.5,
       },
-      brows: { color: BROW_C, thickness: 0.0102, lift: 0.002, inner: [0.13, 0.335], mid: [0.37, 0.405], outer: [0.62, 0.35], range: 0.125, flatten: 0.5, profile: [0.92, 1.06, 0.9, 0.45] },
+      brows: { color: BROW_C, thickness: 0.0086, lift: 0.002, inner: [0.13, 0.335], mid: [0.37, 0.405], outer: [0.62, 0.35], range: 0.15, flatten: 0.5, profile: [0.92, 1.06, 0.9, 0.45] },
       mouth: {
         v: MOUTH_V, halfW: HW0, line: '#5c2320', lineW: HW0 * 0.16, interior: '#3a0d14', interior2: '#6c2029', teeth: '#fbf6ee',
         tongue: '#d4646c', lipTintRGB: '214,104,104', blushColor: '246,118,104', blushX: HW0 * 2.55, blushY: HW0 * 1.8,
@@ -653,7 +656,7 @@ class User extends Character {
       tg.rotateZ(Math.PI * 0.14);
       const m = new THREE.Mesh(tg, this.wetMat); m.rotation.x = Math.PI / 2; m.renderOrder = 3;
       eye.lo.add(m); this.wetLines.push(m);
-      const rm = new THREE.Mesh(new THREE.PlaneGeometry(eye.r * 0.2, eye.r * 0.32), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.85, 0.93, 1.1), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+      const rm = new THREE.Mesh(new THREE.PlaneGeometry(eye.r * 0.15, eye.r * 0.24), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.85, 0.93, 1.1), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
       eye.inner.add(rm); this.eyeRefl.push(rm);
     }
   }
@@ -712,77 +715,96 @@ class User extends Character {
     });
   }
   _buildHair() {
-    // cap shell (offset of the head surface above the hairline; sinks under the skin elsewhere)
-    const g = new THREE.SphereGeometry(1, 48, 32);
-    g.deleteAttribute('uv'); g.deleteAttribute('normal');
-    const P = g.attributes.position, tmp = V();
-    for (let i = 0; i < P.count; i++) {
-      tmp.fromBufferAttribute(P, i).normalize();
-      const v = Math.asin(clamp(tmp.y, -1, 1)), u = Math.atan2(tmp.x, tmp.z);
-      const { p, n } = headSurf(u, v);
-      const e = clamp((v - hairline(u)) / 0.12);
-      p.addScaledVector(n, lerp(-0.004, 0.013 + 0.004 * smoothstep(0.5, 1.4, v), Math.sqrt(e)));
-      P.setXYZ(i, p.x, p.y, p.z);
+    // ONE sculpted shell: crown rows hug the skull (side part, broad flow grooves); on the sides and back the
+    // hair falls straight from the widest point to the jaw (slight A-line flare) and rolls under at the ends
+    // (thick rounded bob edge). The face side of the curtain is a diagonal from the temple to the jaw.
+    const J = 68, K = 14, H = 8, R = H + 2 + K + 1;
+    const pos = new Float32Array(J * R * 3);
+    const at = (j, r) => (j * R + r) * 3;
+    for (let j = 0; j < J; j++) {
+      const u = -Math.PI + (j / J) * 2 * Math.PI, au = Math.abs(u), vh = hairline(u);
+      const cw = smoothstep(0.88, 1.2, au);                         // 0 = face (fringe covers), 1 = hanging curtain
+      const back = Math.max(0, -Math.cos(u));
+      const vEnd = lerp(vh, 0.1, cw);
+      const thick = (v) => {
+        let T = 0.014 + 0.012 * smoothstep(0.2, 1.2, v);
+        const part = Math.exp(-(((u - 0.3) / 0.07) ** 2)) * smoothstep(0.75, 1.0, v) * (1 - smoothstep(1.25, 1.45, v));
+        T *= 1 - 0.55 * part;
+        T *= 1 + 0.1 * Math.sin(u * 9 + 0.5) * smoothstep(0.2, 0.9, v) * (1 - smoothstep(1.2, 1.45, v));   // chunky flow grooves
+        return T;
+      };
+      for (let k = 0; k <= K; k++) {
+        const v = lerp(Math.PI / 2 - 1e-3, vEnd, Math.pow(k / K, 1.1));
+        const { p, n } = headSurf(u, v);
+        const e = clamp((v - vh) / 0.1);
+        p.addScaledVector(n, lerp(-0.002, thick(v), cw > 0.5 ? 1 : Math.sqrt(e)));
+        pos.set([p.x, p.y, p.z], at(j, H + 2 + (K - k)));
+      }
+      // hanging curtain (rows H+1 .. 0), Bezier from A (bottom skull row) to the tip, then the roll-under
+      const A = V(...pos.slice(at(j, H + 2), at(j, H + 2) + 3));
+      const d = V(Math.sin(u), 0, Math.cos(u));
+      const RA = Math.hypot(A.x, A.z);
+      const yTip = -0.122 + 0.012 * back - 0.008 * Math.max(0, Math.cos(u)) + 0.006 * Math.sin(u * 4.3 + 0.7);
+      const tipFull = d.clone().multiplyScalar(RA + 0.006 + 0.004 * Math.sin(u * 3.1)).setY(yTip);
+      const tip = A.clone().lerp(tipFull, cw);
+      const c1 = A.clone().add(V(0, -0.06 * cw, 0)).addScaledVector(d, 0.004 * cw), c2 = tip.clone().add(V(0, 0.07 * cw, 0)).addScaledVector(d, -0.004 * cw);
+      for (let i = 0; i <= H; i++) {
+        const sb = i / H, m = 1 - sb;                                  // sb = 0 at the tip -> 1 at A
+        const q = tip.clone().multiplyScalar(m * m * m).addScaledVector(c2, 3 * m * m * sb).addScaledVector(c1, 3 * m * sb * sb).addScaledVector(A, sb * sb * sb);
+        q.addScaledVector(d, 0.006 * Math.sin(sb * Math.PI) * cw);
+        pos.set([q.x, q.y, q.z], at(j, i + 1));
+      }
+      // rolled-under end: tucks toward the neck and slightly up (thick, rounded bob edge)
+      const T0 = V(...pos.slice(at(j, 1), at(j, 1) + 3));
+      T0.addScaledVector(d, -0.02 * cw).add(V(0, 0.016 * cw, 0));
+      pos.set([T0.x, T0.y, T0.z], at(j, 0));
     }
-    const sg = mergeVertices(g); sg.computeVertexNormals();
-    const shell = new THREE.Mesh(sg, this.hairMat); shell.castShadow = true;
+    const idx = [];
+    for (let j = 0; j < J; j++) for (let r = 0; r < R - 1; r++) {
+      const a2 = j * R + r, b2 = ((j + 1) % J) * R + r;
+      idx.push(a2, b2, a2 + 1, b2, b2 + 1, a2 + 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx);
+    g.computeVertexNormals();
+    const shell = new THREE.Mesh(g, this.hairMat); shell.castShadow = true;
+    this.hairShell = shell;
     this.headG.add(shell);
-    // locks
+    // chunky accent locks: swept fringe (kept above the brows), face-framing clumps, curtain clumps
     const r = rng(77);
     const locks = [];
-    const W0 = 0.05;
-    // back + sides: crown -> jaw-length bob; alternating tuck-under / flick-out tips
-    const N = 16;
-    for (let i = 0; i < N; i++) {
-      const a = i / (N - 1);
-      let u = lerp(1.0, 2 * Math.PI - 1.0, a); if (u > Math.PI) u -= 2 * Math.PI;
-      const back = Math.max(0, -Math.cos(u));
-      const vEnd = -0.6 - 0.04 * back + 0.07 * (r() - 0.5);
-      const flick = i % 3 === 0 ? 0.016 : i % 3 === 1 ? -0.012 : 0.004;
-      const u0 = u * 0.45 + (r() - 0.5) * 0.3, du = (r() - 0.5) * 0.12;
-      locks.push({
-        keys: [[u0, 1.36, 0.008], [u * 0.8 + du, 1.05, 0.016], [u + du, 0.6, 0.021], [u + du * 0.5, 0.14, 0.024], [u, -0.25, 0.024, 0.004], [u - Math.sign(u) * 0.03, vEnd, 0.02, flick, flick > 0 ? 0.008 : 0]],
-        w: W0 * (0.9 + 0.25 * r()), flat: 0.62,
-      });
-    }
-    // face-framing front locks (bob points), part on the character's left
-    for (const s of [1, -1]) {
-      locks.push({ keys: [[s * 0.3, 1.08, 0.012], [s * 0.72, 0.72, 0.02], [s * 0.98, 0.3, 0.024], [s * 1.02, -0.1, 0.024, 0.004], [s * 0.98, -0.42, 0.022, 0.002], [s * 0.86, -0.64, 0.018, -0.004, 0.006]], w: 0.054, flat: 0.62 });
-      locks.push({ keys: [[s * 0.45, 1.15, 0.012], [s * 0.85, 0.75, 0.02], [s * 1.12, 0.3, 0.025], [s * 1.16, -0.15, 0.025, 0.006], [s * 1.12, -0.5, 0.022, 0.01, 0.0]], w: 0.05, flat: 0.62 });
-    }
-    // swept fringe (stays above the brows), from the side part across the forehead toward the right
     const fr = [
-      [[0.32, 1.06, 0.012], [0.12, 0.88, 0.017], [-0.2, 0.72, 0.018], [-0.46, 0.62, 0.016]],
-      [[0.28, 1.0, 0.012], [0.0, 0.84, 0.018], [-0.45, 0.7, 0.019], [-0.84, 0.5, 0.017]],
-      [[0.36, 1.02, 0.012], [0.26, 0.82, 0.018], [0.13, 0.66, 0.016]],
-      [[0.42, 1.0, 0.012], [0.56, 0.82, 0.018], [0.74, 0.6, 0.017]],
-      [[-0.05, 1.12, 0.012], [-0.55, 0.88, 0.019], [-0.95, 0.56, 0.021], [-1.05, 0.28, 0.02]],
-      [[0.2, 1.15, 0.012], [-0.25, 0.95, 0.019], [-0.7, 0.75, 0.02]],
+      { keys: [[0.34, 1.12, 0.018], [0.14, 0.92, 0.026], [-0.18, 0.76, 0.026], [-0.42, 0.66, 0.022]], w: 0.085 },
+      { keys: [[0.3, 1.05, 0.018], [0.02, 0.86, 0.026], [-0.45, 0.72, 0.026], [-0.82, 0.52, 0.024]], w: 0.08 },
+      { keys: [[0.42, 1.05, 0.018], [0.3, 0.86, 0.025], [0.16, 0.7, 0.02]], w: 0.07 },
+      { keys: [[0.44, 1.04, 0.018], [0.6, 0.86, 0.025], [0.76, 0.66, 0.023]], w: 0.07 },
+      { keys: [[-0.1, 1.15, 0.02], [-0.6, 0.92, 0.028], [-0.98, 0.6, 0.028], [-1.06, 0.3, 0.026]], w: 0.08 },
     ];
-    fr.forEach((k, i) => locks.push({ keys: k, w: [0.05, 0.052, 0.042, 0.046, 0.05, 0.048][i], flat: 0.66, hang: false }));
-    // crown fill locks from the part toward the back
-    for (let i = 0; i < 5; i++) {
-      const u = 0.6 + i * 0.5;
-      locks.push({ keys: [[0.32, 1.12, 0.012], [u * 0.6, 1.25, 0.019], [u, 1.0, 0.021], [u * 1.02, 0.6, 0.021]], w: 0.05, flat: 0.65, hang: false });
-      locks.push({ keys: [[0.2, 1.1, 0.012], [-u * 0.55, 1.28, 0.019], [-u, 1.02, 0.021], [-u * 1.02, 0.62, 0.021]], w: 0.05, flat: 0.65, hang: false });
-    }
+    for (const f of fr) locks.push({ ...f, hang: false, flat: 0.72, tip: 0.55 });
+    // curtain clumps (on top of the shell): follow the column straight down, a few flick out / tuck under
+    const cl = [1.02, 1.42, 1.9, 2.55, -3.0, -2.3, -1.75, -1.3, -1.06];
+    cl.forEach((u, i) => {
+      const fl = i % 3 === 0 ? 0.012 : i % 3 === 1 ? -0.006 : 0.003;
+      const vEnd = -0.5 - 0.08 * r();
+      locks.push({ keys: [[u * 0.8, 0.95, 0.018], [u, 0.55, 0.027], [u, 0.12, 0.029], [u, -0.2, 0.027, 0.003], [u - Math.sign(u) * 0.05, vEnd, 0.022, fl, fl > 0 ? 0.005 : 0.0]], w: 0.07 + 0.02 * r(), flat: 0.86, tip: 0.45 });
+    });
     const geos = [];
-    const tube = new SweepTube({ material: this.hairMat, segments: 16, radial: 9, capRings: 3 });
+    const tube = new SweepTube({ material: this.hairMat, segments: 13, radial: 8, capRings: 2 });
     for (const L of locks) {
       const pts = this._lockPts(L.keys, L.hang !== false);
       const ups = pts.map((p) => p.clone().normalize());
-      const w = L.w;
-      tube.update(pts, (s) => w * (0.55 + 0.45 * smoothstep(0, 0.18, s)) * (1 - 0.82 * smoothstep(0.55, 1, s)) * 0.5,
+      const w = L.w, tp = L.tip;
+      tube.update(pts, (s) => w * 0.5 * (0.45 + 0.55 * smoothstep(0, 0.2, s)) * (1 - (1 - tp) * smoothstep(0.65, 1, s)),
         { up: (s) => ups[Math.min(ups.length - 1, Math.round(s * (ups.length - 1)))], flatten: L.flat });
       geos.push(tube.geo.clone());
     }
-    const locksMesh = new THREE.Mesh(mergeGeometries(geos), this.hairMat); locksMesh.castShadow = true;
+    const locksMesh = new THREE.Mesh(mergeGeometries(geos), this.hairMat);
     this.headG.add(locksMesh);
     // cowlick (dynamic: bounces)
     this.cowlick = [0, 1, 2].map((i) => {
       const tb = new SweepTube({ material: this.hairMat, segments: 10, radial: 8, capRings: 2 });
       this.headG.add(tb.mesh);
-      return { tb, u: Math.PI - 0.35 + i * 0.3, v: 1.18 - i * 0.05, len: [1, 0.8, 0.65][i], tw: [-0.25, 0.15, 0.4][i] };
+      return { tb, u: Math.PI - 0.3 + i * 0.26, v: 1.12 - i * 0.05, len: [1, 0.8, 0.62][i], tw: [-0.3, 0.12, 0.45][i] };
     });
   }
   _updateCowlick(bounce, t) {
@@ -791,13 +813,13 @@ class User extends Character {
       const fwd = V(0, 0, 1), up = n.clone().lerp(V(0, 1, 0), 0.5).normalize();
       const side = V(Math.sin(C.tw), 0, 0);
       const b = bounce * C.len;
-      const pts = [p.clone().addScaledVector(n, -0.004)];
-      let q = p.clone().addScaledVector(n, 0.012);
+      const pts = [p.clone().addScaledVector(n, 0.01)];
+      let q = p.clone().addScaledVector(n, 0.03);
       pts.push(q.clone());
       const dirs = [up.clone().addScaledVector(fwd, 0.15 + b * 0.5), up.clone().addScaledVector(fwd, 0.75 + b), up.clone().multiplyScalar(0.2).addScaledVector(fwd, 1).addScaledVector(V(0, -1, 0), 0.35 - b * 0.4)];
-      const lens = [0.026, 0.02, 0.016].map((x) => x * C.len);
+      const lens = [0.03, 0.024, 0.018].map((x) => x * C.len);
       for (let k = 0; k < 3; k++) { q = q.clone().addScaledVector(dirs[k].normalize().add(side).normalize(), lens[k]); pts.push(q.clone()); }
-      C.tb.update(pts, (s) => 0.011 * C.len * (1 - 0.85 * smoothstep(0.4, 1, s)) + 0.002, { up: V(1, 0, 0), flatten: 0.5 });
+      C.tb.update(pts, (s) => 0.013 * C.len * (1 - 0.8 * smoothstep(0.4, 1, s)) + 0.002, { up: V(1, 0, 0), flatten: 0.45 });
     }
   }
 
@@ -809,12 +831,12 @@ class User extends Character {
       const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
       g.translate(64, 64); g.rotate(-0.7);
       const gr = g.createLinearGradient(-64, 0, 64, 0);
-      gr.addColorStop(0.18, 'rgba(255,255,255,0)'); gr.addColorStop(0.27, 'rgba(255,255,255,0.55)'); gr.addColorStop(0.33, 'rgba(255,255,255,0)');
-      gr.addColorStop(0.39, 'rgba(255,255,255,0)'); gr.addColorStop(0.42, 'rgba(255,255,255,0.3)'); gr.addColorStop(0.45, 'rgba(255,255,255,0)');
+      gr.addColorStop(0.62, 'rgba(255,255,255,0)'); gr.addColorStop(0.7, 'rgba(255,255,255,0.6)'); gr.addColorStop(0.76, 'rgba(255,255,255,0)');
+      gr.addColorStop(0.8, 'rgba(255,255,255,0)'); gr.addColorStop(0.83, 'rgba(255,255,255,0.35)'); gr.addColorStop(0.86, 'rgba(255,255,255,0)');
       g.fillStyle = gr; g.fillRect(-64, -64, 128, 128);
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
     })();
-    this.lensMat = new THREE.MeshBasicMaterial({ map: lensTex, color: 0xffffff, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false });
+    this.lensMat = new THREE.MeshBasicMaterial({ map: lensTex, color: 0xffffff, transparent: true, opacity: 0.14, blending: THREE.AdditiveBlending, depthWrite: false });
     const RING = 0.047, TH = 0.0027;
     const parts = [];
     let cz = 0;
@@ -827,11 +849,11 @@ class User extends Character {
       ring.position.copy(c); ring.rotation.y = s * 0.16; parts.push(ring);
       const lens = new THREE.Mesh(new THREE.CircleGeometry(RING * 0.97, 32), this.lensMat);
       lens.position.copy(c); lens.rotation.y = s * 0.16; lens.renderOrder = 4; this.glasses.add(lens); this.lenses.push(lens);
-      // temple arm: from the outer rim back along the side of the head into the hair
-      const o = c.clone().add(V(s * RING * Math.cos(0.16), 0.008, -s * RING * Math.sin(0.16) * s));
-      const back = V(s * 0.147, 0.016, -0.045);
-      const arm = new SweepTube({ material: this.frameMat, segments: 8, radial: 6, capRings: 1 });
-      arm.update([o, V(s * 0.142, o.y + 0.004, o.z - 0.035), back], TH * 0.9);
+      // temple arm: from the outer rim along the side of the face (just off the skin), then under the hair
+      const o = c.clone().add(V(s * RING * Math.cos(0.16), 0.008, -RING * Math.sin(0.16)));
+      const ap = [0.86, 1.1, 1.4].map((uu) => { const q = headSurf(s * uu, EYE_V + 0.06); return q.p.addScaledVector(q.n, 0.0045); });
+      const arm = new SweepTube({ material: this.frameMat, segments: 10, radial: 6, capRings: 1 });
+      arm.update([o, ...ap], TH * 0.9);
       parts.push(new THREE.Mesh(arm.geo.clone(), this.frameMat));
     }
     const eL = this.face.eyes[0].group.position;
@@ -979,7 +1001,7 @@ class User extends Character {
     const bag = new THREE.Mesh(bg, this.sleeveMat);
     bag.position.set(0, yb - 0.075, -0.142); bag.rotation.x = 0.22; bag.castShadow = true;
     this.hoodG.add(rm, bag);
-    bake(this.hoodG, [rm, bag]).forEach((m) => { m.castShadow = true; });
+    bake(this.hoodG, [rm, bag]);
     // drawstrings (dynamic) + metal aglets
     this.strings = [1, -1].map((s) => {
       const tb = new SweepTube({ material: this.stringMat, segments: 8, radial: 6, capRings: 1 });
@@ -1032,8 +1054,8 @@ class User extends Character {
   _presetToRoot(d, s, out) {
     const sp = d.space || 'chest';
     const M = sp === 'head' ? this.Mh : sp === 'pelvis' || sp === 'ground' ? this.Mp : this.Mc;
-    out.t.set(s * d.t[0], d.t[1], d.t[2]).applyMatrix4(M);
-    if (sp === 'ground') out.t.y = d.t[1];
+    if (sp === 'ground') { out.t.set(s * d.t[0], 0, d.t[2]).applyMatrix4(this.MpYaw).add(this.pelvisG.position); out.t.y = d.t[1]; }
+    else out.t.set(s * d.t[0], d.t[1], d.t[2]).applyMatrix4(M);
     const rot = sp === 'ground' ? this.MpYaw : M;
     out.pole.set(s * d.pole[0], d.pole[1], d.pole[2]).transformDirection(rot);
     out.palm.set(s * d.palm[0], d.palm[1], d.palm[2]).transformDirection(rot);
@@ -1090,11 +1112,13 @@ class User extends Character {
       const fwd = V(0, 0, 1).transformDirection(this.Mp);
       if (S.run) {
         const a = Math.sin(2 * Math.PI * ph);
+        const R3 = new THREE.Matrix4().extractRotation(this.Mc);
         const sh = V(s * SH[0], SH[1], SH[2]).applyMatrix4(this.Mc);
         const fl = clamp(A.flail ?? ctx.flail);
         const f1 = noise1(t * 2.2, 81 + s), f2 = noise1(t * 2.6, 83 + s);
-        const P = sh.clone().add(V(s * (0.06 + 0.07 * fl * (0.5 + 0.5 * f1)), -0.2 + 0.17 * a + 0.1 * fl * f2, 0.06 + 0.2 * a).applyMatrix4(new THREE.Matrix4().extractRotation(this.Mc)));
-        P.add(V(s * 0.05 * fl * Math.cos(2 * Math.PI * ph * 1.0 + s), 0.06 * fl * Math.sin(2 * Math.PI * ph + 0.7 * s), 0).applyQuaternion(this.rootQInv.clone().invert().invert()));
+        const c = Math.cos(2 * Math.PI * ph + s), d = Math.sin(2 * Math.PI * ph + 0.7 * s);
+        const off = V(s * (0.035 + 0.04 * fl * (0.5 + 0.5 * f1) + 0.035 * fl * c), -0.21 + 0.17 * a + 0.07 * fl * f2 + 0.05 * fl * d, 0.07 + 0.2 * a);
+        const P = sh.clone().add(off.applyMatrix4(R3));
         acc.t.lerp(P, w);
         acc.pole.lerp(V(s * 0.5, -0.6, -1).transformDirection(this.Mc), w);
         acc.fing.lerp(V(-s * 0.4, 0.5 + 0.4 * a, 0.7).transformDirection(this.Mc), w);
@@ -1103,10 +1127,14 @@ class User extends Character {
         gripW.fist = (gripW.fist || 0) + 3 * w;
       } else {
         const sw = Math.sin(2 * Math.PI * ph);
+        if (isPhone && S.stomp) {
+          const r = this._presetToRoot(ARM.rest, s, { t: V(), pole: V(), palm: V(), fing: V() });
+          acc.t.lerp(r.t, w); acc.pole.lerp(r.pole, w); acc.palm.lerp(r.palm, w); acc.fing.lerp(r.fing, w);
+        }
         acc.t.addScaledVector(fwd, sw * S.arm * w);
         acc.t.y += 0.018 * Math.abs(sw) * w;
         if (S.stomp) {             // stiff fists, elbows locked-ish, a bit out from the body
-          acc.t.x += s * 0.03 * w; acc.t.y += 0.02 * w;
+          acc.t.x += s * 0.035 * w; acc.t.y += 0.03 * w; acc.t.addScaledVector(fwd, 0.03 * w);
           acc.hand.curl = lerp(acc.hand.curl, 1, w); acc.hand.thumb = lerp(acc.hand.thumb, 0.1, w); acc.hand.cup = lerp(acc.hand.cup, 0, w);
           gripW.fist = (gripW.fist || 0) + 3 * w;
         }
@@ -1159,12 +1187,17 @@ class User extends Character {
     if (isPhone) {
       const gm = acc.grip;
       if (gm === 'flat') {
-        hp.curl = Math.min(hp.curl, 0.2); hp.cup = Math.max(hp.cup, 0.22); hp.spread = Math.min(hp.spread, 0.08); hp.point = 0;
-        hp.perFinger = [0.18, 0.22, 0.28, 0.4].map((c) => Math.max(c, hp.curl));
+        // phone lies on the palm + fingers (fingers stay behind the slab), pinky tucks under the bottom edge
+        hp.curl = Math.min(hp.curl, 0.06); hp.cup = Math.min(hp.cup, 0.04); hp.spread = Math.min(hp.spread, 0.06); hp.point = 0; hp.splay = 0.06;
+        hp.perFinger = [0.02, 0.03, 0.05, 0.12];
         const tap = clamp(ctx.tap), tw = clamp(ctx.thumbOn + tap);
         if (tw > 0) {
           const scr = this._phoneLocal('flat');
-          hp.thumbTo = V(-arm.hand.ts * 0.006, 0.083 + 0.01 * noise1(ctx.t * 1.3, 5 + s), scr.z - 0.004 - 0.008 * (1 - tap));
+          const ta = ctx.thumbAt || THUMB_AT[ctx.screen] || THUMB_AT.feed;
+          const tu = ta[0] + 0.012 * noise1(ctx.t * 0.9, 7 + s), tv = ta[1] + 0.02 * noise1(ctx.t * 1.3, 5 + s);
+          // screen (u, v) -> phone local (x right, y up) -> hand local (phone is turned 180 deg about Y)
+          const px = (tu - 0.5) * (PH_W - 0.007), py = (0.5 - tv) * (PH_H - 0.008);
+          hp.thumbTo = V(-px + arm.hand.ts * 0.006, scr.pos.y + py, scr.z - 0.0095 - 0.014 * (1 - tap));
           hp.thumbW = tw;
         }
       } else if (gm === 'fist') { hp.curl = Math.max(hp.curl, 0.88); hp.grip = 0.2; hp.thumb = Math.min(hp.thumb, 0.25); }
@@ -1179,7 +1212,7 @@ class User extends Character {
     const m2 = elbow.clone().lerp(wrist, 0.5);
     const sag = 0.012 * (1 - Math.abs(fore.y));
     m2.y -= sag; m1.y -= 0.006;
-    const bunch = clamp(1 - elbow.distanceTo(sh) / UPPER * 0.0);
+    const bunch = 1;
     arm.sleeve.update([shIn, sh, m1, elbow, m2, wrist.clone().addScaledVector(fore, -0.03), cuffEnd], (u) => {
       let r = u < 0.18 ? lerp(0.07, 0.066, u / 0.18) : u < 0.5 ? lerp(0.066, 0.06, (u - 0.18) / 0.32) : lerp(0.06, 0.057, (u - 0.5) / 0.4);
       if (u > 0.52 && u < 0.9) r += 0.0075 * bunch * Math.abs(Math.sin((u - 0.52) / 0.38 * Math.PI * 3.5)) - 0.003;
@@ -1216,8 +1249,8 @@ class User extends Character {
   }
   /** phone centre/orientation in hand-local space for a grip mode (screen faces the palm-normal side, -Z) */
   _phoneLocal(mode) {
-    if (mode === 'fist') return { pos: V(0, 0.05, -0.024), rot: new THREE.Euler(Math.PI / 2, 0, Math.PI / 2, 'XYZ'), z: -0.024 };
-    if (mode === 'tuck') return { pos: V(0, 0.05, -0.016), rot: new THREE.Euler(0, Math.PI, 0.2), z: -0.016 };
+    if (mode === 'fist') return { pos: V(0, 0.048, -0.021), rot: new THREE.Euler(0, Math.PI, Math.PI / 2, 'XYZ'), z: -0.026 };
+    if (mode === 'tuck') return { pos: V(0, 0.048, -0.021), rot: new THREE.Euler(0, Math.PI, Math.PI / 2 + 0.3, 'XYZ'), z: -0.026 };
     const z = -(this.arms ? this.arms.L.hand.pt * 0.5 : 0.015) - PH_D / 2 - 0.0035;
     return { pos: V(0, 0.07, z), rot: new THREE.Euler(0, Math.PI, 0), z: z - PH_D / 2 };
   }
@@ -1244,7 +1277,7 @@ class User extends Character {
     }
     if (mode === 'feed') this.feedTex.offset.y = -(E.scroll ?? 0) * 0.5 % 1;
     const k = mode === 'off' ? 0 : lum;
-    const bright = lerp(0.025, 1.55, k);
+    const bright = lerp(0.025, 1.08, k);
     this.screenMat.color.setRGB(bright * 0.95, bright * 0.98, bright);
     this.hdrMat.color.copy(this.screenMat.color);
     if (mode === 'off') this.screenMat.color.setRGB(0.02, 0.022, 0.03);
@@ -1253,7 +1286,7 @@ class User extends Character {
     this.phW.set(0, 0, PH_D / 2 + 0.01).applyMatrix4(this.phone.matrixWorld);
     this.phN.set(0, 0, 1).transformDirection(this.phone.matrixWorld);
     const g = k * (SCREEN_LUM[mode] ?? 0.8) * (E.glow ?? 1);
-    this.PU.col.value.setRGB(0.62 * g, 0.78 * g, 1.0 * g);
+    this.PU.col.value.setRGB(0.75 * g, 1.08 * g, 1.6 * g);
     // reflections: eyes (cornea glint where the phone is) and glasses
     const cam = CTX.camera;
     for (let i = 0; i < 2; i++) {
@@ -1264,16 +1297,15 @@ class User extends Character {
       const inv = new THREE.Matrix4().copy(eye.inner.matrixWorld).invert();
       const Lp = this.phW.clone().applyMatrix4(inv).normalize(), Vc = cam.position.clone().applyMatrix4(inv).normalize();
       const n = Lp.clone().add(Vc).normalize();
-      const st = this.face.state, sideK = i === 0 ? 'L' : 'R';
-      const elev = Math.asin(clamp(n.y));
-      const lidU = (st['lidU' + sideK] ?? st.lidU);
-      if (n.z < 0.3 || elev > 0.5 * Math.min(1, lidU) - 0.12 || elev < -0.5 || st.blink > 0.4) continue;
+      const elev = Math.asin(clamp(n.y, -1, 1));
+      const upE = -eye.up.rotation.x, loE = -eye.lo.rotation.x;
+      if (n.z < 0.35 || elev > upE - 0.14 || elev < loE + 0.14) continue;
       rm.visible = true;
       rm.position.copy(n).multiplyScalar(eye.r * 1.015);
       rm.lookAt(cam.position);
       rm.material.opacity = clamp(g * 0.9) * 0.85;
     }
-    this.lensMat.opacity = 0.28 + 0.25 * g;
+    this.lensMat.opacity = 0.06 + 0.14 * g;
   }
 
   // ------------------------------------------------------------------ legs: joggers + chunky sneakers
@@ -1328,7 +1360,7 @@ class User extends Character {
       const tab = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.04, 0.012, 2, 0.005), this.tabMat);
       tab.position.set(0, -0.008, -0.086); tab.rotation.x = 0.25;
       g.add(outsole, mid, upper, collar, tongue, ...laces, tab);
-      bake(g, [...g.children]).forEach((m) => { m.castShadow = true; });
+      bake(g, [...g.children]);
       this.root.add(g);
       const leg = new SweepTube({ material: this.jogMat, segments: 22, radial: 12, capRings: 2, castShadow: true });
       this.root.add(leg.mesh);
@@ -1515,7 +1547,7 @@ class User extends Character {
     const comp = Hd.compensate ?? 1;
     hp += amt * (0.012 + 0.03 * ST.run) * Math.cos(4 * Math.PI * ph) - (lean + pelPitch * 0.85) * 0.75 * comp;
     hp += slump * 0.18 - recoil * 0.15 - hunch * 0.12 - jut * 0.22 + impact * 0.12 + flinch * 0.12;
-    if (ST.stomp && amt > 0) hp += 0.05 * amt;
+    if (ST.stomp && amt > 0) hp += 0.1 * amt;
     if (tremble > 0) { hy += 0.012 * tremble * noise1(t * 13, 41); hp += 0.01 * tremble * noise1(t * 11, 42); }
     if (sp && (Hd.talk ?? 1) > 0) { const k2 = Hd.talk ?? 1; hp += 0.05 * (sp.open - 0.3) * k2; hy += 0.03 * noise1(t * 0.8, 31) * k2; hr += 0.02 * noise1(t * 0.6, 32) * k2; }
     const follow = clamp(Hd.follow ?? 0);
@@ -1591,7 +1623,7 @@ class User extends Character {
     }
     // ---- arms (+ phone)
     const actx = { t, amt, ST, ph, swing: swingDz, shrug, hunch, br, talk, knee, fall, tremble, flail: Wk.flail ?? (ST.run ? 0.55 : 0),
-      phoneUp: E.phoneUp ?? 0, tap: E.tap ?? 0, thumbOn: E.thumb ?? (E.tap != null ? 1 : 0) };
+      phoneUp: E.phoneUp ?? 0, tap: E.tap ?? 0, thumbOn: E.thumb ?? (E.tap != null ? 1 : 0), screen: E.screen || 'feed', thumbAt: E.thumbAt || null };
     this.phoneGrip = 'flat';
     this._updateArm('L', P.armL, actx);
     this._updateArm('R', P.armR, actx);
