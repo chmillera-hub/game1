@@ -246,7 +246,7 @@ void main(){
     m *= cosmosMaskA(an, jit, uFront);                         // walls dissolve into deep space ...
     float mn = cosmosMaskA(an, jit * 1.4, uFrontN);            // ... then the nebulae bloom open behind that front
     float bl = mn * (1.0 - mn) * 4.0;
-    c = cosmosBase(d) * m + s.rgb * uNebula * mn * (1.0 + 0.8 * bl * uFringe);
+    c = cosmosBase(d) * m + s.rgb * uNebula * mn * (1.0 + 0.6 * bl * uFringe);
     // reveal bloom: soft cloudy light unfurling outward from behind the source
     float x = an / uBloomR;
     float g = uBloomA * exp(-x * x) * (0.3 + 1.1 * s.a * s.a) * m;
@@ -707,26 +707,26 @@ class CosmosSet {
   }
 
   /**
-   * update(t, opts) — pure function of (t, opts).
-   *  reveal 0..1        0 = nothing; .02–.3 near stars kindle around `source`; .12–.9 sky blooms outward from the source
-   *                     (walls dissolve behind a soft glowing fringe), nebula puffs swell open; .5–1 galaxies drift in;
-   *                     .62–1 glyphs. 1 = everything (cheap: no masking).
+   * update(t, opts) — pure function of (t, opts). Full table: docs/sets/cosmos.md.
+   *  reveal 0..1        0 = nothing; .015–.29 near stars kindle around `source`; .12–~.75 walls dissolve into deep space
+   *                     outward from the source (camera-relative); .14–.72 a soft light unfurls behind the source;
+   *                     .24–~.85 nebulae bloom open; .5–1 galaxies drift in; .62–1 glyphs. 1 = everything (cheapest).
    *  center [x,y,z]     floor point the cosmos surrounds (the characters' spot). Default [0,0,0].
    *  source [x,y,z]     where the reveal starts (the Void's chest). Default center + [0,1.6,0].
-   *  radius (m)         horizontal radius of the sky shell (default 7.5). Must be < distance to the host walls.
+   *  radius (m)         horizontal radius of the sky shell (default 7.5): geometry farther than the shell is covered.
    *  height (m)         vertical semi-axis of the shell (default 0.87·radius). Shell centre = center + [0, lift, 0].
    *  lift (m)           shell centre height above `center` (default 1.5).
-   *  drift              speed multiplier for all slow motion (sky rotation, galaxy spin, glyph orbits). Default 1.
+   *  drift              speed multiplier for slow motion (bounded sky drift, galaxy spin, orbits). Default 1.
    *  clock              explicit motion clock (s) instead of t·drift (use when animating drift).
    *  intensity          global brightness multiplier (default 1).
-   *  stars, nebula, galaxies, glyphs, puffs   per-element brightness multipliers (default 1).
-   *  fringe             reveal-front glow (default 1).
-   *  light              multiplier for the cosmic hemi + key lights (default 1; 0 = no light added to the host).
+   *  stars, nebula, galaxies, glyphs, puffs   per-element multipliers (default 1; 0 hides + skips the draw).
+   *  bloom, fringe      mid-reveal unfurling light / dissolve-front glow (default 1).
+   *  light              cosmic key (+ hemi standalone) multiplier (default 1). hemi: also add the hemi in a host.
    *  floor { cover, inner, r0, r1, glow }    cover: sky over the host floor beyond r0..r1 (default 1 in a host, 0 standalone);
    *                     inner: sky tint inside r0; glow: light pool under the characters (default .35 host / 1 standalone).
    *  eyeLight 0..1      blend EYE_LIGHT toward the cosmos key (default 1 standalone, 0 in a host).
-   *  bloom              strength of the soft light that unfurls from behind the source mid-reveal (default 1).
    *  standalone         force standalone/host defaults (default: group.parent === this.scene).
+   *  blendShell         keep the shell blended at reveal 1 (default false: opaque pass, same pixels, cheaper).
    */
   update(t, opts = {}) {
     const standalone = opts.standalone ?? (this.group.parent === this.scene);
@@ -755,7 +755,8 @@ class CosmosSet {
 
     // reveal stages
     const kindle = clamp(reveal / 0.3);
-    const fr = (u) => (u >= 0.999 || reveal >= 0.999 ? 1e3 : 0.55 * u / (1 - u));
+    // front radius in frame half-diagonals: ~linear across the frame (1.9 per unit), then races around the sphere
+    const fr = (u) => (u >= 0.999 || reveal >= 0.999 ? 1e3 : 1.9 * u + 0.3 * Math.pow(u, 6) / (1 - u));
     const ub = clamp((reveal - 0.12) / 0.72), un = clamp((reveal - 0.24) / 0.72);
     const front = fr(ub);
     U.uFront.value = front; U.uFrontN.value = un <= 0 ? -1 : fr(un);
@@ -815,7 +816,7 @@ class CosmosSet {
     // reveal bloom (stage .14 -> .72), drawn by the sky shell itself
     const bs = clamp((reveal - 0.14) / 0.58);
     D.uBloomR.value = lerp(0.35, 2.4, 1 - Math.pow(1 - bs, 2));
-    D.uBloomA.value = bs > 0 && bs < 1 ? 0.30 * Math.pow(Math.sin(Math.PI * bs), 1.2) * (opts.bloom ?? 1) * (opts.nebula ?? 1) : 0;
+    D.uBloomA.value = bs > 0 && bs < 1 ? 0.24 * Math.pow(Math.sin(Math.PI * bs), 1.2) * (opts.bloom ?? 1) * (opts.nebula ?? 1) : 0;
 
     // galaxies: spin, drift in, fade in (staggered)
     const Gm = opts.galaxies ?? 1;

@@ -257,43 +257,46 @@ function makeMaterials(env) {
   const galv = galvTexture();
   const std = (o) => new THREE.MeshStandardMaterial(o);
   const lam = (o) => new THREE.MeshLambertMaterial(o);
+  const pho = (o) => new THREE.MeshPhongMaterial(o);
   const M = {
     floor: std({ color: 0xffffff, map: floorTexture(), roughness: 0.56, metalness: 0.0 }),
     // big matte surfaces use Lambert (much cheaper per pixel on SwiftShader with several lights)
     wall: lam({ color: 0x8e95ad, map: plasterTexture(), vertexColors: true }),
     wains: lam({ color: 0x4e3a2e, vertexColors: true }),
-    pipe: std({ color: 0x6a5f62, roughness: 0.42, metalness: 0.75, vertexColors: true, envMap: env, envMapIntensity: 0.7 }),
+    pipe: pho({ color: 0x4a4246, specular: 0x6a6266, shininess: 40, vertexColors: true, envMap: env, reflectivity: 0.3, combine: THREE.AddOperation }),
     cardboard: lam({ color: 0x7e6349 }),
     tape: lam({ color: 0xb49c76 }),
     sheet: lam({ color: 0xa8a3b8 }),
     doorway: new THREE.MeshBasicMaterial({ color: 0x030307 }),
+    // hero brass keeps PBR; every other prop uses Phong / Lambert (cheaper per pixel on SwiftShader, same read at phone size)
     brass: std({ color: 0xfff2d8, map: rust.map, roughnessMap: rust.rough, roughness: 0.62, metalness: 0.85, envMap: env, envMapIntensity: 1.0 }),
     brassBright: std({ color: 0xf2c878, roughness: 0.25, metalness: 0.95, envMap: env, envMapIntensity: 1.6, emissive: 0x2a1604 }),
-    iron: std({ color: 0x3e3940, roughness: 0.55, metalness: 0.65, envMap: env, envMapIntensity: 0.7 }),
-    galv: std({ color: 0xd4dade, map: galv, roughness: 0.4, metalness: 0.55, vertexColors: true, envMap: env, envMapIntensity: 1.3 }),
-    galvDark: std({ color: 0x9aa1a6, roughness: 0.42, metalness: 0.6, envMap: env, envMapIntensity: 1.1 }),
-    wood: std({ color: 0xa06d42, roughness: 0.6 }),
-    woodPale: std({ color: 0xb08a62, roughness: 0.58 }),
-    red: std({ color: 0xa8382e, roughness: 0.45 }),
-    rubber: std({ color: 0x1c1a1c, roughness: 0.8 }),
-    straw: std({ color: 0xffffff, roughness: 0.85, vertexColors: true }),
-    bristle: std({ color: 0x2c2726, roughness: 0.9 }),
-    plasticW: std({ color: 0xeae4d8, roughness: 0.32 }),
-    sprayA: std({ color: 0xffffff, roughness: 0.28, vertexColors: true }),
-    sprayB: std({ color: 0xffffff, roughness: 0.28, vertexColors: true }),
-    label: std({ color: 0xe8e0cc, roughness: 0.7 }),
-    sign: std({ color: 0xffffff, map: signTexture(), roughness: 0.42 }),
-    signEdge: std({ color: 0xe0ac10, roughness: 0.45 }),
-    cord: std({ color: 0x1a1618, roughness: 0.7 }),
-    socket: std({ color: 0x5a4632, roughness: 0.4, metalness: 0.8, envMap: env }),
-    puddle: std({ color: 0x40607e, roughness: 0.05, metalness: 0.35, envMap: env, envMapIntensity: 2.6, transparent: true, opacity: 0.62, depthWrite: false }),
-    mop: std({ color: 0xe6dfcc, roughness: 0.92 }),
-    mopCotton: std({ color: 0xc8bfa8, roughness: 0.95 }),
+    iron: pho({ color: 0x3a353c, specular: 0x5a5560, shininess: 30, envMap: env, reflectivity: 0.25, combine: THREE.AddOperation }),
+    galv: pho({ color: 0xc2c9ce, map: galv, specular: 0x8a949a, shininess: 42, vertexColors: true, envMap: env, reflectivity: 0.5, combine: THREE.AddOperation }),
+    galvDark: pho({ color: 0x969ea4, specular: 0x7a8288, shininess: 40, envMap: env, reflectivity: 0.4, combine: THREE.AddOperation }),
+    wood: lam({ color: 0xa06d42 }),
+    woodPale: lam({ color: 0xb08a62 }),
+    red: pho({ color: 0xa8382e, specular: 0x402020, shininess: 30 }),
+    rubber: lam({ color: 0x1c1a1c }),
+    straw: lam({ color: 0xffffff, vertexColors: true }),
+    bristle: lam({ color: 0x2c2726 }),
+    plasticW: pho({ color: 0xeae4d8, specular: 0x404040, shininess: 50 }),
+    sprayA: pho({ color: 0xffffff, specular: 0x505050, shininess: 60, vertexColors: true }),
+    sprayB: pho({ color: 0xffffff, specular: 0x505050, shininess: 60, vertexColors: true }),
+    label: lam({ color: 0xe8e0cc }),
+    sign: pho({ color: 0xffffff, map: signTexture(), specular: 0x3a3a30, shininess: 36 }),
+    signEdge: pho({ color: 0xe0ac10, specular: 0x3a3a30, shininess: 36 }),
+    cord: lam({ color: 0x1a1618 }),
+    socket: pho({ color: 0x4a3828, specular: 0x8a7050, shininess: 50 }),
+    puddle: pho({ color: 0x1e3044, specular: 0x8aa0c0, shininess: 90, envMap: env, reflectivity: 0.55, combine: THREE.MixOperation, transparent: true, opacity: 0.62, depthWrite: false }),
+    mop: lam({ color: 0xe6dfcc }),
+    mopCotton: lam({ color: 0xc8bfa8 }),
   };
-  M.rag = [0x6e9896, 0xd8ccae, 0xb88680, 0x7a88a2, 0x9b8b6f].map((c) => std({ color: c, roughness: 0.96 }));
+  M.rag = [0x6e9896, 0xd8ccae, 0xb88680, 0x7a88a2, 0x9b8b6f].map((c) => lam({ color: c }));
+  fakeGlow(M.floor); fakeGlow(M.wall); fakeGlow(M.wains);
   // room materials are OPAQUE (cheap, early-z); a transparent twin is swapped in only while opts.cosmos fades the room
   M.fadeable = [M.wall, M.wains, M.pipe, M.cardboard, M.tape, M.sheet, M.doorway];
-  for (const m of M.fadeable) { const t = m.clone(); t.transparent = true; t.depthWrite = true; m.userData.twin = t; }
+  for (const m of M.fadeable) { const t = m.clone(); t.transparent = true; t.depthWrite = true; m.userData.twin = t; if (m === M.wall || m === M.wains) fakeGlow(t); }
   return M;
 }
 
@@ -339,6 +342,24 @@ function droopMaterial(base) {
   return base;
 }
 
+// "fake light": a warm radial glow added as emissive * albedo inside the floor / wall shaders (one distance + a
+// division per pixel, far cheaper than a real PointLight on SwiftShader and no additive overdraw). Shared uniforms.
+const FAKE = { uFGPos: { value: V() }, uFGCol: { value: new THREE.Color(0, 0, 0) }, uFGR: { value: 1.6 } };
+function fakeGlow(mat) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => {
+    if (prev) prev(sh, r);
+    Object.assign(sh.uniforms, FAKE);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vFGW;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFGW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vFGW; uniform vec3 uFGPos, uFGCol; uniform float uFGR;')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        { vec3 dv = vFGW - uFGPos; float r2 = uFGR * uFGR; float f = r2 / (r2 + dot(dv, dv)); totalEmissiveRadiance += uFGCol * diffuseColor.rgb * (f * f); }`);
+  };
+  mat.customProgramCacheKey = () => 'brFakeGlow' + mat.type;
+  return mat;
+}
+
 // ------------------------------------------------------------------------------------------------ geometry helpers
 function vcolFade(geo, f) {         // vertex colour by world-ish y of the geometry (after translation)
   const p = geo.attributes.position, c = new Float32Array(p.count * 3);
@@ -346,7 +367,8 @@ function vcolFade(geo, f) {         // vertex colour by world-ish y of the geome
   geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
   return geo;
 }
-const wallFade = (x, y) => 1 - smooth((y - 0.8) / 5.2) * 0.97;
+const WALL_H = 5.6;                                  // walls/pillars stop where the fade reaches black (the dome takes over)
+const wallFade = (x, y) => 1 - smooth((y - 0.7) / (WALL_H - 0.7));
 function planarUV(geo, ax, ay, scale) {   // metres-based UVs from two position axes
   const p = geo.attributes.position, uv = geo.attributes.uv;
   for (let i = 0; i < p.count; i++) uv.setXY(i, p.getComponent(i, ax) / scale, p.getComponent(i, ay) / scale);
@@ -386,9 +408,9 @@ function buildRoom(M) {
   planarUV(fg, 0, 2, -4); // 4 m tile, boards along Z
   const floor = new THREE.Mesh(fg, M.floor); floor.position.set(-2, 0, 7); floor.receiveShadow = true; g.add(floor);
   // walls (vertex-colour fade to darkness upward)
-  const H = 9;
+  const H = WALL_H;
   const mkWall = (w, cx, cz, rotY) => {
-    const geo = new THREE.PlaneGeometry(w, H, 1, 14); geo.translate(0, H / 2, 0);
+    const geo = new THREE.PlaneGeometry(w, H, 1, 10); geo.translate(0, H / 2, 0);
     planarUV(geo, 0, 1, 3); vcolFade(geo, wallFade);
     const m = new THREE.Mesh(geo, M.wall); m.rotation.y = rotY; m.position.set(cx, 0, cz); g.add(m); return m;
   };
@@ -436,11 +458,11 @@ function buildRoom(M) {
   // pillars on the open left side + pilasters on the right wall (rise into darkness)
   const colG = [];
   for (const [x, z] of [[-6.3, -2.7], [-6.3, 3.4], [-6.3, 9.5], [-6.3, 15.6]]) {
-    const c = new THREE.CylinderGeometry(0.38, 0.38, H, 28, 8, true); c.translate(x, H / 2, z); colG.push(c);
+    const c = new THREE.CylinderGeometry(0.38, 0.38, H, 28, 6, true); c.translate(x, H / 2, z); colG.push(c);
     const b = new THREE.CylinderGeometry(0.5, 0.54, 0.32, 28); b.translate(x, 0.16, z); colG.push(b);
     const b2 = new THREE.CylinderGeometry(0.44, 0.48, 0.1, 28); b2.translate(x, 0.37, z); colG.push(b2);
   }
-  for (const z of [1.8, 8.4, 15.0]) { const p = new THREE.BoxGeometry(0.34, H, 0.8, 1, 8, 1); p.translate(RIGHT_X - 0.17, H / 2, z); colG.push(dropFaces(p, V(1, 0, 0))); }
+  for (const z of [1.8, 8.4, 15.0]) { const p = new THREE.BoxGeometry(0.34, H, 0.8, 1, 6, 1); p.translate(RIGHT_X - 0.17, H / 2, z); colG.push(dropFaces(p, V(1, 0, 0))); }
   const cols = new THREE.Mesh(vcolFade(merge(colG.map((q) => ni(q))), wallFade), M.wall); g.add(cols);
   // storage: stacked cardboard boxes + a dust-sheet-draped armchair (pale ghostly lump) back-left
   const boxG = [], tapeG = [], r = rng(23);
@@ -845,6 +867,10 @@ export async function create() {
   };
   const bulb = makeBulb(V(-1.15, 2.3, 0.5), 5.4, 0xffb468, 7.0, 11);
   const bulb2 = makeBulb(V(3.45, 2.15, -3.75), 5.6, 0xffa95e, 4.2, 8);
+  // The corner bulb's real PointLight is OFF by default (perf: a 4th per-pixel light costs ~8% of the frame on
+  // SwiftShader); its warm pool is faked with additive decals on the floor and the two corner walls instead.
+  // opts.lights.cornerLight = 1 turns the real light on (close corner shots; first use compiles a second program set).
+  // (the fake glow FAKE.* follows bulb2's glass every frame — see update())
   const voidLight = new THREE.PointLight(0x9a7cff, 3.2, 7, 2); scene.add(voidLight);
   const VOID_LIGHT_POS = VOID_SPOT.clone().addScaledVector(FWD, 1.0).setY(2.0);
   voidLight.position.copy(VOID_LIGHT_POS);
@@ -870,11 +896,11 @@ export async function create() {
       }`,
   });
   const SHAFTS = [   // floor point, top offset (direction the light comes from), bottom radius, colour, intensity
-    { at: V(-1.62, 0, 0.0), from: V(-0.32, 1, -0.22), rb: 0.78, rt: 0.3, col: 0xbfc8ff, k: 0.22 },
-    { at: V(-3.9, 0, -3.7), from: V(-0.25, 1, -0.12), rb: 0.9, rt: 0.36, col: 0x9fb0ff, k: 0.2 },
-    { at: V(2.45, 0, -3.95), from: V(-0.18, 1, -0.2), rb: 0.62, rt: 0.24, col: 0xc6cdfa, k: 0.17 },
+    { at: V(-1.62, 0, 0.0), from: V(-0.32, 1, -0.22), rb: 0.7, rt: 0.32, col: 0xbfc8ff, k: 0.22 },
+    { at: V(-3.9, 0, -3.7), from: V(-0.25, 1, -0.12), rb: 0.8, rt: 0.36, col: 0x9fb0ff, k: 0.2 },
+    { at: V(2.45, 0, -3.95), from: V(-0.18, 1, -0.2), rb: 0.56, rt: 0.26, col: 0xc6cdfa, k: 0.17 },
   ];
-  const SH_LEN = 8.5;
+  const SH_LEN = 6.0;
   SHAFTS.forEach((s, i) => {
     const geo = new THREE.CylinderGeometry(s.rt, s.rb, SH_LEN, 28, 1, true); geo.translate(0, SH_LEN / 2, 0);
     const mat = shaftMat(s.col); mat.uniforms.uSeed.value = i * 2.3;
@@ -1003,6 +1029,10 @@ export async function create() {
     bulb2.pivot.rotation.set(kick * 0.6 + 0.003 * Math.sin(t * 0.47), 0, kick + 0.004 * Math.sin(t * 0.58));
     bulb.light.intensity = bulb.base * (L.bulb ?? 1) * dimRoom;
     bulb2.light.intensity = bulb2.base * (L.bulb2 ?? 1) * dimRoom;
+    bulb2.light.visible = !!L.cornerLight;
+    { const k = (L.bulb2 ?? 1) * dimRoom * (L.cornerLight ? 0.3 : 1);
+      bulb2.pivot.updateMatrixWorld(true); bulb2.glass.getWorldPosition(FAKE.uFGPos.value);
+      FAKE.uFGCol.value.setRGB(1.0, 0.55, 0.24).multiplyScalar(2.6 * k); FAKE.uFGR.value = 1.7; }
     bulb.glass.material.color.set(0xffb468).multiplyScalar(5 * (L.bulb ?? 1) * dimRoom); bulb.halo.material.opacity = (L.bulb ?? 1) * dimRoom;
     bulb2.glass.material.color.set(0xffa95e).multiplyScalar(5 * (L.bulb2 ?? 1) * dimRoom); bulb2.halo.material.opacity = (L.bulb2 ?? 1) * dimRoom;
     bulb.glass.getWorldPosition(anchors.bulb); bulb2.glass.getWorldPosition(anchors.bulb2);

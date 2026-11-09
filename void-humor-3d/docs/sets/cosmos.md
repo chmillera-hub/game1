@@ -47,9 +47,10 @@ the lab header.
 - **Floor veil** (host mode): beyond `r0` the host floor fades into the same sky + a procedural star field, seamless
   with the shell where the shell meets the floor plane → the characters stand on an island of floor in space.
   Standalone: a soft violet/teal **light pool** under the characters ("glass over the universe").
-- **Lights** (in the group, intensity × reveal): violet/teal hemisphere + warm starlight key from the hero galaxy
-  (from behind/above in a front view → a gentle warm rim). Standalone scene adds a cool rim, a soft lilac front fill
-  and a faint hemi so faces read.
+- **Lights** (in the group, intensity × reveal): a warm starlight **key** from the hero galaxy (from behind/above in
+  a front view → a gentle warm rim) and a violet/teal **hemisphere** (standalone only by default — hosts such as
+  BACKROOM tint their own ambient with their `cosmos` param; `opts.hemi` turns it on in a host). The standalone
+  scene adds a soft lilac front fill so faces read; inner beings bring their own fresnel rims.
 
 ## Reveal timeline (`opts.reveal` 0 → 1)
 
@@ -57,7 +58,7 @@ the lab header.
 |---|---|
 | 0 | nothing is drawn (cosmos objects hidden; lights at 0) |
 | .015–.29 | **stars kindle** one by one near the source (the Void), each with a little glint |
-| .12 → ~.75 | the **walls dissolve** into deep starry space, opening outward from the source *as seen by the current camera* (front in units of the frame half-diagonal: covers a frame around the source by ≈ .7), with a faint fringe |
+| .12 → ~.75 | the **walls dissolve** into deep starry space, opening outward from the source *as seen by the current camera* at a steady pace across the frame (front ≈ 1.9 frame half-diagonals per unit; a frame around the source is covered by ≈ .68), then races around the rest of the sphere; faint fringe |
 | .14 → .72 | a soft cloudy **light unfurls** from behind the source (violet → rose → teal), fading as the sky takes over |
 | .24 → ~.85 | **nebulae bloom open** behind that front (brighter at their leading edge); puffs swell open |
 | .5 → 1 | **galaxies drift in** (staggered: slide ~6°, grow 80 → 100 %, fade in) |
@@ -73,7 +74,7 @@ avoid cutting in the middle of the .2–.75 range (a cut re-centres the opening 
 const cos = await app.set('COSMOS');
 // -> { scene, group, update(t, opts), attach(scene), blendLook(base, w), anchors, props, look }
 ```
-- `scene` — standalone THREE.Scene (dark background, cosmos group, rim/fill/hemi lights).
+- `scene` — standalone THREE.Scene (dark background, cosmos group, a lilac front fill).
 - `group` — everything cosmic (shell, floor veil, stars, puffs, galaxies, glyphs, cosmic lights). One parent at a time.
 - `attach(scene)` — re-parent `group` (idempotent). **Call every frame before `update()`**, like characters.
 - `update(t, opts)` — pure function of (t, opts); returns the set. Methods are bound (destructuring is safe).
@@ -96,7 +97,9 @@ const cos = await app.set('COSMOS');
 | `stars`, `nebula`, `galaxies`, `glyphs`, `puffs` | 1 | per-element multipliers (0 hides and skips the draw) |
 | `bloom` | 1 | strength of the mid-reveal unfurling light |
 | `fringe` | 1 | dissolve-front glow + nebula leading-edge brightening |
-| `light` | 1 | cosmic hemi + key (host: .4/.65 × light; standalone .55/1.25). 0 = add no light |
+| `light` | 1 | cosmic key (host .65 × light, standalone 1.25) and hemi (standalone .3 + .35 × light) |
+| `hemi` | false | also add the cosmic hemisphere in a host (true or a 0..1 strength) |
+| `blendShell` | false | keep the shell a blended pass at reveal 1 (default: opaque pass, cheaper, identical pixels) |
 | `floor` | — | `{ cover, inner, r0=2.2, r1=5.5, glow }` — `cover` (host 1 / standalone 0): sky over the host floor beyond r0→r1; `inner`: sky tint inside r0; `glow` (host .35 / standalone 1): light pool |
 | `eyeLight` | standalone 1, host 0 | blend `EYE_LIGHT` toward the cosmos key (in a host, call after the host's update) |
 | `standalone` | auto | force standalone/host defaults (auto = `group.parent === scene`) |
@@ -150,20 +153,26 @@ veil turns the floor beyond r0 into sky. The BACKROOM bulb on its cord stays vis
 - The shell only covers geometry **farther than the shell**. Walls/ceilings closer than `radius` must be faded by
   the host (BACKROOM `cosmos`) or the radius reduced (galaxies/sky stay at infinity regardless).
 - Soft billboards (puffs, glyphs) never touch the floor; galaxies sit above ~10° elevation.
-- Adding the group to a host adds 2 lights → one shader recompile of the host's lit materials on first attach
-  (no per-frame recompiles; intensities go to 0 when hidden).
+- Adding the group to a host adds 1 light (the key; +1 with `opts.hemi`) → one shader recompile of the host's lit
+  materials on first attach (no per-frame recompiles; intensities go to 0 when hidden). At reveal 1 the shell
+  switches to an opaque pass drawn after the host's opaque objects (a second program, compiled once).
 - Order with `EYE_LIGHT`: hosts set it in their update; COSMOS only touches it if `eyeLight > 0` (default in
   standalone), so call `cos.update` after the host's update when you blend.
 - All ShaderMaterials ignore scene fog by design (BACKROOM fog does not grey out the cosmos).
 
 ## Performance (SwiftShader, 720×1280, MSAA + bloom post)
-Interleaved min-of-8 benches while other agents loaded the 4-core box (load ≈ 5–7):
-empty-scene floor (post + readback) 0.34–0.38 s · placeholder room alone 0.43–0.47 · **room + full cosmos
-0.57–0.62** · **standalone cosmos + capsules 0.53** · looking-up hero frame 0.55–0.57 · mid-reveal 0.58–0.70.
-So the cosmos itself costs **≈ 0.1–0.17 s/frame** under load (≈ 0.08–0.12 unloaded): shell ≈ 0.04–0.08, puffs ≈
-0.03–0.04, floor veil ≈ 0.02–0.05 (host mode only), stars + galaxies + glyphs ≈ 0.02. One-time setup (GPU bakes:
-sky cube 6×640², 4 galaxies 512², puff atlas 256²) ≈ 1–2 s. Draw calls ≈ 13. `opts.puffs: 0` is the cheapest
-quality knob (≈ −0.03 s).
+All numbers measured while other agents kept the 4-core box at load ≈ 6–11 (interleaved min-of-N benches):
+- **Same window as the core `facetest` lab** (0.48 s/frame unloaded): facetest 0.75–0.79 · cosmos lab standalone
+  + capsules 0.59–0.66 · looking-up hero frame 0.69 · room + full cosmos 0.71–0.83 · mid-reveal 0.73–0.74 ⇒ the
+  lab runs **at or below facetest parity ≈ 0.37–0.47 s/frame unloaded**.
+- Cosmos alone over an empty frame (same camera): +0.07 (load 6) … +0.16 s (load 9) at reveal 1; mid-reveal (blended
+  shell + masks + bloom) ≈ +0.1 more. Breakdown (A/B, load 9): full-screen shell ≈ 0.05 (of which blending 0.03 —
+  hence the opaque shell at reveal 1), puffs ≈ 0.02–0.04, floor veil ≈ 0.02–0.05 (host only), stars + galaxies +
+  glyphs ≈ 0.02.
+- One-time setup (GPU bakes: sky cube 6×640², 4 galaxies 512², puff atlas 256² + compiles) ≈ 1.5–2 s.
+- ~12 draw calls; no per-frame geometry allocation (glyph/puff instance attributes rewritten in place).
+- Cheapest quality knobs: `puffs: 0`, `floor: { cover: 0 }` in a host whose floor you do not need to dissolve.
+- Temporal stability at reveal 1: frame-to-frame MAE ≈ 0.002 (stars/glyphs only; no global flicker).
 
 ## Known limitations
 - The reveal front is computed **per camera** (screen-space-like opening from the source); a cut mid-reveal

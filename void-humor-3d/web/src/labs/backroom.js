@@ -1,13 +1,15 @@
-// Lab: SET BACKROOM — angles, cage latch/door, janitor-corner crash, bucket hat + mop wig, rolling bucket, cosmos fade.
-// Placeholder capsules for scale: VOID 3.0 m (indigo bell), FEAR 0.85 m (lavender bean), MAGICIAN 2.1 m (grey + hat).
-//   node tools/render.js sheet --lab backroom --from 0 --to 9.6 --n 9 --cols 3 --out out/sheets/backroom_angles.jpg
-//   node tools/render.js sheet --lab backroom --from 10 --to 14 --n 8 --cols 4 --out out/sheets/backroom_door.jpg
-//   node tools/render.js sheet --lab backroom --from 14 --to 24 --n 16 --cols 4 --out out/sheets/backroom_crash.jpg
+// Lab: SET BACKROOM — 10 camera angles, cage latch + door, janitor-corner crash, bucket hat + mop wig, rolling bucket,
+// cosmos fade. Placeholder capsules for scale: VOID 3.0 m (indigo bell), FEAR 0.85 m (lavender bean), MAGICIAN 2.1 m.
+// Segments (s): angles 0-12 (1.2 s each: wide reverse corner cage fearPOV lurk sideKick farCorner high latch),
+// door 12-16, crash 16-26 (impact at 16.8, crashT = t - 16.8), hat 26-30.5, roll 30.5-33.5, cosmos 33.5-36.5.
+//   node tools/render.js sheet --lab backroom --from 0.6 --to 11.4 --n 10 --cols 5 --out out/sheets/backroom_angles.jpg
+//   node tools/render.js sheet --lab backroom --from 12 --to 16 --n 6 --cols 6 --out out/sheets/backroom_door.jpg
+//   node tools/render.js sheet --lab backroom --from 16.2 --to 26 --n 16 --cols 8 --out out/sheets/backroom_crash.jpg
+//   node tools/render.js sheet --lab backroom --from 26 --to 36.4 --n 12 --cols 6 --out out/sheets/backroom_end.jpg
 //   exported `segments` = [[start, end, name], ...]
 import * as THREE from 'three';
 import { applyShot, framed } from '../core/camera.js';
 import { clamp, lerp, smooth, ease } from '../core/util.js';
-import { SETS } from '../sets/index.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const sm = (a, b, x) => smooth((x - a) / (b - a));
@@ -53,7 +55,7 @@ function placeholders() {
 }
 
 export async function setup(app) {
-  const set = await SETS.BACKROOM();
+  const set = await app.set('BACKROOM');
   const scene = set.scene;
   const P = placeholders();
   scene.add(P.vg, P.fg, P.mg);
