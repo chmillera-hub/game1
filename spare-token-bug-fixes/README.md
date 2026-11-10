@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-65 small ready-made bug fixes (patch files) for 31 public open source projects. Free to take.
+66 small ready-made bug fixes (patch files) for 32 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and TMHSDigital/Free-Game-Dev-Assets and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and prapaa-ai/agav and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and TMHSDigital/Free-Game-Dev-Assets and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 28 of the 65 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 58 of the 65 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 28 of the 66 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 59 of the 66 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -221,6 +221,9 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 65. [Free-Game-Dev-Assets: the link check reports a short server outage as dead links](fix-65-free-game-dev-assets-275.md)
    Project: TMHSDigital/Free-Game-Dev-Assets. Bug report number 275. License: CC0-1.0. Test included: yes. Patch file: [65-free-game-dev-assets-275.patch](fixes/65-free-game-dev-assets-275.patch)
+
+66. [agav: /undo with a mistyped argument reverts a file](fix-66-agav-681.md)
+   Project: prapaa-ai/agav. Bug report number 681. License: Apache-2.0. Test included: yes. Patch file: [66-agav-681.patch](fixes/66-agav-681.patch)
 
 ## How to use a fix
 

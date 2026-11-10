@@ -1,0 +1,90 @@
+diff --git a/source/__tests__/commands.undo.test.ts b/source/__tests__/commands.undo.test.ts
+new file mode 100644
+index 0000000..bee4a82
+--- /dev/null
++++ b/source/__tests__/commands.undo.test.ts
+@@ -0,0 +1,54 @@
++import { describe, it, expect, beforeEach, vi } from "vitest";
++
++vi.mock("../utils/undo.js", () => ({
++  performUndo: vi.fn(),
++  hasUndo: vi.fn(),
++  getUndoStack: vi.fn(),
++}));
++
++import { getUndoStack, hasUndo, performUndo } from "../utils/undo.js";
++import { undoCommand } from "../commands/undo.js";
++import type { CommandContext } from "../commands/types.js";
++
++const performUndoMock = vi.mocked(performUndo);
++const hasUndoMock = vi.mocked(hasUndo);
++const getUndoStackMock = vi.mocked(getUndoStack);
++const context = {} as CommandContext;
++
++describe("commands/undo", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    hasUndoMock.mockReturnValue(true);
++    performUndoMock.mockResolvedValue({ path: "src/a.ts", tool: "edit" });
++    getUndoStackMock.mockReturnValue([{ path: "src/a.ts", tool: "edit", timestamp: Date.now() }]);
++  });
++
++  it.each(["lsit", "List", "list all", "1", "--help"])("returns usage for the unknown argument %j and reverts nothing", async (args) => {
++    const result = await undoCommand.execute(args, context);
++
++    expect(result).toMatchObject({ type: "message" });
++    expect((result as { text: string }).text).toContain(`Unknown argument "${args}"`);
++    expect((result as { text: string }).text).toContain("Usage: /undo [list]");
++    expect(performUndoMock).not.toHaveBeenCalled();
++    expect(hasUndoMock).not.toHaveBeenCalled();
++  });
++
++  it.each(["", "   ", "\n"])("reverts the last change for empty input %j", async (args) => {
++    const result = await undoCommand.execute(args, context);
++
++    expect(performUndoMock).toHaveBeenCalledTimes(1);
++    expect(result).toEqual({ type: "message", text: "Reverted edit on src/a.ts" });
++  });
++
++  it.each(["list", "  list  "])("lists the tracked changes for %j without reverting", async (args) => {
++    const result = await undoCommand.execute(args, context);
++
++    expect(performUndoMock).not.toHaveBeenCalled();
++    expect((result as { text: string }).text).toContain("Undo stack:");
++    expect((result as { text: string }).text).toContain("src/a.ts");
++  });
++
++  it("names list in its usage", () => {
++    expect(undoCommand.usage).toContain("list");
++  });
++});
+diff --git a/source/commands/undo.ts b/source/commands/undo.ts
+index 380e540..05486d6 100644
+--- a/source/commands/undo.ts
++++ b/source/commands/undo.ts
+@@ -1,14 +1,23 @@
+ import type { SlashCommand, CommandResult } from "./types.js"
+ import { performUndo, hasUndo, getUndoStack } from "../utils/undo.js"
+ 
++const USAGE =
++  "Usage: /undo [list]\n\nRestores the previous version of the last file modified by the agent.\n`/undo list` shows the tracked changes without reverting anything.\nOnly tracks file writes and edits from the current session."
++
+ /** Revert the most recent tracked file change. */
+ export const undoCommand: SlashCommand = {
+   name: "undo",
+   description: "Revert the last file change",
+   autoSubmit: true,
+-  usage: "Usage: /undo\n\nRestores the previous version of the last file modified by the agent.\nOnly tracks file writes and edits from the current session.",
++  usage: USAGE,
+   async execute(args: string): Promise<CommandResult> {
+-    if (args.trim() === "list") {
++    const arg = args.trim()
++    // Only a bare `/undo` reverts. A typo such as `/undo lsit` must not cost a file its last change.
++    if (arg !== "" && arg !== "list") {
++      return { type: "message", text: `Unknown argument "${arg}".\n\n${USAGE}` }
++    }
++
++    if (arg === "list") {
+       const stack = getUndoStack()
+       if (stack.length === 0) {
+         return { type: "message", text: "No changes to undo." }
