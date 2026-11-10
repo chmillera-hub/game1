@@ -1,0 +1,62 @@
+diff --git a/src/program.ts b/src/program.ts
+index 4e68e8d..ef4885b 100644
+--- a/src/program.ts
++++ b/src/program.ts
+@@ -158,6 +158,7 @@ export function buildProgram(): Command {
+     .option("--disable <rules>", "comma separated rule ids to skip")
+     .action(
+       (path: string, o: { three?: string; json?: boolean; markdown?: boolean; sarif?: string; compact?: boolean; limit: string; minScore?: string; failOn: string; disable?: string }) => {
++        const limit = positiveInt("--limit", o.limit);
+         const disable = o.disable ? parseRuleList(o.disable, "--disable") : undefined;
+         const { review: r, learned } = applyFeedback(review({ path, ...(o.three ? { three: o.three } : {}), ...(disable ? { disable } : {}) }));
+         const note = formatLearned(learned);
+@@ -166,7 +167,7 @@ export function buildProgram(): Command {
+           mkdirSync(dirname(o.sarif), { recursive: true });
+           writeFileSync(o.sarif, JSON.stringify(toSarif(r), null, 1) + "\n");
+         }
+-        out(o.json ? JSON.stringify(r, null, 2) : o.markdown ? formatMarkdown(r, { limit: Number(o.limit) }) : o.compact ? formatCompact(r, { limit: Number(o.limit) }) : formatText(r, { limit: Number(o.limit) }));
++        out(o.json ? JSON.stringify(r, null, 2) : o.markdown ? formatMarkdown(r, { limit }) : o.compact ? formatCompact(r, { limit }) : formatText(r, { limit }));
+         const rank: Record<string, number> = { error: 0, warn: 1, info: 2 };
+         if (o.failOn !== "none" && r.findings.some((f) => (rank[f.severity] ?? 9) <= (rank[o.failOn] ?? -1))) process.exitCode = 1;
+         if (o.minScore !== undefined && r.score !== null && r.score < Number(o.minScore)) process.exitCode = 1;
+@@ -669,9 +670,10 @@ export function buildProgram(): Command {
+     .option("--limit <n>", "max problems shown", "50")
+     .option("--json", "JSON output")
+     .action((path: string, o: { limit: string; json?: boolean }) => {
++      const limit = positiveInt("--limit", o.limit);
+       const root = projectRootOf(path);
+       const r = checkAssets(root, collect(root).files);
+-      out(o.json ? JSON.stringify(r, null, 2) : formatAssets(r, { limit: Number(o.limit) }));
++      out(o.json ? JSON.stringify(r, null, 2) : formatAssets(r, { limit }));
+       if (r.problems.some((p) => p.severity === "error")) process.exitCode = 1;
+     });
+ 
+diff --git a/test/cli.test.ts b/test/cli.test.ts
+index 7bb3bd5..f5e01e4 100644
+--- a/test/cli.test.ts
++++ b/test/cli.test.ts
+@@ -62,6 +62,24 @@ describe.skipIf(!existsSync("dist/cli.js"))("built cli", () => {
+     expect(goodLimit.stdout.toString()).toContain("Vector3");
+   });
+ 
++  it("rejects a --limit that is not a whole number of 1 or more, for review and for assets", () => {
++    const example = "examples/agent-mistakes";
++    for (const [command, value] of [["review", "abc"], ["review", "0"], ["assets", "abc"], ["assets", "0"], ["assets", "-3"], ["review", "1.5"]] as const) {
++      const bad = spawnSync("node", ["dist/cli.js", command, example, "--limit", value]);
++      expect(bad.status, `${command} --limit ${value}`).toBe(2);
++      expect(bad.stderr.toString()).toContain(`threesmith: --limit must be a whole number of 1 or more (got "${value}")`);
++      expect(bad.stdout.toString()).toBe("");
++    }
++
++    // Valid limits behave as before: the same exit code as the default, and findings are printed.
++    const byDefault = spawnSync("node", ["dist/cli.js", "review", example]);
++    const one = spawnSync("node", ["dist/cli.js", "review", example, "--limit", "1"]);
++    expect(one.status).toBe(byDefault.status);
++    expect(one.stdout.toString()).toContain("Threesmith review:");
++    const assets = spawnSync("node", ["dist/cli.js", "assets", example, "--limit", "50"]);
++    expect(assets.stdout.toString()).toContain("Assets:");
++  });
++
+   it("rejects unknown lesson filters and keeps the valid ones working", () => {
+     const badTopic = spawnSync("node", ["dist/cli.js", "lessons", "--topic", "shadowz", "shadow"]);
+     expect(badTopic.status).toBe(2);

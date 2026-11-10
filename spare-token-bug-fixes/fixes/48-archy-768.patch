@@ -1,0 +1,36 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 5bf7388..c80f980 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -99,4 +99,4 @@ jobs:
+           "
+ 
+       - name: MCP suites (in-process + real stdio protocol)
+-        run: .venv-mcp2/bin/python -m pytest tests/test_mcp_*.py tests/test_qualname_collision.py tests/test_config_unknown_keys.py -q
++        run: .venv-mcp2/bin/python -m pytest tests/test_mcp_*.py tests/test_qualname_collision.py tests/test_config_unknown_keys.py tests/test_safety_claims.py -q
+diff --git a/tests/test_safety_claims.py b/tests/test_safety_claims.py
+index a44bf05..4342066 100644
+--- a/tests/test_safety_claims.py
++++ b/tests/test_safety_claims.py
+@@ -389,7 +389,9 @@ def test_render_out_writes_only_the_named_file(sandbox):
+ def _mcp_args(tool, proj: Path) -> dict:
+     """Minimal arguments that make each archy MCP tool answer for the fixture project."""
+     args: dict = {}
+-    if "path" in tool.inputSchema.get("properties", {}):
++    # The wire form, not the attribute: mcp 2.x renamed `inputSchema` to
++    # `input_schema` and kept the alias, so this reads the same on both majors.
++    if "path" in tool.model_dump(by_alias=True)["inputSchema"].get("properties", {}):
+         args["path"] = str(proj)
+     if tool.name in {"archy_impact", "archy_affected"}:
+         args["files"] = ["pkg/b.py"]
+@@ -433,7 +435,9 @@ def test_mcp_tools_write_only_cache_and_baseline(sandbox):
+     # The page says every tool but archy_snapshot is annotated read-only.
+     for name, tool in tools.items():
+         assert tool.annotations is not None, name
+-        assert (tool.annotations.readOnlyHint is False) == (name == "archy_snapshot"), name
++        # The wire form again: `readOnlyHint` is `read_only_hint` on mcp 2.x.
++        read_only = tool.model_dump(by_alias=True)["annotations"]["readOnlyHint"]
++        assert (read_only is False) == (name == "archy_snapshot"), name
+ 
+     written: set[str] = set()
+     for name, tool in tools.items():

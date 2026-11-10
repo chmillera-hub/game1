@@ -1,0 +1,181 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 5f007f2..896b890 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -9,6 +9,17 @@ format, output framing, and exit codes; the `overleaf-web-mcp/core` surface the
+ is announced at least one minor version ahead with both names working, and every change is listed
+ below. Before 1.0.0, a minor or patch release could change them, and each such change is listed.
+ 
++## [Unreleased]
++
++### Fixed
++
++- An empty `OVERLEAF_BASE_URL` or `OVERLEAF_COOKIE_JAR_FILE`, or one holding only spaces, now
++  counts as unset and takes its default, as the list and folder variables already did. The same
++  holds for `OVERLEAF_BROWSER_PATH`, `OVERLEAF_BROWSER_PROFILE_DIR`, `OVERLEAF_PROTOCOL_VERSIONS`,
++  the numeric variables, `XDG_CONFIG_HOME` and `APPDATA`. A launcher that passes every declared
++  variable no longer stops the server with "OVERLEAF_BASE_URL is invalid." for a setting nobody
++  set. A malformed value that is not empty is still refused.
++
+ ## [1.1.0] - 2026-11-09
+ 
+ Project tags. The labels that organize projects on the Overleaf dashboard can now be read with
+diff --git a/docs/configuration.md b/docs/configuration.md
+index 40b6b8c..a3c7a3b 100644
+--- a/docs/configuration.md
++++ b/docs/configuration.md
+@@ -4,6 +4,7 @@ Everything is configured through environment variables: for the server, set wher
+ starts it, for example in the `env` block of the client's MCP configuration; for the
+ [command line](cli.md), in the shell that runs each command; for the [SDK](sdk.md), in the
+ process, which `readConfig()` reads from `process.env`. Defaults suit `www.overleaf.com`.
++A variable set to an empty value, or to spaces only, counts as unset and takes its default.
+ 
+ ## Reference
+ 
+diff --git a/src/auth/paths.ts b/src/auth/paths.ts
+index 5106147..484370c 100644
+--- a/src/auth/paths.ts
++++ b/src/auth/paths.ts
+@@ -12,6 +12,11 @@ export interface AuthPaths {
+   browserProfileDir: string
+ }
+ 
++/** An empty or blank value counts as unset, as it does for every variable `readConfig` reads. */
++function set(value: string | undefined): string | undefined {
++  return value === undefined || value.trim() === '' ? undefined : value
++}
++
+ export function resolveAuthPaths(options: AuthPathOptions = {}): AuthPaths {
+   const env = options.env ?? process.env
+   const platform = options.platform ?? process.platform
+@@ -22,9 +27,9 @@ export function resolveAuthPaths(options: AuthPathOptions = {}): AuthPaths {
+   if (platform === 'darwin') {
+     configRoot = path.join(homeDir, 'Library', 'Application Support')
+   } else if (platform === 'win32') {
+-    configRoot = env.APPDATA ?? path.join(homeDir, 'AppData', 'Roaming')
++    configRoot = set(env.APPDATA) ?? path.join(homeDir, 'AppData', 'Roaming')
+   } else {
+-    configRoot = env.XDG_CONFIG_HOME ?? path.join(homeDir, '.config')
++    configRoot = set(env.XDG_CONFIG_HOME) ?? path.join(homeDir, '.config')
+   }
+ 
+   const authRoot = path.join(configRoot, 'overleaf-web-mcp')
+diff --git a/src/config.ts b/src/config.ts
+index 5fb657e..74e110b 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -37,9 +37,19 @@ export interface AppConfig {
+   allowedEffects?: Effect[]
+ }
+ 
+-function positiveInteger(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
++/**
++ * A string variable, or `undefined` when it is unset, empty, or only whitespace. A launcher that
++ * passes every declared variable (a generated MCP client configuration, a container, an extension
++ * with blank optional settings) sends `""` for the ones nobody set.
++ */
++function text(env: NodeJS.ProcessEnv, name: string): string | undefined {
+   const raw = env[name]
+-  if (raw === undefined || raw === '') return fallback
++  return raw === undefined || raw.trim() === '' ? undefined : raw
++}
++
++function positiveInteger(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
++  const raw = text(env, name)
++  if (raw === undefined) return fallback
+   const parsed = Number(raw)
+   if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+     throw new McpError('INVALID_ARGUMENT', `${name} must be a positive integer.`)
+@@ -48,8 +58,8 @@ function positiveInteger(env: NodeJS.ProcessEnv, name: string, fallback: number)
+ }
+ 
+ function nonNegativeInteger(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
+-  const raw = env[name]
+-  if (raw === undefined || raw === '') return fallback
++  const raw = text(env, name)
++  if (raw === undefined) return fallback
+   const parsed = Number(raw)
+   if (!Number.isSafeInteger(parsed) || parsed < 0) {
+     throw new McpError('INVALID_ARGUMENT', `${name} must be zero or a positive integer.`)
+@@ -96,11 +106,11 @@ export interface ConfigContext {
+ 
+ export function readConfig(env: NodeJS.ProcessEnv = process.env, context: ConfigContext = {}): AppConfig {
+   const authPaths = resolveAuthPaths({ env, ...context })
+-  const cookieJarFile = env.OVERLEAF_COOKIE_JAR_FILE ?? authPaths.cookieJarFile
++  const cookieJarFile = text(env, 'OVERLEAF_COOKIE_JAR_FILE') ?? authPaths.cookieJarFile
+ 
+   let baseUrl: URL
+   try {
+-    baseUrl = new URL(env.OVERLEAF_BASE_URL ?? 'https://www.overleaf.com')
++    baseUrl = new URL(text(env, 'OVERLEAF_BASE_URL') ?? 'https://www.overleaf.com')
+   } catch (error) {
+     throw new McpError('INVALID_ARGUMENT', 'OVERLEAF_BASE_URL is invalid.', { cause: error })
+   }
+@@ -108,7 +118,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env, context: Config
+     throw new McpError('INVALID_ARGUMENT', 'OVERLEAF_BASE_URL must use HTTP or HTTPS.')
+   }
+ 
+-  const supportedProtocolVersions = (env.OVERLEAF_PROTOCOL_VERSIONS ?? '2')
++  const supportedProtocolVersions = (text(env, 'OVERLEAF_PROTOCOL_VERSIONS') ?? '2')
+     .split(',')
+     .map(value => Number(value.trim()))
+   if (supportedProtocolVersions.some(value => !Number.isSafeInteger(value))) {
+@@ -116,6 +126,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env, context: Config
+   }
+ 
+   const proxyUrl = resolveProxyUrl(baseUrl, env)
++  const browserPath = text(env, 'OVERLEAF_BROWSER_PATH')
+   const allowedProjects = list(env, 'OVERLEAF_ALLOWED_PROJECTS')
+   const localReadRoots = roots(env, 'OVERLEAF_LOCAL_READ_ROOTS')
+   const localWriteRoots = roots(env, 'OVERLEAF_LOCAL_WRITE_ROOTS')
+@@ -124,8 +135,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env, context: Config
+   return {
+     baseUrl: baseUrl.href.replace(/\/$/u, ''),
+     cookieJarFile,
+-    ...(env.OVERLEAF_BROWSER_PATH ? { browserPath: env.OVERLEAF_BROWSER_PATH } : {}),
+-    browserProfileDir: env.OVERLEAF_BROWSER_PROFILE_DIR ?? authPaths.browserProfileDir,
++    ...(browserPath === undefined ? {} : { browserPath }),
++    browserProfileDir: text(env, 'OVERLEAF_BROWSER_PROFILE_DIR') ?? authPaths.browserProfileDir,
+     loginTimeoutMs: Math.min(positiveInteger(env, 'OVERLEAF_LOGIN_TIMEOUT_MS', 5 * 60_000), 15 * 60_000),
+     maxDocLength: positiveInteger(env, 'OVERLEAF_MAX_DOC_LENGTH', 2 * 1024 * 1024),
+     maxUpdateChars: positiveInteger(env, 'OVERLEAF_MAX_UPDATE_CHARS', 7 * 1024 * 1024),
+diff --git a/test/http/config.test.ts b/test/http/config.test.ts
+index d1b191e..c2ebf59 100644
+--- a/test/http/config.test.ts
++++ b/test/http/config.test.ts
+@@ -14,6 +14,35 @@ describe('configuration', () => {
+     })
+   })
+ 
++  test.each(['', '   '])('treats an empty or blank value (%j) as unset', blank => {
++    const context = { platform: 'linux', homeDir: '/home/alice' } as const
++    const unset = readConfig({}, context)
++
++    expect(readConfig({ OVERLEAF_BASE_URL: blank }, context).baseUrl).toBe('https://www.overleaf.com')
++    expect(readConfig({ OVERLEAF_COOKIE_JAR_FILE: blank }, context).cookieJarFile).toBe(
++      '/home/alice/.config/overleaf-web-mcp/cookies.txt'
++    )
++    expect(
++      readConfig(
++        {
++          OVERLEAF_BROWSER_PATH: blank,
++          OVERLEAF_BROWSER_PROFILE_DIR: blank,
++          OVERLEAF_PROTOCOL_VERSIONS: blank,
++          OVERLEAF_LOGIN_TIMEOUT_MS: blank,
++          OVERLEAF_MIN_REQUEST_INTERVAL_MS: blank,
++          XDG_CONFIG_HOME: blank,
++        },
++        context
++      )
++    ).toEqual(unset)
++  })
++
++  test('still refuses a malformed base URL that is not empty', () => {
++    expect(() => readConfig({ OVERLEAF_BASE_URL: 'not a url' })).toThrow(
++      expect.objectContaining({ code: 'INVALID_ARGUMENT' })
++    )
++  })
++
+   test('normalizes the base URL and applies conservative defaults', () => {
+     const config = readConfig({
+       OVERLEAF_COOKIE_JAR_FILE: '/tmp/cookies.txt',

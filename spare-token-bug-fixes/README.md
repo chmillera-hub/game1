@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-46 small ready-made bug fixes (patch files) for 21 public open source projects. Free to take.
+57 small ready-made bug fixes (patch files) for 27 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mila-iqia/cluv and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 21 of the 46 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 39 of the 46 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 23 of the 57 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 50 of the 57 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -164,6 +164,39 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 46. [cluv: submit exits with code 0 when every submission failed](fix-46-cluv-257.md)
    Project: mila-iqia/cluv. Bug report number 257. License: MIT. Test included: yes. Patch file: [46-cluv-257.patch](fixes/46-cluv-257.patch)
+
+47. [Archy: archy_graph accepts an invalid direction or depth or max_nodes unless the call takes the path that reads the value](fix-47-archy-779.md)
+   Project: hslee16/Archy. Bug report number 779. License: MIT. Test included: yes. Patch file: [47-archy-779.patch](fixes/47-archy-779.patch)
+
+48. [Archy: three safety tests fail on mcp 2.x and the mcp 2.x CI job does not run them](fix-48-archy-768.md)
+   Project: hslee16/Archy. Bug report number 768. License: MIT. Test included: yes. Patch file: [48-archy-768.patch](fixes/48-archy-768.patch)
+
+49. [sshhh docs: the timeout chain says pip 150s is less than the 120s window handoff](fix-49-sshhh-13.md)
+   Project: Hayuuka/sshhh. Bug report number 13. License: MIT. Test included: yes. Patch file: [49-sshhh-13.patch](fixes/49-sshhh-13.patch)
+
+50. [sshhh: the generic redaction rule wipes normal output that contains pwd = and a path](fix-50-sshhh-11.md)
+   Project: Hayuuka/sshhh. Bug report number 11. License: MIT. Test included: yes. Patch file: [50-sshhh-11.patch](fixes/50-sshhh-11.patch)
+
+51. [ColdGuard: timestamps without a timezone are read in the server's local zone](fix-51-coldguard-59.md)
+   Project: Santhosh-zeta/ColdGuard. Bug report number 59. License: MIT. Test included: yes. Patch file: [51-coldguard-59.patch](fixes/51-coldguard-59.patch)
+
+52. [overleaf-web-mcp: an empty OVERLEAF_BASE_URL or OVERLEAF_COOKIE_JAR_FILE stops the server instead of using the default](fix-52-overleaf-web-mcp-53.md)
+   Project: mhmdaskari/overleaf-web-mcp. Bug report number 53. License: MIT. Test included: yes. Patch file: [52-overleaf-web-mcp-53.patch](fixes/52-overleaf-web-mcp-53.patch)
+
+53. [cve-lite-cli: recommendedAction says npm install on pnpm and Yarn and Bun projects](fix-53-cve-lite-cli-1583.md)
+   Project: OWASP/cve-lite-cli. Bug report number 1583. License: MIT. Test included: yes. Patch file: [53-cve-lite-cli-1583.patch](fixes/53-cve-lite-cli-1583.patch)
+
+54. [resume-agent-skills: Phase 4 says Section 17 framings but framings are Section 19](fix-54-resume-agent-skills-3.md)
+   Project: vignzpie/resume-agent-skills. Bug report number 3. License: MIT. Test included: no. Patch file: [54-resume-agent-skills-3.patch](fixes/54-resume-agent-skills-3.patch)
+
+55. [Threesmith: review and assets hide every finding when --limit is abc or 0](fix-55-threesmith-26.md)
+   Project: laaielichter/Threesmith. Bug report number 26. License: MIT. Test included: yes. Patch file: [55-threesmith-26.patch](fixes/55-threesmith-26.patch)
+
+56. [Threesmith: undo --steps abc says Nothing to undo and --steps 0 undoes one write](fix-56-threesmith-27.md)
+   Project: laaielichter/Threesmith. Bug report number 27. License: MIT. Test included: yes. Patch file: [56-threesmith-27.patch](fixes/56-threesmith-27.patch)
+
+57. [Threesmith: model lint ignores --max-triangles abc and the model scores 100 out of 100](fix-57-threesmith-28.md)
+   Project: laaielichter/Threesmith. Bug report number 28. License: MIT. Test included: yes. Patch file: [57-threesmith-28.patch](fixes/57-threesmith-28.patch)
 
 ## How to use a fix
 

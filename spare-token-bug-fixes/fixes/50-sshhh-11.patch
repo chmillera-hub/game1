@@ -1,0 +1,120 @@
+diff --git a/README.en.md b/README.en.md
+index 7cc0920..05076f1 100644
+--- a/README.en.md
++++ b/README.en.md
+@@ -358,6 +358,7 @@ py -3.14 -m venv .venv
+ .venv/Scripts/python.exe tests/test_flow.py   # main flow and status codes
+ .venv/Scripts/python.exe tests/test_lock.py   # cross-process locking
+ py -3.14 tests/test_docs.py                   # docs/code consistency
++py -3.14 tests/test_redact.py                 # redaction rules
+ ```
+ 
+ The tests spin up a real local SSH server — no mocks, no network needed.
+diff --git a/README.md b/README.md
+index 4bfd0eb..9e5f757 100644
+--- a/README.md
++++ b/README.md
+@@ -342,6 +342,7 @@ py -3.14 -m venv .venv
+ .venv/Scripts/python.exe tests/test_flow.py   # 主流程与状态码
+ .venv/Scripts/python.exe tests/test_lock.py   # 并发锁
+ py -3.14 tests/test_docs.py                   # 文档与代码一致性
++py -3.14 tests/test_redact.py                 # 脱敏规则
+ ```
+ 
+ 测试会起一个本地 SSH 服务端做真实连接，不依赖外网。
+diff --git a/scripts/lib/redact.py b/scripts/lib/redact.py
+index e69c6e0..d12b894 100644
+--- a/scripts/lib/redact.py
++++ b/scripts/lib/redact.py
+@@ -8,7 +8,11 @@ from urllib.parse import quote
+ PLACEHOLDER = "[REDACTED]"
+ 
+ _GENERIC = [
+-    re.compile(r"(?i)((?:password|passwd|pwd)\s*[=:]\s*)(\S+)"),
++    re.compile(r"(?i)((?:password|passwd)\s*[=:]\s*)(\S+)"),
++    # `pwd` 也是「当前目录」：`pwd = /home/deploy`、`workdir=/app pwd=/app` 是正常输出，
++    # 抹掉路径会误导排障。值看起来是路径（/、~/、./、../ 开头）时不脱敏；
++    # 其余情况（如连接串里的 `Pwd=secret`）照旧脱敏。
++    re.compile(r"(?i)(pwd\s*[=:]\s*)(?!~?/|\.{1,2}/)(\S+)"),
+     re.compile(r"(?i)(--password[= ])(\S+)"),
+ ]
+ 
+diff --git a/tests/test_redact.py b/tests/test_redact.py
+new file mode 100644
+index 0000000..ede9873
+--- /dev/null
++++ b/tests/test_redact.py
+@@ -0,0 +1,73 @@
++"""脱敏规则测试：通用规则不能误伤正常输出。
++
++`pwd` 既可能是密码字段，也是「当前目录」。路径信息被抹掉会误导排障，
++所以 `pwd = /home/deploy` 这类输出必须原样保留，真正的密码仍要脱敏。
++
++运行：
++    py -3.14 tests/test_redact.py
++"""
++
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
++sys.path.insert(0, str(SCRIPTS))
++
++from lib.redact import PLACEHOLDER, Redactor  # noqa: E402
++
++PASSED = 0
++FAILED = 0
++
++
++def check(name: str, cond: bool, detail: str = "") -> None:
++    global PASSED, FAILED
++    if cond:
++        PASSED += 1
++        print(f"  [ok] {name}")
++    else:
++        FAILED += 1
++        print(f"  [FAIL] {name}" + (f"  -> {detail}" if detail else ""))
++
++
++def main() -> int:
++    r = Redactor()
++
++    print("== pwd 是路径时不脱敏 ==")
++    for line in (
++        "pwd = /var/www",
++        "pwd = /home/deploy",
++        "workdir=/app pwd=/app",
++        "PWD=/root",
++        "pwd: ~/project",
++        "pwd=./build",
++        "pwd=../shared",
++    ):
++        out = r.clean(line)
++        check(f"原样保留：{line}", out == line, out)
++
++    print("\n== 密码仍然脱敏 ==")
++    for line, want in (
++        ("password=abc123", f"password={PLACEHOLDER}"),
++        ("Password: hunter2", f"Password: {PLACEHOLDER}"),
++        ("passwd = s3cret", f"passwd = {PLACEHOLDER}"),
++        ("mysql --password=abc123 -e status", f"mysql --password={PLACEHOLDER} -e status"),
++        ("Uid=app;Pwd=s3cret", f"Uid=app;Pwd={PLACEHOLDER}"),
++        ("pwd=abc123", f"pwd={PLACEHOLDER}"),
++    ):
++        out = r.clean(line)
++        check(f"脱敏：{line}", out == want, out)
++
++    print("\n== 已知密码不受路径豁免影响 ==")
++    known = Redactor(["/Sup3r/Secret"])
++    out = known.clean("pwd=/Sup3r/Secret")
++    check("已登记的密码即使像路径也被替换", "/Sup3r/Secret" not in out, out)
++
++    print("\n" + "=" * 46)
++    print(f"通过 {PASSED} 项，失败 {FAILED} 项")
++    return 0 if FAILED == 0 else 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())

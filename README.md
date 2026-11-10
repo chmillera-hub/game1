@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds forty-six small AI-written bug fixes (patch files) for twenty-one public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds fifty-seven small AI-written bug fixes (patch files) for twenty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -149,6 +149,39 @@ The shelf holds forty-six small AI-written bug fixes (patch files) for twenty-on
 
 46. [cluv: submit exits with code 0 when every submission failed](spare-token-bug-fixes/fix-46-cluv-257.md)
    Project: mila-iqia/cluv. Bug report number 257. License: MIT. Test included: yes. Patch file: [46-cluv-257.patch](spare-token-bug-fixes/fixes/46-cluv-257.patch)
+
+47. [Archy: archy_graph accepts an invalid direction or depth or max_nodes unless the call takes the path that reads the value](spare-token-bug-fixes/fix-47-archy-779.md)
+   Project: hslee16/Archy. Bug report number 779. License: MIT. Test included: yes. Patch file: [47-archy-779.patch](spare-token-bug-fixes/fixes/47-archy-779.patch)
+
+48. [Archy: three safety tests fail on mcp 2.x and the mcp 2.x CI job does not run them](spare-token-bug-fixes/fix-48-archy-768.md)
+   Project: hslee16/Archy. Bug report number 768. License: MIT. Test included: yes. Patch file: [48-archy-768.patch](spare-token-bug-fixes/fixes/48-archy-768.patch)
+
+49. [sshhh docs: the timeout chain says pip 150s is less than the 120s window handoff](spare-token-bug-fixes/fix-49-sshhh-13.md)
+   Project: Hayuuka/sshhh. Bug report number 13. License: MIT. Test included: yes. Patch file: [49-sshhh-13.patch](spare-token-bug-fixes/fixes/49-sshhh-13.patch)
+
+50. [sshhh: the generic redaction rule wipes normal output that contains pwd = and a path](spare-token-bug-fixes/fix-50-sshhh-11.md)
+   Project: Hayuuka/sshhh. Bug report number 11. License: MIT. Test included: yes. Patch file: [50-sshhh-11.patch](spare-token-bug-fixes/fixes/50-sshhh-11.patch)
+
+51. [ColdGuard: timestamps without a timezone are read in the server's local zone](spare-token-bug-fixes/fix-51-coldguard-59.md)
+   Project: Santhosh-zeta/ColdGuard. Bug report number 59. License: MIT. Test included: yes. Patch file: [51-coldguard-59.patch](spare-token-bug-fixes/fixes/51-coldguard-59.patch)
+
+52. [overleaf-web-mcp: an empty OVERLEAF_BASE_URL or OVERLEAF_COOKIE_JAR_FILE stops the server instead of using the default](spare-token-bug-fixes/fix-52-overleaf-web-mcp-53.md)
+   Project: mhmdaskari/overleaf-web-mcp. Bug report number 53. License: MIT. Test included: yes. Patch file: [52-overleaf-web-mcp-53.patch](spare-token-bug-fixes/fixes/52-overleaf-web-mcp-53.patch)
+
+53. [cve-lite-cli: recommendedAction says npm install on pnpm and Yarn and Bun projects](spare-token-bug-fixes/fix-53-cve-lite-cli-1583.md)
+   Project: OWASP/cve-lite-cli. Bug report number 1583. License: MIT. Test included: yes. Patch file: [53-cve-lite-cli-1583.patch](spare-token-bug-fixes/fixes/53-cve-lite-cli-1583.patch)
+
+54. [resume-agent-skills: Phase 4 says Section 17 framings but framings are Section 19](spare-token-bug-fixes/fix-54-resume-agent-skills-3.md)
+   Project: vignzpie/resume-agent-skills. Bug report number 3. License: MIT. Test included: no. Patch file: [54-resume-agent-skills-3.patch](spare-token-bug-fixes/fixes/54-resume-agent-skills-3.patch)
+
+55. [Threesmith: review and assets hide every finding when --limit is abc or 0](spare-token-bug-fixes/fix-55-threesmith-26.md)
+   Project: laaielichter/Threesmith. Bug report number 26. License: MIT. Test included: yes. Patch file: [55-threesmith-26.patch](spare-token-bug-fixes/fixes/55-threesmith-26.patch)
+
+56. [Threesmith: undo --steps abc says Nothing to undo and --steps 0 undoes one write](spare-token-bug-fixes/fix-56-threesmith-27.md)
+   Project: laaielichter/Threesmith. Bug report number 27. License: MIT. Test included: yes. Patch file: [56-threesmith-27.patch](spare-token-bug-fixes/fixes/56-threesmith-27.patch)
+
+57. [Threesmith: model lint ignores --max-triangles abc and the model scores 100 out of 100](spare-token-bug-fixes/fix-57-threesmith-28.md)
+   Project: laaielichter/Threesmith. Bug report number 28. License: MIT. Test included: yes. Patch file: [57-threesmith-28.patch](spare-token-bug-fixes/fixes/57-threesmith-28.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

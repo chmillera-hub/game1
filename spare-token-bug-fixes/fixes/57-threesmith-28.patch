@@ -1,0 +1,48 @@
+diff --git a/src/program.ts b/src/program.ts
+index 4e68e8d..ee490b5 100644
+--- a/src/program.ts
++++ b/src/program.ts
+@@ -460,7 +460,10 @@ export function buildProgram(): Command {
+     .option("--full", "every finding")
+     .option("--json", "JSON output")
+     .action((file: string, o: { archetype?: string; maxTriangles?: string; maxDrawCalls?: string; full?: boolean; json?: boolean }) => {
+-      const r = lintModelFile(file, { ...(o.archetype ? { archetype: o.archetype } : {}), ...(o.maxTriangles ? { maxTriangles: Number(o.maxTriangles) } : {}), ...(o.maxDrawCalls ? { maxDrawCalls: Number(o.maxDrawCalls) } : {}) });
++      // A budget that is not a number used to be dropped without a word: every comparison against NaN is false.
++      const maxTriangles = o.maxTriangles === undefined ? undefined : positiveInt("--max-triangles", o.maxTriangles);
++      const maxDrawCalls = o.maxDrawCalls === undefined ? undefined : positiveInt("--max-draw-calls", o.maxDrawCalls);
++      const r = lintModelFile(file, { ...(o.archetype ? { archetype: o.archetype } : {}), ...(maxTriangles === undefined ? {} : { maxTriangles }), ...(maxDrawCalls === undefined ? {} : { maxDrawCalls }) });
+       out(o.json ? JSON.stringify(r, null, 2) : formatLint(r, o.full ? "full" : "brief"));
+       if (r.failed) process.exitCode = 1;
+     });
+diff --git a/test/cli-model-lint-budgets.test.ts b/test/cli-model-lint-budgets.test.ts
+new file mode 100644
+index 0000000..51f006e
+--- /dev/null
++++ b/test/cli-model-lint-budgets.test.ts
+@@ -0,0 +1,26 @@
++import { spawnSync } from "node:child_process";
++import { existsSync } from "node:fs";
++import { describe, expect, it } from "vitest";
++
++const ROBOT = "examples/agent-mistakes/public/models/robot.glb";
++
++describe.skipIf(!existsSync("dist/cli.js"))("built cli: model lint budgets", () => {
++  it.each([
++    ["--max-triangles", "abc"],
++    ["--max-triangles", "1.5"],
++    ["--max-draw-calls", "0"],
++    ["--max-draw-calls", "-5"],
++  ])("refuses %s %s", (option, value) => {
++    // The joined form, so `-5` is not read as another option.
++    const bad = spawnSync("node", ["dist/cli.js", "model", "lint", ROBOT, `${option}=${value}`]);
++    expect(bad.status).toBe(2);
++    expect(bad.stderr.toString()).toContain(`threesmith: ${option} must be a whole number of 1 or more (got "${value}")`);
++    expect(bad.stdout.toString()).toBe("");
++  });
++
++  it("keeps a valid budget working", () => {
++    const roomy = spawnSync("node", ["dist/cli.js", "model", "lint", ROBOT, "--max-triangles", "100000"]);
++    expect(roomy.status).toBe(0);
++    expect(roomy.stdout.toString()).toContain("Model lint:");
++  });
++});

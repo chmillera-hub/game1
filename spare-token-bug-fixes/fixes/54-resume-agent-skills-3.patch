@@ -1,0 +1,13 @@
+diff --git a/resume-tailor/SKILL.md b/resume-tailor/SKILL.md
+index 8c59c0a..a969d57 100644
+--- a/resume-tailor/SKILL.md
++++ b/resume-tailor/SKILL.md
+@@ -94,7 +94,7 @@ Write `resume_<JD-ID>.md`. The structure is:
+ 
+ ```
+ # <Name>
+-<Headline tailored to the JD's role title — pull from Section 17 framings if available>
++<Headline tailored to the JD's role title — pull from Section 19 framings if available>
+ <Location · Email · Phone · LinkedIn · GitHub>
+ 
+ ## Summary
