@@ -1,0 +1,31 @@
+diff --git a/docsite/content/3.guides/4.run/05.logs-and-disk-space.md b/docsite/content/3.guides/4.run/05.logs-and-disk-space.md
+index b701600..fcff66d 100644
+--- a/docsite/content/3.guides/4.run/05.logs-and-disk-space.md
++++ b/docsite/content/3.guides/4.run/05.logs-and-disk-space.md
+@@ -105,7 +105,13 @@ item's documents and session logs stay readable on its page.
+ _Added in 2.1_
+ 
+ Without a limit, worktrees use disk until you notice. Set one in `policy.yaml`
+-and Kraft tells you before the disk is full, and holds new starts at the limit:
++and Kraft tells you before the disk is full, and holds new starts at the limit.
++
++Edit the `policy.yaml` you already have, in `~/.kraft/config/` (or
++`$KRAFT_HOME/config/` if you set `KRAFT_HOME`). The `storage:` block is already
++in it, commented out: uncomment it and set your sizes. Don't replace the file
++with the block below. It is one part of the file, and Kraft refuses a
++`policy.yaml` without its `default:` key.
+ 
+ ```yaml [config/policy.yaml]
+ storage:
+@@ -167,7 +173,10 @@ preview refuses one: it has no worktree to reclaim.
+ 
+ An instance left running unattended can sit held with nobody to clean up. Add
+ `auto_cleanup` and Kraft archives finished items itself when worktrees pass
+-the limit:
++the limit. It goes in the same `storage:` block of your existing `policy.yaml`
++in `~/.kraft/config/` (or `$KRAFT_HOME/config/`). The seeded file has the
++`auto_cleanup` lines there too, commented out: uncomment them rather than
++replace the file with this block.
+ 
+ ```yaml [config/policy.yaml]
+ storage:

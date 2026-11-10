@@ -1,0 +1,83 @@
+diff --git a/cli/src/lflabs_memory_cli/apps.py b/cli/src/lflabs_memory_cli/apps.py
+index 1641d35..1029a3c 100644
+--- a/cli/src/lflabs_memory_cli/apps.py
++++ b/cli/src/lflabs_memory_cli/apps.py
+@@ -246,6 +246,23 @@ def _drop_toml(text, block):
+     return out, removed
+ 
+ 
++def _by_hand(entry):
++    """What to take out of a file that could not be rewritten, named so the user can find it."""
++    kind = entry["kind"]
++    if kind == "codex-toml":
++        return f"remove the [mcp_servers.{SERVER}] table by hand"
++    if kind == "mcp-json":
++        return f'remove "{SERVER}" from "{entry.get("key", "mcpServers")}" by hand'
++    return f"remove the hooks whose command runs {ENGINE} by hand"
++
++
++def _left_alone(skip, entry):
++    """A Skip in uninstall's words. The reason is kept; setup's "add this by hand" ending is replaced by what to
++    remove."""
++    why = str(skip).split(": left alone")[0]
++    return f"{why}, so it was left alone: {_by_hand(entry)}"
++
++
+ def unplan(entry, h=None):
+     """The plan that takes our entry out of one file (entry: an install.json file record, or one found by discovery:
+     {"path", "kind", "added", "created"})."""
+@@ -282,7 +299,7 @@ def unplan(entry, h=None):
+         return Plan(app, kind, path, "remove", f"remove {n} memory hook" + ("s" if n > 1 else ""),
+                     new=edits.dump_json(new, old), old=old)
+     except Skip as e:
+-        return Plan(app, kind, path, "error", str(e))
++        return Plan(app, kind, path, "error", _left_alone(e, entry))
+ 
+ 
+ def discover(h=None):
+diff --git a/cli/src/lflabs_memory_cli/uninstall.py b/cli/src/lflabs_memory_cli/uninstall.py
+index 01d9ef3..608712f 100644
+--- a/cli/src/lflabs_memory_cli/uninstall.py
++++ b/cli/src/lflabs_memory_cli/uninstall.py
+@@ -62,7 +62,7 @@ def _file(entry, rep):
+     if p.state == "gone":
+         return rep.row(label, "gone", f"{short(path)}: {p.note}")
+     if p.state == "error":
+-        return rep.row(label, "error", f"{short(path)}: {p.note}; remove the {SERVER} entries by hand")
++        return rep.row(label, "error", f"{short(path)} {p.note}")
+     try:
+         backup = edits.write(path, p.new, p.old)
+     except edits.Skip as e:
+diff --git a/cli/tests/test_uninstall.py b/cli/tests/test_uninstall.py
+index dae98f9..0fcae5c 100644
+--- a/cli/tests/test_uninstall.py
++++ b/cli/tests/test_uninstall.py
+@@ -113,7 +113,27 @@ def test_uninstall_leaves_jsonc_alone(mac):
+     out = []
+     assert uninstall.main(out=out.append) == 1
+     assert (home / ".cursor/mcp.json").read_text() == jsonc
+-    assert "by hand" in "\n".join(out)
++    said = "\n".join(out)
++    assert ('.cursor/mcp.json is not plain JSON (comments?), so it was left alone: '
++            'remove "lflabs-memory" from "mcpServers" by hand') in said
++    assert "add this by hand" not in said, "that is setup's wording"
++
++
++def test_uninstall_names_the_hooks_to_remove_from_a_jsonc_hooks_file(mac):
++    home = mac.home
++    seed(home)
++    fake_setup(home)
++    layout.install_json().unlink()
++    jsonc = ('// mine\n{"version": 1, "hooks": {"sessionStart": '
++             '[{"command": "lflabs-memory hook-cursor-start", "timeout": 10}]}}\n')
++    (home / ".cursor/hooks.json").write_text(jsonc)
++    out = []
++    assert uninstall.main(out=out.append) == 1
++    assert (home / ".cursor/hooks.json").read_text() == jsonc
++    said = "\n".join(out)
++    assert ".cursor/hooks.json is not plain JSON (comments?), so it was left alone: " \
++           "remove the hooks whose command runs lflabs-memory by hand" in said
++    assert "add this by hand" not in said and "add the hook by hand" not in said
+ 
+ 
+ def test_uninstall_asks_before_deleting_memory(mac, monkeypatch):

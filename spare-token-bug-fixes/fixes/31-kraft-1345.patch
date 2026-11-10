@@ -1,0 +1,44 @@
+diff --git a/src/kraft/console/app.py b/src/kraft/console/app.py
+index 4082ec9..067ac5e 100644
+--- a/src/kraft/console/app.py
++++ b/src/kraft/console/app.py
+@@ -585,8 +585,10 @@ class KraftConsole(App):
+     def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
+         # Textual's theme picker lists its themes (Kraft has two), and its
+         # "Keys" opens a panel of the framework's own bindings: `?` is Kraft's.
++        # "Maximize" (and the "Minimize" that undoes it) and "Screenshot" are
++        # the framework's own, which Kraft doesn't use. Quit stays.
+         for command in super().get_system_commands(screen):
+-            if command.title not in ("Theme", "Keys"):
++            if command.title not in ("Theme", "Keys", "Maximize", "Minimize", "Screenshot"):
+                 yield command
+         yield SystemCommand("Keys", "Kraft's keys for this screen", self.action_keys)
+         yield SystemCommand("Dark", "Kraft's dark look", lambda: self._use("kraft-dark"))
+diff --git a/tests/console/test_app.py b/tests/console/test_app.py
+index a578961..661eec6 100644
+--- a/tests/console/test_app.py
++++ b/tests/console/test_app.py
+@@ -390,6 +390,23 @@ def test_the_palette_switches_kraft_looks_not_textuals(console):
+     assert (theme, side) == ("kraft-light", console_app.theme.LIGHT["side"])
+ 
+ 
++def test_the_palette_lists_none_of_textuals_maximize_minimize_or_screenshot(console):
++    """Kraft uses none of the three; Quit and Kraft's own commands stay."""
++
++    async def scenario(app, pilot):
++        # Textual offers Maximize only while something focusable has focus.
++        app.screen.focus_next()
++        await pilot.pause()
++        textuals = {c.title for c in App.get_system_commands(app, app.screen)}
++        return textuals, {c.title for c in app.get_system_commands(app.screen)}
++
++    textuals, titles = console.run(scenario)
++    # Textual always offers Screenshot, so the filter is what keeps it out.
++    assert "Screenshot" in textuals
++    assert not titles & {"Maximize", "Minimize", "Screenshot"}
++    assert {"Quit", "Keys", "Dark", "Light"} <= titles
++
++
+ def test_the_palettes_keys_command_opens_krafts_dialog_not_textuals_panel(console):
+     async def scenario(app, pilot):
+         commands = [c for c in app.get_system_commands(app.screen) if c.title == "Keys"]

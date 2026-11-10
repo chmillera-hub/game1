@@ -1,0 +1,168 @@
+diff --git a/skills/roast-rematch/SKILL.md b/skills/roast-rematch/SKILL.md
+index 6f87de4..63c96f3 100644
+--- a/skills/roast-rematch/SKILL.md
++++ b/skills/roast-rematch/SKILL.md
+@@ -17,8 +17,13 @@ measured, not claimed. The before and after card is the one people post.
+ 
+ ## Inputs
+ 
+-- The previous roast: the path the user gives, else the newest file in `roast/history/`, else the
+-  current `roast/roast.json` (which will be archived when the new roast is written).
++- The previous roast: the path the user gives, else the most recent roast in `roast/history/`
++  (the round just before this one, never round one unless there has only been one), else the
++  current `roast/roast.json` (which will be archived when the new roast is written). Do not pick
++  the file by eye: `delta.py --history roast/history` picks it, by the date inside each file and
++  then the round number in its name.
++- "Since day one": only when the user asks for progress since the first roast, compare against
++  the oldest archived roast with `--baseline first`.
+ - Mode flag: use the previous roast's `mode` unless the user asks for another. Changing tone
+   between rounds is fine; changing the rubric is not.
+ 
+@@ -51,7 +56,10 @@ measured, not claimed. The before and after card is the one people post.
+      --out roast/REMATCH.md --card-out roast/card.json
+    ```
+    Use the archived path in `roast/history/` for `--before` if the baseline was the old
+-   `roast/roast.json`.
++   `roast/roast.json`. When the user gave no path, replace `--before <previous roast.json>` with
++   `--history roast/history`: after step 3 the most recent archive is the round just before this
++   one. Add `--baseline first` for a "since day one" comparison, and say in the report which
++   round the numbers are measured against.
+ 
+ 5. **Regenerate the card** with before and after values:
+    ```
+diff --git a/skills/roast-rematch/delta.py b/skills/roast-rematch/delta.py
+index db01539..712a4a8 100644
+--- a/skills/roast-rematch/delta.py
++++ b/skills/roast-rematch/delta.py
+@@ -11,6 +11,10 @@ another line counts as both "dropped" and "new". The report says so.
+ Usage:
+     python3 delta.py --before roast/history/roast-2026-11-01.json \
+         --after roast/roast.json --out roast/REMATCH.md --card-out roast/card.json
++
++    # Let delta.py pick the baseline from the archive: the most recent round by
++    # default, or the very first one with --baseline first ("since day one").
++    python3 delta.py --history roast/history --after roast/roast.json
+ """
+ from __future__ import annotations
+ 
+@@ -27,6 +31,38 @@ def load(path: str) -> dict:
+     return data
+ 
+ 
++def archive_order(path: Path, data: dict) -> tuple:
++    """Sort key that puts archived roasts in the order they were written.
++
++    verdict.py names archives roast-<date>.json, then roast-<date>-2.json,
++    roast-<date>-3.json for later rounds on the same day. A plain name sort
++    gets that wrong ("-2.json" sorts before ".json"), so order by the roast's
++    own date and then by the round number in the file name.
++    """
++    date = str(data.get("date") or "undated")
++    rest = path.stem[len(f"roast-{date}"):] if path.stem.startswith(f"roast-{date}") else ""
++    round_no = int(rest[1:]) if rest[:1] == "-" and rest[1:].isdigit() else 1
++    return (date != "undated", date, round_no, path.name)
++
++
++def pick_baseline(history: str, which: str = "latest") -> Path:
++    """Pick the roast to compare against from a roast/history/ folder.
++
++    "latest" is the most recent archived roast (the previous round), "first"
++    is the oldest one. Files that are not roast.json files are ignored.
++    """
++    found = []
++    for path in Path(history).glob("*.json"):
++        try:
++            found.append((archive_order(path, load(str(path))), path))
++        except (OSError, ValueError):
++            continue
++    if not found:
++        raise ValueError(f"{history} holds no archived roast.json to compare against")
++    found.sort()
++    return found[0][1] if which == "first" else found[-1][1]
++
++
+ def signed(d: float) -> str:
+     d = round(d, 1)
+     return f"+{d:.1f}" if d > 0 else (f"{d:.1f}" if d < 0 else "0.0")
+@@ -125,14 +161,20 @@ def card_payload(before: dict, after: dict) -> dict:
+ 
+ def main(argv: list[str] | None = None) -> int:
+     p = argparse.ArgumentParser(description="Compare two roast.json files and report per-judge score deltas.")
+-    p.add_argument("--before", required=True, help="previous roast.json (e.g. roast/history/roast-<date>.json)")
++    src = p.add_mutually_exclusive_group(required=True)
++    src.add_argument("--before", help="previous roast.json (e.g. roast/history/roast-<date>.json)")
++    src.add_argument("--history", help="folder of archived roasts (roast/history); the baseline is picked from it")
++    p.add_argument("--baseline", choices=("latest", "first"), default="latest",
++                   help="with --history: compare against the most recent archived roast (default) "
++                        "or against the first one")
+     p.add_argument("--after", required=True, help="new roast.json")
+     p.add_argument("--out", help="write the markdown report here (default: stdout)")
+     p.add_argument("--card-out", help="write a before/after card JSON for card.py here")
+     p.add_argument("--json", action="store_true", help="print the comparison as JSON instead of markdown")
+     args = p.parse_args(argv)
+     try:
+-        before, after = load(args.before), load(args.after)
++        before_path = args.before or str(pick_baseline(args.history, args.baseline))
++        before, after = load(before_path), load(args.after)
+     except (OSError, ValueError) as exc:
+         print(f"error: {exc}", file=sys.stderr)
+         return 2
+diff --git a/tests/test_delta.py b/tests/test_delta.py
+index d9e2c22..1c98c30 100644
+--- a/tests/test_delta.py
++++ b/tests/test_delta.py
+@@ -107,5 +107,54 @@ class CliTests(unittest.TestCase):
+             self.assertEqual(delta.main(["--before", str(bad), "--after", str(bad)]), 2)
+ 
+ 
++class HistoryBaselineTests(unittest.TestCase):
++    """With three rounds archived, the default baseline is the round before, not round one."""
++
++    def setUp(self):
++        self._tmp = tempfile.TemporaryDirectory()
++        self.addCleanup(self._tmp.cleanup)
++        self.t = Path(self._tmp.name)
++        self.history = self.t / "history"
++        self.history.mkdir()
++        scores = {"security": 3.0}
++        # Round two and three were archived on the same day: verdict.py names
++        # the later one with a -2 suffix, which a plain name sort puts first.
++        rounds = [("roast-2026-11-01.json", 3.0, "2026-11-01"),
++                  ("roast-2026-11-05.json", 5.0, "2026-11-05"),
++                  ("roast-2026-11-05-2.json", 6.0, "2026-11-05")]
++        for name, overall, date in rounds:
++            (self.history / name).write_text(json.dumps(roast(overall, scores, date=date)), encoding="utf-8")
++        (self.history / "notes.json").write_text("{}", encoding="utf-8")
++        self.after = self.t / "roast.json"
++        self.after.write_text(json.dumps(roast(7.0, scores, date="2026-11-09")), encoding="utf-8")
++
++    def run_delta(self, *extra):
++        buf = io.StringIO()
++        with redirect_stdout(buf):
++            code = delta.main(["--history", str(self.history), "--after", str(self.after), "--json", *extra])
++        return code, buf.getvalue()
++
++    def test_default_baseline_is_the_most_recent_round(self):
++        self.assertEqual(delta.pick_baseline(str(self.history)).name, "roast-2026-11-05-2.json")
++        code, out = self.run_delta()
++        self.assertEqual(code, 0)
++        c = json.loads(out)
++        self.assertEqual(c["overall_before"], 6.0)
++        self.assertEqual(c["overall_delta"], 1.0)
++
++    def test_baseline_first_compares_since_day_one(self):
++        self.assertEqual(delta.pick_baseline(str(self.history), "first").name, "roast-2026-11-01.json")
++        code, out = self.run_delta("--baseline", "first")
++        self.assertEqual(code, 0)
++        self.assertEqual(json.loads(out)["overall_delta"], 4.0)
++
++    def test_empty_history_is_an_error(self):
++        empty = self.t / "empty"
++        empty.mkdir()
++        with redirect_stdout(io.StringIO()):
++            code = delta.main(["--history", str(empty), "--after", str(self.after)])
++        self.assertEqual(code, 2)
++
++
+ if __name__ == "__main__":
+     unittest.main()

@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds twenty-six small AI-written bug fixes (patch files) for eighteen public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds thirty-six small AI-written bug fixes (patch files) for twenty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -89,6 +89,36 @@ The shelf holds twenty-six small AI-written bug fixes (patch files) for eighteen
 
 26. [kitden: add panels show one gap too many above the hint](spare-token-bug-fixes/fix-26-kitden-21.md)
    Project: KonstantinStarovoytov/kitden. Bug report number 21. License: Apache-2.0. Test included: yes. Patch file: [26-kitden-21.patch](spare-token-bug-fixes/fixes/26-kitden-21.patch)
+
+27. [orm-lens: drift reports a moved model as unmigrated because operations inside SeparateDatabaseAndState are skipped](spare-token-bug-fixes/fix-27-orm-lens-220.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 220. License: MIT. Test included: yes. Patch file: [27-orm-lens-220.patch](spare-token-bug-fixes/fixes/27-orm-lens-220.patch)
+
+28. [orm-lens: suggest-indexes counts lookups from test files and proposes indexes that production code never uses](spare-token-bug-fixes/fix-28-orm-lens-224.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 224. License: MIT. Test included: yes. Patch file: [28-orm-lens-224.patch](spare-token-bug-fixes/fixes/28-orm-lens-224.patch)
+
+29. [repo-roast-skill: facts.py says 'not a git repo' when pointed at a subfolder of a repository](spare-token-bug-fixes/fix-29-repo-roast-skill-2.md)
+   Project: vivekbhange-hub/repo-roast-skill. Bug report number 2. License: MIT. Test included: yes. Patch file: [29-repo-roast-skill-2.patch](spare-token-bug-fixes/fixes/29-repo-roast-skill-2.patch)
+
+30. [repo-roast-skill: roast-rematch can compare round three against round one instead of round two](spare-token-bug-fixes/fix-30-repo-roast-skill-3.md)
+   Project: vivekbhange-hub/repo-roast-skill. Bug report number 3. License: MIT. Test included: yes. Patch file: [30-repo-roast-skill-3.patch](spare-token-bug-fixes/fixes/30-repo-roast-skill-3.patch)
+
+31. [kraft: the console command palette lists Textual's own Maximize and Screenshot commands](spare-token-bug-fixes/fix-31-kraft-1345.md)
+   Project: itsOmidKarami/kraft. Bug report number 1345. License: Apache-2.0. Test included: yes. Patch file: [31-kraft-1345.patch](spare-token-bug-fixes/fixes/31-kraft-1345.patch)
+
+32. [kraft docs: the storage guide's policy.yaml block reads like a whole file](spare-token-bug-fixes/fix-32-kraft-1347.md)
+   Project: itsOmidKarami/kraft. Bug report number 1347. License: Apache-2.0. Test included: no. Patch file: [32-kraft-1347.patch](spare-token-bug-fixes/fixes/32-kraft-1347.patch)
+
+33. [dawnmere: uninstall says 'add this by hand' for a config file with comments and does not say what to remove](spare-token-bug-fixes/fix-33-dawnmere-16.md)
+   Project: Hadeva-Dev/dawnmere. Bug report number 16. License: MIT. Test included: yes. Patch file: [33-dawnmere-16.patch](spare-token-bug-fixes/fixes/33-dawnmere-16.patch)
+
+34. [Archy: graph --format dot writes node names unescaped so a quote mark in a path gives invalid DOT](spare-token-bug-fixes/fix-34-archy-781.md)
+   Project: hslee16/Archy. Bug report number 781. License: MIT. Test included: yes. Patch file: [34-archy-781.patch](spare-token-bug-fixes/fixes/34-archy-781.patch)
+
+35. [Archy: the trend table shows UTC times with no zone so the times read as local time](spare-token-bug-fixes/fix-35-archy-754.md)
+   Project: hslee16/Archy. Bug report number 754. License: MIT. Test included: yes. Patch file: [35-archy-754.patch](spare-token-bug-fixes/fixes/35-archy-754.patch)
+
+36. [Archy: the tree-sitter version floor admits versions that lack QueryCursor so every command crashes at import](spare-token-bug-fixes/fix-36-archy-764.md)
+   Project: hslee16/Archy. Bug report number 764. License: MIT. Test included: no. Patch file: [36-archy-764.patch](spare-token-bug-fixes/fixes/36-archy-764.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

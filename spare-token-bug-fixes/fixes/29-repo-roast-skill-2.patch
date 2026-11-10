@@ -1,0 +1,116 @@
+diff --git a/skills/roast-repo/facts.py b/skills/roast-repo/facts.py
+index fa526d2..edc23de 100644
+--- a/skills/roast-repo/facts.py
++++ b/skills/roast-repo/facts.py
+@@ -100,12 +100,24 @@ def run_git(repo: Path, *args: str) -> str | None:
+     return proc.stdout
+ 
+ 
++def git_toplevel(repo: Path) -> Path | None:
++    """Top folder of the git repository that holds ``repo``, or None outside one.
++
++    ``repo`` may be a subfolder (one package in a monorepo), so asking git is
++    the only reliable test: only the top folder has a ``.git`` entry.
++    """
++    out = run_git(repo, "rev-parse", "--show-toplevel")
++    if out is None or not out.strip():
++        return None
++    return Path(out.strip())
++
++
+ def list_files(repo: Path) -> tuple[list[str], int, bool]:
+     """Return (relative posix paths, tracked dependency files skipped, is_git)."""
+     out = run_git(repo, "ls-files", "-z")
+     skipped_deps = 0
+     files: list[str] = []
+-    if out is not None and (repo / ".git").exists():
++    if out is not None and git_toplevel(repo) is not None:
+         for rel in out.split("\0"):
+             if not rel:
+                 continue
+@@ -246,27 +258,40 @@ def dependency_facts(repo: Path, files: list[str]) -> dict:
+ 
+ 
+ def git_facts(repo: Path) -> dict | None:
+-    if not (repo / ".git").exists():
++    top = git_toplevel(repo)
++    if top is None:
+         return None
+-    count = run_git(repo, "rev-list", "--count", "HEAD")
++    # In a subfolder of a repository every stat is limited to that subfolder.
++    subfolder = top.resolve() != repo.resolve()
++    scope = ("--", ".") if subfolder else ()
++    count = run_git(repo, "rev-list", "--count", "HEAD", *scope)
+     if count is None:
+         return {"commits": 0, "note": "repository has no commits yet"}
+     facts: dict = {"commits": int(count.strip() or 0)}
+-    shortlog = run_git(repo, "shortlog", "-sn", "HEAD") or ""
++    if subfolder:
++        facts["scoped_to_subfolder"] = repo.resolve().relative_to(top.resolve()).as_posix()
++    shortlog = run_git(repo, "shortlog", "-sn", "HEAD", *scope) or ""
+     facts["contributors"] = len([ln for ln in shortlog.splitlines() if ln.strip()])
+-    roots = (run_git(repo, "rev-list", "--max-parents=0", "HEAD") or "").split()
+-    if roots:
+-        facts["first_commit"] = (run_git(repo, "log", "-1", "--format=%cs", roots[-1]) or "").strip()
+-    facts["last_commit"] = (run_git(repo, "log", "-1", "--format=%cs") or "").strip()
+-    recent = run_git(repo, "rev-list", "--count", "--since=90.days", "HEAD")
++    if subfolder:
++        dates = (run_git(repo, "log", "--reverse", "--format=%cs", *scope) or "").split()
++        if dates:
++            facts["first_commit"] = dates[0]
++    else:
++        roots = (run_git(repo, "rev-list", "--max-parents=0", "HEAD") or "").split()
++        if roots:
++            facts["first_commit"] = (run_git(repo, "log", "-1", "--format=%cs", roots[-1]) or "").strip()
++    facts["last_commit"] = (run_git(repo, "log", "-1", "--format=%cs", *scope) or "").strip()
++    recent = run_git(repo, "rev-list", "--count", "--since=90.days", "HEAD", *scope)
+     facts["commits_last_90_days"] = int((recent or "0").strip() or 0)
+-    subjects = (run_git(repo, "log", "-n", "200", "--format=%s") or "").splitlines()
++    subjects = (run_git(repo, "log", "-n", "200", "--format=%s", *scope) or "").splitlines()
+     lazy = [s for s in subjects if LAZY_MESSAGE.match(s.strip()) or len(s.strip()) < 4]
+     facts["lazy_commit_messages"] = {"count": len(lazy), "of_last": len(subjects),
+                                      "examples": sorted(set(lazy))[:5]}
+-    churn = Counter(f for f in (run_git(repo, "log", "-n", "500", "--format=", "--name-only") or "").splitlines() if f)
++    # --relative gives paths from the scanned folder, the same form list_files uses.
++    names = run_git(repo, "log", "-n", "500", "--format=", "--name-only", "--relative", *scope) or ""
++    churn = Counter(f for f in names.splitlines() if f)
+     facts["churn_hotspots"] = [{"path": p, "changes": n} for p, n in churn.most_common(10)]
+-    status = run_git(repo, "status", "--porcelain") or ""
++    status = run_git(repo, "status", "--porcelain", *scope) or ""
+     facts["uncommitted_changes"] = len([ln for ln in status.splitlines() if ln.strip()])
+     return facts
+ 
+diff --git a/tests/test_facts.py b/tests/test_facts.py
+index 31f8f44..98e083e 100644
+--- a/tests/test_facts.py
++++ b/tests/test_facts.py
+@@ -188,6 +188,29 @@ class GitTests(FactsCase):
+         # node_modules was committed; it is counted, not scanned
+         self.assertGreaterEqual(f["files"]["tracked_dependency_files"], 1)
+ 
++    def test_subfolder_of_a_repo_is_still_a_git_repo(self):
++        self.git("init", "-q")
++        self.git("add", "-A")
++        self.git("commit", "-q", "-m", "wip")
++        self.write("README.md", "# Demo\n\nChanged outside the app folder.\n")
++        self.git("commit", "-q", "-am", "Touch only the README")
++        self.write("app/main.py", "changed\n")
++        self.git("commit", "-q", "-am", "Touch only the app folder")
++        f = facts.gather(self.repo / "app")
++        self.assertTrue(f["is_git_repo"])
++        g = f["git"]
++        # Three commits in the repository, two of them touch app/.
++        self.assertEqual(g["commits"], 2)
++        self.assertEqual(g["scoped_to_subfolder"], "app")
++        self.assertEqual(g["lazy_commit_messages"]["of_last"], 2)
++        # Paths are relative to the scanned folder, like the file list.
++        self.assertEqual(g["churn_hotspots"][0], {"path": "main.py", "changes": 2})
++        self.assertNotIn("README.md", [h["path"] for h in g["churn_hotspots"]])
++        self.assertIn("main.py", [x["path"] for x in f["largest_source_files"]])
++        whole = facts.gather(self.repo)["git"]
++        self.assertEqual(whole["commits"], 3)
++        self.assertNotIn("scoped_to_subfolder", whole)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()

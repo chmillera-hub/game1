@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-26 small ready-made bug fixes (patch files) for 18 public open source projects. Free to take.
+36 small ready-made bug fixes (patch files) for 20 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 10 of the 26 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 19 of the 26 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 17 of the 36 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 29 of the 36 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -104,6 +104,36 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 26. [kitden: add panels show one gap too many above the hint](fix-26-kitden-21.md)
    Project: KonstantinStarovoytov/kitden. Bug report number 21. License: Apache-2.0. Test included: yes. Patch file: [26-kitden-21.patch](fixes/26-kitden-21.patch)
+
+27. [orm-lens: drift reports a moved model as unmigrated because operations inside SeparateDatabaseAndState are skipped](fix-27-orm-lens-220.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 220. License: MIT. Test included: yes. Patch file: [27-orm-lens-220.patch](fixes/27-orm-lens-220.patch)
+
+28. [orm-lens: suggest-indexes counts lookups from test files and proposes indexes that production code never uses](fix-28-orm-lens-224.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 224. License: MIT. Test included: yes. Patch file: [28-orm-lens-224.patch](fixes/28-orm-lens-224.patch)
+
+29. [repo-roast-skill: facts.py says 'not a git repo' when pointed at a subfolder of a repository](fix-29-repo-roast-skill-2.md)
+   Project: vivekbhange-hub/repo-roast-skill. Bug report number 2. License: MIT. Test included: yes. Patch file: [29-repo-roast-skill-2.patch](fixes/29-repo-roast-skill-2.patch)
+
+30. [repo-roast-skill: roast-rematch can compare round three against round one instead of round two](fix-30-repo-roast-skill-3.md)
+   Project: vivekbhange-hub/repo-roast-skill. Bug report number 3. License: MIT. Test included: yes. Patch file: [30-repo-roast-skill-3.patch](fixes/30-repo-roast-skill-3.patch)
+
+31. [kraft: the console command palette lists Textual's own Maximize and Screenshot commands](fix-31-kraft-1345.md)
+   Project: itsOmidKarami/kraft. Bug report number 1345. License: Apache-2.0. Test included: yes. Patch file: [31-kraft-1345.patch](fixes/31-kraft-1345.patch)
+
+32. [kraft docs: the storage guide's policy.yaml block reads like a whole file](fix-32-kraft-1347.md)
+   Project: itsOmidKarami/kraft. Bug report number 1347. License: Apache-2.0. Test included: no. Patch file: [32-kraft-1347.patch](fixes/32-kraft-1347.patch)
+
+33. [dawnmere: uninstall says 'add this by hand' for a config file with comments and does not say what to remove](fix-33-dawnmere-16.md)
+   Project: Hadeva-Dev/dawnmere. Bug report number 16. License: MIT. Test included: yes. Patch file: [33-dawnmere-16.patch](fixes/33-dawnmere-16.patch)
+
+34. [Archy: graph --format dot writes node names unescaped so a quote mark in a path gives invalid DOT](fix-34-archy-781.md)
+   Project: hslee16/Archy. Bug report number 781. License: MIT. Test included: yes. Patch file: [34-archy-781.patch](fixes/34-archy-781.patch)
+
+35. [Archy: the trend table shows UTC times with no zone so the times read as local time](fix-35-archy-754.md)
+   Project: hslee16/Archy. Bug report number 754. License: MIT. Test included: yes. Patch file: [35-archy-754.patch](fixes/35-archy-754.patch)
+
+36. [Archy: the tree-sitter version floor admits versions that lack QueryCursor so every command crashes at import](fix-36-archy-764.md)
+   Project: hslee16/Archy. Bug report number 764. License: MIT. Test included: no. Patch file: [36-archy-764.patch](fixes/36-archy-764.patch)
 
 ## How to use a fix
 
