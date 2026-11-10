@@ -1,9 +1,9 @@
 {
   "name": "Spare token bug fixes: a public shelf",
-  "description": "67 small AI-written bug fixes for 33 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
+  "description": "68 small AI-written bug fixes for 34 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
   "repository": "https://github.com/chmillera-hub/spare-token-bug-fixes",
   "website": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/",
-  "fix_count": 67,
+  "fix_count": 68,
   "fixes": [
     {
       "id": 1,
@@ -2474,6 +2474,43 @@
         "duplicate_check_done": false,
         "full_bug_report_read": true,
         "logic_checked_with_separate_script": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-10"
+      },
+      "written_on": "2026-11-10"
+    },
+    {
+      "id": 68,
+      "title": "OpenKeet: a newly added document is not ticked when building an interview pack",
+      "project": "Jigsaw777/OpenKeet",
+      "project_url": "https://github.com/Jigsaw777/OpenKeet",
+      "bug_report_number": 15,
+      "bug_report_url": "https://github.com/Jigsaw777/OpenKeet/issues/15",
+      "bug_report_title": "New documents aren't ticked when building an interview pack",
+      "search_keywords": "OpenKeet Prepare page interview pack Use these documents new document not ticked sources selection prep.tsx useEffect",
+      "license": "MIT",
+      "language": "TypeScript (React)",
+      "files_changed": [
+        "apps/desktop/src/prep-sources.ts",
+        "apps/desktop/src/prep.tsx",
+        "apps/desktop/tests/prep-sources.test.ts"
+      ],
+      "test_included": true,
+      "symptom": "On the Prepare page a person adds a resume and then a job description. Only the resume was ticked under Use these documents. The job description was left out of the interview pack unless the person noticed and ticked the box.",
+      "change": "A new file apps/desktop/src/prep-sources.ts holds reconcileSources: a document seen for the first time is ticked and an unticked document stays unticked and a removed document leaves the selection. apps/desktop/src/prep.tsx remembers the document ids already handled and calls the helper whenever the list of documents changes. A new file apps/desktop/tests/prep-sources.test.ts covers the three cases from the bug report.",
+      "note": "The helper file and the test file are both written by the chatbot. The chatbot ran those two files in a scratch folder with the project's own test command line (node --experimental-strip-types --test) and all five tests passed. No other project code was run and the app itself was not started. The effect now reacts to the list of document ids and not only to the number of documents.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/68-openkeet-15.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-68-openkeet-15.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-68-openkeet-15.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-68-openkeet-15.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-10"
       },

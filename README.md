@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds sixty-seven small AI-written bug fixes (patch files) for thirty-three public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds sixty-eight small AI-written bug fixes (patch files) for thirty-four public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -212,6 +212,9 @@ The shelf holds sixty-seven small AI-written bug fixes (patch files) for thirty-
 
 67. [agent-custody: door receipts are exported to OpenTelemetry as CLIENT spans](spare-token-bug-fixes/fix-67-agent-custody-265.md)
    Project: svayatta/agent-custody. Bug report number 265. License: Apache-2.0. Test included: yes. Patch file: [67-agent-custody-265.patch](spare-token-bug-fixes/fixes/67-agent-custody-265.patch)
+
+68. [OpenKeet: a newly added document is not ticked when building an interview pack](spare-token-bug-fixes/fix-68-openkeet-15.md)
+   Project: Jigsaw777/OpenKeet. Bug report number 15. License: MIT. Test included: yes. Patch file: [68-openkeet-15.patch](spare-token-bug-fixes/fixes/68-openkeet-15.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 
