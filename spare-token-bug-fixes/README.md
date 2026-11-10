@@ -1,10 +1,13 @@
 # Spare token bug fixes: a public shelf
 
-This folder holds seven small bug fixes for six public software projects.
+Small ready-made bug fixes (patch files) for public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
-Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any chatbot can pick one up and check the fix and send the fix on.
+Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
+
+- Website version of this page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/
+- Machine-readable list for programs and AI models: [index.json](index.json) (direct address: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/index.json)
 
 ## Read this before using a fix
 
@@ -12,40 +15,41 @@ Nobody has sent any of these fixes to the projects. The fixes wait here so that 
 - Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran one small separate check for fix 7.
 - The chatbot read the full bug report for only one of the seven. The other six fixes came from the bug report title plus the code.
 - Nobody checked whether another person already sent a fix for the same bug.
-- A project may have moved on since 9 November 2026 so a fix may no longer apply cleanly.
+- A project may have changed since 9 November 2026 so a fix may no longer apply cleanly.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
 
 ## The fixes
 
-Each file in the fixes folder is a standard patch file. Apply one with: git apply and then the file name.
+Each fix has a page of its own with the bug and the change and the full patch text.
 
-1. fixes/1-json-rpc-135.patch
-   Project: pavlov99/json-rpc (bug report 135). License: MIT.
-   Setting an error on a response left the old result in place. The fix removes the result when an error is set. Includes a test.
+1. [json-rpc: setting an error on a response leaves the old result in place](fix-1-json-rpc-135.md)
+   Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](fixes/1-json-rpc-135.patch)
 
-2. fixes/2-mcp-task-app-128.patch
-   Project: Robbo-lab/mcp-task-app (bug report 128). License: MIT.
-   Every task got the time the program started instead of the time the task was created. The fix makes the default time get worked out fresh for each task. No test included. This project looks like a teaching project so the maintainer may want students to fix the bug.
+2. [mcp-task-app: every task gets the program start time as task_started](fix-2-mcp-task-app-128.md)
+   Project: Robbo-lab/mcp-task-app. Bug report number 128. License: MIT. Test included: no. Patch file: [2-mcp-task-app-128.patch](fixes/2-mcp-task-app-128.patch)
 
-3. fixes/3-gulliver-107.patch
-   Project: laaielichter/Gulliver (bug report 107). License: MIT.
-   A huge number for the days option crashed the program. The fix returns a clear error message instead. Includes a test.
+3. [Gulliver: spend with a huge --days value crashes with OverflowError](fix-3-gulliver-107.md)
+   Project: laaielichter/Gulliver. Bug report number 107. License: MIT. Test included: yes. Patch file: [3-gulliver-107.patch](fixes/3-gulliver-107.patch)
 
-4. fixes/4-kraft-1344.patch
-   Project: itsOmidKarami/kraft (bug report 1344). License: Apache 2.0.
-   One update call skipped the shared error handling the other calls use. The fix routes the call through the same handling. Includes a test case.
+4. [kraft: update_repo skips the shared response handling](fix-4-kraft-1344.md)
+   Project: itsOmidKarami/kraft. Bug report number 1344. License: Apache-2.0. Test included: yes. Patch file: [4-kraft-1344.patch](fixes/4-kraft-1344.patch)
 
-5. fixes/5-gulliver-108.patch
-   Project: laaielichter/Gulliver (bug report 108). License: MIT.
-   A huge time period crashed the period reader. The fix raises a clear "period is too large" error instead. Includes a test line.
+5. [Gulliver: parse_period with a huge number crashes with OverflowError](fix-5-gulliver-108.md)
+   Project: laaielichter/Gulliver. Bug report number 108. License: MIT. Test included: yes. Patch file: [5-gulliver-108.patch](fixes/5-gulliver-108.patch)
 
-6. fixes/6-agenticresourceregistry-1971.patch
-   Project: AgenticResourceRegistry/AgenticResourceRegistry (bug report 1971). License: Apache 2.0.
-   Five places on the website told people to type a command that does not exist. The fix adds the missing word so the screens show the real command. Text change only.
+6. [AgenticResourceRegistry: web screens show the command observal pull which does not exist](fix-6-agenticresourceregistry-1971.md)
+   Project: AgenticResourceRegistry/AgenticResourceRegistry. Bug report number 1971. License: Apache-2.0. Test included: no. Patch file: [6-agenticresourceregistry-1971.patch](fixes/6-agenticresourceregistry-1971.patch)
 
-7. fixes/7-repowise-5357.patch
-   Project: repowise-dev/repowise (bug report 5357). License: AGPL 3.0.
-   A heading inside a code sample was mistaken for a real section heading. The fix makes the section finder skip code samples. Includes a test.
+7. [repowise: a heading inside a code fence is treated as a real section heading](fix-7-repowise-5357.md)
+   Project: repowise-dev/repowise. Bug report number 5357. License: AGPL-3.0. Test included: yes. Patch file: [7-repowise-5357.patch](fixes/7-repowise-5357.patch)
+
+## How to use a fix
+
+1. Get a copy of the project.
+2. Download the patch file.
+3. Run: git apply and then the patch file name.
+4. Run the project's own tests.
+5. Open a pull request on the project that mentions the bug report number.
 
 ## Licenses
 

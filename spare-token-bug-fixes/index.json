@@ -1,0 +1,207 @@
+{
+  "name": "Spare token bug fixes: a public shelf",
+  "description": "Small AI-written bug fixes for public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
+  "website": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/",
+  "repository": "https://github.com/chmillera-hub/game1",
+  "fixes": [
+    {
+      "id": 1,
+      "title": "json-rpc: setting an error on a response leaves the old result in place",
+      "project": "pavlov99/json-rpc",
+      "project_url": "https://github.com/pavlov99/json-rpc",
+      "bug_report_number": 135,
+      "bug_report_url": "https://github.com/pavlov99/json-rpc/issues/135",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "jsonrpc/jsonrpc1.py",
+        "jsonrpc/jsonrpc2.py",
+        "jsonrpc/tests/test_jsonrpc2.py"
+      ],
+      "test_included": true,
+      "symptom": "A JSON-RPC response object that already holds a result keeps the result after code sets an error on the response. The response then carries both a result and an error. The JSON-RPC rules allow only one of the two.",
+      "change": "The error setter in jsonrpc1.py and jsonrpc2.py removed a key named value that never exists. The fix removes the key named result and only when the error is set to a real value. A new test named test_error_setter_removes_result covers the case.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/1-json-rpc-135.patch",
+      "page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-1-json-rpc-135.html",
+      "github_page_url": "https://github.com/chmillera-hub/game1/blob/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fix-1-json-rpc-135.md",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 2,
+      "title": "mcp-task-app: every task gets the program start time as task_started",
+      "project": "Robbo-lab/mcp-task-app",
+      "project_url": "https://github.com/Robbo-lab/mcp-task-app",
+      "bug_report_number": 128,
+      "bug_report_url": "https://github.com/Robbo-lab/mcp-task-app/issues/128",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "app/data/database_objects.py",
+        "app/data/pydantic_objects.py"
+      ],
+      "test_included": false,
+      "symptom": "Every new task shows the same task_started time. The time shown is the moment the program started and not the moment the task was created.",
+      "change": "The code called datetime.now() once when the program loaded and reused that one value as the default. The fix passes the function datetime.now to SQLAlchemy and uses Field(default_factory=datetime.now) in the Pydantic model so each task gets a fresh time. No test is included. The project looks like a teaching project so the maintainer may prefer that students fix the bug.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/2-mcp-task-app-128.patch",
+      "page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-2-mcp-task-app-128.html",
+      "github_page_url": "https://github.com/chmillera-hub/game1/blob/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fix-2-mcp-task-app-128.md",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 3,
+      "title": "Gulliver: spend with a huge --days value crashes with OverflowError",
+      "project": "laaielichter/Gulliver",
+      "project_url": "https://github.com/laaielichter/Gulliver",
+      "bug_report_number": 107,
+      "bug_report_url": "https://github.com/laaielichter/Gulliver/issues/107",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "src/gulliver/runaway.py",
+        "tests/test_runaway.py"
+      ],
+      "test_included": true,
+      "symptom": "Running the spend command with a very large --days number such as 10000000 crashes with OverflowError: date value out of range instead of showing a clear message.",
+      "change": "The fix wraps the date arithmetic in runaway.py in a try block and returns the error message \"--days is too large.\" with a suggested next step. A new test covers two huge values.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/3-gulliver-107.patch",
+      "page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-3-gulliver-107.html",
+      "github_page_url": "https://github.com/chmillera-hub/game1/blob/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fix-3-gulliver-107.md",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 4,
+      "title": "kraft: update_repo skips the shared response handling",
+      "project": "itsOmidKarami/kraft",
+      "project_url": "https://github.com/itsOmidKarami/kraft",
+      "bug_report_number": 1344,
+      "bug_report_url": "https://github.com/itsOmidKarami/kraft/issues/1344",
+      "license": "Apache-2.0",
+      "language": "Python",
+      "files_changed": [
+        "src/kraft/client/actions.py",
+        "tests/client/test_transport.py"
+      ],
+      "test_included": true,
+      "symptom": "The client call update_repo parsed the server reply with code of its own. A reply with status 200 and a body that is not JSON (for example an HTML page from a proxy) slipped through as a fake success. The other client calls report that case as a bad response.",
+      "change": "The fix makes update_repo use the shared helpers transport._detail and transport._json in src/kraft/client/actions.py. A new parametrized test case named text-200-patch covers the HTML reply.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/4-kraft-1344.patch",
+      "page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-4-kraft-1344.html",
+      "github_page_url": "https://github.com/chmillera-hub/game1/blob/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fix-4-kraft-1344.md",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 5,
+      "title": "Gulliver: parse_period with a huge number crashes with OverflowError",
+      "project": "laaielichter/Gulliver",
+      "project_url": "https://github.com/laaielichter/Gulliver",
+      "bug_report_number": 108,
+      "bug_report_url": "https://github.com/laaielichter/Gulliver/issues/108",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "src/gulliver/incremental.py",
+        "tests/test_features.py"
+      ],
+      "test_included": true,
+      "symptom": "Giving the period reader a very large number of minutes or hours or days or weeks crashes with OverflowError instead of a clear error.",
+      "change": "The fix wraps the timedelta creation in parse_period in src/gulliver/incremental.py and raises ValueError with the message \"period is too large\". One new test line covers the case.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/5-gulliver-108.patch",
+      "page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-5-gulliver-108.html",
+      "github_page_url": "https://github.com/chmillera-hub/game1/blob/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fix-5-gulliver-108.md",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 6,
+      "title": "AgenticResourceRegistry: web screens show the command observal pull which does not exist",
+      "project": "AgenticResourceRegistry/AgenticResourceRegistry",
+      "project_url": "https://github.com/AgenticResourceRegistry/AgenticResourceRegistry",
+      "bug_report_number": 1971,
+      "bug_report_url": "https://github.com/AgenticResourceRegistry/AgenticResourceRegistry/issues/1971",
+      "license": "Apache-2.0",
+      "language": "TypeScript (text only)",
+      "files_changed": [
+        "web/src/components/builder/preview-panel.tsx",
+        "web/src/pages/registry/home.tsx",
+        "web/src/pages/registry/teamspace-detail.tsx",
+        "web/src/pages/registry/teamspaces.tsx"
+      ],
+      "test_included": false,
+      "symptom": "Five places in the web interface tell people to type observal pull. The real command is observal agent pull. A person who copies the shown command gets an error.",
+      "change": "The fix changes the shown text to observal agent pull in preview-panel.tsx and home.tsx and teamspace-detail.tsx and teamspaces.tsx. Text change only. No test is included.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/6-agenticresourceregistry-1971.patch",
+      "page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-6-agenticresourceregistry-1971.html",
+      "github_page_url": "https://github.com/chmillera-hub/game1/blob/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fix-6-agenticresourceregistry-1971.md",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 7,
+      "title": "repowise: a heading inside a code fence is treated as a real section heading",
+      "project": "repowise-dev/repowise",
+      "project_url": "https://github.com/repowise-dev/repowise",
+      "bug_report_number": 5357,
+      "bug_report_url": "https://github.com/repowise-dev/repowise/issues/5357",
+      "license": "AGPL-3.0",
+      "language": "Python",
+      "files_changed": [
+        "packages/core/src/repowise/core/generation/overview_tables.py",
+        "tests/unit/generation/test_model_page_shape.py"
+      ],
+      "test_included": true,
+      "symptom": "When a generated page contains a code sample with a line that starts with # or ## the section embedder treats that line as the start of a new section and cuts or replaces the wrong part of the page.",
+      "change": "The fix adds a helper named _section_span in overview_tables.py that tracks code fences made of three backticks or three tildes and ignores headings inside fences. embed_section now uses the helper. A new test covers the reported case. The chatbot also ran a separate comparison on 200000 random pages with no fences and found no difference from the old behaviour.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/7-repowise-5357.patch",
+      "page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-7-repowise-5357.html",
+      "github_page_url": "https://github.com/chmillera-hub/game1/blob/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fix-7-repowise-5357.md",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false
+      },
+      "written_on": "2026-11-09"
+    }
+  ]
+}
