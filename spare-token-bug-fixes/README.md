@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-239 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
+247 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 70 of the 239 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 227 of the 239 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 70 of the 247 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 235 of the 247 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -743,6 +743,30 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 239. [security-checker: public names in providers/base.py have no docstring (aclose and apply and capabilities and complete and health_check)](fix-239-security-checker-408.md)
    Project: Sh1n1230/security-checker. Bug report number 408. License: MIT. Test included: no. Patch file: [239-security-checker-408.patch](fixes/239-security-checker-408.patch)
+
+240. [security-checker: no test covers the row limit of the candidates table in the pull request comment](fix-240-security-checker-511.md)
+   Project: Sh1n1230/security-checker. Bug report number 511. License: MIT. Test included: yes. Patch file: [240-security-checker-511.patch](fixes/240-security-checker-511.patch)
+
+241. [security-checker: no test covers the cost in the footer of the pull request comment](fix-241-security-checker-512.md)
+   Project: Sh1n1230/security-checker. Bug report number 512. License: MIT. Test included: yes. Patch file: [241-security-checker-512.patch](fixes/241-security-checker-512.patch)
+
+242. [security-checker: no test covers the counts line of the pull request comment when nothing was judged](fix-242-security-checker-509.md)
+   Project: Sh1n1230/security-checker. Bug report number 509. License: MIT. Test included: yes. Patch file: [242-security-checker-509.patch](fixes/242-security-checker-509.patch)
+
+243. [security-checker: no test covers a quota record that cannot be written](fix-243-security-checker-530.md)
+   Project: Sh1n1230/security-checker. Bug report number 530. License: MIT. Test included: yes. Patch file: [243-security-checker-530.patch](fixes/243-security-checker-530.patch)
+
+244. [security-checker: no test covers severity aggregation with no vulnerable verdict or zero total weight](fix-244-security-checker-470.md)
+   Project: Sh1n1230/security-checker. Bug report number 470. License: MIT. Test included: yes. Patch file: [244-security-checker-470.patch](fixes/244-security-checker-470.patch)
+
+245. [security-checker: no test covers an event file that cannot be read in context_from_env](fix-245-security-checker-505.md)
+   Project: Sh1n1230/security-checker. Bug report number 505. License: MIT. Test included: yes. Patch file: [245-security-checker-505.patch](fixes/245-security-checker-505.patch)
+
+246. [security-checker: no test covers a missing or failing git in the diff helper](fix-246-security-checker-516.md)
+   Project: Sh1n1230/security-checker. Bug report number 516. License: MIT. Test included: yes. Patch file: [246-security-checker-516.patch](fixes/246-security-checker-516.patch)
+
+247. [security-checker: no test covers the advice texts of the provider check](fix-247-security-checker-531.md)
+   Project: Sh1n1230/security-checker. Bug report number 531. License: MIT. Test included: yes. Patch file: [247-security-checker-531.patch](fixes/247-security-checker-531.patch)
 
 ## How to use a fix
 

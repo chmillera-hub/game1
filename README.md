@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds 239 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 247 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -728,6 +728,30 @@ The shelf holds 239 small AI-written bug fixes (patch files) for forty-seven pub
 
 239. [security-checker: public names in providers/base.py have no docstring (aclose and apply and capabilities and complete and health_check)](spare-token-bug-fixes/fix-239-security-checker-408.md)
    Project: Sh1n1230/security-checker. Bug report number 408. License: MIT. Test included: no. Patch file: [239-security-checker-408.patch](spare-token-bug-fixes/fixes/239-security-checker-408.patch)
+
+240. [security-checker: no test covers the row limit of the candidates table in the pull request comment](spare-token-bug-fixes/fix-240-security-checker-511.md)
+   Project: Sh1n1230/security-checker. Bug report number 511. License: MIT. Test included: yes. Patch file: [240-security-checker-511.patch](spare-token-bug-fixes/fixes/240-security-checker-511.patch)
+
+241. [security-checker: no test covers the cost in the footer of the pull request comment](spare-token-bug-fixes/fix-241-security-checker-512.md)
+   Project: Sh1n1230/security-checker. Bug report number 512. License: MIT. Test included: yes. Patch file: [241-security-checker-512.patch](spare-token-bug-fixes/fixes/241-security-checker-512.patch)
+
+242. [security-checker: no test covers the counts line of the pull request comment when nothing was judged](spare-token-bug-fixes/fix-242-security-checker-509.md)
+   Project: Sh1n1230/security-checker. Bug report number 509. License: MIT. Test included: yes. Patch file: [242-security-checker-509.patch](spare-token-bug-fixes/fixes/242-security-checker-509.patch)
+
+243. [security-checker: no test covers a quota record that cannot be written](spare-token-bug-fixes/fix-243-security-checker-530.md)
+   Project: Sh1n1230/security-checker. Bug report number 530. License: MIT. Test included: yes. Patch file: [243-security-checker-530.patch](spare-token-bug-fixes/fixes/243-security-checker-530.patch)
+
+244. [security-checker: no test covers severity aggregation with no vulnerable verdict or zero total weight](spare-token-bug-fixes/fix-244-security-checker-470.md)
+   Project: Sh1n1230/security-checker. Bug report number 470. License: MIT. Test included: yes. Patch file: [244-security-checker-470.patch](spare-token-bug-fixes/fixes/244-security-checker-470.patch)
+
+245. [security-checker: no test covers an event file that cannot be read in context_from_env](spare-token-bug-fixes/fix-245-security-checker-505.md)
+   Project: Sh1n1230/security-checker. Bug report number 505. License: MIT. Test included: yes. Patch file: [245-security-checker-505.patch](spare-token-bug-fixes/fixes/245-security-checker-505.patch)
+
+246. [security-checker: no test covers a missing or failing git in the diff helper](spare-token-bug-fixes/fix-246-security-checker-516.md)
+   Project: Sh1n1230/security-checker. Bug report number 516. License: MIT. Test included: yes. Patch file: [246-security-checker-516.patch](spare-token-bug-fixes/fixes/246-security-checker-516.patch)
+
+247. [security-checker: no test covers the advice texts of the provider check](spare-token-bug-fixes/fix-247-security-checker-531.md)
+   Project: Sh1n1230/security-checker. Bug report number 531. License: MIT. Test included: yes. Patch file: [247-security-checker-531.patch](spare-token-bug-fixes/fixes/247-security-checker-531.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

@@ -1,0 +1,35 @@
+diff --git a/tests/unit/test_comment_footer_cost.py b/tests/unit/test_comment_footer_cost.py
+new file mode 100644
+index 0000000..6b16e19
+--- /dev/null
++++ b/tests/unit/test_comment_footer_cost.py
+@@ -0,0 +1,29 @@
++"""PR コメントのフッタ: コストが分かるときだけ金額を載せること."""
++
++from __future__ import annotations
++
++from security_checker.github.comment import _footer
++from security_checker.models.verdict import Usage
++from tests.factories import make_candidate, make_report
++
++
++def test_known_cost_is_shown_with_four_decimals() -> None:
++    usage = Usage(estimated_usd=0.01234, cost_known=True)
++    report = make_report([make_candidate()], usage=usage)
++
++    assert " · $0.0123" in _footer(report, None)
++
++
++def test_unknown_cost_is_not_shown() -> None:
++    """対になるケース. 測れなかったコストを 0 ドルのように見せない."""
++    usage = Usage(estimated_usd=None, cost_known=False)
++    report = make_report([make_candidate()], usage=usage)
++
++    assert "$" not in _footer(report, None)
++
++
++def test_report_link_is_added_when_given() -> None:
++    footer = _footer(make_report([make_candidate()]), "https://example.com/run/1")
++
++    assert footer.startswith("<sub>security-checker v2.0.0 · ")
++    assert footer.endswith("[full report](https://example.com/run/1)</sub>")

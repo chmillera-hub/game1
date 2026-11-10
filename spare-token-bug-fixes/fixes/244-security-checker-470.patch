@@ -1,0 +1,51 @@
+diff --git a/tests/unit/test_aggregate_severity_edges.py b/tests/unit/test_aggregate_severity_edges.py
+new file mode 100644
+index 0000000..c87684c
+--- /dev/null
++++ b/tests/unit/test_aggregate_severity_edges.py
+@@ -0,0 +1,45 @@
++"""aggregate_severity: 「脆弱」の判定が無いときと、重みの合計が 0 のときの扱い."""
++
++from __future__ import annotations
++
++from security_checker.aggregate.base import aggregate_severity
++from security_checker.models.enums import Severity
++from security_checker.models.verdict import ReviewVerdict
++from tests.factories import make_verdict
++
++
++def _one(_verdict: ReviewVerdict) -> float:
++    return 1.0
++
++
++def _zero(_verdict: ReviewVerdict) -> float:
++    return 0.0
++
++
++def _verdicts(*severities: Severity) -> list[ReviewVerdict]:
++    return [
++        make_verdict(f"r{index}", severity=severity) for index, severity in enumerate(severities)
++    ]
++
++
++def test_no_vulnerable_verdicts_is_severity_none() -> None:
++    for mode in ("median", "max", "weighted_mean"):
++        assert aggregate_severity([], mode, _one) is Severity.NONE
++
++
++def test_max_takes_the_heaviest_severity() -> None:
++    verdicts = _verdicts(Severity.LOW, Severity.HIGH)
++
++    assert aggregate_severity(verdicts, "max", _one) is Severity.HIGH
++
++
++def test_weighted_mean_with_zero_total_weight_does_not_divide_by_zero() -> None:
++    verdicts = _verdicts(Severity.HIGH, Severity.HIGH)
++
++    assert aggregate_severity(verdicts, "weighted_mean", _zero) is Severity.HIGH
++
++
++def test_weighted_mean_of_equal_severities_is_that_severity() -> None:
++    verdicts = _verdicts(Severity.LOW, Severity.LOW)
++
++    assert aggregate_severity(verdicts, "weighted_mean", _one) is Severity.LOW

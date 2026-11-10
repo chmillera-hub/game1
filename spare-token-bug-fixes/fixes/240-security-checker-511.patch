@@ -1,0 +1,32 @@
+diff --git a/tests/unit/test_comment_candidate_table_limit.py b/tests/unit/test_comment_candidate_table_limit.py
+new file mode 100644
+index 0000000..c8bd149
+--- /dev/null
++++ b/tests/unit/test_comment_candidate_table_limit.py
+@@ -0,0 +1,26 @@
++"""PR コメントの候補表: 上限を超えた分は件数だけを示すこと."""
++
++from __future__ import annotations
++
++from security_checker.github.comment import MAX_SUMMARY_FINDINGS, _candidate_table
++from security_checker.models.candidate import Candidate
++from tests.factories import make_candidate, make_report
++
++
++def _many(count: int) -> list[Candidate]:
++    return [make_candidate(f"c{index}", line=index + 1) for index in range(count)]
++
++
++def test_rows_past_the_limit_are_counted_not_listed() -> None:
++    lines = _candidate_table(make_report(_many(MAX_SUMMARY_FINDINGS + 2)))
++
++    assert "\n_ほか 2 件_" in lines
++    assert sum("`semgrep`" in line for line in lines) == MAX_SUMMARY_FINDINGS
++
++
++def test_exactly_the_limit_has_no_note() -> None:
++    """境界. ちょうど上限の件数なら注記は出ない."""
++    lines = _candidate_table(make_report(_many(MAX_SUMMARY_FINDINGS)))
++
++    assert not any("ほか" in line for line in lines)
++    assert sum("`semgrep`" in line for line in lines) == MAX_SUMMARY_FINDINGS

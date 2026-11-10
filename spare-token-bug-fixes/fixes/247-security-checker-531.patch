@@ -1,0 +1,61 @@
+diff --git a/tests/unit/test_check_suggest.py b/tests/unit/test_check_suggest.py
+new file mode 100644
+index 0000000..7a67181
+--- /dev/null
++++ b/tests/unit/test_check_suggest.py
+@@ -0,0 +1,55 @@
++"""providers.check._suggest: 失敗の種類ごとに、次に取れる行動を案内すること."""
++
++from __future__ import annotations
++
++from types import SimpleNamespace
++from typing import Any
++
++import pytest
++
++from security_checker.providers.check import _suggest
++from security_checker.providers.errors import (
++    ProviderAuthError,
++    ProviderBadRequestError,
++    ProviderError,
++    ProviderRateLimitError,
++    ProviderTimeoutError,
++)
++
++
++def _reviewer(**overrides: Any) -> Any:
++    """_suggest が読む項目だけを持つ、設定の代役."""
++    fields = {
++        "api_key_env": "EXAMPLE_API_KEY",
++        "timeout_s": 45.0,
++        "transport": "http",
++        "base_url": "https://api.example.com/v1",
++    }
++    fields.update(overrides)
++    return SimpleNamespace(**fields)
++
++
++@pytest.mark.parametrize(
++    ("exc", "expected"),
++    [
++        (ProviderAuthError("x"), "EXAMPLE_API_KEY の値"),
++        (ProviderRateLimitError("x"), "rate_limit.rpm を下げる"),
++        (ProviderTimeoutError("x"), "timeout_s (現在 45.0) を延ばしてください"),
++        (ProviderBadRequestError("x"), "structured_output: prompt_only"),
++        (ProviderError("x"), "base_url (https://api.example.com/v1) に到達できるか"),
++    ],
++)
++def test_each_failure_gets_its_own_advice(exc: Exception, expected: str) -> None:
++    assert expected in _suggest(exc, _reviewer())
++
++
++def test_auth_error_without_a_key_variable_names_a_generic_one() -> None:
++    advice = _suggest(ProviderAuthError("x"), _reviewer(api_key_env=None))
++
++    assert "API キーの環境変数 の値" in advice
++
++
++def test_other_failure_of_a_process_reviewer_points_at_the_command() -> None:
++    advice = _suggest(ProviderError("x"), _reviewer(transport="process"))
++
++    assert "command が非対話で JSON を標準出力に返すか" in advice

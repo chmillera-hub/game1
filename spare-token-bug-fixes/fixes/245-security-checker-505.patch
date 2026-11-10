@@ -1,0 +1,48 @@
+diff --git a/tests/unit/test_github_context_from_env_event_file.py b/tests/unit/test_github_context_from_env_event_file.py
+new file mode 100644
+index 0000000..25ea838
+--- /dev/null
++++ b/tests/unit/test_github_context_from_env_event_file.py
+@@ -0,0 +1,42 @@
++"""context_from_env: 読めないイベントペイロードは無視し、引数と環境変数で PR を特定すること."""
++
++from __future__ import annotations
++
++import json
++from pathlib import Path
++
++import pytest
++
++from security_checker.errors import ConfigError
++from security_checker.github.client import context_from_env
++
++
++def test_broken_event_file_falls_back_to_the_arguments(tmp_path: Path) -> None:
++    event = tmp_path / "event.json"
++    event.write_text("{not json", encoding="utf-8")
++    environ = {"GITHUB_EVENT_PATH": str(event), "GITHUB_REPOSITORY": "owner/repo"}
++
++    context = context_from_env(environ, number=7, head_sha="abc123")
++
++    assert (context.repository, context.number, context.head_sha) == ("owner/repo", 7, "abc123")
++
++
++def test_broken_event_file_without_a_number_is_a_config_error(tmp_path: Path) -> None:
++    event = tmp_path / "event.json"
++    event.write_text("{not json", encoding="utf-8")
++    environ = {"GITHUB_EVENT_PATH": str(event), "GITHUB_REPOSITORY": "owner/repo"}
++
++    with pytest.raises(ConfigError, match="コメント先の PR を特定できません"):
++        context_from_env(environ)
++
++
++def test_readable_event_file_supplies_the_number_and_the_head(tmp_path: Path) -> None:
++    """対になるケース. 読めるペイロードからは番号と head の sha を取る."""
++    event = tmp_path / "event.json"
++    payload = {"pull_request": {"number": 12, "head": {"sha": "def456"}}}
++    event.write_text(json.dumps(payload), encoding="utf-8")
++    environ = {"GITHUB_EVENT_PATH": str(event), "GITHUB_REPOSITORY": "owner/repo"}
++
++    context = context_from_env(environ)
++
++    assert (context.repository, context.number, context.head_sha) == ("owner/repo", 12, "def456")

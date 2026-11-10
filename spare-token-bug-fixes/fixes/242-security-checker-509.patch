@@ -1,0 +1,29 @@
+diff --git a/tests/unit/test_comment_counts_line_no_findings.py b/tests/unit/test_comment_counts_line_no_findings.py
+new file mode 100644
+index 0000000..9901b4a
+--- /dev/null
++++ b/tests/unit/test_comment_counts_line_no_findings.py
+@@ -0,0 +1,23 @@
++"""PR コメントの件数の行: 判定が 1 件も無いときの表記."""
++
++from __future__ import annotations
++
++from security_checker.github.comment import _counts_line
++from security_checker.models.report import ReviewerRun
++from tests.factories import make_candidate, make_report
++
++
++def test_reviewers_ran_but_nothing_was_judged() -> None:
++    report = make_report(
++        [make_candidate("c1"), make_candidate("c2", line=2)],
++        reviewers=[ReviewerRun(name="r1")],
++    )
++
++    assert _counts_line(report) == ["候補 2 件"]
++
++
++def test_scanners_only_says_that_no_llm_judged() -> None:
++    """対になるケース. Reviewer がいなければ、LLM の判定が無いことを明示する."""
++    report = make_report([make_candidate("c1")])
++
++    assert _counts_line(report) == ["候補 1 件 (スキャナのみ・LLM による判定なし)"]

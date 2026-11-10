@@ -1,0 +1,65 @@
+diff --git a/tests/unit/test_pr_git_failures.py b/tests/unit/test_pr_git_failures.py
+new file mode 100644
+index 0000000..4d3d620
+--- /dev/null
++++ b/tests/unit/test_pr_git_failures.py
+@@ -0,0 +1,59 @@
++"""pr._git: git が無い・終わらない・失敗したときは DiffError になること."""
++
++from __future__ import annotations
++
++import subprocess
++from pathlib import Path
++from typing import Any
++
++import pytest
++
++from security_checker.github import pr
++from security_checker.github.pr import DiffError, _git
++
++
++def _raise(exc: BaseException) -> Any:
++    def run(*_args: Any, **_kwargs: Any) -> Any:
++        raise exc
++
++    return run
++
++
++def test_missing_git_is_a_diff_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
++    monkeypatch.setattr(pr.subprocess, "run", _raise(FileNotFoundError("git")))
++
++    with pytest.raises(DiffError, match="git が見つかりません"):
++        _git(tmp_path, "diff")
++
++
++def test_git_that_does_not_finish_is_a_diff_error(
++    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    timeout = subprocess.TimeoutExpired(cmd="git", timeout=pr.GIT_TIMEOUT_S)
++    monkeypatch.setattr(pr.subprocess, "run", _raise(timeout))
++
++    with pytest.raises(DiffError, match="git diff が .* 秒以内に終わりませんでした"):
++        _git(tmp_path, "diff")
++
++
++def test_failed_git_reports_the_last_line_of_stderr(
++    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    def run(argv: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[str]:
++        return subprocess.CompletedProcess(argv, 128, "", "hint: x\nfatal: bad revision\n")
++
++    monkeypatch.setattr(pr.subprocess, "run", run)
++
++    with pytest.raises(DiffError, match="git diff main が失敗しました: fatal: bad revision"):
++        _git(tmp_path, "diff", "main")
++
++
++def test_successful_git_returns_stdout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
++    """対になるケース. 成功すれば標準出力をそのまま返す."""
++
++    def run(argv: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[str]:
++        return subprocess.CompletedProcess(argv, 0, "ok\n", "")
++
++    monkeypatch.setattr(pr.subprocess, "run", run)
++
++    assert _git(tmp_path, "status") == "ok\n"

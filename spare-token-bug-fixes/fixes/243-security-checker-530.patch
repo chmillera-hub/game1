@@ -1,0 +1,33 @@
+diff --git a/tests/unit/test_quota_consume_write_error.py b/tests/unit/test_quota_consume_write_error.py
+new file mode 100644
+index 0000000..da2d021
+--- /dev/null
++++ b/tests/unit/test_quota_consume_write_error.py
+@@ -0,0 +1,27 @@
++"""クォータの記録に書けなくても実行を止めず、警告を残すこと."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++from security_checker.observability.quota import QuotaStore
++
++
++def test_write_failure_is_recorded_and_the_count_is_still_returned(tmp_path: Path) -> None:
++    blocker = tmp_path / "not-a-directory"
++    blocker.write_text("", encoding="utf-8")
++    # 親がファイルなので mkdir も書き込みも OSError になる
++    store = QuotaStore(blocker / "quota.json")
++
++    assert store.consume("r1") == 1
++    assert len(store.errors) == 1
++    assert "に書けません" in store.errors[0]
++
++
++def test_successful_write_leaves_no_error(tmp_path: Path) -> None:
++    """対になるケース. 書ければ警告は無く、累計が増える."""
++    store = QuotaStore(tmp_path / "cache" / "quota.json")
++
++    assert store.consume("r1") == 1
++    assert store.consume("r1", 2) == 3
++    assert store.errors == []
