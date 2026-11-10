@@ -1,6 +1,6 @@
 # game1: public shelf of free bug fixes
 
-> 63 small AI-written bug fixes (git patch files) for 30 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
+> 64 small AI-written bug fixes (git patch files) for 30 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
 
 ## Shelf
 
@@ -74,3 +74,4 @@
 - [remitsure-frontend: dashboard payee names only cover the first 20 payees](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-61-remitsure-frontend-5.md): remitsure/remitsure-frontend bug report 5. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/61-remitsure-frontend-5.patch
 - [loop: session titles split a joined emoji by removing the zero width joiner](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-62-loop-116.md): JimmyDi/loop bug report 116. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/62-loop-116.patch
 - [loop: a stale clipboard result overwrites the latest copy status](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-63-loop-115.md): JimmyDi/loop bug report 115. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/63-loop-115.patch
+- [loop: cleaning a session title removes the visible text between two terminal escape sequences](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-64-loop-117.md): JimmyDi/loop bug report 117. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/64-loop-117.patch

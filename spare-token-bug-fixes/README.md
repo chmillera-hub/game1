@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-63 small ready-made bug fixes (patch files) for 30 public open source projects. Free to take.
+64 small ready-made bug fixes (patch files) for 30 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 26 of the 63 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 56 of the 63 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 27 of the 64 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 57 of the 64 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -215,6 +215,9 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 63. [loop: a stale clipboard result overwrites the latest copy status](fix-63-loop-115.md)
    Project: JimmyDi/loop. Bug report number 115. License: MIT. Test included: yes. Patch file: [63-loop-115.patch](fixes/63-loop-115.patch)
+
+64. [loop: cleaning a session title removes the visible text between two terminal escape sequences](fix-64-loop-117.md)
+   Project: JimmyDi/loop. Bug report number 117. License: MIT. Test included: yes. Patch file: [64-loop-117.patch](fixes/64-loop-117.patch)
 
 ## How to use a fix
 

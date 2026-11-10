@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds sixty-three small AI-written bug fixes (patch files) for thirty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds sixty-four small AI-written bug fixes (patch files) for thirty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -200,6 +200,9 @@ The shelf holds sixty-three small AI-written bug fixes (patch files) for thirty 
 
 63. [loop: a stale clipboard result overwrites the latest copy status](spare-token-bug-fixes/fix-63-loop-115.md)
    Project: JimmyDi/loop. Bug report number 115. License: MIT. Test included: yes. Patch file: [63-loop-115.patch](spare-token-bug-fixes/fixes/63-loop-115.patch)
+
+64. [loop: cleaning a session title removes the visible text between two terminal escape sequences](spare-token-bug-fixes/fix-64-loop-117.md)
+   Project: JimmyDi/loop. Bug report number 117. License: MIT. Test included: yes. Patch file: [64-loop-117.patch](spare-token-bug-fixes/fixes/64-loop-117.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

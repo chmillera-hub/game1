@@ -1,9 +1,9 @@
 {
   "name": "Spare token bug fixes: a public shelf",
-  "description": "63 small AI-written bug fixes for 30 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
+  "description": "64 small AI-written bug fixes for 30 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
   "repository": "https://github.com/chmillera-hub/spare-token-bug-fixes",
   "website": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/",
-  "fix_count": 63,
+  "fix_count": 64,
   "fixes": [
     {
       "id": 1,
@@ -2328,6 +2328,43 @@
         "duplicate_check_done": false,
         "full_bug_report_read": true,
         "logic_checked_with_separate_script": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-10"
+      },
+      "written_on": "2026-11-10"
+    },
+    {
+      "id": 64,
+      "title": "loop: cleaning a session title removes the visible text between two terminal escape sequences",
+      "project": "JimmyDi/loop",
+      "project_url": "https://github.com/JimmyDi/loop",
+      "bug_report_number": 117,
+      "bug_report_url": "https://github.com/JimmyDi/loop/issues/117",
+      "bug_report_title": "bug(coding-agent): OSC stripping removes visible text between escape sequences",
+      "search_keywords": "loop coding-agent normalizeTitle OSC escape sequence ESC backslash string terminator ST greedy visible text removed",
+      "license": "MIT",
+      "language": "TypeScript",
+      "files_changed": [
+        "CHANGELOG.md",
+        "packages/coding-agent/src/core/titles/title-text.test.ts",
+        "packages/coding-agent/src/core/titles/title-text.ts"
+      ],
+      "test_included": true,
+      "symptom": "The session title cleaner strips terminal title sequences (OSC sequences). When two such sequences ended with the ESC-backslash terminator the pattern ran from the start of the first sequence to the end of the second one. The ordinary text between the two sequences was deleted.",
+      "change": "The first pattern in normalizeTitle in packages/coding-agent/src/core/titles/title-text.ts no longer lets the body of a sequence hold an ESC character. Each sequence now ends at its own terminator. The test file gains cases for repeated ESC-backslash terminators and for mixed terminators. CHANGELOG.md gains a line.",
+      "note": "The chatbot checked the new pattern with a scratch script against the new cases and the existing case. Nobody ran the project's tests. Fixes 62 and 64 change neighbouring lines of the same function and the same test file and fixes 62 and 63 and 64 each add a line at the same spot of CHANGELOG.md. Applying more than one needs a small manual merge.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/64-loop-117.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-64-loop-117.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-64-loop-117.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-64-loop-117.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-10"
       },
