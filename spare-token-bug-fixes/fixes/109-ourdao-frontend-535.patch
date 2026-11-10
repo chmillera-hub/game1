@@ -1,0 +1,32 @@
+diff --git a/src/__tests__/manifest.test.ts b/src/__tests__/manifest.test.ts
+index 59cee58..f2a9712 100644
+--- a/src/__tests__/manifest.test.ts
++++ b/src/__tests__/manifest.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, it, expect } from 'vitest'
+ import { readFileSync, existsSync } from 'fs'
+-import { resolve } from 'path'
++import { join, resolve } from 'path'
+ 
+ const PUBLIC_DIR = resolve(import.meta.dirname, '../../public')
+ 
+@@ -20,7 +20,9 @@ describe('PWA Manifest', () => {
+ 
+   it('all referenced icon files exist', () => {
+     for (const icon of manifest.icons) {
+-      const iconPath = resolve(PUBLIC_DIR, icon.src)
++      // join, not resolve: resolve treats a src such as '/icon-192x192.png' as
++      // absolute and drops PUBLIC_DIR, so the check looked at the filesystem root.
++      const iconPath = join(PUBLIC_DIR, icon.src)
+       expect(existsSync(iconPath)).toBe(true)
+     }
+   })
+@@ -30,7 +32,7 @@ describe('PWA Manifest', () => {
+       for (const shortcut of manifest.shortcuts) {
+         if (shortcut.icons) {
+           for (const icon of shortcut.icons) {
+-            const iconPath = resolve(PUBLIC_DIR, icon.src)
++            const iconPath = join(PUBLIC_DIR, icon.src)
+             expect(existsSync(iconPath)).toBe(true)
+           }
+         }

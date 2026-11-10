@@ -1,0 +1,32 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 71dc17d..dcae775 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,10 @@
+ 
+ ## Unreleased
+ 
++### Bug fixes
++
++- On a first run the default theme is now stored and applied as `builtin:onyx`, so Settings highlights the active built-in theme before the user picks one.
++
+ ### Documentation and contributor infrastructure
+ 
+ - Rewrote the README with accurate UI limits, project status, supported formats and contributor links.
+diff --git a/src/context/ThemeContext.tsx b/src/context/ThemeContext.tsx
+index 9ac61bf..ea1a4c7 100644
+--- a/src/context/ThemeContext.tsx
++++ b/src/context/ThemeContext.tsx
+@@ -10,10 +10,10 @@ import {
+ } from "../themes";
+ 
+ const STORAGE_KEY = "vynlore.theme";
+-const DEFAULT_ID = BUILTIN_THEMES[0].id;
+-
+ export const builtinId = (id: string) => `builtin:${id}`;
+ export const customId = (fileName: string) => `custom:${fileName}`;
++// Prefixed like every stored theme id: findSkin only knows `builtin:` and `custom:` ids.
++const DEFAULT_ID = builtinId(BUILTIN_THEMES[0].id);
+ 
+ interface ThemeContextValue {
+   currentId: string;

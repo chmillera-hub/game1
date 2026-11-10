@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-101 small ready-made bug fixes (patch files) for 40 public open source projects. Free to take.
+115 small ready-made bug fixes (patch files) for 45 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and awslabs/social-messaging-agent-runtime-toolkit and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and himanshu748/devswarm and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and jasonkryst/MyFinances and Jigsaw777/OpenKeet and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maximem-ai/maximem_synap_core and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and prapaa-ai/agav and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and Sh1n1230/security-checker and svayatta/agent-custody and TMHSDigital/Free-Game-Dev-Assets and Under-Research-Labs/CONTINUUM and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and awslabs/social-messaging-agent-runtime-toolkit and dhanushbs10/vynlore and FROWNINGdev/orm-lens and gabe-santana/arkdraw and Hadeva-Dev/dawnmere and Hayuuka/sshhh and himanshu748/devswarm and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and jasonkryst/MyFinances and Jigsaw777/OpenKeet and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maximem-ai/maximem_synap_core and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and ourdao/ourdao-frontend and OWASP/cve-lite-cli and pavlov99/json-rpc and Pranayd555/codelens-graph and prapaa-ai/agav and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and Sh1n1230/security-checker and svayatta/agent-custody and TMHSDigital/Free-Game-Dev-Assets and ujjwalv01/releaseproof and Under-Research-Labs/CONTINUUM and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 47 of the 101 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 91 of the 101 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 56 of the 115 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 104 of the 115 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -329,6 +329,48 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 101. [maximem_synap_core: a fully downloaded leftover .part file makes the first start fail on every boot](fix-101-maximem-synap-core-30.md)
    Project: maximem-ai/maximem_synap_core. Bug report number 30. License: Apache-2.0. Test included: yes. Patch file: [101-maximem-synap-core-30.patch](fixes/101-maximem-synap-core-30.patch)
+
+102. [codelens-graph: the stats sidebar treats built-in names such as toString as commands](fix-102-codelens-graph-45.md)
+   Project: Pranayd555/codelens-graph. Bug report number 45. License: MIT. Test included: yes. Patch file: [102-codelens-graph-45.patch](fixes/102-codelens-graph-45.patch)
+
+103. [codelens-graph: function parameters with non-English names are dropped](fix-103-codelens-graph-43.md)
+   Project: Pranayd555/codelens-graph. Bug report number 43. License: MIT. Test included: yes. Patch file: [103-codelens-graph-43.patch](fixes/103-codelens-graph-43.patch)
+
+104. [codelens-graph: plain text search treats _ and % as wildcards](fix-104-codelens-graph-30.md)
+   Project: Pranayd555/codelens-graph. Bug report number 30. License: MIT. Test included: yes. Patch file: [104-codelens-graph-30.patch](fixes/104-codelens-graph-30.patch)
+
+105. [vynlore: on a first run no theme is highlighted in Settings](fix-105-vynlore-15.md)
+   Project: dhanushbs10/vynlore. Bug report number 15. License: MIT. Test included: no. Patch file: [105-vynlore-15.patch](fixes/105-vynlore-15.patch)
+
+106. [vynlore: the artist page crashes to a white screen when the artist has no tracks left](fix-106-vynlore-14.md)
+   Project: dhanushbs10/vynlore. Bug report number 14. License: MIT. Test included: no. Patch file: [106-vynlore-14.patch](fixes/106-vynlore-14.patch)
+
+107. [releaseproof: older package names with capital letters such as JSONStream are rejected](fix-107-releaseproof-146.md)
+   Project: ujjwalv01/releaseproof. Bug report number 146. License: MIT. Test included: yes. Patch file: [107-releaseproof-146.patch](fixes/107-releaseproof-146.patch)
+
+108. [cve-lite-cli: the OA010 message repeats one version once per advisory](fix-108-cve-lite-cli-1560.md)
+   Project: OWASP/cve-lite-cli. Bug report number 1560. License: MIT. Test included: yes. Patch file: [108-cve-lite-cli-1560.patch](fixes/108-cve-lite-cli-1560.patch)
+
+109. [ourdao-frontend: the manifest test can never pass because it looks for icons at the root of the disk](fix-109-ourdao-frontend-535.md)
+   Project: ourdao/ourdao-frontend. Bug report number 535. License: MIT. Test included: yes. Patch file: [109-ourdao-frontend-535.patch](fixes/109-ourdao-frontend-535.patch)
+
+110. [codelens-graph: safe regex searches such as \d{1,3} are searched as plain text](fix-110-codelens-graph-34.md)
+   Project: Pranayd555/codelens-graph. Bug report number 34. License: MIT. Test included: yes. Patch file: [110-codelens-graph-34.patch](fixes/110-codelens-graph-34.patch)
+
+111. [codelens-graph: the snippet of a one-line function includes the code that follows it](fix-111-codelens-graph-25.md)
+   Project: Pranayd555/codelens-graph. Bug report number 25. License: MIT. Test included: yes. Patch file: [111-codelens-graph-25.patch](fixes/111-codelens-graph-25.patch)
+
+112. [codelens-graph: the list of dependencies is rewritten on every scan for some package names](fix-112-codelens-graph-32.md)
+   Project: Pranayd555/codelens-graph. Bug report number 32. License: MIT. Test included: yes. Patch file: [112-codelens-graph-32.patch](fixes/112-codelens-graph-32.patch)
+
+113. [ourdao-frontend: the unused-package check reports a package that the formatter needs](fix-113-ourdao-frontend-532.md)
+   Project: ourdao/ourdao-frontend. Bug report number 532. License: MIT. Test included: no. Patch file: [113-ourdao-frontend-532.patch](fixes/113-ourdao-frontend-532.patch)
+
+114. [arkdraw: saving an AI key can hang forever when the browser aborts the write](fix-114-arkdraw-42.md)
+   Project: gabe-santana/arkdraw. Bug report number 42. License: MIT. Test included: yes. Patch file: [114-arkdraw-42.patch](fixes/114-arkdraw-42.patch)
+
+115. [arkdraw: the viewer in exported HTML files filters link types with a list of forbidden types](fix-115-arkdraw-44.md)
+   Project: gabe-santana/arkdraw. Bug report number 44. License: MIT. Test included: yes. Patch file: [115-arkdraw-44.patch](fixes/115-arkdraw-44.patch)
 
 ## How to use a fix
 

@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds 101 small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 115 small AI-written bug fixes (patch files) for forty-five public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -314,6 +314,48 @@ The shelf holds 101 small AI-written bug fixes (patch files) for forty public pr
 
 101. [maximem_synap_core: a fully downloaded leftover .part file makes the first start fail on every boot](spare-token-bug-fixes/fix-101-maximem-synap-core-30.md)
    Project: maximem-ai/maximem_synap_core. Bug report number 30. License: Apache-2.0. Test included: yes. Patch file: [101-maximem-synap-core-30.patch](spare-token-bug-fixes/fixes/101-maximem-synap-core-30.patch)
+
+102. [codelens-graph: the stats sidebar treats built-in names such as toString as commands](spare-token-bug-fixes/fix-102-codelens-graph-45.md)
+   Project: Pranayd555/codelens-graph. Bug report number 45. License: MIT. Test included: yes. Patch file: [102-codelens-graph-45.patch](spare-token-bug-fixes/fixes/102-codelens-graph-45.patch)
+
+103. [codelens-graph: function parameters with non-English names are dropped](spare-token-bug-fixes/fix-103-codelens-graph-43.md)
+   Project: Pranayd555/codelens-graph. Bug report number 43. License: MIT. Test included: yes. Patch file: [103-codelens-graph-43.patch](spare-token-bug-fixes/fixes/103-codelens-graph-43.patch)
+
+104. [codelens-graph: plain text search treats _ and % as wildcards](spare-token-bug-fixes/fix-104-codelens-graph-30.md)
+   Project: Pranayd555/codelens-graph. Bug report number 30. License: MIT. Test included: yes. Patch file: [104-codelens-graph-30.patch](spare-token-bug-fixes/fixes/104-codelens-graph-30.patch)
+
+105. [vynlore: on a first run no theme is highlighted in Settings](spare-token-bug-fixes/fix-105-vynlore-15.md)
+   Project: dhanushbs10/vynlore. Bug report number 15. License: MIT. Test included: no. Patch file: [105-vynlore-15.patch](spare-token-bug-fixes/fixes/105-vynlore-15.patch)
+
+106. [vynlore: the artist page crashes to a white screen when the artist has no tracks left](spare-token-bug-fixes/fix-106-vynlore-14.md)
+   Project: dhanushbs10/vynlore. Bug report number 14. License: MIT. Test included: no. Patch file: [106-vynlore-14.patch](spare-token-bug-fixes/fixes/106-vynlore-14.patch)
+
+107. [releaseproof: older package names with capital letters such as JSONStream are rejected](spare-token-bug-fixes/fix-107-releaseproof-146.md)
+   Project: ujjwalv01/releaseproof. Bug report number 146. License: MIT. Test included: yes. Patch file: [107-releaseproof-146.patch](spare-token-bug-fixes/fixes/107-releaseproof-146.patch)
+
+108. [cve-lite-cli: the OA010 message repeats one version once per advisory](spare-token-bug-fixes/fix-108-cve-lite-cli-1560.md)
+   Project: OWASP/cve-lite-cli. Bug report number 1560. License: MIT. Test included: yes. Patch file: [108-cve-lite-cli-1560.patch](spare-token-bug-fixes/fixes/108-cve-lite-cli-1560.patch)
+
+109. [ourdao-frontend: the manifest test can never pass because it looks for icons at the root of the disk](spare-token-bug-fixes/fix-109-ourdao-frontend-535.md)
+   Project: ourdao/ourdao-frontend. Bug report number 535. License: MIT. Test included: yes. Patch file: [109-ourdao-frontend-535.patch](spare-token-bug-fixes/fixes/109-ourdao-frontend-535.patch)
+
+110. [codelens-graph: safe regex searches such as \d{1,3} are searched as plain text](spare-token-bug-fixes/fix-110-codelens-graph-34.md)
+   Project: Pranayd555/codelens-graph. Bug report number 34. License: MIT. Test included: yes. Patch file: [110-codelens-graph-34.patch](spare-token-bug-fixes/fixes/110-codelens-graph-34.patch)
+
+111. [codelens-graph: the snippet of a one-line function includes the code that follows it](spare-token-bug-fixes/fix-111-codelens-graph-25.md)
+   Project: Pranayd555/codelens-graph. Bug report number 25. License: MIT. Test included: yes. Patch file: [111-codelens-graph-25.patch](spare-token-bug-fixes/fixes/111-codelens-graph-25.patch)
+
+112. [codelens-graph: the list of dependencies is rewritten on every scan for some package names](spare-token-bug-fixes/fix-112-codelens-graph-32.md)
+   Project: Pranayd555/codelens-graph. Bug report number 32. License: MIT. Test included: yes. Patch file: [112-codelens-graph-32.patch](spare-token-bug-fixes/fixes/112-codelens-graph-32.patch)
+
+113. [ourdao-frontend: the unused-package check reports a package that the formatter needs](spare-token-bug-fixes/fix-113-ourdao-frontend-532.md)
+   Project: ourdao/ourdao-frontend. Bug report number 532. License: MIT. Test included: no. Patch file: [113-ourdao-frontend-532.patch](spare-token-bug-fixes/fixes/113-ourdao-frontend-532.patch)
+
+114. [arkdraw: saving an AI key can hang forever when the browser aborts the write](spare-token-bug-fixes/fix-114-arkdraw-42.md)
+   Project: gabe-santana/arkdraw. Bug report number 42. License: MIT. Test included: yes. Patch file: [114-arkdraw-42.patch](spare-token-bug-fixes/fixes/114-arkdraw-42.patch)
+
+115. [arkdraw: the viewer in exported HTML files filters link types with a list of forbidden types](spare-token-bug-fixes/fix-115-arkdraw-44.md)
+   Project: gabe-santana/arkdraw. Bug report number 44. License: MIT. Test included: yes. Patch file: [115-arkdraw-44.patch](spare-token-bug-fixes/fixes/115-arkdraw-44.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

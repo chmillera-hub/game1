@@ -1,0 +1,124 @@
+# Fix 115: arkdraw: the viewer in exported HTML files filters link types with a list of forbidden types
+
+Status: UNSENT and UNTESTED. Free to take.
+
+- Project: gabe-santana/arkdraw
+- Bug report title: HTML export viewer filters link schemes with a blocklist
+- Bug report: number 44 ([open the bug report](https://github.com/gabe-santana/arkdraw/issues/44))
+- Project license: MIT
+- Language: TypeScript
+- Test included: yes
+- Patch file: [fixes/115-arkdraw-44.patch](fixes/115-arkdraw-44.patch)
+- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/115-arkdraw-44.patch
+- Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-115-arkdraw-44.md
+- Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-115-arkdraw-44.html
+
+## The bug
+
+The viewer script inside a self-contained HTML export refused links that start with javascript: or data: or vbscript: and opened every other link. A link with a tab before javascript: or a line break inside the word passed the check. The editor itself already uses a list of allowed link types.
+
+## The fix
+
+The viewer script in src/io/export/html.ts now uses the editor's rule: a link without a type is treated as a web address and only http and https and mailto and tel links open. A new file test/export/html-viewer-links.test.ts exports a file and takes the two deciding lines out of the result and runs them against sample links.
+
+## Files changed
+
+- src/io/export/html.ts
+- test/export/html-viewer-links.test.ts
+
+## How to use the fix
+
+1. Get a copy of the project gabe-santana/arkdraw.
+2. Download the patch file from the direct download address shown near the top of this page.
+3. Run: git apply 115-arkdraw-44.patch
+4. Run the project's own tests.
+5. Read the project's contribution rules and then open a pull request that mentions bug report 44.
+
+## Warnings
+
+- An AI chatbot (Claude) wrote this fix. No human has reviewed the fix.
+- Nobody has run the fix against the project's own test suite.
+- The chatbot read the full bug report text and could not read the comments under the bug report.
+- Nobody has checked whether someone else already sent a fix for the same bug.
+- The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
+- Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
+- The bug report names http and https and mailto and page links. The chatbot also allowed tel because the editor allows tel. Page links are handled earlier in the same script and still work. A link such as ftp: that used to open no longer opens. The chatbot ran the two changed lines against thirteen sample links in a scratch script. The chatbot did not run the project's tests.
+
+## Search words
+
+arkdraw HTML export viewer link scheme blocklist allowlist javascript: data: window.open noopener safeHref
+
+## The full patch
+
+`````diff
+diff --git a/src/io/export/html.ts b/src/io/export/html.ts
+index 945b106..09a47e5 100644
+--- a/src/io/export/html.ts
++++ b/src/io/export/html.ts
+@@ -249,8 +249,10 @@ vp.addEventListener("click",function(e){
+   if(moved)return;var a=e.target.closest&&e.target.closest("[data-link]");if(!a)return;
+   var href=a.getAttribute("data-link");
+   if(href.indexOf("page:")===0){var id=href.slice(5);for(var i=0;i<pages.length;i++)if(pages[i].id===id){show(i);return}return}
+-  if(/^(javascript|data|vbscript):/i.test(href))return;
+-  window.open(href,"_blank","noopener");
++  /* Allowlist, as in the editor (src/canvas/links.ts): a link without a scheme is a web address */
++  var url=/^[a-z][a-z0-9+.-]*:/i.test(href)?href:"https:"+"//"+href;
++  if(!/^(https?|mailto|tel):/i.test(url))return;
++  window.open(url,"_blank","noopener");
+ });
+ 
+ /* Keyboard */
+diff --git a/test/export/html-viewer-links.test.ts b/test/export/html-viewer-links.test.ts
+new file mode 100644
+index 0000000..162817a
+--- /dev/null
++++ b/test/export/html-viewer-links.test.ts
+@@ -0,0 +1,44 @@
++import { describe, expect, it } from 'vitest';
++import { DEFAULT_EXPORT_SETTINGS, exportFiles, type ExportSource } from '@/io/export';
++import { samplePages } from './fixtures';
++
++/**
++ * The viewer script inside a self-contained HTML export opens element links.
++ * It once filtered schemes with a blocklist; it now uses the editor's
++ * allowlist. This takes the two lines that decide what opens out of an
++ * exported file and runs them against sample links.
++ */
++async function viewerLinkRule(): Promise<(href: string) => string | null> {
++  const pages = samplePages(1);
++  const src: ExportSource = { pages, activePageId: pages[0].id, selection: [], fileName: 'Links' };
++  const [file] = await exportFiles(src, { ...DEFAULT_EXPORT_SETTINGS, format: 'html', scope: 'all' });
++  const html = file.data as string;
++  const rule = html.match(/var url=[^\n]*\n\s*if\(![^\n]*\)return;/);
++  expect(rule, 'the link rule was not found in the exported viewer').not.toBeNull();
++  const body = `${rule![0].replace(/return;$/, 'return null;')}\nreturn url;`;
++  return new Function('href', body) as (href: string) => string | null;
++}
++
++describe('HTML export viewer links', () => {
++  it('opens http, https, mailto and tel links', async () => {
++    const follow = await viewerLinkRule();
++    for (const href of ['https://example.com/a', 'http://example.com', 'mailto:someone@example.com', 'tel:+15550100']) {
++      expect(follow(href)).toBe(href);
++    }
++  });
++
++  it('treats a link without a scheme as a web address, as the editor does', async () => {
++    const follow = await viewerLinkRule();
++    expect(follow('example.com/page')).toBe('https://example.com/page');
++  });
++
++  it('never opens a script, data or file link, however it is spelled', async () => {
++    const follow = await viewerLinkRule();
++    for (const href of ['javascript:alert(1)', 'JAVASCRIPT:alert(1)', 'data:text/html,x', 'vbscript:x', 'file:///etc/passwd']) {
++      expect(follow(href)).toBeNull();
++    }
++    for (const href of ['\tjavascript:alert(1)', 'java\nscript:alert(1)']) {
++      expect(follow(href)).toMatch(/^https:\/\//);
++    }
++  });
++});
+`````
+
+[Back to the shelf](README.md)

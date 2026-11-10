@@ -1,0 +1,54 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 71dc17d..64667ed 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,10 @@
+ 
+ ## Unreleased
+ 
++### Bug fixes
++
++- The artist detail view no longer crashes when a rescan removes the last track of the open artist. The view shows an empty state with a back button.
++
+ ### Documentation and contributor infrastructure
+ 
+ - Rewrote the README with accurate UI limits, project status, supported formats and contributor links.
+diff --git a/src/components/views/ArtistDetailView.tsx b/src/components/views/ArtistDetailView.tsx
+index f29c28e..fc1262f 100644
+--- a/src/components/views/ArtistDetailView.tsx
++++ b/src/components/views/ArtistDetailView.tsx
+@@ -38,8 +38,9 @@ export function ArtistDetailView({ artist, tracks, onBack, playTrack }: ArtistDe
+     return Array.from(map.entries()).map(([album, tracks]) => ({ album, tracks }));
+   }, [artistTracks]);
+ 
+-  const coverSrc = hasCover(artistTracks[0])
+-    ? convertFileSrc(artistTracks[0].cover_path!)
++  const firstTrack = artistTracks[0];
++  const coverSrc = firstTrack && hasCover(firstTrack)
++    ? convertFileSrc(firstTrack.cover_path!)
+     : undefined;
+ 
+   const totalDuration = artistTracks.reduce((acc, t) => acc + t.duration_secs, 0);
+@@ -59,6 +60,22 @@ export function ArtistDetailView({ artist, tracks, onBack, playTrack }: ArtistDe
+     await playTrack(shuffled[0], shuffled);
+   }, [artistTracks, isShuffle, toggleShuffle, playTrack]);
+ 
++  // A rescan or a watcher removal can delete this artist's last track while the
++  // view is still mounted. Show an empty state instead of reading a missing track.
++  if (artistTracks.length === 0) {
++    return (
++      <div>
++        <div className="flex items-center gap-4 mb-7">
++          <button onClick={onBack} className="p-2 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-text transition-colors" aria-label="Back to artists">
++            <ArrowLeft size={18} />
++          </button>
++          <h1 className="font-display text-2xl font-bold text-text tracking-tight">{artist}</h1>
++        </div>
++        <p className="text-sm text-text-secondary">No tracks by this artist are in the library any more.</p>
++      </div>
++    );
++  }
++
+   return (
+     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+       <div className="flex items-center gap-4 mb-7">

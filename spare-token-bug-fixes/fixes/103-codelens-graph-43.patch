@@ -1,0 +1,55 @@
+diff --git a/changelog.md b/changelog.md
+index 2986438..f507e90 100644
+--- a/changelog.md
++++ b/changelog.md
+@@ -12,6 +12,7 @@ All notable changes to the **CodeLens Graph** extension will be documented in th
+ - **Import hints match the project's module system**: CommonJS files get `const { x } = require(…)` instead of an ES-module `import`. "Import as" paths are now relative to the workspace root (they were relative to the symbol's own folder), and `codelens_node` no longer suggests a JavaScript import for Java, Go, C# and other languages.
+ - **Arrow functions are now real symbols.** `const f = () => {}`, `const f = function () {}` and class fields like `handler = () => {}` were indexed as variables (or not at all), so the calls inside them were lost. They are now functions and methods with parameters, return types and call links, which adds a lot of call links in modern TypeScript and React code.
+ - **Fewer false "undefined" warnings**: default, rest and destructured parameters in JavaScript (`function f({ items }, ...rest)`) are recognized, and HTML tags in JSX (`<div>`) and standard globals (`Uint8Array`, `TextEncoder`, `setImmediate`, …) are no longer flagged. Missing components like `<Missing />` still are.
++- Parameters with non-English names (`ñame`, `größe`) are kept. They were dropped and then flagged as undefined inside the function that declares them.
+ - **The MCP server could index a second workspace without its call graph.** Only the first parser in a process worked properly; later ones silently fell back to regex parsing, which finds no calls or parameters.
+ - **Importing a folder now links to its index file** (`require('./lib')` → `lib/index.js`, Python packages → `__init__.py`). Previously no link was created.
+ - **Calls through an aliased import keep their link** when the imported file is edited (`import { helper as h }`). Previously the link was lost until a full rebuild.
+diff --git a/src/ingestion/astParser.ts b/src/ingestion/astParser.ts
+index 3e62698..c0a8df1 100644
+--- a/src/ingestion/astParser.ts
++++ b/src/ingestion/astParser.ts
+@@ -9,10 +9,15 @@ import { isConfigPath, isNodeModulePath } from '../utils';
+ // every file once on the next scan, so existing users get the fix without a
+ // manual rebuild. 2: CommonJS require() imports (#9). 3: arrow-function symbols,
+ // JS default/rest/destructured params, no JSX intrinsics in undefinedRefs.
+-export const PARSER_VERSION = '3';
++// 4: parameters with non-ASCII names are kept.
++export const PARSER_VERSION = '4';
+ 
+ // ─── Language → WASM mapping ──────────────────────────────────────────────────
+ 
++// A parameter name as written in source. `\w` is ASCII-only and dropped names
++// such as `ñame` or `größe`, which were then reported as undefined.
++const IDENTIFIER_RE = /^[\p{L}\p{Nl}$_][\p{L}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}$]*$/u;
++
+ const EXTENSION_MAP: Record<string, { language: string; wasm: string }> = {
+   '.ts':   { language: 'typescript', wasm: 'tree-sitter-typescript.wasm' },
+   '.tsx':  { language: 'tsx',        wasm: 'tree-sitter-tsx.wasm'        },
+@@ -877,7 +882,7 @@ export class TreeSitterParser {
+           for (const name of new Set(names)) { params.push({ name, rest: false }); }
+         } else {
+           const name     = nameNode.text.replace(/^\.\.\./, '').trim();
+-          if (name && /^\w+$/.test(name)) {
++          if (name && IDENTIFIER_RE.test(name)) {
+             params.push({
+               name,
+               type:         typeNode?.text?.replace(/^:\s*/, '').trim(),
+diff --git a/test/parser/robustness.test.ts b/test/parser/robustness.test.ts
+index f72e38b..a9d2364 100644
+--- a/test/parser/robustness.test.ts
++++ b/test/parser/robustness.test.ts
+@@ -101,7 +101,7 @@ describe('Robustness', () => {
+     assert.equal(get(p, 'afterEmoji').signature, 'function afterEmoji() { return s; }');
+   });
+ 
+-  it('keeps non-ASCII parameter names', { todo: 'BUG #43: params must match /^\\w+$/ (ASCII only), so `café(ñ: number)` has no params (astParser.ts:816)' }, async () => {
++  it('keeps non-ASCII parameter names', async () => {
+     const p = await fx.parse('uni-params.ts', 'export function café(ñame: number, größe: string) { return ñame; }\n');
+     assert.deepEqual(get(p, 'café').params?.map(x => x.name), ['ñame', 'größe']);
+   });

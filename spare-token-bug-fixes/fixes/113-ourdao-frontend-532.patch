@@ -1,0 +1,12 @@
+diff --git a/.depcheckrc.json b/.depcheckrc.json
+index 2002166..cf697a4 100644
+--- a/.depcheckrc.json
++++ b/.depcheckrc.json
+@@ -2,6 +2,7 @@
+   "ignores": [
+     "@tailwindcss/postcss",
+     "tailwindcss",
++    "prettier-plugin-tailwindcss",
+     "depcheck"
+   ]
+ }

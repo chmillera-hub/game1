@@ -1,0 +1,48 @@
+diff --git a/changelog.md b/changelog.md
+index 2986438..4752ef5 100644
+--- a/changelog.md
++++ b/changelog.md
+@@ -18,6 +18,7 @@ All notable changes to the **CodeLens Graph** extension will be documented in th
+ - **CodeLens no longer damages your files when updating its section**: front matter in `CLAUDE.md` and similar files is kept, a leftover CodeLens marker no longer causes the text after it to be deleted, and removing the CodeLens block from `.gitignore` no longer merges the lines around it.
+ - `codelens_clear_config` no longer recreates `.codelens` and starts re-indexing right after clearing it.
+ - **The graph panel no longer freezes VS Code on large repos.** It built its data with two queries per symbol and drew every symbol, which on a 100k-symbol monorepo blocked the extension host for minutes. It now loads in about a second, and above 1,000 symbols it shows the most connected ones with their neighbours. Search and the filter buttons still find any symbol in the index.
++- The dependency list is no longer rewritten on every scan when package names mix upper and lower case (for example `JSONStream` next to `axios`), which saves disk writes and startup time.
+ 
+ ### Security
+ - `codelens_dependencies` no longer reads type definition files outside the workspace, which a pre-built index could point it at.
+diff --git a/src/graph/graphDB.ts b/src/graph/graphDB.ts
+index cfde56b..4196014 100644
+--- a/src/graph/graphDB.ts
++++ b/src/graph/graphDB.ts
+@@ -780,7 +780,15 @@ export class GraphDB {
+       p.version, rel(p.dir), rel(p.types), rel(p.main), rel(p.readme),
+     ]);
+     const current = this.db.exec('SELECT name, declared_range, kind, declared_in, installed, version, dir, types, main, readme FROM packages ORDER BY name')[0]?.values ?? [];
+-    if (JSON.stringify(current) === JSON.stringify([...rows].sort((a, b) => String(a[0]).localeCompare(String(b[0]))))) {
++    // Sort the way SQLite's `ORDER BY name` does (plain code order), not with localeCompare:
++    // the two orders differ for names like `JSONStream` and `axios`, which made every scan
++    // look like a change.
++    const byName = (a: unknown[], b: unknown[]) => {
++      const x = String(a[0]);
++      const y = String(b[0]);
++      return x < y ? -1 : x > y ? 1 : 0;
++    };
++    if (JSON.stringify(current) === JSON.stringify([...rows].sort(byName))) {
+       return false;
+     }
+ 
+diff --git a/test/graph/graphDB.packages.test.ts b/test/graph/graphDB.packages.test.ts
+index 0972a69..da1ecb2 100644
+--- a/test/graph/graphDB.packages.test.ts
++++ b/test/graph/graphDB.packages.test.ts
+@@ -40,9 +40,7 @@ describe('GraphDB dependency manifest', () => {
+     assert.equal(db.replacePackages([]), false);
+   });
+ 
+-  it('detects an unchanged manifest whatever the package-name casing and punctuation', {
+-    todo: 'BUG #32: replacePackages compares SQLite\'s binary ORDER BY name with JS localeCompare order, so e.g. "JSONStream" + "axios" always reports a change and rewrites the DB',
+-  }, () => {
++  it('detects an unchanged manifest whatever the package-name casing and punctuation', () => {
+     const packages = [pkg('JSONStream'), pkg('axios'), pkg('a_b'), pkg('a.b')];
+     assert.equal(db.replacePackages(packages), true);
+     assert.equal(db.replacePackages(packages), false);
