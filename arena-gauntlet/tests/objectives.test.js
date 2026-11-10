@@ -15,6 +15,11 @@ function test(name, fn) {
   }
 }
 
+// The enemy passes (unit by unit: a pass hands the turn to its next unit) until you are up.
+function toPlayer(s) {
+  for (let i = 0; i < 40 && !s.over && s.side !== 'P'; i++) E.pass(s);
+}
+
 function battle(units, opts = {}) {
   const w = 9;
   const h = 9;
@@ -35,7 +40,7 @@ test('the Commander comes first when killing it wins the battle', () => {
     { type: 'orc', team: 'E', x: 6, y: 4 },
   ];
   const s = battle(units, { objective: 'vip' });
-  E.pass(s);
+  toPlayer(s);
   s.units[2].hp = 20; // the orc is the easier hit
   assert.strictEqual(firstTarget(s), s.units[1], 'it shoots the Commander');
 });

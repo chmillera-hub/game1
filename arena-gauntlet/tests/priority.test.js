@@ -16,6 +16,11 @@ function test(name, fn) {
   }
 }
 
+// The enemy passes (unit by unit: a pass hands the turn to its next unit) until you are up.
+function toPlayer(s) {
+  for (let i = 0; i < 40 && !s.over && s.side !== 'P'; i++) E.pass(s);
+}
+
 function battle(units, opts = {}) {
   const w = 9;
   const h = 9;
@@ -27,7 +32,8 @@ function play(s, n, focus) {
   for (let turns = 0, g = 0; turns < n && !s.over && g < 500; g++) {
     const team = s.side;
     AI.playTurn(s, team, { stance: 'balanced', temp: 0, focus: team === 'P' ? focus : null });
-    if (team === 'P') turns++;
+    // A side turn: its units march until one acts, or all have had their go.
+    if (team === 'P' && s.side !== 'P') turns++;
   }
 }
 
@@ -57,7 +63,7 @@ function chestOrOrc(orcHp) {
     ],
     { loot: [{ id: 'c1', kind: 'chest', x: 2, y: 8 }] }
   );
-  E.pass(s);
+  toPlayer(s);
   s.units[1].hp = orcHp;
   const plan = AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0 });
   return plan.kind === 'moveLoot' || plan.kind === 'loot' ? 'chest' : plan.target && s.byId[plan.target.uid] ? s.byId[plan.target.uid].type : plan.kind;
@@ -73,7 +79,7 @@ test('but a kill comes first', () => {
 
 test('an enemy as the priority comes before any chest', () => {
   const s = battle(army(), { loot: [{ id: 'c1', kind: 'chest', x: 3, y: 7 }] });
-  E.pass(s);
+  toPlayer(s);
   const ctx = AI.makeCtx(s, 'P', { focus: { uid: s.units[3].uid } });
   assert.strictEqual(ctx.lootField, null, 'no drift toward the chest');
   const plan = AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0, focus: { uid: s.units[3].uid } });
@@ -110,7 +116,7 @@ test('made the priority, an enemy is struck first even when another is the bette
   ];
   const first = (focus) => {
     const s = battle(units.map((u) => Object.assign({}, u)));
-    E.pass(s); // the enemy's first turn
+    toPlayer(s); // the enemy's first turn
     s.units[1].hp = 4; // a nearly dead scout: the obvious kill
     const plan = AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0, focus });
     return plan.target && s.byId[plan.target.uid] ? s.byId[plan.target.uid].type : plan.kind;
@@ -198,8 +204,10 @@ test('the shrine as priority: the army takes it, drives off squatters and holds 
   const b = run(null);
   assert.ok(a.best >= 2, `with the priority a unit of yours holds it turn after turn (${a.best})`);
   assert.ok(a.best > b.best, `more than on normal orders (${a.best} vs ${b.best})`);
+  // Held to the end: the mission done (the win sealed, and the army free to go), or a unit
+  // of yours still standing on it.
   const on = E.at(a.s, 0, 4);
-  assert.ok(on && on.team === 'P', 'and it is still yours at the end');
+  assert.ok((a.s.routed && a.s.routed.held) || (on && on.team === 'P'), 'and it is held to the end');
 });
 
 test('a spot on open ground as priority: the army huddles there and stays', () => {
@@ -271,8 +279,9 @@ test('one of your units as priority: the army gathers around it', () => {
   assert.strictEqual(AI.focusOf(s0, 'E', f), null, 'the enemy does not rally on your unit');
   const spread = (focus) => {
     const s = make();
-    // Two full rounds, so every unit has moved twice whatever the turn order.
-    play(s, 8, focus);
+    // Three turns: marching is free, so every unit has moved three times (before the orc
+    // arrives and the fight pulls them about).
+    play(s, 3, focus);
     const lead = s.units[0];
     const rest = s.units.filter((u) => u.alive && u.team === 'P' && u !== lead);
     return rest.reduce((t, u) => t + Math.abs(u.x - lead.x) + Math.abs(u.y - lead.y), 0) / rest.length;

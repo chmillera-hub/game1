@@ -1,8 +1,11 @@
-// Plays whole campaigns with the AI on both sides. Losses are retried, as in the game.
+// Plays whole campaigns with the AI on both sides, as the game does (your units play
+// sharply, the enemy as its difficulty says). Losses are retried, as in the game, each try
+// with Auto's next plan.
 // Run: node tests/run.test.js [runs] [policy] [maxTries]
 // policy, which challenge to pick each round: medium (default: medium, easy after a loss),
 // easy, elite (elite, then medium, then easy after losses) or mix (mostly medium, some easy
-// and elite). MEGA=1 also tries the optional final challenge.
+// and elite). MEGA=1 also tries the optional final challenge. FIRST=n starts at campaign
+// n, VERBOSE=1 prints every battle, SAVE=prefix writes a stuck campaign out as JSON.
 const assert = require('assert');
 const AG = require('./load')();
 const R = AG.Run;
@@ -11,7 +14,9 @@ const D = AG.Data;
 const N = +process.argv[2] || 12;
 const POLICY = process.argv[3] || 'medium';
 const TIER_ORDER = ['elite', 'medium', 'easy'];
-const MAX_TRIES = +process.argv[4] || 6;
+const MAX_TRIES = +process.argv[4] || 12;
+// As in the game (ui.js, aiOpts): your army at 0.3, the enemy at its difficulty's.
+const E_TEMP = (D.DIFFICULTIES.find((d) => d.id === 'knight') || { temp: 1.2 }).temp;
 const OVERTIME = R.OVERTIME;
 
 function checkLoadouts(run) {
@@ -44,7 +49,7 @@ function playBattle(run) {
   const s = E.createBattle(R.battleConfig(run, dep));
   let guard = 0;
   while (!s.over && guard++ < 4000) {
-    AG.AI.playTurn(s, s.side, { stance: s.side === 'E' ? p.enc.stance : 'balanced', temp: 0.6 });
+    AG.AI.playTurn(s, s.side, s.side === 'E' ? { stance: p.enc.stance, temp: E_TEMP } : { stance: 'balanced', temp: 0.3 });
     for (const e of s.events) {
       const k = e.t === 'dunk' ? (e.lava ? 'lava' : 'water') : e.t === 'push' && e.pull ? null : ['crash', 'slam', 'climb'].includes(e.t) ? e.t : null;
       if (k) results.shoves[k] = (results.shoves[k] || 0) + 1;
@@ -53,6 +58,10 @@ function playBattle(run) {
     s.events.length = 0;
   }
   assert.ok(s.over, 'battle ended');
+  if (process.env.VERBOSE) {
+    const left = (t) => s.units.filter((u) => u.alive && u.team === t && !u.nonCombat).map((u) => `${u.type}${u.level > 1 ? u.level : ''}:${u.hp}`).join(' ');
+    console.log(`  act ${run.act} ${p.enc.kind} ${p.enc.name} (${p.enc.primary}) try ${(p.attempt || 0) + 1} ${s.winner === 'P' ? 'WON ' : 'lost'} turn ${s.turn} · you ${dep.map((d) => { const r = run.roster.find((u) => u.id === d.rid); return r.type + (r.load.lv > 1 ? r.load.lv : ''); }).join(' ')} · left ${left('P') || '-'} | foe ${left('E') || '-'}`);
+  }
   if (s.winner === 'P') {
     // Goal results come in the order of the encounter's bonus goals.
     for (const [i, g] of R.goalResults(run, s, dep).entries()) {
@@ -116,7 +125,7 @@ function firstTier(rng) {
   return 'medium';
 }
 const t0 = Date.now();
-for (let i = 0; i < N; i++) {
+for (let i = +process.env.FIRST || 0; i < N; i++) {
   // DRAFT=1: draft each army, picking at random as a player might, instead of a warband.
   let run;
   if (process.env.DRAFT) {
@@ -226,6 +235,8 @@ for (let i = 0; i < N; i++) {
     throw new Error('unknown pending ' + p.type);
   }
   JSON.parse(JSON.stringify(run));
+  // SAVE=prefix: a stuck campaign, as it stands at its wall, for a closer look.
+  if (process.env.SAVE && !run.won) require('fs').writeFileSync(`${process.env.SAVE}-${i}.json`, JSON.stringify(run));
   if (run.won) results.done++;
   else results.stuck++;
   if (run.won && run.finalArmy) results.armies.push({ name: `${run.warband} ${i}`, level: R.commanderLevel(run), relics: run.relics.slice(), units: run.finalArmy });

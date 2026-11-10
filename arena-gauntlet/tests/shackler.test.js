@@ -36,21 +36,38 @@ function pray(s) {
   if (plan) AI.runPlan(s, plan, { stance: 'balanced', temp: 0 });
 }
 
-test('every elite army fields Shacklers (two from Act II); other battles never do', () => {
+test('every elite army fields Shacklers (two from Act II); from Act II some other armies and the bosses field one, never on an Easy card', () => {
   const run = R.newRun({ seed: 12, warband: D.WARBANDS[1].id });
+  // Which armies have one of their own, by name.
+  const own = new Map();
+  for (const act of [1, 2, 3]) for (const g of ['normal', 'elite', 'boss']) for (const t of Object.values(D.ENCOUNTERS[act][g] || {})) own.set(t.name, t.shacklers || 0);
+  let withOne = 0;
+  let without = 0;
   for (const act of [1, 2, 3]) {
     run.act = act;
-    for (let k = 0; k < 4; k++) {
-      const enc = R.genEncounter(run, { id: 'e' + act + k, row: 2, kind: 'elite', tier: 'elite', mult: 1.85 }, null, []);
+    for (let k = 0; k < 6; k++) {
+      const enc = R.genEncounter(run, { id: 'e' + act + k, row: 2, kind: 'elite', tier: 'elite', mult: R.TIERS.elite.mult }, null, []);
       const sh = enc.units.filter((u) => u.type === 'shackler');
-      assert.strictEqual(sh.length, act === 1 ? 1 : 2, `act ${act}: Shacklers`);
+      assert.strictEqual(sh.length, (act === 1 ? 1 : 2) + own.get(enc.name), `act ${act}: Shacklers`);
       assert.ok(!sh.some((u) => u.vip), 'a Shackler is never the commander');
       assert.ok(!('bounty' in enc), 'no bounty on the card');
       assert.ok(R.scoutTips(enc).some((t) => t.startsWith('Shacklers')), 'the war room explains them');
+      assert.ok(enc.units.filter((u) => u.type !== 'shackler' && !D.UNITS[u.type].traits.includes('object') && !D.UNITS[u.type].traits.includes('structure')).length >= 2, 'never an army of Shacklers alone');
       const med = R.genEncounter(run, { id: 'm' + act + k, row: 2, kind: 'battle', tier: 'medium', mult: 1 }, null, []);
-      assert.ok(!med.units.some((u) => u.type === 'shackler'), 'no Shackler in a medium battle');
+      const n = med.units.filter((u) => u.type === 'shackler').length;
+      assert.strictEqual(n, own.get(med.name), `${med.name}: a medium army has its own Shacklers only`);
+      if (n) withOne++;
+      else without++;
+      assert.ok(!n || act >= 2, 'none in Act I');
+      const easy = R.genEncounter(run, { id: 'm' + act + k, row: 2, kind: 'battle', tier: 'easy', mult: R.TIERS.easy.mult }, null, []);
+      assert.ok(!easy.units.some((u) => u.type === 'shackler'), 'never on an Easy card');
     }
   }
+  assert.ok(withOne > 0 && without > withOne, `some medium armies field one, most do not (${withOne} of ${withOne + without})`);
+  // Act I armies and bosses have none of their own; the later bosses and the final challenge do.
+  for (const g of ['normal', 'elite', 'boss']) for (const t of Object.values(D.ENCOUNTERS[1][g])) assert.ok(!t.shacklers, t.name);
+  for (const act of [2, 3]) for (const t of Object.values(D.ENCOUNTERS[act].boss)) assert.strictEqual(t.shacklers, 1, t.name);
+  assert.strictEqual(D.ENCOUNTERS.mega.shacklers, 2);
   for (const act of [1, 2, 3]) for (const g of ['normal', 'elite', 'boss']) {
     for (const t of Object.values(D.ENCOUNTERS[act][g] || {})) assert.ok(!(t.units || []).includes('shackler') && !(t.pool || []).includes('shackler'), t.name);
   }

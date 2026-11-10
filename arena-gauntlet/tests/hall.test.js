@@ -322,7 +322,7 @@ test('the first army ever to enter finds the house armies holding the Hall: a fe
     }
     assert.strictEqual(new Set(l.units.map((it) => it.x + ',' + it.y)).size, l.units.length);
     // The Hall shows the full price: units, Level 3 and both picks.
-    const price = (it) => D.UNITS[it.spec.type].cost + D.LEVEL_COST[3] + D.ABILITIES[it.spec.a1].cost + D.ABILITIES[it.spec.a2].cost;
+    const price = (it) => D.UNITS[it.spec.type].cost + D.levelCost(it.spec.type, 3) + D.ABILITIES[it.spec.a1].cost + D.ABILITIES[it.spec.a2].cost;
     assert.strictEqual(R.armySupply(l), l.units.reduce((t, it) => t + price(it), 0));
   }
   // It fights as Level 3: masteries in, stats up.

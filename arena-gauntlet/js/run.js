@@ -310,7 +310,7 @@
     const T = UNITS[r.type];
     const L = r.load;
     const out = [r.core ? { label: T.name + ' (always fights: free)', cost: 0 } : { label: T.name + ' (Level 1)', cost: T.cost }];
-    if (L.lv > 1) out.push({ label: 'Level ' + L.lv, cost: LEVEL_COST[L.lv] });
+    if (L.lv > 1) out.push({ label: 'Level ' + L.lv, cost: D.levelCost(r.type, L.lv) });
     if (L.a1) out.push({ label: ABILITIES[L.a1].name, cost: abilityCost(L.a1) });
     if (L.lv >= 2 && L.a2) out.push({ label: ABILITIES[L.a2].name, cost: abilityCost(L.a2) });
     for (const uid of L.talents.concat(L.skills, L.gear)) {
@@ -530,11 +530,15 @@
   }
 
   // Challenge tiers: what each asks of you and pays.
+  // `mult`: the enemy army's budget against a medium battle's. An Easy card is the way on
+  // for an army that cannot take the medium one: under half the army, and no relics. An
+  // elite fields a quarter more (on an elite's bigger base), an extra unit, more relics and
+  // Shacklers.
   const TIERS = {
     // relicChance: easy and medium wins now and then turn up a relic too, so a build has more to grow from.
-    easy: { name: 'Easy', kind: 'battle', mult: 0.8, gold: [10, 14], xp: 0.75, spoils: 2, relicChance: 0.06 },
+    easy: { name: 'Easy', kind: 'battle', mult: 0.45, gold: [10, 14], xp: 0.75, spoils: 2, relicChance: 0.06 },
     medium: { name: 'Medium', kind: 'battle', mult: 1, gold: [14, 20], xp: 1, spoils: 3, relicChance: 0.1 },
-    elite: { name: 'Elite', kind: 'elite', mult: 1.85, gold: [30, 38], xp: 1, spoils: 3, relic: true, extraUnits: 1 },
+    elite: { name: 'Elite', kind: 'elite', mult: 1.25, gold: [30, 38], xp: 1, spoils: 3, relic: true, extraUnits: 1 },
     boss: { name: 'Boss', kind: 'boss', mult: 1, gold: [75, 75], xp: 1, spoils: 3 },
     mega: { name: 'Final challenge', kind: 'boss', mult: 1, gold: [0, 0], xp: 1, spoils: 0 },
   };
@@ -697,7 +701,7 @@
   function enemyCost(u) {
     const T = UNITS[u.type];
     if (isObjectType(u.type) || T.traits.includes('structure')) return u.type === 'tower' ? 3 : 0;
-    let c = T.cost + LEVEL_COST[u.level || 1] + abilityCost(u.a1) + ((u.level || 1) >= 2 ? abilityCost(u.a2) : 0);
+    let c = T.cost + D.levelCost(u.type, u.level || 1) + abilityCost(u.a1) + ((u.level || 1) >= 2 ? abilityCost(u.a2) : 0);
     for (const id of u.skills || []) c += SKILLS[id].cost;
     for (const id of u.gear || []) c += GEAR[id].cost;
     return c;
@@ -760,8 +764,6 @@
     intro: [['rout', 40], ['banner', 18], ['prison', 16], ['hold', 14], ['commander', 12]],
   };
 
-  // Missions with buildings or reinforcements field a smaller army up front.
-  const BUDGET_SHARE = { survive: 0.8, raze: 0.6, totems: 0.85 };
   // Totems and spawners grow sturdier act by act.
   const BUILDING_HP = { 1: 0.8, 2: 1, 3: 1.15 };
   // Gold in each wrecked cart at the Act I boss's camp.
@@ -847,7 +849,8 @@
     return u;
   }
 
-  // A wave worth about `budget` Supply.
+  // A wave worth about `budget` Supply: up to `maxN` units, and what is left of the budget
+  // buys them levels.
   function waveOf(rng, run, pool, budget, group, maxN) {
     const out = [];
     let spent = 0;
@@ -861,7 +864,16 @@
       out.push(u);
       spent += c;
     }
-    return out.length ? out : [waveSpec(rng, run, pool, group)];
+    if (!out.length) return [waveSpec(rng, run, pool, group)];
+    for (let g = 0; g < 12; g++) {
+      const step = (u) => D.levelCost(u.type, (u.level || 1) + 1) - D.levelCost(u.type, u.level || 1);
+      const open = out.filter((u) => (u.level || 1) < 3 && spent + step(u) <= budget + 0.5);
+      if (!open.length) break;
+      const u = rng.pick(open);
+      spent += step(u);
+      u.level = (u.level || 1) + 1;
+    }
+    return out;
   }
 
   // The unit a bonus goal asks you to field, if there is one. It always fights: the War
@@ -877,19 +889,64 @@
     return run.roster.filter((u) => !run.lastDeployed.includes(u.id));
   }
 
-  // Enemy armies grow with the act and the floor, but never outgrow your own Supply by much,
-  // so an under-leveled army can always find a winning plan.
-  // Later acts lean harder on you, to answer the relics and gear you have piled up.
-  const BUDGET_CAP = { normal: 1.0, elite: 1.2, boss: 1.15 };
-  // With one unit acting a turn, a bigger army counts for less, so ordinary foes get a
-  // little more to spend.
-  const BUDGET_SCALE = { normal: 1.27, elite: 1.1, boss: 0.84 };
-  // The optional final challenge is meant to break most armies.
-  const MEGA_BUDGET = 1.5;
-
-  // Your Supply runs 2 ahead of what enemy armies are sized for: the extra is yours, for
-  // abilities and kit, not a cue for bigger enemies.
-  const ENEMY_SUPPLY_LAG = 2;
+  // Enemy sizing. Everything here is what the balance lab tunes (tests/balance.js changes
+  // these in memory to try other numbers; the game only reads them).
+  const BAL = {
+    // Enemy armies grow with the act and the floor, but never outgrow your own Supply by
+    // much, so an under-leveled army can always find a winning plan: `cap` times your
+    // Supply (less `lag`), a little more each act.
+    cap: { normal: 1.0, elite: 1.2, boss: 1.15 },
+    // What that buys, by kind of battle. A medium army fields about one and a half times
+    // your Supply: your Cleric, your relics and your healing are worth the rest.
+    scale: { normal: 1.7, elite: 1.1, boss: 1.25 },
+    // The optional final challenge is meant to break most armies: how many of its line-up
+    // take the field (the three bosses first), the bosses' level (one number, or one for
+    // each boss in that order), and Supply for their kit. An enemy army acts once a turn
+    // like yours, so three bosses that hit hard are worse news than nine units that do not.
+    // In the lab, Level 1 bosses fell to nearly half of the strongest armies (the ones
+    // that took the elite cards all the way), Level 3 to one in ten; at Level 2 it is four
+    // in ten with Auto, one in four with an army left as it was, and none of the armies
+    // that only ever took medium cards.
+    megaUnits: 3,
+    megaLevel: 2,
+    megaKit: 0,
+    // Your Supply runs 2 ahead of what enemy armies are sized for: the extra is yours, for
+    // abilities and kit, not a cue for bigger enemies.
+    lag: 2,
+    // What the budget is worth by mission, so each is about as hard: buildings to break or
+    // reinforcements on the way mean a smaller army up front, a mission that ends early
+    // (their commander slain, a banner burnt) a bigger one, a plain fight to the last a
+    // slightly smaller one. (An elite's commander is a monster with half again its HP:
+    // no shortcut, so no bigger army around it.)
+    share: { rout: 0.9, banner: 1.15, prison: 1.05, hold: 1.05, commander: { normal: 1.28, elite: 0.95 }, survive: 1.3, totems: 0.6, raze: 0.44 },
+    // A survival battle's whole enemy, the waves included, as a multiple of the budget, and
+    // how many turns you must outlast it, by act: about as long as a battle takes, or
+    // holding out is no feat.
+    surviveAll: 3,
+    surviveTurns: [0, 19, 25, 25],
+    // How many units each enemy building sends before it falls silent. On an Easy card
+    // half as many: what comes out of a building is not bought from the budget, so an Easy
+    // battle would otherwise hide a second army in its dens.
+    spawns: { easy: 2, other: 4 },
+    // Their commander is a veteran: this much of its kind's HP.
+    commanderHp: 1.5,
+    // A boss leaves you no easier card to fall back on. So that no army is ever stuck at
+    // one, each defeat it hands you after the first `after` wears its army down: its units
+    // start the rematch `step` further short of full HP, down to `max`.
+    wear: { after: 2, step: 0.06, max: 0.3 },
+    // Enemy armies stay near your usual army size (this many over it), and never above
+    // `maxUnits`; spare Supply buys levels instead.
+    extraUnits: { normal: 0, elite: 1, boss: 2 },
+    maxUnits: 10,
+    // Relics an enemy army carries, by act (index 1 to 3), by tier (see FACTIONS): what
+    // answers the relics you have piled up. None on an Easy card.
+    relics: { easy: [0, 0, 0, 0], medium: [0, 1, 2, 3], elite: [0, 2, 3, 3], boss: [0, 1, 1, 2], mega: [0, 2, 2, 2] },
+    // Shacklers by act (index 1 to 3), by tier: units that pin down your biggest hitter, so
+    // a single carry has to be backed by an army that can break the chain. They are part
+    // of the army, first in line, so trimming to the budget never drops them. (Some armies
+    // field one of their own on top: `shacklers` on their line in ENCOUNTERS.)
+    shacklers: { elite: [0, 1, 2, 2] },
+  };
 
   function enemyBudget(run, node, kind) {
     const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
@@ -899,8 +956,9 @@
     if (group === 'boss') b = 12 + (run.act - 1) * 7 + 8;
     const lean = group === 'boss' ? 0.03 : 0.08;
     // Veteran Supply (past the top commander level) is all yours: enemies do not grow with it.
-    b = Math.min(b, (supplyFor(run) - veteranSupply(run) - ENEMY_SUPPLY_LAG) * (BUDGET_CAP[group] + lean * (run.act - 1)));
-    return b * diff.mult * BUDGET_SCALE[group];
+    b = Math.min(b, (supplyFor(run) - veteranSupply(run) - BAL.lag) * (BAL.cap[group] + lean * (run.act - 1)));
+    const scale = BAL.scale[group];
+    return b * diff.mult * (Array.isArray(scale) ? scale[run.act] : scale);
   }
 
   // Give enemy units abilities, levels and (later on) gear, within the budget.
@@ -912,14 +970,14 @@
       u.a1 = enemyAbility(rng, ab[1], (id) => cost() + abilityCost(id) <= budget);
       u.a2 = ab[2].find((id) => !healingId(ABILITIES, id)) || ab[2][0];
     }
-    const maxLv = run.act === 1 ? (group === 'normal' ? 2 : 3) : 3;
+    const maxLv = 3;
     for (let guard = 0; guard < 24; guard++) {
       const left = budget - cost();
       const opts = units.filter((u) => {
         const T = UNITS[u.type];
         if (T.boss || isObjectType(u.type) || T.traits.includes('structure') || (u.level || 1) >= maxLv) return false;
         const lv = u.level || 1;
-        return LEVEL_COST[lv + 1] - LEVEL_COST[lv] <= left;
+        return D.levelCost(u.type, lv + 1) - D.levelCost(u.type, lv) <= left;
       });
       if (!opts.length) break;
       const u = rng.pick(opts);
@@ -948,10 +1006,17 @@
     }
   }
 
-  // Elite armies field Shacklers (two from Act II on, levelled with the act), as part of their army: units that pin
-  // down your biggest hitter, so a single carry has to be backed by an army that can break
-  // the chain.
-  const ELITE_SHACKLERS = [0, 1, 2, 2];
+  // The relics an enemy army carries: a few of its faction's, more in later acts and on
+  // harder cards.
+  function foeRelics(run, node, kind, tpl) {
+    const group = kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'normal';
+    const table = BAL.relics[node.mega ? 'mega' : group === 'normal' ? node.tier || 'medium' : group] || [];
+    const n = table[run.act] || 0;
+    const pool = ((D.FACTIONS[tpl.faction] || {}).relics || []).filter((id) => RELICS[id]);
+    if (!n || !pool.length) return [];
+    const rng = AG.derive(run.seed, 'foeRelics:' + run.act + ':' + node.id + ':' + kind);
+    return rng.shuffle(pool.slice()).slice(0, n);
+  }
 
   // `recent`: encounter names to steer away from (default: the last few you fought).
   function genEncounter(run, node, kindOverride, recent) {
@@ -972,22 +1037,36 @@
     }
     const layout = tpl.layout || null;
     let primary = group === 'boss' ? 'boss' : layout === 'siege' ? 'gate' : layout === 'convoy' ? 'convoy' : rng.weighted(PRIMARY[intro ? 'intro' : group]);
-    const fullBudget = enemyBudget(run, node, kind) * (intro ? (node.row === 0 ? 0.85 : 0.92) : 1) * (node.mult || 1) * (node.mega ? MEGA_BUDGET : 1);
-    const budget = fullBudget * (BUDGET_SHARE[primary] || 1);
+    let fullBudget = enemyBudget(run, node, kind) * (intro ? (node.row === 0 ? 0.85 : 0.92) : 1) * (node.mult || 1) * (tpl.k || 1);
+    const sh = BAL.share[primary];
+    let budget = fullBudget * ((sh && typeof sh === 'object' ? sh[group] || sh.normal : sh) || 1);
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
+    // The final challenge is a set army, not one sized to yours: its three bosses at the
+    // level BAL.megaLevel says, and the first BAL.megaUnits of its line-up.
+    if (node.mega) {
+      units.length = Math.min(units.length, BAL.megaUnits);
+      units.forEach((u, i) => {
+        if (UNITS[u.type].boss) u.level = Array.isArray(BAL.megaLevel) ? BAL.megaLevel[i] || 1 : BAL.megaLevel;
+      });
+    }
     // No healers in an enemy army: its Clerics are fighters instead.
     const fighters = tpl.pool.filter((t) => !ENEMY_HEALERS.includes(t));
     for (const u of units) if (ENEMY_HEALERS.includes(u.type)) u.type = rng.pick(fighters.length ? fighters : ['knight']);
-    // Shacklers first in line, so trimming to the budget never drops them.
-    if (group === 'elite' && !node.mega) for (let i = 0; i < ELITE_SHACKLERS[act]; i++) units.unshift({ type: 'shackler', level: Math.min(3, act) });
+    // Shacklers first in line, levelled with the act (see BAL.shacklers).
+    const shacklers = ((BAL.shacklers[node.mega ? 'mega' : node.tier] || BAL.shacklers[group === 'normal' ? '' : group] || [])[act] || 0) + (node.tier === 'easy' ? 0 : tpl.shacklers || 0);
+    for (let i = 0; i < shacklers; i++) units.unshift({ type: 'shackler', level: Math.min(3, act) });
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
+    if (node.mega) fullBudget = budget = cost() + BAL.megaKit;
     const structures = layout === 'siege' ? (act >= 3 || group === 'elite' ? 2 : 1) * 3 : 0;
     // Enemy armies stay a little above your usual army size; spare Supply buys levels instead.
     const tierExtra = (TIERS[node.tier] && TIERS[node.tier].extraUnits) || 0;
-    const maxUnits = node.mega ? 10 : Math.min(9, armySize(run) + (group === 'normal' ? 0 : group === 'elite' ? 1 : 2) + tierExtra);
-    while ((cost() + structures > budget + 0.5 && units.length > 2) || units.length > maxUnits) {
+    const maxUnits = node.mega ? units.length : Math.min(BAL.maxUnits, armySize(run) + BAL.extraUnits[group] + tierExtra + (tpl.more || 0));
+    // Trimmed to the budget from the back of the line, but never below two fighters of its
+    // own (Shacklers and bosses aside), whatever the budget says.
+    const own = () => units.filter((u) => u.type !== 'shackler' && !UNITS[u.type].boss).length;
+    while ((cost() + structures > budget + 0.5 && own() > 2) || units.length > maxUnits) {
       let i = units.length - 1;
-      while (i >= 0 && UNITS[units[i].type].boss) i--;
+      while (i >= 0 && (UNITS[units[i].type].boss || (units[i].type === 'shackler' && own() > 0))) i--;
       if (i < 0) break;
       units.splice(i, 1);
     }
@@ -1000,8 +1079,10 @@
     if (primary === 'commander') {
       let lead = null;
       for (const u of units) if (u.type !== 'shackler' && (!lead || enemyCost(u) > enemyCost(lead))) lead = u;
+      if (!lead) lead = units[0];
       lead.vip = true;
       lead.level = Math.min(3, (lead.level || 1) + 1);
+      lead.baseHp = Math.round(UNITS[lead.type].hp * BAL.commanderHp);
       if (UNITS[lead.type].abilities && !lead.a2) lead.a2 = UNITS[lead.type].abilities[2][0];
     }
     const terrain = genTerrain(rng, act, BOARD, BOARD, layout);
@@ -1017,21 +1098,23 @@
     };
     // Buildings that send reinforcements keep their doorway clear.
     const spawners = [];
-    const putSpawner = (type, x, y, goal) => {
+    const putSpawner = (type, x, y, goal, extra) => {
       if (terrain[(y + 1) * BOARD + x] !== 0 || taken.has(x + ',' + (y + 1))) return false;
       const key = 'sp' + spawners.length;
-      if (!putObj(type, x, y, { key, goal })) return false;
+      if (!putObj(type, x, y, Object.assign({ key, goal }, extra || {}))) return false;
       taken.add(x + ',' + (y + 1));
       spawners.push({ key, x, y });
       return true;
     };
     if (layout === 'siege') {
       for (const x of [1, 2, 3, 5, 6, 7]) putObj('wall', x, 2);
-      putObj('gate', 4, 2);
       const towers = structures / 3 === 2 ? [2, 6] : [rng.pick([2, 6])];
       for (const x of towers) putObj('tower', x, 1);
       const houses = act >= 3 || group === 'elite' ? [1, 7] : [rng.pick([1, 7])];
-      for (const x of houses) putSpawner('guardhouse', x, 0, false);
+      // The castle's gold is the gate's to give: the guardhouses behind the wall hold none,
+      // so taking the castle takes all of it.
+      putObj('gate', 4, 2, { salvage: UNITS.gate.salvage + houses.length * UNITS.guardhouse.salvage });
+      for (const x of houses) putSpawner('guardhouse', x, 0, false, { salvage: 0 });
     } else if (primary === 'raze') {
       // One building in Act I skirmishes, two everywhere else.
       const type = tpl.spawner || SPAWNER_BY_ACT[act];
@@ -1065,6 +1148,11 @@
         const near = units.some((u) => Math.abs(u.x - x) + Math.abs(u.y - y) === 1 && !isObjectType(u.type));
         if (!near || terrain[y * BOARD + x] !== 0 || units.some((u) => u.x + ',' + u.y === k)) continue;
         units.push({ type: 'barrel', level: 1, x, y, facing: 2 });
+        // Never a keg that seals someone in (no clearing of rocks opens a way past a keg).
+        if (sealedIn(units, BOARD, BOARD)) {
+          units.pop();
+          continue;
+        }
         placed++;
       }
     }
@@ -1090,6 +1178,8 @@
       seed: rng.int(2 ** 30) + 1,
       loot: [],
       bonus: [],
+      // The relics this army carries (a roll of its own, so nothing else shifts).
+      relics: foeRelics(run, node, kind, tpl),
       // Timings made for one unit a turn (see retime).
       tm: 2,
     };
@@ -1137,7 +1227,7 @@
       }
       case 'survive':
         enc.objective = 'survive';
-        enc.surviveTurns = act === 1 ? 12 : 15;
+        enc.surviveTurns = BAL.surviveTurns[act];
         enc.stance = 'aggressive';
         break;
     }
@@ -1157,13 +1247,14 @@
           const type = units.find((u) => u.key === sp.key).type;
           sPool = cheap(sPool).length ? cheap(sPool) : cheap(SPAWN_DEFAULT[type][1]).length ? cheap(SPAWN_DEFAULT[type][1]) : sPool;
         }
-        for (let k = 0, t = first; k < 4; k++, t += every) enc.waves.push({ turn: t, from: sp.key, units: [waveSpec(rng, run, sPool, group)] });
+        const sends = BAL.spawns[node.tier] != null ? BAL.spawns[node.tier] : BAL.spawns.other;
+        for (let k = 0, t = first; k < sends; k++, t += every) enc.waves.push({ turn: t, from: sp.key, units: [waveSpec(rng, run, sPool, group)] });
       }
     } else if (primary === 'survive') {
       const tiles = [];
       for (const y of [0, 1]) for (let x = 0; x < BOARD; x++) if (terrain[y * BOARD + x] === 0) tiles.push([x, y]);
-      const turns = act === 1 ? [3, 7] : [2, 6, 10];
-      const share = (fullBudget * 2.2 - budget) / turns.length;
+      const turns = act === 1 ? [3, 7, 11] : [2, 6, 10, 14];
+      const share = (fullBudget * BAL.surviveAll - budget) / turns.length;
       for (const t of turns) enc.waves.push({ turn: t, tiles, units: waveOf(rng, run, pool, share, group, 3) });
     }
 
@@ -1251,6 +1342,36 @@
     if (layout === 'convoy') enc.bonus.push({ type: 'plunder' });
     openRoutes(units, terrain, BOARD, BOARD);
     return enc;
+  }
+
+  // Whether buildings and kegs alone (whatever the ground) cut some enemy on foot off from
+  // your deployment rows: what openRoutes could not mend by clearing rocks.
+  function sealedIn(units, w, h) {
+    const solid = (T) => (T.traits.includes('object') || T.traits.includes('structure') || T.traits.includes('summon')) && !T.traits.includes('opens');
+    const blocked = new Set(units.filter((u) => u.x != null && solid(UNITS[u.type])).map((u) => u.y * w + u.x));
+    for (const u of units) {
+      const T = UNITS[u.type];
+      if (u.x == null || solid(T) || u.post || T.traits.includes('flying') || T.traits.includes('immobile')) continue;
+      const seen = new Set([u.y * w + u.x]);
+      const q = [u.y * w + u.x];
+      let out = false;
+      while (q.length && !out) {
+        const i = q.pop();
+        const x = i % w;
+        const y = (i - x) / w;
+        if (y >= h - DEPLOY_ROWS) out = true;
+        for (const [dx, dy] of D.DIRS) {
+          const nx = x + dx;
+          const ny = y + dy;
+          const ni = ny * w + nx;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h || seen.has(ni) || blocked.has(ni)) continue;
+          seen.add(ni);
+          q.push(ni);
+        }
+      }
+      if (!out) return true;
+    }
+    return false;
   }
 
   // Every enemy on foot, and every building's doorway, must have a way across the field to
@@ -1351,7 +1472,7 @@
         case 'swift':
           return { b, text: `Win within ${b.turns} turns.`, short: `Win within ${b.turns} turns`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'flawless':
-          return { b, text: 'Win without losing a unit.', short: 'Lose no unit', reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: 'Win with no more than one of your units down.', short: 'Lose at most one unit', reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'plunder':
           return { b, text: 'Break every wagon (none may escape).', short: 'No wagon escapes', reward: '+20 gold per wagon' };
         case 'ambush':
@@ -1408,7 +1529,7 @@
     const T = UNITS[sp.type];
     if (!T) return 0;
     const lv = sp.level || 1;
-    let c = (sp.core ? 0 : T.cost) + LEVEL_COST[lv] + abilityCost(sp.a1) + (lv >= 2 ? abilityCost(sp.a2) : 0);
+    let c = (sp.core ? 0 : T.cost) + D.levelCost(sp.type, lv) + abilityCost(sp.a1) + (lv >= 2 ? abilityCost(sp.a2) : 0);
     for (const id of sp.talents || []) c += TALENTS[id] ? TALENTS[id].cost : 0;
     for (const id of sp.skills || []) c += SKILLS[id] ? SKILLS[id].cost : 0;
     for (const id of sp.gear || []) c += GEAR[id] ? GEAR[id].cost : 0;
@@ -1491,10 +1612,26 @@
 
   // ------------------------------------------------------------ battles
 
+  // How worn a boss's army is by the defeats it has handed you (see BAL.wear): the share of
+  // their HP its units start the next battle without. Only where there is no easier card to
+  // take instead: an act's boss, or a battle an event started. Never the final challenge,
+  // which is there to be lost. `o`: a card on offer; without it, the battle at hand.
+  function wornDown(run, o) {
+    const p = o || run.pending;
+    if (!p || !p.enc) return 0;
+    const lone = !!p.fromEvent || (p.enc.kind === 'boss' && p.tier !== 'mega' && !(p.node && p.node.mega));
+    if (!lone) return 0;
+    const losses = p.wear != null ? p.wear : (o ? o.attempts : p.attempt) || 0;
+    return Math.min(BAL.wear.max, Math.round(100 * BAL.wear.step * Math.max(0, losses - BAL.wear.after)) / 100);
+  }
+
   // `enc` defaults to the battle at hand (another, for a preview of a challenge).
   function battleConfig(run, deployment, enc) {
     enc = enc || run.pending.enc;
     const units = [];
+    // A worn-down army's fighters start hurt (its buildings and wreckage do not).
+    const worn = run.pending && run.pending.enc === enc ? wornDown(run) : 0;
+    const hurt = (type) => (worn && !isObjectType(type) && !UNITS[type].traits.includes('structure') ? worn : 0);
     const crown = crownedIn(run, deployment);
     for (const d of deployment) {
       const r = unitById(run, d.rid);
@@ -1502,13 +1639,13 @@
       units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0, supply: unitCost(run, r), champion: r.id === crown }));
     }
     for (const e of enc.units)
-      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', foe: true, x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty, supply: enemyCost(e) });
+      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', foe: true, x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty, salvage: e.salvage, hurt: hurt(e.type), supply: enemyCost(e) });
     return {
       w: enc.w,
       h: enc.h,
       terrain: enc.terrain,
       units,
-      relics: { P: run.relics.slice(), E: [] },
+      relics: { P: run.relics.slice(), E: (enc.relics || []).slice() },
       seed: enc.seed + ((run.pending && run.pending.attempt) || 0) * 7919,
       objective: enc.objective,
       hold: enc.hold,
@@ -1517,7 +1654,7 @@
       goals: enc.bonus || [],
       cartExit: 0,
       turnLimit: TURN_LIMIT,
-      waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w, { units: w.units.map((u) => Object.assign({ foe: true, supply: enemyCost(u) }, u)) })),
+      waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w, { units: w.units.map((u) => Object.assign({ foe: true, supply: enemyCost(u), hurt: hurt(u.type) }, u)) })),
       // Both sides take their turns in a speed-ordered unit rotation.
       queue: true,
       overtime: OVERTIME,
@@ -1680,6 +1817,15 @@
 
   // Apply the outcome of a finished battle. `s` is the engine state.
   // Whether a won battle met one bonus goal.
+  // "Few losses": a win with no more than this many of your units down when it is sealed.
+  // (Battles are won by a hair too often for "none" to be a goal you can plan for; one is
+  // what a few tough units, or a well-guarded line, can manage.)
+  const FLAWLESS_MAX = 1;
+  // Your units down as the win was sealed, or so far.
+  function fallen(s) {
+    return s.won ? s.won.lost : s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length;
+  }
+
   function bonusDone(s, deployment, b) {
     if (b.type === 'loot') return s.loot.some((l) => l.id === b.lootId && l.taken);
     // A fast win counts from the turn the mission was done (the rout), not the last kill.
@@ -1688,7 +1834,7 @@
     // Speed and losses are judged as of the moment the win was yours (the mission done, or
     // the enemy army down): what fatigue takes after that does not count.
     if (b.type === 'swift') return (s.won ? s.won.turn : s.turn) <= b.turns;
-    if (b.type === 'flawless') return s.won ? s.won.lost === 0 : !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
+    if (b.type === 'flawless') return fallen(s) <= FLAWLESS_MAX;
     if (b.type === 'muster') return deployment.some((d) => d.rid === b.rid);
     if (b.type === 'ambush') return (s.stats.waveKills || 0) >= b.n;
     if (b.type === 'blockade') return (s.stats.blocked || 0) >= b.n;
@@ -2634,31 +2780,72 @@
     return !!((m.props && m.props.vs && m.props.vs.structure) || (m.active && m.active.vs && m.active.vs.structure));
   }
 
-  // Which damage type gets through this enemy better: its armor against its magic
-  // resistance, averaged over its fighters and reinforcements by HP (treasure guardians
-  // count half). A gap under 8 points counts as even. `share` is the part of your
-  // attackers Auto makes magic.
+  // Which damage type gets through this enemy better. A physical blow is cut by armor and
+  // stopped outright by a block (a full block from the front, half the chance from the
+  // side, none from behind: FRONT_HITS is the share that counts); a spell is cut by magic
+  // resistance only. `phys` and `magic` are the parts of a blow that get through, averaged
+  // over the enemy's fighters and reinforcements by HP (treasure guardians count half). A
+  // gap under about 13 points counts as even. `share` is the part of your attackers Auto
+  // makes magic.
+  const FRONT_HITS = 0.6;
+  const physThrough = (armor, block) => (1 - armor) * (1 - FRONT_HITS * block);
   function damageProfile(enc) {
     let w = 0;
     let armor = 0;
     let res = 0;
+    let phys = 0;
+    let magic = 0;
     const add = (spec, k) => {
       if (isObjectType(spec.type) || UNITS[spec.type].traits.includes('structure')) return;
       const b = E.buildUnit(spec, new Set());
       w += b.maxHp * k;
       armor += b.maxHp * k * b.armor;
       res += b.maxHp * k * b.res;
+      phys += b.maxHp * k * physThrough(b.armor, b.block);
+      magic += b.maxHp * k * (1 - b.res);
     };
     for (const u of enc.units) add(u, u.post ? 0.5 : 1);
     for (const wv of enc.waves || []) for (const u of wv.units) add(u, 1);
-    if (!w) return { armor: 0, res: 0, share: 0.5, lean: 'mixed' };
+    if (!w) return { armor: 0, res: 0, phys: 1, magic: 1, share: 0.5, lean: 'mixed' };
     armor /= w;
     res /= w;
-    const share = Math.min(0.85, Math.max(0.15, 0.5 + (armor - res) * 2.5));
-    return { armor, res, share, lean: share >= 0.7 ? 'magic' : share <= 0.3 ? 'phys' : 'mixed' };
+    phys /= w;
+    magic /= w;
+    const share = Math.min(0.85, Math.max(0.15, 0.5 + (magic - phys) * 1.5));
+    return { armor, res, phys, magic, share, lean: share >= 0.7 ? 'magic' : share <= 0.3 ? 'phys' : 'mixed' };
   }
 
-  function counterScore(type, enc, prof) {
+  // What this enemy hits with: `magic` is the share of its attack power that is magic
+  // (area attacks count half as much again, slow ones less), over its fighters, towers and
+  // reinforcements.
+  function threatProfile(enc) {
+    let all = 0;
+    let magic = 0;
+    const add = (spec) => {
+      if (isObjectType(spec.type)) return;
+      const b = E.buildUnit(spec, new Set());
+      const a = b.acts[0];
+      if (!a || !a.dmg || !b.pow) return;
+      const k = (b.pow * (['blast', 'line', 'cone', 'cross', 'nova', 'quake', 'cleave', 'detonate'].includes(a.kind) ? 1.5 : 1)) / (1 + 0.5 * b.rec);
+      all += k;
+      if (a.dmg === 'magic') magic += k;
+    };
+    for (const u of enc.units) add(u);
+    for (const wv of enc.waves || []) for (const u of wv.units) add(u);
+    const share = all ? magic / all : 0;
+    return { magic: share, lean: share >= 0.55 ? 'magic' : share <= 0.25 ? 'phys' : 'mixed' };
+  }
+
+  // The part of this enemy's blows a unit type takes: its armor and block against their
+  // steel, its magic resistance against their spells.
+  function taken(type, threat) {
+    const T = UNITS[type];
+    return (1 - threat.magic) * physThrough(T.armor || 0, T.block || 0) + threat.magic * (1 - (T.res || 0));
+  }
+
+  // How well a unit type answers this enemy army: damage that gets through it, defenses
+  // that turn its blows (for the units that stand in front), siege where buildings must fall.
+  function counterScore(type, enc, prof, threat) {
     const T = UNITS[type];
     // Siege engines earn their place when buildings must fall, and are a poor pick otherwise.
     const siege = T.act.vs && T.act.vs.structure ? (siegeTargets(enc) ? 1 + Math.min(0.6, 0.2 * siegeTargets(enc)) : 0.7) : 1;
@@ -2669,19 +2856,36 @@
     if (dmg === 'magic') k *= (p.share / 0.5) ** 0.7;
     else if (dmg === 'phys') k *= ((1 - p.share) / 0.5) ** 0.7;
     if (!isAttacker(type)) k *= 0.75;
+    // Units that shrug off what this enemy hits with are worth more, the front line most.
+    const t = threat || threatProfile(enc);
+    k *= (0.7 / Math.max(0.25, taken(type, t))) ** (FRONT_ROLES.includes(T.role) ? 0.5 : 0.2);
     return Math.max(0.4, k * siege);
   }
 
   // A reasonable army for this battle within Supply: picks units,
   // levels, abilities and items, and places them. Rewrites the chosen units' loadouts.
-  // variant > 0 shuffles the priorities a little, for a different suggestion each time.
+  // Each call for another suggestion (variant 1, 2, 3 ...) is a different plan, so a lost
+  // battle can be tried another way at a tap: the usual army first; then fewer, better
+  // units (one less than the usual army, then two, then three, the best-suited for this
+  // enemy, the Supply saved going to their levels and kit); after that, or where the army
+  // is too small to shrink, the usual army with its priorities shuffled.
+  const AUTO_FEWER = 3;
+  // How many units besides the Cleric plan `variant` fields: the usual army's less one,
+  // two or three (never under two), or 0 for a plan that is not a smaller army.
+  function autoFocus(run, variant) {
+    if (!(variant >= 1 && variant <= AUTO_FEWER)) return 0;
+    const usual = autoDeploy(run, 0).filter((d) => !unitById(run, d.rid).core).length;
+    const n = Math.max(2, usual - variant);
+    return n < usual ? n : 0;
+  }
   function autoDeploy(run, variant) {
     const enc = run.pending.enc;
-    const vr = variant ? AG.derive(run.seed, 'auto:' + variant) : null;
+    const focus = autoFocus(run, variant);
+    const vr = variant && !focus ? AG.derive(run.seed, 'auto:' + variant) : null;
     const jitter = {};
     for (const r of run.roster) jitter[r.id] = vr ? 0.6 + vr.next() * 0.8 : 1;
     const supply = supplyFor(run);
-    const cap = armySize(run);
+    const cap = focus ? Math.min(armySize(run), focus) : armySize(run);
     for (const r of run.roster) {
       r.load.lv = 1;
       r.load.skills = [];
@@ -2692,8 +2896,9 @@
       r.load.talents = [];
     }
     const prof = damageProfile(enc);
+    const threat = threatProfile(enc);
     const kind = (r) => UNITS[r.type].act.dmg;
-    const worth = (r) => ((UNITS[r.type].cost + (r.enchant ? 1.5 : 0)) * counterScore(r.type, enc, prof) * jitter[r.id]) / Math.max(1, unitCost(run, r));
+    const worth = (r) => ((UNITS[r.type].cost + (r.enchant ? 1.5 : 0)) * counterScore(r.type, enc, prof, threat) * jitter[r.id]) / Math.max(1, unitCost(run, r));
     // Never a ward: a Lightning or Barrier Ward is only as good as the exact tile it stands
     // on, so Auto leaves them for you to place by hand (a quest's ward still goes in).
     const pool = run.roster.filter((r) => UNITS[r.type].role !== 'ward').sort((a, b) => worth(b) - worth(a) || UNITS[b.type].cost - UNITS[a.type].cost);
@@ -2769,14 +2974,14 @@
       if (!did) {
         for (const r of pick) {
           if (r.load.lv >= 3) continue;
-          if (LEVEL_COST[3] - LEVEL_COST[2] <= left && r.load.lv === 2) {
+          if (D.levelCost(r.type, 3) - D.levelCost(r.type, 2) <= left && r.load.lv === 2) {
             r.load.lv = 3;
             did = true;
             break;
           }
         }
       }
-      if (!did) {
+      if (!did && !focus) {
         // No field limit: Supply left over after all that buys one more unit.
         const extra = pool.find((r) => !pick.includes(r) && unitCost(run, r) <= left);
         if (extra) {
@@ -2817,14 +3022,23 @@
 
   // ------------------------------------------------------------ advice
 
-  // The scout report's first line: which damage type gets through this army better.
+  // The scout report's first lines: which damage type gets through this army better, and
+  // what it hits with.
   function damageTip(enc) {
     const p = damageProfile(enc);
-    const a = Math.round(p.armor * 100) + '%';
-    const r = Math.round(p.res * 100) + '%';
-    if (p.lean === 'magic') return `Their physical resistance (${a} on average) outweighs their magic resistance (${r}): magic hits harder here. Auto favors magic attackers.`;
-    if (p.lean === 'phys') return `Their magic resistance (${r} on average) outweighs their physical resistance (${a}): steel hits harder here. Auto favors physical attackers.`;
-    return `Their physical resistance (${a}) and magic resistance (${r}) are close: both damage types work. Auto mixes physical and magic attackers.`;
+    const a = Math.round(p.phys * 100) + '%';
+    const r = Math.round(p.magic * 100) + '%';
+    if (p.lean === 'magic') return `Steel lands for about ${a} of its damage on this army (armor, and blows blocked from the front), spells for ${r}: magic hits harder here. Auto favors magic attackers.`;
+    if (p.lean === 'phys') return `Spells land for about ${r} of their damage on this army (magic resistance), steel for ${a}: steel hits harder here. Auto favors physical attackers.`;
+    return `Steel lands for about ${a} of its damage on this army and spells for ${r}: both damage types work. Auto mixes physical and magic attackers.`;
+  }
+
+  function threatTip(enc) {
+    const t = threatProfile(enc);
+    const m = Math.round(t.magic * 100);
+    if (t.lean === 'magic') return `About ${m}% of their damage is magic: armor and shields do not stop it. Bring magic resistance up front (a Mage Knight, a Barrier Ward) and keep your units apart.`;
+    if (t.lean === 'phys') return `Nearly all their damage is steel${m ? ` (${100 - m}%)` : ''}: armor and blocks stop it. A Knight or a Golem up front, facing them, takes most of it.`;
+    return `They hit with steel and spells alike (${m}% magic): armor alone will not hold.`;
   }
 
   // Plain-language counter tips for the scout report.
@@ -2832,7 +3046,7 @@
     const foes = enc.units.filter((u) => !isObjectType(u.type));
     const count = (pred) => foes.filter((u) => pred(UNITS[u.type], u)).length;
     const has = (...types) => enc.units.some((u) => types.includes(u.type));
-    const tips = [damageTip(enc)];
+    const tips = [damageTip(enc), threatTip(enc)];
     if (has('shackler'))
       tips.unshift(
         'Shacklers: they hit weakly, but each pins down your biggest unit for as long as it holds the chain (you will see the chain). A Spell Shield eats the first blow on one, and it is tough: bring a second threat that can reach it, or anything that paralyzes, to break the chain.'
@@ -2852,11 +3066,10 @@
       tips.push('Stone buildings shrug off swords and spells. Siege damage breaks them fast: a Trebuchet, Siege Hammer, Demolisher or Boulder Toss.');
     if (buildings.some((u) => UNITS[u.type].material === 'wood')) tips.push('Wooden buildings burn: fire and magic deal extra damage to them.');
     if (has('portal')) tips.push('Dark Portals: steel barely scratches them, but magic unravels them.');
-    if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Heavy enemy magic: Mage Knights, Silk Mantles and a Barrier Ward blunt it. Spread out.');
     if (has('knight', 'castellan')) tips.push('Knights block 70% of frontal blows. Hit them from the side or behind, or use magic.');
     if (has('skeleton', 'specter', 'colossus', 'lich', 'skelarcher')) tips.push('Undead: magic and Blessed Blades shatter them.');
     if (has('specter')) tips.push('Specters are ghosts: steel mostly passes through them (50% physical resistance), but magic tears them apart.');
-    if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
+    if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins wear war paint that turns spells aside: bring steel, and an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
     if (has('sapper')) tips.push('Goblin Sappers explode when adjacent to your units. Shoot them at range and keep a gap between your units.');
     if (has('wreckage')) tips.push('Wreckage holds gold, but your army leaves it be until the boss and its retinue fall. Then its fatigue sets in: the faster you win, the more you salvage.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies are adjacent to them.');
@@ -2872,7 +3085,7 @@
     if (has('shaman')) tips.push('Orc Shamans drive the warband into a frenzy (25% more damage): kill the drummer first.');
     if (has('golem', 'golem_king')) tips.push('Golems have 50% physical resistance but take 25% extra from magic.');
     if (has('dragon', 'ashen_tyrant', 'drake', 'brute', 'colossus')) tips.push('Huge foes: Dragonslayer Spears deal 50% more to them.');
-    return tips.slice(0, 4);
+    return tips.slice(0, 5);
   }
 
   // ------------------------------------------------------------ saving
@@ -2884,7 +3097,7 @@
     enc.tm = 2;
     const group = enc.kind === 'boss' ? 'boss' : enc.kind === 'elite' ? 'elite' : 'normal';
     if (enc.hold) enc.hold.need = HOLD_NEED;
-    if (enc.surviveTurns) enc.surviveTurns = run.act === 1 ? 12 : 15;
+    if (enc.surviveTurns) enc.surviveTurns = BAL.surviveTurns[run.act];
     const waves = enc.waves || [];
     const { first, every } = spawnRhythm(enc.primary, run.act, group);
     const k = {};
@@ -3791,13 +4004,13 @@
   }
 
   AG.Run = {
-    FIGHTS, TIERS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
+    FIGHTS, TIERS, BAL, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     crownHolder, crownedIn, gainRelic,
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, veteranSupply, VETERAN_XP, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, draftClericTalent, draftBrought, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
-    objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
+    objectiveInfo, fallen, FLAWLESS_MAX, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, autoFocus, counterScore, damageProfile, threatProfile, isFront, battleConfig, wornDown,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,

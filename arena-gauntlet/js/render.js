@@ -2404,10 +2404,10 @@
             break;
           case 'sitout':
             // Its turn came and it passes (cooling down, paralyzed, or nothing to do).
-            if (!v || e.why === 'passive') break;
+            if (!v || e.why === 'passive' || e.why === 'stay') break;
             any = true;
             // Passing ticks its cooldown down one: the badge by its health bar shows the new count.
-            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: e.why === 'para' ? 'PARALYZED' : e.why === 'held' ? 'SHACKLED' : e.why === 'hold' ? 'HOLDING THE NET' : e.wait > 0 ? `COOLDOWN ${e.wait}→${e.wait - 1}` : '' });
+            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: e.why === 'para' ? 'PARALYZED' : e.why === 'held' ? 'SHACKLED' : e.why === 'hold' ? 'HOLDING THE NET' : e.why === 'rest' ? 'CATCHING ITS BREATH' : e.wait > 0 ? `COOLDOWN ${e.wait}→${e.wait - 1}` : '' });
             if (e.wait > 0) v.wait = e.wait - 1;
             break;
           case 'pass':
@@ -2998,7 +2998,7 @@
   const BEAT_MIN = 420;
   // The word after a floating number (-16 FATIGUE), as a share of the number's size.
   const TAG_SIZE = 0.72;
-  const beatShows = (e) => !!e.uid && BEAT_EVENTS.has(e.t) && !(e.t === 'sitout' && e.why === 'passive') && !(e.t === 'pass' && e.auto);
+  const beatShows = (e) => !!e.uid && BEAT_EVENTS.has(e.t) && !(e.t === 'sitout' && (e.why === 'passive' || e.why === 'stay')) && !(e.t === 'pass' && e.auto);
 
   // Small static portrait of a unit for cards and lists.
   function portrait(canvas, type, team, opts) {

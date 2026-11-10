@@ -125,8 +125,8 @@ test('levels scale stats; abilities need the right class and level', () => {
   ]);
   const [k1, k2, k3, kw, kp, ar] = s.units;
   assert.deepStrictEqual([k1.maxHp, k1.pow], [52, 18]);
-  assert.deepStrictEqual([k2.maxHp, k2.pow], [62, 21]);
-  assert.deepStrictEqual([k3.maxHp, k3.pow], [73, 23]);
+  assert.deepStrictEqual([k2.maxHp, k2.pow], [68, 22]);
+  assert.deepStrictEqual([k3.maxHp, k3.pow], [83, 25]);
   assert.ok(kw.traits.has('shieldwall'));
   assert.ok(!kw.traits.has('brace'), 'level 2 ability ignored at level 1');
   assert.ok(kp.traits.has('brace'));
@@ -148,7 +148,7 @@ test('no Level 3 mastery shortens a cooldown', () => {
   assert.strictEqual(d3.rec, d2.rec, 'and so does the Dragon');
   assert.ok(E.healAmount(c3) >= 1.5 * E.healAmount(c2), 'Devotion: prayer heals 50% more');
   assert.ok(c3.maxHp > c2.maxHp + 10 && d3.maxHp > d2.maxHp + 20);
-  assert.ok(Math.abs(d3.props.dmgMult - 0.25) < 1e-9, 'Wyrmlord: +25% damage');
+  assert.ok(Math.abs(d3.props.dmgMult - 0.15) < 1e-9, 'Wyrmlord: +15% damage');
 });
 
 test('barrier aura grants armor and magic resistance, but no immunity to poison or paralysis', () => {
@@ -888,12 +888,13 @@ test('a unit crashing into an enemy building cracks it, and a broken one pays it
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 5, a1: 'k_bash' },
     { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
-    { type: 'wall', team: 'E', x: 4, y: 3 },
+    { type: 'totem', team: 'E', x: 4, y: 3 },
   ]);
   const [kn, sc, wall] = s.units;
   wall.hp = 3;
   act(s, kn, { kind: 'unit', uid: sc.uid }, 1);
-  assert.ok(!wall.alive, 'the wall gives way');
+  assert.ok(!wall.alive, 'the totem gives way');
+  assert.ok(wall.salvage > 0);
   assert.strictEqual(s.stats.bounty, wall.salvage);
 });
 
@@ -1050,7 +1051,7 @@ test('powder kegs explode and set off their neighbors', () => {
     { type: 'barrel', team: 'E', x: 4, y: 4 },
     { type: 'barrel', team: 'E', x: 5, y: 4 },
     { type: 'knight', team: 'E', x: 4, y: 3 },
-    { type: 'orc', team: 'E', x: 6, y: 4 },
+    { type: 'crossbow', team: 'E', x: 6, y: 4 },
   ]);
   const [ar, b1, b2, kn, orc] = s.units;
   act(s, ar, { kind: 'unit', uid: b1.uid });
@@ -1071,7 +1072,7 @@ test('a goblin sapper detonates itself and everyone beside it', () => {
   assert.ok(!sa.alive);
   assert.strictEqual(kn.hp, kn.maxHp - 24);
   assert.strictEqual(ar.hp, ar.maxHp - 22);
-  assert.strictEqual(orc.hp, orc.maxHp - 24, 'friendly fire');
+  assert.strictEqual(orc.hp, orc.maxHp - Math.round(24 * (1 - orc.res)), 'friendly fire (through the orc\'s war paint)');
   const s2 = board([
     { type: 'archer', team: 'P', x: 4, y: 7 },
     { type: 'sapper', team: 'E', x: 4, y: 4, facing: 0 },
@@ -1325,7 +1326,7 @@ test('gear bonuses: blessed blades, runic mastery and spellward', () => {
   assert.strictEqual(E.calcHit(s, py, guarded, {}).dmg, 13, 'spellward softens magic by 20%');
 });
 
-test('towers and walls do not need to fall: the win is yours, and your army stays to collect their coins', () => {
+test('towers and walls do not need to fall and hold no gold; a building with coins in it keeps your army to collect them', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 5 },
     { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
@@ -1335,9 +1336,18 @@ test('towers and walls do not need to fall: the win is yours, and your army stay
   const [kn, sc] = s.units;
   sc.hp = 1;
   act(s, kn, { kind: 'unit', uid: sc.uid });
-  assert.ok(s.cleanup && !s.over, 'cleaning up');
-  E.endCleanup(s);
-  assert.ok(s.over && s.winner === 'P');
+  assert.ok(s.over && s.winner === 'P' && !s.cleanup, 'no gold in a tower or a wall: over on the spot');
+  // A guardhouse has coins in it: the win is yours, and your army stays to break it.
+  const g = board([
+    { type: 'knight', team: 'P', x: 4, y: 5 },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+    { type: 'guardhouse', team: 'E', x: 0, y: 0 },
+  ]);
+  g.units[1].hp = 1;
+  act(g, g.units[0], { kind: 'unit', uid: g.units[1].uid });
+  assert.ok(g.cleanup && !g.over, 'cleaning up');
+  E.endCleanup(g);
+  assert.ok(g.over && g.winner === 'P');
   // Nothing left worth having: over on the spot.
   const t = board([
     { type: 'knight', team: 'P', x: 4, y: 5 },
@@ -2063,24 +2073,28 @@ test('a barricade broken by your army spills its gold; the AI breaks one when no
   assert.ok(bar.hp < bar.maxHp, 'the knight went for the gold');
 });
 
-test('every enemy building your army breaks drops a few coins: 3 for a wall or tower, 5 for a gate or a guardhouse', () => {
+test('enemy buildings your army breaks drop a few coins: 3 for a totem, 5 for a gate or a guardhouse; none for a wall or a tower', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 5 },
-    { type: 'wall', team: 'E', x: 4, y: 4 },
+    { type: 'totem', team: 'E', x: 4, y: 4 },
     { type: 'guardhouse', team: 'E', x: 5, y: 5 },
     { type: 'tower', team: 'E', x: 3, y: 5 },
     { type: 'knight', team: 'E', x: 0, y: 0 },
+    { type: 'wall', team: 'E', x: 8, y: 8 },
   ]);
-  const [kn, wall, house, tower, foe] = s.units;
-  assert.deepStrictEqual([wall.salvage, house.salvage, tower.salvage, foe.salvage, kn.salvage], [3, 5, 3, 0, 0]);
-  for (const [b, gold] of [[wall, 3], [house, 8]]) {
+  const [kn, totem, house, tower, foe, wall] = s.units;
+  assert.deepStrictEqual([totem.salvage, house.salvage, tower.salvage || 0, wall.salvage || 0, foe.salvage, kn.salvage], [3, 5, 0, 0, 0, 0]);
+  for (const [b, gold] of [[totem, 3], [house, 8]]) {
     b.hp = 1;
     act(s, kn, { kind: 'unit', uid: b.uid });
     assert.ok(!b.alive);
     assert.strictEqual(s.stats.bounty, gold);
   }
   assert.ok(s.events.some((e) => e.t === 'gold' && e.coins && e.amount === 5));
-  assert.ok(tower.alive && s.stats.bounty === 8, 'the tower still stands, its coins unclaimed');
+  // Walls and towers need not fall, and there is nothing in them: breaking one pays nothing.
+  tower.hp = 1;
+  act(s, kn, { kind: 'unit', uid: tower.uid });
+  assert.ok(!tower.alive && s.stats.bounty === 8, 'no coins in a tower');
   // Your own wards hold no coins.
   assert.strictEqual(AG.Data.UNITS.lightning.salvage, undefined);
   assert.strictEqual(AG.Data.UNITS.gate.salvage, 5);

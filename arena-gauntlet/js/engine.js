@@ -210,7 +210,8 @@
       acts: b.acts,
       act: b.acts[0],
       maxHp: b.maxHp,
-      hp: b.maxHp,
+      // `hurt`: it starts this share of its HP down (an army worn by earlier battles).
+      hp: spec.hurt > 0 ? Math.max(1, Math.round(b.maxHp * (1 - spec.hurt))) : b.maxHp,
       pow: b.pow,
       armor: b.armor,
       res: b.res,
@@ -262,7 +263,7 @@
       bounty: spec.bounty || 0,
       // What it costs its side in Supply (for the readout of both armies' strength).
       supply: spec.supply || 0,
-      salvage: T.salvage || 0,
+      salvage: spec.salvage != null ? spec.salvage : T.salvage || 0,
       value: unitValue(spec.type, b.level),
     };
     if (spec.thorns) u.props.thorns = (u.props.thorns || 0) + spec.thorns;
@@ -340,6 +341,17 @@
       // Queue battles: each side's units take its turns in a set rotation (see pickDue).
       queue: !!cfg.queue,
       due: 0,
+      // Tempo in queue battles (see the unit queue): a unit that acted rests for `rest` of
+      // its side's turns, and with `march` a unit that only moved hands the turn on.
+      rest: cfg.queue ? (cfg.rest != null ? cfg.rest : TEMPO.rest) : 0,
+      march: !!cfg.queue && (cfg.march != null ? !!cfg.march : TEMPO.march),
+      // This side turn so far: the units that have had their go, whether one of them acted
+      // (which ends the turn), and whether any did anything at all.
+      went: [],
+      struck: false,
+      stirred: false,
+      // Whether fatigue has taken its toll of this side turn (see fatigue).
+      tired: false,
       // Fatigue from this turn on (0: never); see startFatigue.
       overtime: cfg.overtime || 0,
       // Fatigue hits taken so far in the battle, by anyone (see fatigue).
@@ -1853,7 +1865,14 @@
       let ls = atk.props.lifesteal || 0;
       if (s.relics[atk.team].has('bloodstone') && !atk.nonCombat) ls += 0.2;
       if (s.relics[atk.team].has('blood_moon') && !atk.nonCombat) ls += 0.25;
-      if (ls > 0) heal(s, atk, Math.max(1, Math.round(dealt * ls)), 'drain');
+      if (ls > 0) {
+        // An attack that strikes several at once feeds on its hardest hit only: a breath
+        // over five foes mends no more than a blow on one.
+        const A = s.act && s.act.uid === atk.uid ? s.act : null;
+        const fed = A ? Math.max(0, dealt - (A.drained || 0)) : dealt;
+        if (A) A.drained = Math.max(A.drained || 0, dealt);
+        if (fed > 0) heal(s, atk, Math.max(1, Math.round(fed * ls)), 'drain');
+      }
     }
     reactToMelee(s, atk, tgt, opts);
     return { blocked: false, dmg: dealt };
@@ -2626,7 +2645,11 @@
     // Acting starts the cooldown: the unit sits out that many of its side's turns, and the
     // count drops at the end of each one (not the turn it acted in). Moving alone is free.
     let w = 0;
+    s.stirred = true;
     if (A.acted) {
+      s.struck = true;
+      // Rest: it sits out its side's next `rest` turns, whatever its cooldown says.
+      if (s.rest) u.readyPly = s.ply + 2 * (s.rest + 1);
       w = cooldown(u);
       if (u.firstActionFree) {
         w = 0;
@@ -2811,6 +2834,20 @@
     if (s.act) {
       if (s.act.moved || s.act.acted) finishActivation(s, null);
       else s.act = null;
+    }
+    // Marching is free: while no unit of this side has acted this turn, the unit that only
+    // moved (or stood where it was) has had its go, and the next in line takes the turn.
+    if (s.queue && s.march && !s.struck) {
+      const u = s.due ? s.byId[s.due] : null;
+      if (u && !s.spent && u.alive) {
+        emit(s, { t: 'sitout', uid: u.uid, why: 'stay', wait: u.wait, para: u.para });
+        ownTurnDone(s, u);
+      }
+      s.due = 0;
+      s.spent = false;
+      pickDue(s, s.side);
+      if (s.over || s.due) return;
+      s.spent = s.stirred;
     }
     if (!s.spent) emit(s, { t: 'pass', side: s.side, auto: !!auto, uid: s.due || 0 });
     if (s.queue && s.due && !s.spent && s.byId[s.due].alive) ownTurnDone(s, s.byId[s.due]);
@@ -3064,17 +3101,26 @@
   }
 
   // Fatigue, past armor and shields: one unit at a time, never a side at once. Each side has
-  // a fatigue timer of its own, off at first. Once a side's timer is on, each of its units
-  // loses HP as its own turn comes, before it moves, acts or passes (see pickDue): that
-  // side's next number, 1 for its first hit, then 2, 3 and so on, one more every time one
-  // of its units takes its turn. Five of your units passing in a row at 15 lose 15, 16, 17,
-  // 18 and 19. The two sides count apart, and neither count ever resets or doubles.
+  // a fatigue timer of its own, off at first. Once a side's timer is on, the first of its
+  // units whose turn comes in each of its side turns loses HP, before it moves, acts or
+  // passes (see pickDue): that side's next number, 1 for its first hit, then 2, 3 and so
+  // on. (Without free marching, in the old one-unit-a-turn rules, every unit whose turn
+  // came lost HP, passes included.) From turn s.overtime, fatigue for everyone, each hit is
+  // two more than the last, not one (see fatigueStep). The two sides count apart, and
+  // neither count ever resets or doubles.
   // Your timer switches on when the mission is done or the enemy army falls (the win is
   // yours, see lockWin), the enemy's when the mission is done; turn s.overtime switches on
   // any timer still off and does nothing to one already on (see startFatigue).
   function fatigue(s, u) {
     if (!u.alive || !counts(u) || !s.tire[u.team].on) return;
-    const n = ++s.tire[u.team].n;
+    // Where marching is free a side turn can bring many units' turns: fatigue takes its
+    // toll once a side turn, from the first unit whose turn comes, so an army on the march
+    // tires no faster than one that stands and fights.
+    if (s.march) {
+      if (s.tired) return;
+      s.tired = true;
+    }
+    const n = (s.tire[u.team].n = fatigueHit(s, u.team));
     applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', fatigueNo: n });
   }
 
@@ -3090,9 +3136,20 @@
     return s.tire[team].on;
   }
 
-  // What `team`'s next unit to take its turn loses to fatigue (0 while its timer is off).
+  // How much a side's fatigue count grows with each hit after its first: by one, and by two
+  // once fatigue is on for everyone (turn s.overtime), so a battle that long is soon over.
+  // Not for your army once the win is yours: its victory lap tires it by one more a turn,
+  // however late the hour, so there is time to gather what the field still holds.
+  // (Only where fatigue comes once a side turn: see fatigue.)
+  function fatigueStep(s, team) {
+    return s.march && s.inOvertime && !(team === 'P' && s.won) ? 2 : 1;
+  }
+
+  // What `team`'s next unit to tire loses to fatigue (0 while its timer is off): 1 the first
+  // time, whenever that is.
   function fatigueHit(s, team) {
-    return s.tire[team].on ? s.tire[team].n + 1 : 0;
+    const t = s.tire[team];
+    return t.on ? (t.n === 0 ? 1 : t.n + fatigueStep(s, team)) : 0;
   }
 
   // The win is yours from here on, whatever happens: the mission is done, or the enemy army
@@ -3143,6 +3200,10 @@
   function startTurn(s) {
     const side = s.side;
     s.spent = false;
+    s.went = [];
+    s.struck = false;
+    s.stirred = false;
+    s.tired = false;
     emit(s, { t: 'turn', side, turn: s.turn });
     if (side === 'E') {
       if (s.turn > s.turnLimit) {
@@ -3187,9 +3248,24 @@
   //
   // In queue battles each side's units take that side's turns in a set rotation: every
   // unit gets one turn per cycle, faster units first (ties: the earlier unit). A unit that
-  // is cooling down, paralyzed or has nothing it could do still has its turn, but passes
-  // it at once, and the next in line goes. Cooldowns, paralysis, roots, weakness and
+  // is cooling down, resting, paralyzed or has nothing it could do still has its turn, but
+  // passes it at once, and the next in line goes. Cooldowns, paralysis, roots, weakness and
   // frenzy count the unit's own turns, taken or passed.
+  //
+  // Two rules keep the pace of a battle with the armies, not with one unit:
+  //   Marching is free. A side's turn is one action. A unit that only moves, or stays put,
+  //   has had its go and hands the turn to the next in line (see endTurn), so an army
+  //   closes in together instead of one unit a turn, and a turn rarely passes without a
+  //   blow struck. Each unit still goes at most once a side turn.
+  //   Rest. A unit that acted sits out its side's next TEMPO.rest turns, on top of any
+  //   cooldown: no unit takes more than one turn in rest + 1 of its side's. An army with
+  //   fewer fighters than that has turns nobody can take, and they pass.
+  // (A battle's config may set its own `rest` and `march`; the balance lab changes these.)
+  const TEMPO = { rest: 2, march: true };
+
+  function resting(s, u) {
+    return !!(u.readyPly && s.ply < u.readyPly);
+  }
 
   // Wards (Barrier and Lightning Wards) keep their place in the rotation even with nothing
   // to do: their turns come like everyone's.
@@ -3228,21 +3304,22 @@
   }
 
   function sitOutReason(s, u) {
-    return u.heldBy ? 'held' : u.para > 0 ? 'para' : u.holding ? 'hold' : u.wait > 0 ? 'cooldown' : !usefulUnit(s, u) ? 'idle' : null;
+    return u.heldBy ? 'held' : u.para > 0 ? 'para' : u.holding ? 'hold' : u.wait > 0 ? 'cooldown' : resting(s, u) ? 'rest' : !usefulUnit(s, u) ? 'idle' : null;
   }
 
-  // The side's unit for this turn. Units take their turns in rotation order; one that is
-  // cooling down, paralyzed or has nothing it could do passes its turn (its cooldown ticks
-  // down) and the next in line goes, each unit at most once a side's turn. If everyone
-  // passes, the side passes. Whatever comes with a unit's turn comes whether it acts or
-  // passes: poison, burns, regen and fatigue.
+  // The side's unit for this turn, or its next one when the last only marched. Units take
+  // their turns in rotation order; one that is cooling down, resting, paralyzed or has
+  // nothing it could do passes its turn (its cooldown ticks down) and the next in line
+  // goes, each unit at most once a side's turn (s.went). If everyone passes, the side
+  // passes. Whatever comes with a unit's turn comes whether it acts or passes: poison,
+  // burns, regen and fatigue.
   function pickDue(s, side) {
     s.due = 0;
-    const seen = new Set();
+    const seen = s.went;
     for (;;) {
       const u = s.units.filter((v) => v.team === side && inQueue(v)).sort(byQueue)[0];
-      if (!u || seen.has(u.uid)) break;
-      seen.add(u.uid);
+      if (!u || seen.includes(u.uid)) break;
+      seen.push(u.uid);
       unitTurnStart(s, u);
       // Fatigue (or poison, or fire underfoot) took the unit whose turn it was: that was
       // its side's turn, and the other side moves next. A side never loses one unit after
@@ -3268,9 +3345,12 @@
   // that turn and are passed ({ uid, wait, para, why }), cooling down, paralyzed or never
   // acting (the Barrier Ward).
   function upcoming(s, team, n) {
-    const vs = s.units.filter((v) => v.team === team && inQueue(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, hold: v.holding ? v.holdLeft : 0, spd: v.spd, uid: v.uid, idle: !hasAction(v) }));
+    const vs = s.units.filter((v) => v.team === team && inQueue(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, hold: v.holding ? v.holdLeft : 0, spd: v.spd, uid: v.uid, idle: !hasAction(v), ready: v.readyPly || 0 }));
     const out = [];
+    // The ply of each of the side's turns to come: the one under way, or its next.
+    const ply0 = s.side === team ? s.ply : s.ply + 1;
     for (let turn = 0; turn < n && vs.length; turn++) {
+      const ply = ply0 + 2 * turn;
       let picked = null;
       const passes = [];
       if (turn === 0 && s.side === team && s.due) picked = vs.find((x) => x.uid === s.due) || null;
@@ -3282,8 +3362,8 @@
         seen.add(x);
         // A Shackler counts down its hold as its turn starts, and sits out while it holds.
         if (x.hold > 0 && x.para === 0) x.hold--;
-        const resting = x.para > 0 || x.hold > 0 || x.wait > 0 || x.idle;
-        if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, why: x.idle ? 'passive' : x.v.heldBy && x.para > 0 ? 'held' : x.para > 0 ? 'para' : x.hold > 0 ? 'hold' : x.wait > 0 ? 'cooldown' : 'para' });
+        const resting = x.para > 0 || x.hold > 0 || x.wait > 0 || x.idle || x.ready > ply;
+        if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, rest: x.ready > ply ? Math.ceil((x.ready - ply) / 2) : 0, why: x.idle ? 'passive' : x.v.heldBy && x.para > 0 ? 'held' : x.para > 0 ? 'para' : x.hold > 0 ? 'hold' : x.wait > 0 ? 'cooldown' : x.ready > ply ? 'rest' : 'para' });
         x.cycles++;
         if (x.wait > 0) x.wait--;
         else if (x.para > 0) {
@@ -3300,6 +3380,7 @@
       }
       if (turn === 0 && s.side === team && s.due) picked.cycles++;
       picked.wait = picked.v.rec;
+      if (s.rest) picked.ready = ply + 2 * (s.rest + 1);
       out.push({ uid: picked.uid, passes });
     }
     return out;
@@ -3441,7 +3522,7 @@
     poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, elementalMult, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, tiring, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, elementalMult, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, resting, TEMPO, regenOf, fatigueHit, tiring, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

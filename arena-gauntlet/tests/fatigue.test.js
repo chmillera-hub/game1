@@ -1,7 +1,8 @@
 // Fatigue, checked on real battles: each side its own timer, off until the mission is done,
-// the enemy army falls (yours) or the set turn comes, then 1, 2, 3 for that side, one unit
-// at a time as its own turn comes, never a side (or the field) at once, never reset or
-// doubled. Plays a few hundred battles of every kind to the end and checks every hit.
+// the enemy army falls (yours) or the set turn comes, then 1, 2, 3 for that side (from 1,
+// and two more a hit once fatigue is on for everyone), once a side turn, from the first of its units
+// whose turn comes: never a side (or the field) at once, never reset or doubled. Plays a
+// few hundred battles of every kind to the end and checks every hit.
 // Run: node tests/fatigue.test.js [battles per kind]
 const assert = require('assert');
 const AG = require('./load')();
@@ -24,16 +25,20 @@ function test(name, fn) {
 // Every rule a stream of battle events must keep. Returns what it saw.
 function checkStream(s, events, label) {
   let side = null;
-  let open = null; // the unit that has just tired and whose turn is not over yet
   const last = { P: 0, E: 0 }; // each side's own count
   const on = { P: false, E: false }; // each side's timer, as the events switch it on
+  let everyone = false; // fatigue on for everyone: from then a count rises by two a hit
+  let won = false; // the win is yours (mission done, or their army down): your count rises by one, however late
   let hits = 0;
   let early = false; // a timer switched on before turn s.overtime
   const sides = new Set();
-  let tired = new Set(); // units that tired this side's turn
+  let tiredNow = null; // the unit that tired this side turn
+  let up = false; // a unit that counts has taken its turn this side turn
   let midTurn = false; // a timer switched on partway through this turn: from the next one
+  const counts = (u) => u && !u.nonCombat && !u.bound && !u.structure;
   for (const e of events) {
     if (['routed', 'cleanup', 'overtime'].includes(e.t)) midTurn = e.t !== 'overtime';
+    if (e.t === 'routed' || e.t === 'cleanup') won = true;
     // The timers' switches: the mission done turns on both, the enemy army falling with
     // something left turns on yours, turn s.overtime turns on any still off.
     if (e.t === 'routed') {
@@ -51,36 +56,39 @@ function checkStream(s, events, label) {
       // Which timers were on already; they carry on untouched.
       assert.deepStrictEqual(e.was, { E: on.E, P: on.P }, `${label}: turn ${e.turn} saw ${JSON.stringify(e.was)}`);
       on.E = on.P = true;
+      everyone = true;
     }
     if (e.t === 'turn') {
       side = e.side;
-      open = null;
-      tired = new Set();
+      tiredNow = null;
+      up = false;
       midTurn = false;
     }
-    // Once a side's timer is on, a unit of it (one that counts) passing, moving or acting
-    // has tired first this turn.
-    const own = ['sitout', 'move', 'action'].includes(e.t) || (e.t === 'pass' && e.uid && !e.auto);
-    if (own && !midTurn && e.uid && s.byId[e.uid] && s.byId[e.uid].team === side && on[side]) {
-      const u = s.byId[e.uid];
-      if (!u.nonCombat && !u.bound && !u.structure) assert.ok(tired.has(u.uid), `${label}: unit ${u.uid} (${u.team}) took its turn with its side tiring, without tiring`);
+    // Once a side's timer is on, the first of its units (that counts) to pass, move or act
+    // in a side turn has tired first; the units whose turns come after it that turn have not.
+    // (A unit that only turns to face shows as 'done'.)
+    const own = ['sitout', 'move', 'action', 'done'].includes(e.t) || (e.t === 'pass' && e.uid && !e.auto);
+    if (own && e.uid && s.byId[e.uid] && s.byId[e.uid].team === side && counts(s.byId[e.uid])) {
+      if (!up && !midTurn && on[side]) assert.strictEqual(tiredNow, e.uid, `${label}: unit ${e.uid} (${side}) was first up with its side tiring, without tiring`);
+      up = true;
     }
-    if (open && e.uid === open && ['sitout', 'move', 'action', 'pass', 'death'].includes(e.t)) open = null;
     if (e.t !== 'dmg' || e.dmgType !== 'fatigue') continue;
     const u = s.byId[e.uid];
     hits++;
     sides.add(u.team);
     assert.ok(on[u.team], `${label}: ${u.team} unit tired before its side's timer was on`);
-    // Each side its own count: 1, 2, 3 ... no number twice, none skipped, never reset.
-    assert.strictEqual(e.fatigueNo, last[u.team] + 1, `${label}: ${u.team} hit #${last[u.team] + 1} came as #${e.fatigueNo}`);
+    // Each side its own count: one more a hit, two more once fatigue is on for everyone
+    // (but only ever one more for your army once the win is yours: its victory lap);
+    // never reset, and a hit never more than the count: nothing doubles it.
+    const step = everyone && !(u.team === 'P' && won) ? 2 : 1;
+    assert.strictEqual(e.fatigueNo, last[u.team] === 0 ? 1 : last[u.team] + step, `${label}: ${u.team} count ${last[u.team]} went to ${e.fatigueNo}`);
     last[u.team] = e.fatigueNo;
-    // Never more than the number: nothing doubles it.
     assert.strictEqual(e.amount, e.fatigueNo, `${label}: hit #${e.fatigueNo} dealt ${e.amount}`);
-    // Only the side whose turn it is, and only once the last unit to tire has had its turn.
+    // Only the side whose turn it is, once a side turn, and before that unit does anything.
     assert.strictEqual(u.team, side, `${label}: ${u.team} unit tired on ${side}'s turn`);
-    assert.ok(!open, `${label}: unit ${e.uid} tired while unit ${open} was still taking its turn`);
-    open = e.uid;
-    tired.add(e.uid);
+    assert.ok(tiredNow == null, `${label}: unit ${e.uid} tired after unit ${tiredNow} had: more than once a side turn`);
+    assert.ok(!up, `${label}: unit ${e.uid} tired after a unit of its side had taken its turn`);
+    tiredNow = e.uid;
   }
   return { hits, sides, early };
 }
@@ -94,7 +102,7 @@ function play(s, stance, events) {
   assert.ok(s.over, 'the battle ended');
 }
 
-test('every battle the game builds runs on the unit rotation, where fatigue comes one unit at a time', () => {
+test('every battle the game builds runs on the unit rotation, where fatigue comes one unit a side turn', () => {
   const run = R.newRun({ seed: 5, warband: 'ember' });
   run.pending = { type: 'battle', nodeId: 'x', enc: R.genEncounter(run, { id: 'q', row: 2, kind: 'battle' }), attempt: 0, tier: 'medium' };
   assert.strictEqual(R.battleConfig(run, R.autoDeploy(run, 0)).queue, true);
@@ -197,7 +205,7 @@ test('the checker catches the old way: a whole side tiring at once', () => {
     events.push(...s.events);
     s.events.length = 0;
   }
-  assert.throws(() => checkStream(s, events, 'side at once'), /still taking its turn/);
+  assert.throws(() => checkStream(s, events, 'side at once'), /went to|more than once a side turn/);
 });
 
 console.log(`fatigue: ${passed} tests passed · ${totals.battles} battles, ${totals.hits} fatigue hits checked one by one (${totals.both} with both sides tiring, ${totals.rout} routs, ${totals.cleanup} cleanups, ${totals.early} with a timer on before the set turn)`);

@@ -1,4 +1,8 @@
 // The unit queue: each side's units take its turns in a speed-ordered rotation.
+// These tests are about the rotation itself (who is up, cooldowns, statuses, what a unit's
+// turn brings), so they switch off the two tempo rules that sit on top of it: rest after
+// acting, and free marching (see tests/tempo.test.js for those, and for fatigue as the
+// game plays it, once a side turn).
 // Run: node tests/queue.test.js
 const assert = require('assert');
 const AG = require('./load')(['rng.js', 'data.js', 'engine.js']);
@@ -18,7 +22,7 @@ function test(name, fn) {
 function battle(units, opts = {}) {
   const w = 9;
   const h = 9;
-  return E.createBattle(Object.assign({ w, h, terrain: new Array(w * h).fill(0), units, relics: { P: [], E: [] }, seed: 7, queue: true }, opts));
+  return E.createBattle(Object.assign({ w, h, terrain: new Array(w * h).fill(0), units, relics: { P: [], E: [] }, seed: 7, queue: true, rest: 0, march: false }, opts));
 }
 
 // The enemy passes until it is the player's turn.
