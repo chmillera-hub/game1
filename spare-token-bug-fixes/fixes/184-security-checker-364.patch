@@ -1,0 +1,33 @@
+diff --git a/src/security_checker/aggregate/agreement.py b/src/security_checker/aggregate/agreement.py
+index b3a171d..3b3ad4e 100644
+--- a/src/security_checker/aggregate/agreement.py
++++ b/src/security_checker/aggregate/agreement.py
+@@ -10,10 +10,18 @@ from security_checker.aggregate.base import SEVERITY_NUMBER
+ from security_checker.models.enums import Agreement
+ from security_checker.models.verdict import ReviewVerdict
+ 
++#: 一致度を出せる最小の人数. 1 人では「合意」にならない (§13.2)
++MIN_REVIEWERS = 2
++#: medium にする vulnerable の割合の帯. この値以下か、MEDIUM_HIGH_RATIO 以上
++MEDIUM_LOW_RATIO = 0.25
++MEDIUM_HIGH_RATIO = 0.75
++#: medium にする severity の幅の上限
++MEDIUM_MAX_SPREAD = 2
++
+ 
+ def compute_agreement(valid: list[ReviewVerdict]) -> Agreement:
+     """vulnerable の割合と severity の幅の 2 軸で決める."""
+-    if len(valid) < 2:
++    if len(valid) < MIN_REVIEWERS:
+         # 「1 モデルの合意」を high agreement と偽装しない (§13.2)
+         return Agreement.NOT_APPLICABLE
+ 
+@@ -24,6 +32,7 @@ def compute_agreement(valid: list[ReviewVerdict]) -> Agreement:
+ 
+     if vuln_ratio in (0.0, 1.0) and spread <= 1:
+         return Agreement.HIGH
+-    if (vuln_ratio <= 0.25 or vuln_ratio >= 0.75) and spread <= 2:
++    lopsided = vuln_ratio <= MEDIUM_LOW_RATIO or vuln_ratio >= MEDIUM_HIGH_RATIO
++    if lopsided and spread <= MEDIUM_MAX_SPREAD:
+         return Agreement.MEDIUM
+     return Agreement.LOW

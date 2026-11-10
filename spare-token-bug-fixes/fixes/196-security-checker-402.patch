@@ -1,0 +1,21 @@
+diff --git a/src/security_checker/observability/explain.py b/src/security_checker/observability/explain.py
+index 939c35d..253c3b8 100644
+--- a/src/security_checker/observability/explain.py
++++ b/src/security_checker/observability/explain.py
+@@ -19,6 +19,8 @@ from security_checker.models.report import Report, SuppressedCandidate
+ 
+ @dataclass
+ class Explanation:
++    """1 つの候補について `explain` が集めた材料. 判定・抑制・LLM 呼び出しの記録."""
++
+     candidate: Candidate
+     finding: Finding | None = None
+     suppressed: SuppressedCandidate | None = None
+@@ -28,6 +30,7 @@ class Explanation:
+ 
+ 
+ def load_report(path: Path) -> Report:
++    """report.json を読む. 無い・読めないときは ConfigError にする."""
+     if not path.is_file():
+         raise ConfigError(f"レポートが見つかりません: {path}")
+     try:

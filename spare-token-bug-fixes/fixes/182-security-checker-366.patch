@@ -1,0 +1,21 @@
+diff --git a/src/security_checker/context/builder.py b/src/security_checker/context/builder.py
+index 5fa69f4..bc6f21f 100644
+--- a/src/security_checker/context/builder.py
++++ b/src/security_checker/context/builder.py
+@@ -244,11 +244,15 @@ _SENSITIVE_ASSIGNMENT_RE = re.compile(
+ _DETECTED_LINE_TOKEN_RE = re.compile(r"(?=[A-Za-z0-9+/_.~:@-]*[0-9])[A-Za-z0-9+/_.~:@-]{16,}={0,2}")
+ 
+ 
++#: 引用符で split した結果がこの数に満たなければ、閉じた引用 ("...") は 1 つも無い
++MIN_PARTS_WITH_QUOTED_VALUE = 3
++
++
+ def _mask_quoted(line: str) -> str:
+     result = line
+     for quote in ('"', "'"):
+         parts = result.split(quote)
+-        if len(parts) < 3:
++        if len(parts) < MIN_PARTS_WITH_QUOTED_VALUE:
+             continue
+         for index in range(1, len(parts), 2):
+             value = parts[index]

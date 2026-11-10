@@ -42,7 +42,7 @@ __enter__ now returns typing.Self. The project needs Python 3.11 or newer so Sel
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- A type annotation change only with no change in behaviour. Nobody ran the lint tool or the type checker.
+- A type annotation change only with no change in behaviour. Nobody ran the lint tool or the type checker. Fix 180 on this shelf adds an import line right next to the changed import so patches 132 and 180 do not apply together: apply one and add the other change by hand.
 
 ## Search words
 

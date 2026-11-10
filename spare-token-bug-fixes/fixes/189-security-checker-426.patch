@@ -1,0 +1,19 @@
+diff --git a/src/security_checker/scanners/trivy.py b/src/security_checker/scanners/trivy.py
+index 257a497..9d8b99d 100644
+--- a/src/security_checker/scanners/trivy.py
++++ b/src/security_checker/scanners/trivy.py
+@@ -177,9 +177,14 @@ class TrivyScanner(BaseScanner):
+     settings: TrivyConfig
+ 
+     def __init__(self, settings: TrivyConfig) -> None:
++        """設定 (`scanners.trivy`) を受け取る. 実行はしない."""
+         super().__init__(settings)
+ 
+     async def scan(self, target: Target, ctx: ScanContext) -> ScanResult:
++        """trivy を実行し、検出を Candidate に正規化して返す.
++
++        trivy が未導入なら skipped、実行に失敗すれば failed を返す (例外にはしない)。
++        """
+         status = self.probe()
+         if not status.available:
+             return self.skipped(status.reason or "trivy が利用できません")

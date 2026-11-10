@@ -1,0 +1,20 @@
+diff --git a/src/security_checker/observability/logging.py b/src/security_checker/observability/logging.py
+index e390fc9..3346205 100644
+--- a/src/security_checker/observability/logging.py
++++ b/src/security_checker/observability/logging.py
+@@ -37,6 +37,7 @@ logger.propagate = False
+ 
+ 
+ def set_run_id(run_id: str | None) -> None:
++    """以降のログに付ける run_id を設定する. None で外す."""
+     _run_id.set(run_id)
+ 
+ 
+@@ -83,6 +84,7 @@ def configure(
+ 
+ 
+ def disable() -> None:
++    """`configure` が付けたハンドラを外して閉じる. 付いていなければ何もしない."""
+     for handler in list(logger.handlers):
+         if handler.get_name() == "security-checker":
+             logger.removeHandler(handler)

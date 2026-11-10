@@ -1,0 +1,22 @@
+diff --git a/src/security_checker/scanners/semgrep.py b/src/security_checker/scanners/semgrep.py
+index ac8f80c..2f5dc89 100644
+--- a/src/security_checker/scanners/semgrep.py
++++ b/src/security_checker/scanners/semgrep.py
+@@ -27,6 +27,8 @@ from security_checker.scanners.base import (
+ from security_checker.scanners.filters import is_excluded
+ 
+ CWE_RE = re.compile(r"CWE-\d+")
++#: semgrep は「検出あり」でも 0 を返す。この値以上の終了コードが実行失敗
++FAILURE_EXIT_CODE = 2
+ 
+ SEVERITY_MAP = {
+     "ERROR": Severity.HIGH,
+@@ -213,7 +215,7 @@ class SemgrepScanner(BaseScanner):
+                 version=status.version,
+             )
+         # semgrep は「検出あり」でも 0 を返す。2 以上が実行失敗。
+-        if result.exit_code is None or result.exit_code >= 2:
++        if result.exit_code is None or result.exit_code >= FAILURE_EXIT_CODE:
+             return self.failed(
+                 "semgrep の実行に失敗しました",
+                 exit_code=result.exit_code,

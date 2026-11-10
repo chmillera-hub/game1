@@ -1,0 +1,43 @@
+diff --git a/src/security_checker/providers/http/transport.py b/src/security_checker/providers/http/transport.py
+index 15b09c9..8baf6b3 100644
+--- a/src/security_checker/providers/http/transport.py
++++ b/src/security_checker/providers/http/transport.py
+@@ -9,6 +9,7 @@ from __future__ import annotations
+ import time
+ from datetime import UTC, datetime
+ from email.utils import parsedate_to_datetime
++from http import HTTPStatus
+ from typing import Any, Literal
+ 
+ import httpx
+@@ -160,7 +161,7 @@ class HttpProvider:
+ 
+     def _raise_for_status(self, response: httpx.Response) -> None:
+         status = response.status_code
+-        if status < 400:
++        if status < HTTPStatus.BAD_REQUEST:
+             return
+         detail = _excerpt(response.text)
+         if status in (401, 403) or self.dialect_impl.is_auth_error(status, response.text):
+@@ -169,18 +170,18 @@ class HttpProvider:
+                 f"api_key_env に指定した環境変数の値を確認してください: {detail}",
+                 provider=self.name,
+             )
+-        if status == 429:
++        if status == HTTPStatus.TOO_MANY_REQUESTS:
+             raise ProviderRateLimitError(
+                 f"{self.name}: レート制限に達しました: {detail}",
+                 provider=self.name,
+                 retry_after=_retry_after(response),
+             )
+-        if status == 408:
++        if status == HTTPStatus.REQUEST_TIMEOUT:
+             raise ProviderTimeoutError(
+                 f"{self.name}: サーバがタイムアウトを返しました (408): {detail}",
+                 provider=self.name,
+             )
+-        if status >= 500:
++        if status >= HTTPStatus.INTERNAL_SERVER_ERROR:
+             raise ProviderServerError(
+                 f"{self.name}: サーバエラー ({status}): {detail}", provider=self.name
+             )

@@ -1,0 +1,22 @@
+diff --git a/src/security_checker/aggregate/consensus.py b/src/security_checker/aggregate/consensus.py
+index eb5bd04..a155a33 100644
+--- a/src/security_checker/aggregate/consensus.py
++++ b/src/security_checker/aggregate/consensus.py
+@@ -24,6 +24,8 @@ SUMMARY_LIMIT = 200
+ SUMMARY_HEAD_LIMIT = 160
+ SINGLE_CONFIRMED_CONFIDENCE = 0.8
+ SINGLE_LIKELY_CONFIDENCE = 0.5
++#: 複数の Reviewer が一致したとき、confirmed にする confidence の平均の下限
++CONSENSUS_CONFIRMED_CONFIDENCE = 0.8
+ 
+ 
+ class ConsensusAggregator:
+@@ -86,7 +88,7 @@ class ConsensusAggregator:
+             mean_confidence = statistics.fmean(v.confidence for v in vulnerable)
+             status = (
+                 FindingStatus.CONFIRMED
+-                if agreement is Agreement.HIGH and mean_confidence >= 0.8
++                if agreement is Agreement.HIGH and mean_confidence >= CONSENSUS_CONFIRMED_CONFIDENCE
+                 else FindingStatus.LIKELY
+             )
+             return self._outcome(

@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds 171 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 197 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -524,6 +524,84 @@ The shelf holds 171 small AI-written bug fixes (patch files) for forty-seven pub
 
 171. [security-checker: no test covers semgrep output whose results field is not a list](spare-token-bug-fixes/fix-171-security-checker-589.md)
    Project: Sh1n1230/security-checker. Bug report number 589. License: MIT. Test included: yes. Patch file: [171-security-checker-589.patch](spare-token-bug-fixes/fixes/171-security-checker-589.patch)
+
+172. [security-checker: semgrep.py compares against unnamed numbers (2)](spare-token-bug-fixes/fix-172-security-checker-378.md)
+   Project: Sh1n1230/security-checker. Bug report number 378. License: MIT. Test included: no. Patch file: [172-security-checker-378.patch](spare-token-bug-fixes/fixes/172-security-checker-378.patch)
+
+173. [security-checker: scheduler.py compares against unnamed numbers (60.0)](spare-token-bug-fixes/fix-173-security-checker-376.md)
+   Project: Sh1n1230/security-checker. Bug report number 376. License: MIT. Test included: no. Patch file: [173-security-checker-376.patch](spare-token-bug-fixes/fixes/173-security-checker-376.patch)
+
+174. [security-checker: terminal.py compares against unnamed numbers (5)](spare-token-bug-fixes/fix-174-security-checker-375.md)
+   Project: Sh1n1230/security-checker. Bug report number 375. License: MIT. Test included: no. Patch file: [174-security-checker-375.patch](spare-token-bug-fixes/fixes/174-security-checker-375.patch)
+
+175. [security-checker: transport.py compares against unnamed numbers (400 and 429 and 500)](spare-token-bug-fixes/fix-175-security-checker-374.md)
+   Project: Sh1n1230/security-checker. Bug report number 374. License: MIT. Test included: no. Patch file: [175-security-checker-374.patch](spare-token-bug-fixes/fixes/175-security-checker-374.patch)
+
+176. [security-checker: ollama_chat.py compares against unnamed numbers (404)](spare-token-bug-fixes/fix-176-security-checker-373.md)
+   Project: Sh1n1230/security-checker. Bug report number 373. License: MIT. Test included: no. Patch file: [176-security-checker-373.patch](spare-token-bug-fixes/fixes/176-security-checker-373.patch)
+
+177. [security-checker: gemini_generate.py compares against unnamed numbers (400 and 404)](spare-token-bug-fixes/fix-177-security-checker-372.md)
+   Project: Sh1n1230/security-checker. Bug report number 372. License: MIT. Test included: no. Patch file: [177-security-checker-372.patch](spare-token-bug-fixes/fixes/177-security-checker-372.patch)
+
+178. [security-checker: anthropic_messages.py compares against unnamed numbers (400 and 404)](spare-token-bug-fixes/fix-178-security-checker-371.md)
+   Project: Sh1n1230/security-checker. Bug report number 371. License: MIT. Test included: no. Patch file: [178-security-checker-371.patch](spare-token-bug-fixes/fixes/178-security-checker-371.patch)
+
+179. [security-checker: score.py compares against unnamed numbers (50 and 70 and 90)](spare-token-bug-fixes/fix-179-security-checker-370.md)
+   Project: Sh1n1230/security-checker. Bug report number 370. License: MIT. Test included: no. Patch file: [179-security-checker-370.patch](spare-token-bug-fixes/fixes/179-security-checker-370.patch)
+
+180. [security-checker: client.py compares against unnamed numbers (400)](spare-token-bug-fixes/fix-180-security-checker-369.md)
+   Project: Sh1n1230/security-checker. Bug report number 369. License: MIT. Test included: no. Patch file: [180-security-checker-369.patch](spare-token-bug-fixes/fixes/180-security-checker-369.patch)
+
+181. [security-checker: facts.py compares against unnamed numbers (10)](spare-token-bug-fixes/fix-181-security-checker-367.md)
+   Project: Sh1n1230/security-checker. Bug report number 367. License: MIT. Test included: no. Patch file: [181-security-checker-367.patch](spare-token-bug-fixes/fixes/181-security-checker-367.patch)
+
+182. [security-checker: builder.py compares against unnamed numbers (3)](spare-token-bug-fixes/fix-182-security-checker-366.md)
+   Project: Sh1n1230/security-checker. Bug report number 366. License: MIT. Test included: no. Patch file: [182-security-checker-366.patch](spare-token-bug-fixes/fixes/182-security-checker-366.patch)
+
+183. [security-checker: consensus.py compares against unnamed numbers (0.8)](spare-token-bug-fixes/fix-183-security-checker-365.md)
+   Project: Sh1n1230/security-checker. Bug report number 365. License: MIT. Test included: no. Patch file: [183-security-checker-365.patch](spare-token-bug-fixes/fixes/183-security-checker-365.patch)
+
+184. [security-checker: agreement.py compares against unnamed numbers (0.25 and 0.75 and 2)](spare-token-bug-fixes/fix-184-security-checker-364.md)
+   Project: Sh1n1230/security-checker. Bug report number 364. License: MIT. Test included: no. Patch file: [184-security-checker-364.patch](spare-token-bug-fixes/fixes/184-security-checker-364.patch)
+
+185. [security-checker: pricing.yml accepts a negative price](spare-token-bug-fixes/fix-185-security-checker-453.md)
+   Project: Sh1n1230/security-checker. Bug report number 453. License: MIT. Test included: yes. Patch file: [185-security-checker-453.patch](spare-token-bug-fixes/fixes/185-security-checker-453.patch)
+
+186. [security-checker: a pricing.yml whose top level is a list crashes with AttributeError](spare-token-bug-fixes/fix-186-security-checker-452.md)
+   Project: Sh1n1230/security-checker. Bug report number 452. License: MIT. Test included: yes. Patch file: [186-security-checker-452.patch](spare-token-bug-fixes/fixes/186-security-checker-452.patch)
+
+187. [security-checker: the anonymous reviewer labels repeat from the 27th reviewer on](spare-token-bug-fixes/fix-187-security-checker-462.md)
+   Project: Sh1n1230/security-checker. Bug report number 462. License: MIT. Test included: yes. Patch file: [187-security-checker-462.patch](spare-token-bug-fixes/fixes/187-security-checker-462.patch)
+
+188. [security-checker: an inline comment after a tab stays in the ignore pattern](spare-token-bug-fixes/fix-188-security-checker-446.md)
+   Project: Sh1n1230/security-checker. Bug report number 446. License: MIT. Test included: yes. Patch file: [188-security-checker-446.patch](spare-token-bug-fixes/fixes/188-security-checker-446.patch)
+
+189. [security-checker: public names in trivy.py have no docstring (__init__ and scan)](spare-token-bug-fixes/fix-189-security-checker-426.md)
+   Project: Sh1n1230/security-checker. Bug report number 426. License: MIT. Test included: no. Patch file: [189-security-checker-426.patch](spare-token-bug-fixes/fixes/189-security-checker-426.patch)
+
+190. [security-checker: public names in semgrep.py have no docstring (__init__ and scan)](spare-token-bug-fixes/fix-190-security-checker-425.md)
+   Project: Sh1n1230/security-checker. Bug report number 425. License: MIT. Test included: no. Patch file: [190-security-checker-425.patch](spare-token-bug-fixes/fixes/190-security-checker-425.patch)
+
+191. [security-checker: public names in osv.py have no docstring (__init__ and scan)](spare-token-bug-fixes/fix-191-security-checker-424.md)
+   Project: Sh1n1230/security-checker. Bug report number 424. License: MIT. Test included: no. Patch file: [191-security-checker-424.patch](spare-token-bug-fixes/fixes/191-security-checker-424.patch)
+
+192. [security-checker: public names in gitleaks.py have no docstring (__init__ and scan)](spare-token-bug-fixes/fix-192-security-checker-423.md)
+   Project: Sh1n1230/security-checker. Bug report number 423. License: MIT. Test included: no. Patch file: [192-security-checker-423.patch](spare-token-bug-fixes/fixes/192-security-checker-423.patch)
+
+193. [security-checker: public names in runner.py have no docstring (__init__ and capabilities)](spare-token-bug-fixes/fix-193-security-checker-417.md)
+   Project: Sh1n1230/security-checker. Bug report number 417. License: MIT. Test included: no. Patch file: [193-security-checker-417.patch](spare-token-bug-fixes/fixes/193-security-checker-417.patch)
+
+194. [security-checker: public names in errors.py have no docstring (three __init__ methods)](spare-token-bug-fixes/fix-194-security-checker-410.md)
+   Project: Sh1n1230/security-checker. Bug report number 410. License: MIT. Test included: no. Patch file: [194-security-checker-410.patch](spare-token-bug-fixes/fixes/194-security-checker-410.patch)
+
+195. [security-checker: public names in logging.py have no docstring (disable and set_run_id)](spare-token-bug-fixes/fix-195-security-checker-403.md)
+   Project: Sh1n1230/security-checker. Bug report number 403. License: MIT. Test included: no. Patch file: [195-security-checker-403.patch](spare-token-bug-fixes/fixes/195-security-checker-403.patch)
+
+196. [security-checker: public names in explain.py have no docstring (Explanation and load_report)](spare-token-bug-fixes/fix-196-security-checker-402.md)
+   Project: Sh1n1230/security-checker. Bug report number 402. License: MIT. Test included: no. Patch file: [196-security-checker-402.patch](spare-token-bug-fixes/fixes/196-security-checker-402.patch)
+
+197. [security-checker: twelve modules each lack one docstring](spare-token-bug-fixes/fix-197-security-checker-432.md)
+   Project: Sh1n1230/security-checker. Bug report number 432. License: MIT. Test included: no. Patch file: [197-security-checker-432.patch](spare-token-bug-fixes/fixes/197-security-checker-432.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

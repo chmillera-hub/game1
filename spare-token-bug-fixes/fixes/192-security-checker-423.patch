@@ -1,0 +1,23 @@
+diff --git a/src/security_checker/scanners/gitleaks.py b/src/security_checker/scanners/gitleaks.py
+index 2044e35..32ccbbd 100644
+--- a/src/security_checker/scanners/gitleaks.py
++++ b/src/security_checker/scanners/gitleaks.py
+@@ -150,6 +150,7 @@ class GitleaksScanner(BaseScanner):
+     settings: GitleaksConfig
+ 
+     def __init__(self, settings: GitleaksConfig) -> None:
++        """設定 (`scanners.gitleaks`) を受け取る. 実行はしない."""
+         super().__init__(settings)
+ 
+     @staticmethod
+@@ -170,6 +171,10 @@ class GitleaksScanner(BaseScanner):
+         return completed.returncode == 0
+ 
+     async def scan(self, target: Target, ctx: ScanContext) -> ScanResult:
++        """gitleaks を実行し、シークレットの検出を Candidate に正規化して返す.
++
++        gitleaks が未導入なら skipped、実行に失敗すれば failed を返す (例外にはしない)。
++        """
+         status = self.probe()
+         if not status.available:
+             return self.skipped(status.reason or "gitleaks が利用できません")

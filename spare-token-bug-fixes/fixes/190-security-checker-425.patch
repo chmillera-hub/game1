@@ -1,0 +1,19 @@
+diff --git a/src/security_checker/scanners/semgrep.py b/src/security_checker/scanners/semgrep.py
+index ac8f80c..8b04249 100644
+--- a/src/security_checker/scanners/semgrep.py
++++ b/src/security_checker/scanners/semgrep.py
+@@ -175,9 +175,14 @@ class SemgrepScanner(BaseScanner):
+     settings: SemgrepConfig
+ 
+     def __init__(self, settings: SemgrepConfig) -> None:
++        """設定 (`scanners.semgrep`) を受け取る. 実行はしない."""
+         super().__init__(settings)
+ 
+     async def scan(self, target: Target, ctx: ScanContext) -> ScanResult:
++        """semgrep を実行し、検出を Candidate に正規化して返す.
++
++        semgrep が未導入なら skipped、実行に失敗すれば failed を返す (例外にはしない)。
++        """
+         status = self.probe()
+         if not status.available:
+             return self.skipped(status.reason or "semgrep が利用できません")

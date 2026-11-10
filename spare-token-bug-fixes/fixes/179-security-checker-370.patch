@@ -1,0 +1,26 @@
+diff --git a/src/security_checker/policy/score.py b/src/security_checker/policy/score.py
+index 95ea466..201271f 100644
+--- a/src/security_checker/policy/score.py
++++ b/src/security_checker/policy/score.py
+@@ -25,14 +25,18 @@ DEDUCTION = {
+     Severity.NONE: 0,
+ }
+ CATEGORY_CAP = 40
++#: ランクの下限 (この点数以上). どれにも届かなければ D
++RANK_A_MIN = 90
++RANK_B_MIN = 70
++RANK_C_MIN = 50
+ 
+ 
+ def rank_for(value: int) -> Literal["A", "B", "C", "D"]:
+-    if value >= 90:
++    if value >= RANK_A_MIN:
+         return "A"
+-    if value >= 70:
++    if value >= RANK_B_MIN:
+         return "B"
+-    if value >= 50:
++    if value >= RANK_C_MIN:
+         return "C"
+     return "D"
+ 

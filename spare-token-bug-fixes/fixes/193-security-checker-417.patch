@@ -1,0 +1,24 @@
+diff --git a/src/security_checker/providers/process/runner.py b/src/security_checker/providers/process/runner.py
+index 49e2670..3eb17c6 100644
+--- a/src/security_checker/providers/process/runner.py
++++ b/src/security_checker/providers/process/runner.py
+@@ -85,6 +85,11 @@ class ProcessProvider:
+         environ: Mapping[str, str] | None = None,
+         runner: Runner | None = None,
+     ) -> None:
++        """起動するコマンドと、その CLI の入出力の形を受け取る. ここでは起動しない.
++
++        `capabilities` は設定で宣言された値をそのまま使う (CLI に問い合わせない)。
++        `runner` はテストで子プロセスの起動を差し替えるためのもの。
++        """
+         self.name = name
+         self.dialect = TEXT_IO_DIALECT
+         self.command = list(command)
+@@ -98,6 +103,7 @@ class ProcessProvider:
+ 
+     @property
+     def capabilities(self) -> Capabilities:
++        """設定で宣言された Capabilities. 実行中に変わらない."""
+         return self._capabilities
+ 
+     async def complete(self, req: CompletionRequest) -> CompletionResponse:

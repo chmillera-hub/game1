@@ -1,0 +1,54 @@
+diff --git a/src/security_checker/observability/cost.py b/src/security_checker/observability/cost.py
+index 2ec7b56..a55ed38 100644
+--- a/src/security_checker/observability/cost.py
++++ b/src/security_checker/observability/cost.py
+@@ -68,6 +68,8 @@ def load_price_table(config_dir: Path | None = None, explicit: Path | None = Non
+             raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+         except (OSError, yaml.YAMLError) as exc:
+             raise ConfigError(f"{path} を読み込めません: {exc}") from exc
++        if not isinstance(raw, dict):
++            raise ConfigError(f"{path}: トップレベルはマッピングである必要があります")
+         entries = raw.get("models", raw)
+         if not isinstance(entries, dict):
+             raise ConfigError(f"{path}: models はマッピングである必要があります")
+diff --git a/tests/unit/test_cost_top_level_shape.py b/tests/unit/test_cost_top_level_shape.py
+new file mode 100644
+index 0000000..bc1ca15
+--- /dev/null
++++ b/tests/unit/test_cost_top_level_shape.py
+@@ -0,0 +1,35 @@
++"""pricing.yml のトップレベルがマッピングでなければ ConfigError になること."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.errors import ConfigError
++from security_checker.observability.cost import load_price_table
++
++
++@pytest.mark.parametrize("text", ["- m\n- n\n", "just text\n", "3\n"])
++def test_top_level_that_is_not_a_mapping_is_a_config_error(tmp_path: Path, text: str) -> None:
++    path = tmp_path / "pricing.yml"
++    path.write_text(text, encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="トップレベルはマッピング"):
++        load_price_table(explicit=path)
++
++
++def test_models_that_is_not_a_mapping_is_still_a_config_error(tmp_path: Path) -> None:
++    path = tmp_path / "pricing.yml"
++    path.write_text("models:\n  - m\n", encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="models はマッピング"):
++        load_price_table(explicit=path)
++
++
++def test_empty_file_is_an_empty_table(tmp_path: Path) -> None:
++    """対になるケース. 空のファイルは「価格の定義なし」として読める."""
++    path = tmp_path / "pricing.yml"
++    path.write_text("", encoding="utf-8")
++
++    assert load_price_table(explicit=path).prices == {}

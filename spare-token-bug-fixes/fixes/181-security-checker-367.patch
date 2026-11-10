@@ -1,0 +1,22 @@
+diff --git a/src/security_checker/context/facts.py b/src/security_checker/context/facts.py
+index 1f22479..8ecf973 100644
+--- a/src/security_checker/context/facts.py
++++ b/src/security_checker/context/facts.py
+@@ -65,6 +65,8 @@ ENTRYPOINT_NAMES = {
+ AUTH_MARKERS = ("auth", "login", "session", "jwt", "oauth", "permission")
+ SKIP_DIRS = {".git", "node_modules", "vendor", "__pycache__", ".venv", "dist", "build"}
+ MAX_FILES = 4000
++#: プロンプトに載せるエントリポイントの上限
++MAX_ENTRYPOINTS = 10
+ 
+ 
+ def collect_repo_facts(root: Path) -> RepoFacts:
+@@ -90,7 +92,7 @@ def collect_repo_facts(root: Path) -> RepoFacts:
+         language = LANGUAGE_BY_SUFFIX.get(path.suffix)
+         if language:
+             languages[language] = languages.get(language, 0) + 1
+-        if name in ENTRYPOINT_NAMES and len(entrypoints) < 10:
++        if name in ENTRYPOINT_NAMES and len(entrypoints) < MAX_ENTRYPOINTS:
+             entrypoints.append(relative)
+         if name in DEPLOYMENT_FILES:
+             hint = DEPLOYMENT_FILES[name]

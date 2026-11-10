@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-171 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
+197 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 66 of the 171 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 159 of the 171 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 68 of the 197 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 185 of the 197 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -539,6 +539,84 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 171. [security-checker: no test covers semgrep output whose results field is not a list](fix-171-security-checker-589.md)
    Project: Sh1n1230/security-checker. Bug report number 589. License: MIT. Test included: yes. Patch file: [171-security-checker-589.patch](fixes/171-security-checker-589.patch)
+
+172. [security-checker: semgrep.py compares against unnamed numbers (2)](fix-172-security-checker-378.md)
+   Project: Sh1n1230/security-checker. Bug report number 378. License: MIT. Test included: no. Patch file: [172-security-checker-378.patch](fixes/172-security-checker-378.patch)
+
+173. [security-checker: scheduler.py compares against unnamed numbers (60.0)](fix-173-security-checker-376.md)
+   Project: Sh1n1230/security-checker. Bug report number 376. License: MIT. Test included: no. Patch file: [173-security-checker-376.patch](fixes/173-security-checker-376.patch)
+
+174. [security-checker: terminal.py compares against unnamed numbers (5)](fix-174-security-checker-375.md)
+   Project: Sh1n1230/security-checker. Bug report number 375. License: MIT. Test included: no. Patch file: [174-security-checker-375.patch](fixes/174-security-checker-375.patch)
+
+175. [security-checker: transport.py compares against unnamed numbers (400 and 429 and 500)](fix-175-security-checker-374.md)
+   Project: Sh1n1230/security-checker. Bug report number 374. License: MIT. Test included: no. Patch file: [175-security-checker-374.patch](fixes/175-security-checker-374.patch)
+
+176. [security-checker: ollama_chat.py compares against unnamed numbers (404)](fix-176-security-checker-373.md)
+   Project: Sh1n1230/security-checker. Bug report number 373. License: MIT. Test included: no. Patch file: [176-security-checker-373.patch](fixes/176-security-checker-373.patch)
+
+177. [security-checker: gemini_generate.py compares against unnamed numbers (400 and 404)](fix-177-security-checker-372.md)
+   Project: Sh1n1230/security-checker. Bug report number 372. License: MIT. Test included: no. Patch file: [177-security-checker-372.patch](fixes/177-security-checker-372.patch)
+
+178. [security-checker: anthropic_messages.py compares against unnamed numbers (400 and 404)](fix-178-security-checker-371.md)
+   Project: Sh1n1230/security-checker. Bug report number 371. License: MIT. Test included: no. Patch file: [178-security-checker-371.patch](fixes/178-security-checker-371.patch)
+
+179. [security-checker: score.py compares against unnamed numbers (50 and 70 and 90)](fix-179-security-checker-370.md)
+   Project: Sh1n1230/security-checker. Bug report number 370. License: MIT. Test included: no. Patch file: [179-security-checker-370.patch](fixes/179-security-checker-370.patch)
+
+180. [security-checker: client.py compares against unnamed numbers (400)](fix-180-security-checker-369.md)
+   Project: Sh1n1230/security-checker. Bug report number 369. License: MIT. Test included: no. Patch file: [180-security-checker-369.patch](fixes/180-security-checker-369.patch)
+
+181. [security-checker: facts.py compares against unnamed numbers (10)](fix-181-security-checker-367.md)
+   Project: Sh1n1230/security-checker. Bug report number 367. License: MIT. Test included: no. Patch file: [181-security-checker-367.patch](fixes/181-security-checker-367.patch)
+
+182. [security-checker: builder.py compares against unnamed numbers (3)](fix-182-security-checker-366.md)
+   Project: Sh1n1230/security-checker. Bug report number 366. License: MIT. Test included: no. Patch file: [182-security-checker-366.patch](fixes/182-security-checker-366.patch)
+
+183. [security-checker: consensus.py compares against unnamed numbers (0.8)](fix-183-security-checker-365.md)
+   Project: Sh1n1230/security-checker. Bug report number 365. License: MIT. Test included: no. Patch file: [183-security-checker-365.patch](fixes/183-security-checker-365.patch)
+
+184. [security-checker: agreement.py compares against unnamed numbers (0.25 and 0.75 and 2)](fix-184-security-checker-364.md)
+   Project: Sh1n1230/security-checker. Bug report number 364. License: MIT. Test included: no. Patch file: [184-security-checker-364.patch](fixes/184-security-checker-364.patch)
+
+185. [security-checker: pricing.yml accepts a negative price](fix-185-security-checker-453.md)
+   Project: Sh1n1230/security-checker. Bug report number 453. License: MIT. Test included: yes. Patch file: [185-security-checker-453.patch](fixes/185-security-checker-453.patch)
+
+186. [security-checker: a pricing.yml whose top level is a list crashes with AttributeError](fix-186-security-checker-452.md)
+   Project: Sh1n1230/security-checker. Bug report number 452. License: MIT. Test included: yes. Patch file: [186-security-checker-452.patch](fixes/186-security-checker-452.patch)
+
+187. [security-checker: the anonymous reviewer labels repeat from the 27th reviewer on](fix-187-security-checker-462.md)
+   Project: Sh1n1230/security-checker. Bug report number 462. License: MIT. Test included: yes. Patch file: [187-security-checker-462.patch](fixes/187-security-checker-462.patch)
+
+188. [security-checker: an inline comment after a tab stays in the ignore pattern](fix-188-security-checker-446.md)
+   Project: Sh1n1230/security-checker. Bug report number 446. License: MIT. Test included: yes. Patch file: [188-security-checker-446.patch](fixes/188-security-checker-446.patch)
+
+189. [security-checker: public names in trivy.py have no docstring (__init__ and scan)](fix-189-security-checker-426.md)
+   Project: Sh1n1230/security-checker. Bug report number 426. License: MIT. Test included: no. Patch file: [189-security-checker-426.patch](fixes/189-security-checker-426.patch)
+
+190. [security-checker: public names in semgrep.py have no docstring (__init__ and scan)](fix-190-security-checker-425.md)
+   Project: Sh1n1230/security-checker. Bug report number 425. License: MIT. Test included: no. Patch file: [190-security-checker-425.patch](fixes/190-security-checker-425.patch)
+
+191. [security-checker: public names in osv.py have no docstring (__init__ and scan)](fix-191-security-checker-424.md)
+   Project: Sh1n1230/security-checker. Bug report number 424. License: MIT. Test included: no. Patch file: [191-security-checker-424.patch](fixes/191-security-checker-424.patch)
+
+192. [security-checker: public names in gitleaks.py have no docstring (__init__ and scan)](fix-192-security-checker-423.md)
+   Project: Sh1n1230/security-checker. Bug report number 423. License: MIT. Test included: no. Patch file: [192-security-checker-423.patch](fixes/192-security-checker-423.patch)
+
+193. [security-checker: public names in runner.py have no docstring (__init__ and capabilities)](fix-193-security-checker-417.md)
+   Project: Sh1n1230/security-checker. Bug report number 417. License: MIT. Test included: no. Patch file: [193-security-checker-417.patch](fixes/193-security-checker-417.patch)
+
+194. [security-checker: public names in errors.py have no docstring (three __init__ methods)](fix-194-security-checker-410.md)
+   Project: Sh1n1230/security-checker. Bug report number 410. License: MIT. Test included: no. Patch file: [194-security-checker-410.patch](fixes/194-security-checker-410.patch)
+
+195. [security-checker: public names in logging.py have no docstring (disable and set_run_id)](fix-195-security-checker-403.md)
+   Project: Sh1n1230/security-checker. Bug report number 403. License: MIT. Test included: no. Patch file: [195-security-checker-403.patch](fixes/195-security-checker-403.patch)
+
+196. [security-checker: public names in explain.py have no docstring (Explanation and load_report)](fix-196-security-checker-402.md)
+   Project: Sh1n1230/security-checker. Bug report number 402. License: MIT. Test included: no. Patch file: [196-security-checker-402.patch](fixes/196-security-checker-402.patch)
+
+197. [security-checker: twelve modules each lack one docstring](fix-197-security-checker-432.md)
+   Project: Sh1n1230/security-checker. Bug report number 432. License: MIT. Test included: no. Patch file: [197-security-checker-432.patch](fixes/197-security-checker-432.patch)
 
 ## How to use a fix
 

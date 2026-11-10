@@ -1,0 +1,59 @@
+diff --git a/src/security_checker/aggregate/judge.py b/src/security_checker/aggregate/judge.py
+index c544c9a..5d5baae 100644
+--- a/src/security_checker/aggregate/judge.py
++++ b/src/security_checker/aggregate/judge.py
+@@ -33,6 +33,16 @@ from security_checker.review.prompts import PeerOpinion
+ STRATEGY = "judge"
+ 
+ 
++def anonymous_label(index: int) -> str:
++    """0 → A、25 → Z、26 → AA。表計算の列名と同じ数え方で、何人いても重複しない."""
++    letters = ""
++    number = index + 1
++    while number > 0:
++        number, remainder = divmod(number - 1, len(string.ascii_uppercase))
++        letters = string.ascii_uppercase[remainder] + letters
++    return letters
++
++
+ def anonymize(candidate_id: str, verdicts: Sequence[ReviewVerdict]) -> list[PeerOpinion]:
+     """有効な判定だけを、名前を伏せて並べ替える."""
+     valid = [verdict for verdict in verdicts if verdict.status is VerdictStatus.OK]
+@@ -40,7 +50,7 @@ def anonymize(candidate_id: str, verdicts: Sequence[ReviewVerdict]) -> list[Peer
+     random.Random(candidate_id).shuffle(shuffled)  # noqa: S311 - 暗号用途ではない
+     return [
+         PeerOpinion(
+-            label=f"Reviewer {string.ascii_uppercase[index % 26]}",
++            label=f"Reviewer {anonymous_label(index)}",
+             vulnerable=verdict.vulnerable,
+             severity=verdict.severity.value,
+             confidence=verdict.confidence,
+diff --git a/tests/unit/test_judge_anonymous_labels.py b/tests/unit/test_judge_anonymous_labels.py
+new file mode 100644
+index 0000000..e7b1fea
+--- /dev/null
++++ b/tests/unit/test_judge_anonymous_labels.py
+@@ -0,0 +1,23 @@
++"""Judge に渡す匿名ラベルが、Reviewer が 27 以上でも重複しないこと."""
++
++from __future__ import annotations
++
++from security_checker.aggregate.judge import anonymize, anonymous_label
++from tests.factories import make_verdict
++
++
++def test_labels_count_like_spreadsheet_columns() -> None:
++    labels = [anonymous_label(index) for index in (0, 1, 25, 26, 27, 51, 52, 701, 702)]
++
++    assert labels == ["A", "B", "Z", "AA", "AB", "AZ", "BA", "ZZ", "AAA"]
++
++
++def test_thirty_opinions_get_unique_labels() -> None:
++    verdicts = [make_verdict(f"r{index}") for index in range(30)]
++
++    labels = [opinion.label for opinion in anonymize("c1", verdicts)]
++
++    assert len(labels) == 30
++    assert len(set(labels)) == 30
++    assert labels[0] == "Reviewer A"
++    assert labels[26] == "Reviewer AA"

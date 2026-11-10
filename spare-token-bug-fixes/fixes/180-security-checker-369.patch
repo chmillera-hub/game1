@@ -1,0 +1,21 @@
+diff --git a/src/security_checker/github/client.py b/src/security_checker/github/client.py
+index 8fcf3b0..57ee688 100644
+--- a/src/security_checker/github/client.py
++++ b/src/security_checker/github/client.py
+@@ -11,6 +11,7 @@ import json
+ import os
+ from collections.abc import Callable, Mapping
+ from dataclasses import dataclass, field
++from http import HTTPStatus
+ from pathlib import Path
+ from typing import Any
+ 
+@@ -114,7 +115,7 @@ class GithubClient:
+             response = self._client.request(method, url, **kwargs)
+         except httpx.HTTPError as exc:
+             raise GithubError(f"GitHub API に接続できません: {exc}") from exc
+-        if response.status_code >= 400:
++        if response.status_code >= HTTPStatus.BAD_REQUEST:
+             message = ""
+             try:
+                 message = str(response.json().get("message", ""))

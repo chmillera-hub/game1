@@ -1,0 +1,80 @@
+diff --git a/src/security_checker/policy/ignore.py b/src/security_checker/policy/ignore.py
+index 07632fb..f934676 100644
+--- a/src/security_checker/policy/ignore.py
++++ b/src/security_checker/policy/ignore.py
+@@ -84,12 +84,22 @@ def rule_matches(rule: str, candidate: Candidate) -> bool:
+     return rule in ("*", candidate.rule_id, f"{candidate.scanner}/{candidate.rule_id}")
+ 
+ 
++#: 行内コメントの始まり. 空白類に続く `#`
++_INLINE_COMMENT = re.compile(r"\s+#")
++
++
+ def parse_ignore_file(text: str, source: str = IGNORE_FILENAME) -> tuple[IgnoreFile, list[str]]:
+-    """内容を解釈する. 解釈できない行は黙って捨てず、警告にする."""
++    """内容を解釈する. 解釈できない行は黙って捨てず、警告にする.
++
++    行内コメントは、空白類 (スペースやタブ) に続く `#` から行末まで。
++    空白を挟まない `#` (`a#b`) はパターンの一部として残す。
++    """
+     ignore = IgnoreFile()
+     warnings: list[str] = []
+     for number, raw in enumerate(text.splitlines(), start=1):
+-        line = raw.split(" #", 1)[0].strip() if not raw.lstrip().startswith("#") else ""
++        if raw.lstrip().startswith("#"):
++            continue
++        line = _INLINE_COMMENT.split(raw, maxsplit=1)[0].strip()
+         if not line:
+             continue
+         if line.startswith("!"):
+diff --git a/tests/unit/test_ignore_file_inline_comment.py b/tests/unit/test_ignore_file_inline_comment.py
+new file mode 100644
+index 0000000..ffac45e
+--- /dev/null
++++ b/tests/unit/test_ignore_file_inline_comment.py
+@@ -0,0 +1,45 @@
++""".security-checker-ignore の行内コメントが、タブ区切りでも落ちること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.policy.ignore import parse_ignore_file
++
++
++@pytest.mark.parametrize(
++    "line",
++    [
++        "tests/**\t# fixtures",
++        "tests/** # fixtures",
++        "tests/**  \t # fixtures",
++        "tests/**\t#fixtures",
++    ],
++)
++def test_inline_comment_after_whitespace_is_dropped(line: str) -> None:
++    ignore, warnings = parse_ignore_file(line + "\n")
++
++    assert ignore.path_patterns == ["tests/**"]
++    assert warnings == []
++
++
++def test_hash_without_whitespace_before_it_stays_in_the_pattern() -> None:
++    ignore, _ = parse_ignore_file("docs/a#b.md\n")
++
++    assert ignore.path_patterns == ["docs/a#b.md"]
++
++
++def test_inline_comment_on_a_rule_line_is_dropped() -> None:
++    ignore, warnings = parse_ignore_file("rule: python.lang.eval\ttests/**\t# 理由\n")
++
++    assert len(ignore.rules) == 1
++    assert ignore.rules[0].rule == "python.lang.eval"
++    assert ignore.rules[0].paths == ("tests/**",)
++    assert warnings == []
++
++
++def test_full_line_comment_is_skipped() -> None:
++    ignore, warnings = parse_ignore_file("\t# only a comment\n")
++
++    assert ignore.path_patterns == []
++    assert warnings == []
