@@ -1,0 +1,39 @@
+diff --git a/tests/unit/test_slicer_read_text_file_os_error.py b/tests/unit/test_slicer_read_text_file_os_error.py
+new file mode 100644
+index 0000000..afd68a5
+--- /dev/null
++++ b/tests/unit/test_slicer_read_text_file_os_error.py
+@@ -0,0 +1,33 @@
++"""slicer.read_text_file: 読み込みで OSError が出たら None を返すこと."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.context.slicer import read_text_file
++
++
++def test_os_error_while_reading_gives_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
++    path = tmp_path / "a.py"
++    path.write_text("a = 1\n", encoding="utf-8")
++
++    def refuse(_self: Path) -> bytes:
++        raise PermissionError("読めません")
++
++    monkeypatch.setattr(Path, "read_bytes", refuse)
++
++    assert read_text_file(path) is None
++
++
++def test_directory_gives_none(tmp_path: Path) -> None:
++    assert read_text_file(tmp_path) is None
++
++
++def test_readable_text_file_gives_its_lines(tmp_path: Path) -> None:
++    """対になるケース. 読めるテキストは行のリストになる."""
++    path = tmp_path / "a.py"
++    path.write_text("a = 1\nb = 2\n", encoding="utf-8")
++
++    assert read_text_file(path) == ["a = 1", "b = 2"]

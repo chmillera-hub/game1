@@ -1,0 +1,42 @@
+diff --git a/tests/unit/test_candidate_where.py b/tests/unit/test_candidate_where.py
+new file mode 100644
+index 0000000..25d7a31
+--- /dev/null
++++ b/tests/unit/test_candidate_where.py
+@@ -0,0 +1,36 @@
++"""Candidate.where: 位置が無い候補の人間向けの表記."""
++
++from __future__ import annotations
++
++from security_checker.models.candidate import PackageRef
++from security_checker.models.enums import Category
++from tests.factories import make_candidate
++
++
++def test_where_of_a_dependency_candidate_is_the_package_key() -> None:
++    candidate = make_candidate(
++        location=None,
++        category=Category.DEPENDENCY,
++        package=PackageRef(ecosystem="PyPI", name="requests", version="2.31.0"),
++    )
++
++    assert candidate.where == "PyPI:requests@2.31.0"
++
++
++def test_where_of_a_package_without_a_version_uses_a_star() -> None:
++    candidate = make_candidate(
++        location=None,
++        category=Category.DEPENDENCY,
++        package=PackageRef(ecosystem="npm", name="left-pad"),
++    )
++
++    assert candidate.where == "npm:left-pad@*"
++
++
++def test_where_without_location_or_package_is_a_dash() -> None:
++    assert make_candidate(location=None).where == "-"
++
++
++def test_where_prefers_the_location() -> None:
++    """対になるケース. 位置があればパスと行を示す."""
++    assert make_candidate(path="src/a.py", line=7).where == "src/a.py:7"

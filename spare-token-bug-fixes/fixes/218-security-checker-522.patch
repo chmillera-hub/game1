@@ -1,0 +1,37 @@
+diff --git a/tests/unit/test_cost_load_price_table_unreadable.py b/tests/unit/test_cost_load_price_table_unreadable.py
+new file mode 100644
+index 0000000..f2be144
+--- /dev/null
++++ b/tests/unit/test_cost_load_price_table_unreadable.py
+@@ -0,0 +1,31 @@
++"""load_price_table: YAML として読めない pricing.yml は ConfigError になること."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.errors import ConfigError
++from security_checker.observability.cost import load_price_table
++
++
++def test_invalid_yaml_is_a_config_error_that_names_the_file(tmp_path: Path) -> None:
++    path = tmp_path / "pricing.yml"
++    path.write_text("models: [unclosed\n", encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="pricing.yml を読み込めません"):
++        load_price_table(explicit=path)
++
++
++def test_price_that_is_not_a_number_is_a_config_error(tmp_path: Path) -> None:
++    path = tmp_path / "pricing.yml"
++    path.write_text("models:\n  m:\n    input_per_1m: cheap\n", encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="価格定義が不正です"):
++        load_price_table(explicit=path)
++
++
++def test_missing_explicit_file_is_an_empty_table(tmp_path: Path) -> None:
++    """対になるケース. 指定したファイルが無ければ空表 (すべて cost unknown)."""
++    assert load_price_table(explicit=tmp_path / "absent.yml").prices == {}

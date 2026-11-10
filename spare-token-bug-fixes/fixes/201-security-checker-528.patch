@@ -1,0 +1,34 @@
+diff --git a/tests/unit/test_quota_default_path.py b/tests/unit/test_quota_default_path.py
+new file mode 100644
+index 0000000..84dadd2
+--- /dev/null
++++ b/tests/unit/test_quota_default_path.py
+@@ -0,0 +1,28 @@
++"""quota.default_quota_path: XDG_CACHE_HOME があればその下、無ければ ~/.cache の下."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.observability.quota import QUOTA_FILENAME, default_quota_path
++
++
++def test_xdg_cache_home_is_used_when_set(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
++    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
++
++    assert default_quota_path() == tmp_path / "security-checker" / QUOTA_FILENAME
++
++
++@pytest.mark.parametrize("unset", [True, False], ids=["unset", "empty"])
++def test_home_cache_is_the_fallback(
++    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, unset: bool
++) -> None:
++    if unset:
++        monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
++    else:
++        monkeypatch.setenv("XDG_CACHE_HOME", "")
++    monkeypatch.setattr(Path, "home", lambda: tmp_path)
++
++    assert default_quota_path() == tmp_path / ".cache" / "security-checker" / QUOTA_FILENAME

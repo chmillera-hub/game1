@@ -1,0 +1,33 @@
+diff --git a/tests/unit/test_pr_strip_prefix.py b/tests/unit/test_pr_strip_prefix.py
+new file mode 100644
+index 0000000..2d50ce7
+--- /dev/null
++++ b/tests/unit/test_pr_strip_prefix.py
+@@ -0,0 +1,27 @@
++"""pr._strip_prefix: diff のヘッダ行からパスを取り出すこと."""
++
++from __future__ import annotations
++
++from security_checker.github.pr import _strip_prefix
++
++
++def test_quotes_around_the_path_are_removed() -> None:
++    assert _strip_prefix('"b/docs/my file.md"') == "docs/my file.md"
++
++
++def test_quoted_path_without_a_prefix_is_kept() -> None:
++    assert _strip_prefix('"docs/my file.md"') == "docs/my file.md"
++
++
++def test_dev_null_is_no_path() -> None:
++    assert _strip_prefix("/dev/null") is None
++
++
++def test_text_after_a_tab_is_dropped() -> None:
++    assert _strip_prefix("b/src/app.py\t2026-01-01 00:00:00") == "src/app.py"
++
++
++def test_plain_paths_lose_only_the_a_or_b_prefix() -> None:
++    assert _strip_prefix("a/src/app.py") == "src/app.py"
++    assert _strip_prefix("b/src/app.py") == "src/app.py"
++    assert _strip_prefix("src/app.py") == "src/app.py"

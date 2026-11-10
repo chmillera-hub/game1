@@ -1,0 +1,24 @@
+diff --git a/tests/unit/test_quota_today.py b/tests/unit/test_quota_today.py
+new file mode 100644
+index 0000000..51c66a4
+--- /dev/null
++++ b/tests/unit/test_quota_today.py
+@@ -0,0 +1,18 @@
++"""quota._today: 日付の区切りは UTC であること."""
++
++from __future__ import annotations
++
++from datetime import UTC, date, datetime, timedelta
++
++from security_checker.observability.quota import _today
++
++
++def test_today_is_a_date_in_utc() -> None:
++    before = datetime.now(UTC).date()
++    today = _today()
++    after = datetime.now(UTC).date()
++
++    assert type(today) is date
++    # 実行中に UTC の日付が変わっても落ちないよう、前後で挟む
++    assert before <= today <= after
++    assert after - before <= timedelta(days=1)

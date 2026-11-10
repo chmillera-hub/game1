@@ -1,0 +1,36 @@
+diff --git a/tests/unit/test_detect_is_local.py b/tests/unit/test_detect_is_local.py
+new file mode 100644
+index 0000000..1d70557
+--- /dev/null
++++ b/tests/unit/test_detect_is_local.py
+@@ -0,0 +1,30 @@
++"""detect._is_local: base_url が無い・ローカルでないエンドポイントの判定."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.providers.detect import _is_local
++
++
++@pytest.mark.parametrize("base_url", [None, ""])
++def test_missing_base_url_is_not_local(base_url: str | None) -> None:
++    assert _is_local(base_url) is False
++
++
++@pytest.mark.parametrize(
++    "base_url",
++    [
++        "http://localhost:11434",
++        "http://127.0.0.1:8080/v1",
++        "http://[::1]:11434",
++        "http://0.0.0.0:1",
++    ],
++)
++def test_loopback_hosts_are_local(base_url: str) -> None:
++    assert _is_local(base_url) is True
++
++
++@pytest.mark.parametrize("base_url", ["https://api.example.com/v1", "http://localhost.example.com"])
++def test_other_hosts_are_not_local(base_url: str) -> None:
++    assert _is_local(base_url) is False

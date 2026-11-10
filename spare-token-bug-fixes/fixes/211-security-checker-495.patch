@@ -1,0 +1,39 @@
+diff --git a/tests/unit/test_slicer_resolve_inside_errors.py b/tests/unit/test_slicer_resolve_inside_errors.py
+new file mode 100644
+index 0000000..84df6fc
+--- /dev/null
++++ b/tests/unit/test_slicer_resolve_inside_errors.py
+@@ -0,0 +1,33 @@
++"""slicer.resolve_inside: 解決に失敗したパスと、root の外を指すパスは None にすること."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.context.slicer import resolve_inside
++
++
++@pytest.mark.parametrize("exc", [OSError("壊れたリンク"), RuntimeError("リンクの循環")])
++def test_failed_resolution_gives_none(
++    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exc: Exception
++) -> None:
++    def fail(_self: Path, strict: bool = False) -> Path:
++        raise exc
++
++    monkeypatch.setattr(Path, "resolve", fail)
++
++    assert resolve_inside(tmp_path, "src/a.py") is None
++
++
++def test_path_that_leaves_the_root_gives_none(tmp_path: Path) -> None:
++    root = tmp_path / "repo"
++    root.mkdir()
++
++    assert resolve_inside(root, "../outside.py") is None
++
++
++def test_path_inside_the_root_is_resolved(tmp_path: Path) -> None:
++    """対になるケース. 配下のパスは解決して返す."""
++    assert resolve_inside(tmp_path, "src/../a.py") == tmp_path.resolve() / "a.py"

@@ -1,0 +1,33 @@
+diff --git a/tests/unit/test_slicer_shrink_short_slice.py b/tests/unit/test_slicer_shrink_short_slice.py
+new file mode 100644
+index 0000000..c04e018
+--- /dev/null
++++ b/tests/unit/test_slicer_shrink_short_slice.py
+@@ -0,0 +1,27 @@
++"""slicer.shrink: すでに収まっている文脈はそのまま返すこと."""
++
++from __future__ import annotations
++
++from security_checker.context.slicer import shrink
++from security_checker.models.task import CodeSlice
++
++
++def _slice(lines: int, start_line: int = 10) -> CodeSlice:
++    text = "\n".join(f"line {start_line + index}" for index in range(lines))
++    end_line = start_line + lines - 1
++    return CodeSlice(path="src/a.py", start_line=start_line, end_line=end_line, text=text)
++
++
++def test_slice_within_the_limit_is_returned_unchanged() -> None:
++    slice_ = _slice(5)
++
++    assert shrink(slice_, keep_lines=5, focus_line=12) is slice_
++    assert shrink(slice_, keep_lines=9, focus_line=12) is slice_
++
++
++def test_longer_slice_is_cut_around_the_focus_line() -> None:
++    """対になるケース. 上限を超えていれば該当行を含めたまま前後を削る."""
++    shrunk = shrink(_slice(11), keep_lines=3, focus_line=15)
++
++    assert (shrunk.start_line, shrunk.end_line) == (14, 16)
++    assert shrunk.text == "line 14\nline 15\nline 16"

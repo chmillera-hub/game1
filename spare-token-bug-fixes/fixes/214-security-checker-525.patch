@@ -1,0 +1,35 @@
+diff --git a/tests/unit/test_explain_load_report_errors.py b/tests/unit/test_explain_load_report_errors.py
+new file mode 100644
+index 0000000..ff8b86b
+--- /dev/null
++++ b/tests/unit/test_explain_load_report_errors.py
+@@ -0,0 +1,29 @@
++"""explain.load_report: レポートが無い・読めないときは ConfigError になること."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.errors import ConfigError
++from security_checker.observability.explain import load_report
++
++
++def test_missing_report_is_a_config_error(tmp_path: Path) -> None:
++    with pytest.raises(ConfigError, match="レポートが見つかりません"):
++        load_report(tmp_path / "report.json")
++
++
++def test_directory_is_a_config_error(tmp_path: Path) -> None:
++    with pytest.raises(ConfigError, match="レポートが見つかりません"):
++        load_report(tmp_path)
++
++
++@pytest.mark.parametrize("text", ["not json", "{}", "[]"])
++def test_unreadable_report_is_a_config_error(tmp_path: Path, text: str) -> None:
++    path = tmp_path / "report.json"
++    path.write_text(text, encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="レポートを読めません"):
++        load_report(path)

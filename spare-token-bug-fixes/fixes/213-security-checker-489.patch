@@ -1,0 +1,51 @@
+diff --git a/tests/unit/test_config_read_yaml_errors.py b/tests/unit/test_config_read_yaml_errors.py
+new file mode 100644
+index 0000000..0899adc
+--- /dev/null
++++ b/tests/unit/test_config_read_yaml_errors.py
+@@ -0,0 +1,45 @@
++"""config.loader._read_yaml: 読めない・空・形の違う設定ファイルの扱い."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.config.loader import _read_yaml
++from security_checker.errors import ConfigError
++
++
++def test_unreadable_path_is_a_config_error(tmp_path: Path) -> None:
++    # ディレクトリを渡すと read_text が OSError になる
++    with pytest.raises(ConfigError, match="を読み込めません"):
++        _read_yaml(tmp_path)
++
++
++def test_missing_file_is_a_config_error(tmp_path: Path) -> None:
++    with pytest.raises(ConfigError, match="absent.yml"):
++        _read_yaml(tmp_path / "absent.yml")
++
++
++def test_empty_file_is_an_empty_mapping(tmp_path: Path) -> None:
++    path = tmp_path / "config.yml"
++    path.write_text("# コメントだけ\n", encoding="utf-8")
++
++    assert _read_yaml(path) == {}
++
++
++@pytest.mark.parametrize("text", ["- a\n- b\n", "just text\n"])
++def test_top_level_that_is_not_a_mapping_is_a_config_error(tmp_path: Path, text: str) -> None:
++    path = tmp_path / "config.yml"
++    path.write_text(text, encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="トップレベルはマッピング"):
++        _read_yaml(path)
++
++
++def test_invalid_yaml_is_a_config_error(tmp_path: Path) -> None:
++    path = tmp_path / "config.yml"
++    path.write_text("policy: [unclosed\n", encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="YAML を解釈できません"):
++        _read_yaml(path)

@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-197 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
+218 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 68 of the 197 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 185 of the 197 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 70 of the 218 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 206 of the 218 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -617,6 +617,69 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 197. [security-checker: twelve modules each lack one docstring](fix-197-security-checker-432.md)
    Project: Sh1n1230/security-checker. Bug report number 432. License: MIT. Test included: no. Patch file: [197-security-checker-432.patch](fixes/197-security-checker-432.patch)
+
+198. [security-checker: no test covers a missing base address in the local endpoint check](fix-198-security-checker-536.md)
+   Project: Sh1n1230/security-checker. Bug report number 536. License: MIT. Test included: yes. Patch file: [198-security-checker-536.patch](fixes/198-security-checker-536.patch)
+
+199. [security-checker: no test covers a version check that fails in command_version](fix-199-security-checker-533.md)
+   Project: Sh1n1230/security-checker. Bug report number 533. License: MIT. Test included: yes. Patch file: [199-security-checker-533.patch](fixes/199-security-checker-533.patch)
+
+200. [security-checker: no test covers the day boundary helper of the quota record](fix-200-security-checker-529.md)
+   Project: Sh1n1230/security-checker. Bug report number 529. License: MIT. Test included: yes. Patch file: [200-security-checker-529.patch](fixes/200-security-checker-529.patch)
+
+201. [security-checker: no test covers the default place of the quota record](fix-201-security-checker-528.md)
+   Project: Sh1n1230/security-checker. Bug report number 528. License: MIT. Test included: yes. Patch file: [201-security-checker-528.patch](fixes/201-security-checker-528.patch)
+
+202. [security-checker: no test covers a less-than comparison of a severity with another type](fix-202-security-checker-521.md)
+   Project: Sh1n1230/security-checker. Bug report number 521. License: MIT. Test included: yes. Patch file: [202-security-checker-521.patch](fixes/202-security-checker-521.patch)
+
+203. [security-checker: no test covers a less-or-equal comparison of a severity with another type](fix-203-security-checker-520.md)
+   Project: Sh1n1230/security-checker. Bug report number 520. License: MIT. Test included: yes. Patch file: [203-security-checker-520.patch](fixes/203-security-checker-520.patch)
+
+204. [security-checker: no test covers a greater-or-equal comparison of a severity with another type](fix-204-security-checker-519.md)
+   Project: Sh1n1230/security-checker. Bug report number 519. License: MIT. Test included: yes. Patch file: [204-security-checker-519.patch](fixes/204-security-checker-519.patch)
+
+205. [security-checker: no test covers the place text of a candidate that has no file location](fix-205-security-checker-518.md)
+   Project: Sh1n1230/security-checker. Bug report number 518. License: MIT. Test included: yes. Patch file: [205-security-checker-518.patch](fixes/205-security-checker-518.patch)
+
+206. [security-checker: no test covers a quoted path in a diff header](fix-206-security-checker-515.md)
+   Project: Sh1n1230/security-checker. Bug report number 515. License: MIT. Test included: yes. Patch file: [206-security-checker-515.patch](fixes/206-security-checker-515.patch)
+
+207. [security-checker: no test covers a code finding without a location in the diff check](fix-207-security-checker-514.md)
+   Project: Sh1n1230/security-checker. Bug report number 514. License: MIT. Test included: yes. Patch file: [207-security-checker-514.patch](fixes/207-security-checker-514.patch)
+
+208. [security-checker: no test covers shrinking a code slice that already fits](fix-208-security-checker-498.md)
+   Project: Sh1n1230/security-checker. Bug report number 498. License: MIT. Test included: yes. Patch file: [208-security-checker-498.patch](fixes/208-security-checker-498.patch)
+
+209. [security-checker: no test covers the cases where no code window can be read](fix-209-security-checker-497.md)
+   Project: Sh1n1230/security-checker. Bug report number 497. License: MIT. Test included: yes. Patch file: [209-security-checker-497.patch](fixes/209-security-checker-497.patch)
+
+210. [security-checker: no test covers a read error in the text file reader](fix-210-security-checker-496.md)
+   Project: Sh1n1230/security-checker. Bug report number 496. License: MIT. Test included: yes. Patch file: [210-security-checker-496.patch](fixes/210-security-checker-496.patch)
+
+211. [security-checker: no test covers a path that cannot be resolved in resolve_inside](fix-211-security-checker-495.md)
+   Project: Sh1n1230/security-checker. Bug report number 495. License: MIT. Test included: yes. Patch file: [211-security-checker-495.patch](fixes/211-security-checker-495.patch)
+
+212. [security-checker: no test covers empty text or a real encoder in the token estimate](fix-212-security-checker-492.md)
+   Project: Sh1n1230/security-checker. Bug report number 492. License: MIT. Test included: yes. Patch file: [212-security-checker-492.patch](fixes/212-security-checker-492.patch)
+
+213. [security-checker: no test covers a config file that cannot be read or has the wrong shape](fix-213-security-checker-489.md)
+   Project: Sh1n1230/security-checker. Bug report number 489. License: MIT. Test included: yes. Patch file: [213-security-checker-489.patch](fixes/213-security-checker-489.patch)
+
+214. [security-checker: no test covers a report file that is missing or unreadable in explain](fix-214-security-checker-525.md)
+   Project: Sh1n1230/security-checker. Bug report number 525. License: MIT. Test included: yes. Patch file: [214-security-checker-525.patch](fixes/214-security-checker-525.patch)
+
+215. [security-checker: no test covers an id that matches no candidate or several candidates in explain](fix-215-security-checker-526.md)
+   Project: Sh1n1230/security-checker. Bug report number 526. License: MIT. Test included: yes. Patch file: [215-security-checker-526.patch](fixes/215-security-checker-526.patch)
+
+216. [security-checker: no test covers an unknown strategy or an old-style plugin in build_aggregator](fix-216-security-checker-469.md)
+   Project: Sh1n1230/security-checker. Bug report number 469. License: MIT. Test included: yes. Patch file: [216-security-checker-469.patch](fixes/216-security-checker-469.patch)
+
+217. [security-checker: no test covers a plugin that fails to load in discover_plugin_aggregators](fix-217-security-checker-468.md)
+   Project: Sh1n1230/security-checker. Bug report number 468. License: MIT. Test included: yes. Patch file: [217-security-checker-468.patch](fixes/217-security-checker-468.patch)
+
+218. [security-checker: no test covers a pricing file that is not valid YAML](fix-218-security-checker-522.md)
+   Project: Sh1n1230/security-checker. Bug report number 522. License: MIT. Test included: yes. Patch file: [218-security-checker-522.patch](fixes/218-security-checker-522.patch)
 
 ## How to use a fix
 

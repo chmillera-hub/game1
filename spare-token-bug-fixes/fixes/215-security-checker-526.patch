@@ -1,0 +1,38 @@
+diff --git a/tests/unit/test_explain_candidate_lookup.py b/tests/unit/test_explain_candidate_lookup.py
+new file mode 100644
+index 0000000..95b3e33
+--- /dev/null
++++ b/tests/unit/test_explain_candidate_lookup.py
+@@ -0,0 +1,32 @@
++"""explain.explain: ID で候補を引けない・1 つに決まらないときは ConfigError になること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.errors import ConfigError
++from security_checker.observability.explain import explain
++from tests.factories import make_candidate, make_report
++
++REPORT = make_report([make_candidate("abc1", line=1), make_candidate("abc2", line=2)])
++
++
++def test_unknown_id_is_a_config_error() -> None:
++    with pytest.raises(ConfigError, match="候補はこのレポートにありません"):
++        explain(REPORT, "zzz")
++
++
++def test_prefix_that_matches_several_candidates_is_a_config_error() -> None:
++    with pytest.raises(ConfigError, match="複数あります: abc1, abc2"):
++        explain(REPORT, "abc")
++
++
++def test_exact_id_is_found() -> None:
++    """対になるケース. ID が 1 つに決まれば、その候補を返す."""
++    assert explain(REPORT, "abc2").candidate.id == "abc2"
++
++
++def test_unique_prefix_is_found() -> None:
++    report = make_report([make_candidate("abc1", line=1), make_candidate("xyz9", line=2)])
++
++    assert explain(report, "xy").candidate.id == "xyz9"

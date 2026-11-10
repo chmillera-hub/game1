@@ -1,0 +1,29 @@
+diff --git a/tests/unit/test_severity_ge_other_type.py b/tests/unit/test_severity_ge_other_type.py
+new file mode 100644
+index 0000000..5ebebb3
+--- /dev/null
++++ b/tests/unit/test_severity_ge_other_type.py
+@@ -0,0 +1,23 @@
++"""Severity の比較: Severity 以外との >= は NotImplemented を返し、TypeError になること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.models.enums import Severity
++
++
++@pytest.mark.parametrize("other", [3, "high", None, 2.5])
++def test_greater_or_equal_with_another_type_is_not_implemented(other: object) -> None:
++    assert Severity.HIGH.__ge__(other) is NotImplemented
++
++
++def test_greater_or_equal_with_an_int_raises_type_error() -> None:
++    with pytest.raises(TypeError):
++        _ = Severity.HIGH >= 3  # type: ignore[operator]
++
++
++def test_greater_or_equal_between_severities_follows_the_order() -> None:
++    """対になるケース. Severity どうしは深刻さの順で比べる."""
++    assert Severity.HIGH >= Severity.HIGH
++    assert not (Severity.LOW >= Severity.HIGH)

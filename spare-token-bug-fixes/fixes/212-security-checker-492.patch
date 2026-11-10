@@ -1,0 +1,33 @@
+diff --git a/tests/unit/test_budget_estimate_tokens.py b/tests/unit/test_budget_estimate_tokens.py
+new file mode 100644
+index 0000000..1cf0e1b
+--- /dev/null
++++ b/tests/unit/test_budget_estimate_tokens.py
+@@ -0,0 +1,27 @@
++"""budget.estimate_tokens: 空の文字列は 0、tiktoken があればその数え方を使うこと."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.context import budget
++from security_checker.context.budget import CHARS_PER_TOKEN, estimate_tokens
++
++
++def test_empty_text_is_zero_tokens() -> None:
++    assert estimate_tokens("") == 0
++
++
++def test_encoder_is_used_when_available(monkeypatch: pytest.MonkeyPatch) -> None:
++    # 1 文字 = 1 トークンと数える偽のエンコーダ
++    monkeypatch.setattr(budget, "_encode_fn", lambda: lambda text: [0] * len(text))
++
++    assert estimate_tokens("abcdefghij") == 10
++
++
++def test_character_count_is_the_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
++    """対になるケース. エンコーダが無ければ文字数から概算し、切り上げる."""
++    monkeypatch.setattr(budget, "_encode_fn", lambda: None)
++
++    assert estimate_tokens("a") == 1
++    assert estimate_tokens("a" * (CHARS_PER_TOKEN + 1)) == 2

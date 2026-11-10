@@ -1,0 +1,55 @@
+diff --git a/tests/unit/test_aggregator_registry_plugins.py b/tests/unit/test_aggregator_registry_plugins.py
+new file mode 100644
+index 0000000..458236d
+--- /dev/null
++++ b/tests/unit/test_aggregator_registry_plugins.py
+@@ -0,0 +1,49 @@
++"""aggregate.registry.discover_plugin_aggregators: 読み込めないプラグインは警告にして続けること."""
++
++from __future__ import annotations
++
++from typing import Any
++
++import pytest
++
++from security_checker.aggregate import registry
++from security_checker.aggregate.registry import ENTRY_POINT_GROUP, discover_plugin_aggregators
++
++
++class _Entry:
++    def __init__(self, name: str, loaded: Any = None, error: Exception | None = None) -> None:
++        self.name = name
++        self._loaded = loaded
++        self._error = error
++
++    def load(self) -> Any:
++        if self._error is not None:
++            raise self._error
++        return self._loaded
++
++
++def test_broken_plugin_becomes_a_warning_and_the_rest_still_load(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    factory = object()
++    groups: list[str] = []
++
++    def fake_entry_points(*, group: str) -> list[_Entry]:
++        groups.append(group)
++        return [_Entry("broken", error=ImportError("no module")), _Entry("good", loaded=factory)]
++
++    monkeypatch.setattr(registry, "entry_points", fake_entry_points)
++
++    found, warnings = discover_plugin_aggregators()
++
++    assert groups == [ENTRY_POINT_GROUP]
++    assert found == {"good": factory}
++    assert len(warnings) == 1
++    assert "broken" in warnings[0]
++    assert "no module" in warnings[0]
++
++
++def test_no_plugins_gives_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
++    monkeypatch.setattr(registry, "entry_points", lambda *, group: [])
++
++    assert discover_plugin_aggregators() == ({}, [])

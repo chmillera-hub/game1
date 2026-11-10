@@ -1,0 +1,42 @@
+diff --git a/tests/unit/test_aggregator_registry_build.py b/tests/unit/test_aggregator_registry_build.py
+new file mode 100644
+index 0000000..1f3bfac
+--- /dev/null
++++ b/tests/unit/test_aggregator_registry_build.py
+@@ -0,0 +1,36 @@
++"""aggregate.registry.build_aggregator: 未知の戦略と、weights を受け取らないプラグインの扱い."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.aggregate import registry
++from security_checker.aggregate.registry import build_aggregator
++from security_checker.errors import ConfigError
++
++
++class _OldStylePlugin:
++    """weights を受け取らない、旧シグネチャの Aggregator."""
++
++    name = "old-style"
++
++
++def test_judge_alone_is_a_config_error() -> None:
++    with pytest.raises(ConfigError, match="judge は単独の Aggregator ではありません"):
++        build_aggregator("judge")
++
++
++def test_unknown_strategy_is_a_config_error_that_lists_the_choices() -> None:
++    with pytest.raises(ConfigError, match="未知の aggregation.strategy 'no-such-strategy'"):
++        build_aggregator("no-such-strategy")
++
++
++def test_plugin_that_takes_no_weights_is_still_built(monkeypatch: pytest.MonkeyPatch) -> None:
++    monkeypatch.setattr(
++        registry, "discover_plugin_aggregators", lambda: ({"old-style": _OldStylePlugin}, ["w"])
++    )
++
++    aggregator, warnings = build_aggregator("old-style", weights={"r1": 2.0})
++
++    assert isinstance(aggregator, _OldStylePlugin)
++    assert warnings == ["w"]
