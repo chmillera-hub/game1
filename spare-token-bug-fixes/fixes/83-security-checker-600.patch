@@ -1,0 +1,71 @@
+diff --git a/src/security_checker/github/comment.py b/src/security_checker/github/comment.py
+index 274992a..995a361 100644
+--- a/src/security_checker/github/comment.py
++++ b/src/security_checker/github/comment.py
+@@ -150,7 +150,7 @@ def _counts_line(report: Report) -> list[str]:
+     ):
+         if counts.get(status.value):
+             lines.append(f"⚠️ {label} {counts[status.value]} 件 (「問題なし」ではありません)")
+-    reviewers = ", ".join(f"`{run.name}`" for run in report.reviewers)
++    reviewers = ", ".join(md.code_span(run.name) for run in report.reviewers)
+     strategy = next(
+         (f.aggregation.strategy for f in report.findings if f.aggregation is not None), None
+     )
+@@ -160,7 +160,8 @@ def _counts_line(report: Report) -> list[str]:
+         )
+     if report.target.mode == "diff":
+         lines.append(
+-            f"範囲: `{report.target.base}` との差分 ({report.target.changed_files or 0} ファイル)"
++            f"範囲: {md.code_span(str(report.target.base))} との差分"
++            f" ({report.target.changed_files or 0} ファイル)"
+         )
+     return [line + "  " for line in lines[:-1]] + lines[-1:]
+ 
+@@ -168,7 +169,7 @@ def _counts_line(report: Report) -> list[str]:
+ def _scanner_warnings(report: Report) -> list[str]:
+     """壊れた事実を隠さない (§7.2)."""
+     return [
+-        f"⚠️ `{run.scanner}` が失敗したため、この観点の検査は行われていません。"
++        f"⚠️ {md.code_span(run.scanner)} が失敗したため、この観点の検査は行われていません。"
+         for run in report.scanners
+         if run.status is ScanStatus.FAILED
+     ]
+diff --git a/tests/unit/test_github_summary_names.py b/tests/unit/test_github_summary_names.py
+new file mode 100644
+index 0000000..7801a22
+--- /dev/null
++++ b/tests/unit/test_github_summary_names.py
+@@ -0,0 +1,33 @@
++"""サマリに出す Reviewer 名・scanner 名・範囲の base は code_span を通す."""
++
++from __future__ import annotations
++
++from security_checker.github.comment import render_summary
++from security_checker.models.enums import FindingStatus, ScanStatus
++from security_checker.models.report import ReviewerRun, ScannerRun, TargetInfo
++from tests.factories import make_candidate, make_finding, make_report
++
++
++def test_reviewer_name_with_backtick_and_newline_stays_one_code_span():
++    candidate = make_candidate()
++    report = make_report(
++        [candidate],
++        [make_finding(candidate, FindingStatus.CONFIRMED)],
++        reviewers=[ReviewerRun(name="al`pha\n## injected")],
++    )
++    body = render_summary(report)
++    assert "Reviewers: `al'pha ## injected`" in body
++    assert "\n## injected" not in body
++
++
++def test_failed_scanner_name_and_diff_base_are_code_spans():
++    candidate = make_candidate()
++    report = make_report(
++        [candidate],
++        [make_finding(candidate, FindingStatus.CONFIRMED)],
++        scanners=[ScannerRun(scanner="tri`vy", category="config", status=ScanStatus.FAILED)],
++        target=TargetInfo(root="/repo", mode="diff", base="origin/ma`in", changed_files=2),
++    )
++    body = render_summary(report)
++    assert "`tri'vy` が失敗" in body
++    assert "範囲: `origin/ma'in` との差分 (2 ファイル)" in body

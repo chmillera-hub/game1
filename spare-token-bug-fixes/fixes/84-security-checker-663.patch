@@ -1,0 +1,78 @@
+diff --git a/src/security_checker/observability/logging.py b/src/security_checker/observability/logging.py
+index e390fc9..d30552a 100644
+--- a/src/security_checker/observability/logging.py
++++ b/src/security_checker/observability/logging.py
+@@ -40,6 +40,14 @@ def set_run_id(run_id: str | None) -> None:
+     _run_id.set(run_id)
+ 
+ 
++def _text_value(value: Any) -> str:
++    """text 形式の値. 空白・`=`・引用符を含む値と空の値は JSON 文字列にする (logfmt)."""
++    text = str(value)
++    if text == "" or any(ch.isspace() or ch in '="' for ch in text):
++        return json.dumps(text, ensure_ascii=False)
++    return text
++
++
+ class _Formatter(logging.Formatter):
+     def __init__(self, fmt: Literal["text", "json"]) -> None:
+         super().__init__()
+@@ -59,7 +67,7 @@ class _Formatter(logging.Formatter):
+         if self.fmt == "json":
+             text = json.dumps(payload, ensure_ascii=False, default=str)
+         else:
+-            extras = " ".join(f"{key}={value}" for key, value in fields.items())
++            extras = " ".join(f"{key}={_text_value(value)}" for key, value in fields.items())
+             text = f"{payload['ts']} {payload['level']:<5} {payload['event']}" + (
+                 f" {extras}" if extras else ""
+             )
+diff --git a/tests/unit/test_text_log_quoting.py b/tests/unit/test_text_log_quoting.py
+new file mode 100644
+index 0000000..d36f1cf
+--- /dev/null
++++ b/tests/unit/test_text_log_quoting.py
+@@ -0,0 +1,44 @@
++"""text 形式のログは、空白・`=`・引用符を含む値を引用する (logfmt として読めるようにする)."""
++
++from __future__ import annotations
++
++import io
++from collections.abc import Iterator
++
++import pytest
++
++from security_checker.observability import logging as log
++
++
++@pytest.fixture(autouse=True)
++def _reset_logging() -> Iterator[None]:
++    yield
++    log.disable()
++
++
++def _line(**fields: object) -> str:
++    stream = io.StringIO()
++    log.configure(fmt="text", level="info", stream=stream)
++    log.event("scan.done", **fields)
++    lines = stream.getvalue().splitlines()
++    assert len(lines) == 1
++    return lines[0]
++
++
++def test_value_with_spaces_is_quoted():
++    line = _line(reason="スキャナが 300s でタイムアウトしました", scanner="trivy")
++    assert 'reason="スキャナが 300s でタイムアウトしました" scanner=trivy' in line
++
++
++def test_value_with_equals_or_quote_is_quoted():
++    line = _line(detail='a=b "c"')
++    assert 'detail="a=b \\"c\\""' in line
++
++
++def test_plain_values_stay_bare():
++    line = _line(reason="x", count=3)
++    assert "scan.done reason=x count=3" in line
++
++
++def test_empty_value_is_quoted():
++    assert 'reason=""' in _line(reason="")

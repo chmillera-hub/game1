@@ -1,0 +1,100 @@
+diff --git a/src/security_checker/github/pr.py b/src/security_checker/github/pr.py
+index d412df7..bc4db51 100644
+--- a/src/security_checker/github/pr.py
++++ b/src/security_checker/github/pr.py
+@@ -117,12 +117,52 @@ def _strip_prefix(raw: str) -> str | None:
+     path = raw.split("\t", 1)[0]
+     if path == "/dev/null":
+         return None
+-    if path.startswith('"') and path.endswith('"'):
+-        # 非 ASCII パスは core.quotePath=false で避けているが、念のため引用符を外す
+-        path = path[1:-1]
++    if len(path) >= 2 and path.startswith('"') and path.endswith('"'):
++        # core.quotePath=false でも、タブ・改行・`"`・`\\` を含むパスは C 形式で引用される
++        path = _unquote_c(path[1:-1])
+     return path[2:] if path[:2] in ("a/", "b/") else path
+ 
+ 
++_C_ESCAPES = {
++    "a": 0x07,
++    "b": 0x08,
++    "f": 0x0C,
++    "n": 0x0A,
++    "r": 0x0D,
++    "t": 0x09,
++    "v": 0x0B,
++    "\\": 0x5C,
++    '"': 0x22,
++}
++
++
++def _unquote_c(quoted: str) -> str:
++    """git が引用したパスの中身 (両端の引用符は除く) から C 形式のエスケープを解除する."""
++    out = bytearray()
++    i = 0
++    while i < len(quoted):
++        ch = quoted[i]
++        if ch != "\\" or i + 1 >= len(quoted):
++            out += ch.encode("utf-8")
++            i += 1
++            continue
++        nxt = quoted[i + 1]
++        if nxt in _C_ESCAPES:
++            out.append(_C_ESCAPES[nxt])
++            i += 2
++        elif nxt in "01234567":
++            end = i + 1
++            while end < len(quoted) and end < i + 4 and quoted[end] in "01234567":
++                end += 1
++            out.append(int(quoted[i + 1 : end], 8) & 0xFF)
++            i = end
++        else:
++            # 知らないエスケープはそのまま残す
++            out += ch.encode("utf-8")
++            i += 1
++    return out.decode("utf-8", errors="replace")
++
++
+ def _git(root: Path, *args: str) -> str:
+     try:
+         completed = subprocess.run(
+diff --git a/tests/unit/test_diff_quoted_paths.py b/tests/unit/test_diff_quoted_paths.py
+new file mode 100644
+index 0000000..95240e0
+--- /dev/null
++++ b/tests/unit/test_diff_quoted_paths.py
+@@ -0,0 +1,34 @@
++"""diff のヘッダで C 形式に引用されたパス (タブ・改行・引用符・バックスラッシュ) を元に戻す."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.github.pr import parse_unified_diff
++
++
++def _diff(old: str, new: str) -> str:
++    return f"diff --git {old} {new}\n--- {old}\n+++ {new}\n@@ -0,0 +1,2 @@\n+x\n+y\n"
++
++
++@pytest.mark.parametrize(
++    ("quoted", "path"),
++    [
++        (r"foo\tbar.py", "foo\tbar.py"),
++        (r"line\nbreak.py", "line\nbreak.py"),
++        (r"say \"hi\".py", 'say "hi".py'),
++        (r"back\\slash.py", "back\\slash.py"),
++        (r"bell\007.py", "bell\x07.py"),
++        (r"caf\303\251\t.py", "café\t.py"),
++    ],
++)
++def test_quoted_header_paths_are_unescaped(quoted: str, path: str) -> None:
++    added, changed = parse_unified_diff(_diff(f'"a/{quoted}"', f'"b/{quoted}"'))
++    assert changed == {path}
++    assert added == {path: ((1, 2),)}
++
++
++def test_unquoted_paths_are_unchanged() -> None:
++    added, changed = parse_unified_diff(_diff("a/src/app.py", "b/src/app.py"))
++    assert changed == {"src/app.py"}
++    assert added == {"src/app.py": ((1, 2),)}

@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds eighty-one small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds eighty-eight small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -254,6 +254,27 @@ The shelf holds eighty-one small AI-written bug fixes (patch files) for forty pu
 
 81. [CONTINUUM: a rule whose id starts with registry gets the wrong recovery advice](spare-token-bug-fixes/fix-81-continuum-1970.md)
    Project: Under-Research-Labs/CONTINUUM. Bug report number 1970. License: Apache-2.0. Test included: yes. Patch file: [81-continuum-1970.patch](spare-token-bug-fixes/fixes/81-continuum-1970.patch)
+
+82. [security-checker: a trivy dependency finding with an unknown severity is treated as medium without saying so](spare-token-bug-fixes/fix-82-security-checker-618.md)
+   Project: Sh1n1230/security-checker. Bug report number 618. License: MIT. Test included: yes. Patch file: [82-security-checker-618.patch](spare-token-bug-fixes/fixes/82-security-checker-618.patch)
+
+83. [security-checker: a reviewer name with a backtick or a line break can break the layout of the pull request summary](spare-token-bug-fixes/fix-83-security-checker-600.md)
+   Project: Sh1n1230/security-checker. Bug report number 600. License: MIT. Test included: yes. Patch file: [83-security-checker-600.patch](spare-token-bug-fixes/fixes/83-security-checker-600.patch)
+
+84. [security-checker: text logs do not quote values that hold spaces so a program cannot tell where a value ends](spare-token-bug-fixes/fix-84-security-checker-663.md)
+   Project: Sh1n1230/security-checker. Bug report number 663. License: MIT. Test included: yes. Patch file: [84-security-checker-663.patch](spare-token-bug-fixes/fixes/84-security-checker-663.patch)
+
+85. [security-checker: changed files whose names hold a tab or a quote are not matched to findings](spare-token-bug-fixes/fix-85-security-checker-669.md)
+   Project: Sh1n1230/security-checker. Bug report number 669. License: MIT. Test included: yes. Patch file: [85-security-checker-669.patch](spare-token-bug-fixes/fixes/85-security-checker-669.patch)
+
+86. [MyFinances: dates in the Health surplus analysis follow the browser language and not the app language](spare-token-bug-fixes/fix-86-myfinances-512.md)
+   Project: jasonkryst/MyFinances. Bug report number 512. License: MIT. Test included: yes. Patch file: [86-myfinances-512.patch](spare-token-bug-fixes/fixes/86-myfinances-512.patch)
+
+87. [maximem_synap_core: a new client-level memory is missing from cached user fetches for up to five minutes](spare-token-bug-fixes/fix-87-maximem-synap-core-35.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 35. License: Apache-2.0. Test included: yes. Patch file: [87-maximem-synap-core-35.patch](spare-token-bug-fixes/fixes/87-maximem-synap-core-35.patch)
+
+88. [maximem_synap_core: one passing server error from the cloud service permanently fails a MACA job](spare-token-bug-fixes/fix-88-maximem-synap-core-31.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 31. License: Apache-2.0. Test included: yes. Patch file: [88-maximem-synap-core-31.patch](spare-token-bug-fixes/fixes/88-maximem-synap-core-31.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

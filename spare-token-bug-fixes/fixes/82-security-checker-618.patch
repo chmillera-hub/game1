@@ -1,0 +1,74 @@
+diff --git a/src/security_checker/scanners/trivy.py b/src/security_checker/scanners/trivy.py
+index 257a497..7e9005c 100644
+--- a/src/security_checker/scanners/trivy.py
++++ b/src/security_checker/scanners/trivy.py
+@@ -144,6 +144,11 @@ def parse_trivy(
+             )
+             title = str(item.get("Title") or vuln_id)
+             fixed = item.get("FixedVersion")
++            severity = SEVERITY_MAP.get(str(item.get("Severity")).upper())
++            message = f"{name} {ref.version or ''} に既知の脆弱性があります: {title}"
++            if severity is None:
++                # 誤設定・osv と同じく、medium として扱ったことを message に残す
++                message += " (重大度不明のため medium として扱います)"
+             candidates.append(
+                 Candidate(
+                     id=ids.make("trivy", vuln_id, path, ref.as_key()),
+@@ -151,10 +156,9 @@ def parse_trivy(
+                     category=Category.DEPENDENCY,
+                     rule_id=vuln_id,
+                     title=title,
+-                    message=f"{name} {ref.version or ''} に既知の脆弱性があります: {title}",
++                    message=message,
+                     package=ref,
+-                    severity_reported=SEVERITY_MAP.get(str(item.get("Severity")).upper())
+-                    or Severity.MEDIUM,
++                    severity_reported=severity or Severity.MEDIUM,
+                     cwe=[c for c in item.get("CweIDs") or [] if isinstance(c, str)],
+                     cve=[vuln_id] if _CVE_RE.match(vuln_id) else [],
+                     references=_references(item),
+diff --git a/tests/unit/test_trivy_unknown_vuln_severity.py b/tests/unit/test_trivy_unknown_vuln_severity.py
+new file mode 100644
+index 0000000..68469a7
+--- /dev/null
++++ b/tests/unit/test_trivy_unknown_vuln_severity.py
+@@ -0,0 +1,39 @@
++"""trivy の依存の脆弱性で重大度が不明のとき、medium として扱ったことを message に残す."""
++
++from __future__ import annotations
++
++from pathlib import Path
++from typing import Any
++
++import pytest
++
++from security_checker.models.enums import Category, Severity
++from security_checker.scanners.trivy import parse_trivy
++
++
++def _payload(severity: Any) -> dict[str, Any]:
++    item: dict[str, Any] = {
++        "VulnerabilityID": "CVE-2099-0001",
++        "PkgName": "demo",
++        "InstalledVersion": "1.0.0",
++        "Title": "demo の脆弱性",
++    }
++    if severity is not None:
++        item["Severity"] = severity
++    return {"Results": [{"Target": "requirements.txt", "Type": "pip", "Vulnerabilities": [item]}]}
++
++
++@pytest.mark.parametrize("severity", ["UNKNOWN", None, 3])
++def test_trivy_vulnerability_with_unknown_severity_says_medium(severity):
++    candidates, _ = parse_trivy(_payload(severity), Path("/repo"))
++    assert len(candidates) == 1
++    assert candidates[0].category is Category.DEPENDENCY
++    assert candidates[0].severity_reported is Severity.MEDIUM
++    assert "重大度不明" in candidates[0].message
++
++
++def test_trivy_vulnerability_with_known_severity_has_no_note():
++    candidates, _ = parse_trivy(_payload("HIGH"), Path("/repo"))
++    assert len(candidates) == 1
++    assert candidates[0].severity_reported is Severity.HIGH
++    assert "重大度不明" not in candidates[0].message

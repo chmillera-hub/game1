@@ -1,0 +1,73 @@
+diff --git a/synap/cloud/application/client_api/retrieval_manager.py b/synap/cloud/application/client_api/retrieval_manager.py
+index c47fc50..4c1148d 100644
+--- a/synap/cloud/application/client_api/retrieval_manager.py
++++ b/synap/cloud/application/client_api/retrieval_manager.py
+@@ -1878,6 +1878,23 @@ def invalidate_visibility_cache(client_id: str) -> None:
+     _visibility_bundle_cache.pop(client_id, None)
+ 
+ 
++def _l1_invalidation_pattern(
++    effective_client: str, customer_id: str, user_id: Optional[str]
++) -> str:
++    """The L1 key pattern a memory write must clear.
++
++    A write with no customer and no user is a client-scope memory. User and
++    customer fetches include client-level memories too, so their cached
++    bundles live under ``query:{client}:{customer}:*`` and would keep serving
++    the pre-write result for the whole TTL. Such a write therefore clears the
++    whole ``query:{client}:*`` namespace, as the delete path already does.
++    Every other write keeps the narrow ``query:{client}:{customer}:*`` pattern.
++    """
++    if not customer_id and not user_id:
++        return f"query:{effective_client}:*"
++    return f"query:{effective_client}:{customer_id or 'global'}:*"
++
++
+ async def invalidate_client_query_cache(client_id: str) -> int:
+     """Bust every cached L1 query result for a client (Redis, cross-process).
+ 
+@@ -9858,8 +9875,7 @@ class RetrievalManager:
+             return 0
+ 
+         try:
+-            # Pattern: query:{client_id}:{customer_id}:*
+-            pattern = f"query:{effective_client}:{effective_customer}:*"
++            pattern = _l1_invalidation_pattern(effective_client, customer_id, user_id)
+             cursor = 0
+             deleted = 0
+ 
+diff --git a/synap/tests/application/test_l1_invalidation_pattern.py b/synap/tests/application/test_l1_invalidation_pattern.py
+new file mode 100644
+index 0000000..9d91d89
+--- /dev/null
++++ b/synap/tests/application/test_l1_invalidation_pattern.py
+@@ -0,0 +1,29 @@
++"""A client-scope write must clear every cached fetch of the client.
++
++User and customer fetches include client-level memories, so clearing only
++``query:{client}:global:*`` left their cached bundles stale for up to 300 s.
++"""
++
++import fnmatch
++
++from synap.cloud.application.client_api.retrieval_manager import _l1_invalidation_pattern
++
++
++class TestL1InvalidationPattern:
++    def test_client_scope_write_clears_the_whole_client_namespace(self):
++        pattern = _l1_invalidation_pattern("c1", "", None)
++        assert pattern == "query:c1:*"
++        assert fnmatch.fnmatchcase("query:c1:global:abc", pattern)
++        assert fnmatch.fnmatchcase("query:c1:cust1:abc", pattern)
++        assert not fnmatch.fnmatchcase("query:c2:cust1:abc", pattern)
++
++    def test_customer_scope_write_stays_within_the_customer(self):
++        pattern = _l1_invalidation_pattern("c1", "cust1", None)
++        assert pattern == "query:c1:cust1:*"
++        assert not fnmatch.fnmatchcase("query:c1:cust2:abc", pattern)
++
++    def test_user_write_without_customer_keeps_the_global_pattern(self):
++        assert _l1_invalidation_pattern("c1", "", "u1") == "query:c1:global:*"
++
++    def test_user_write_with_customer_stays_within_the_customer(self):
++        assert _l1_invalidation_pattern("c1", "cust1", "u1") == "query:c1:cust1:*"

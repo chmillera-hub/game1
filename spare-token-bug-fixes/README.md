@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-81 small ready-made bug fixes (patch files) for 40 public open source projects. Free to take.
+88 small ready-made bug fixes (patch files) for 40 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 35 of the 81 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 74 of the 81 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 40 of the 88 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 81 of the 88 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -269,6 +269,27 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 81. [CONTINUUM: a rule whose id starts with registry gets the wrong recovery advice](fix-81-continuum-1970.md)
    Project: Under-Research-Labs/CONTINUUM. Bug report number 1970. License: Apache-2.0. Test included: yes. Patch file: [81-continuum-1970.patch](fixes/81-continuum-1970.patch)
+
+82. [security-checker: a trivy dependency finding with an unknown severity is treated as medium without saying so](fix-82-security-checker-618.md)
+   Project: Sh1n1230/security-checker. Bug report number 618. License: MIT. Test included: yes. Patch file: [82-security-checker-618.patch](fixes/82-security-checker-618.patch)
+
+83. [security-checker: a reviewer name with a backtick or a line break can break the layout of the pull request summary](fix-83-security-checker-600.md)
+   Project: Sh1n1230/security-checker. Bug report number 600. License: MIT. Test included: yes. Patch file: [83-security-checker-600.patch](fixes/83-security-checker-600.patch)
+
+84. [security-checker: text logs do not quote values that hold spaces so a program cannot tell where a value ends](fix-84-security-checker-663.md)
+   Project: Sh1n1230/security-checker. Bug report number 663. License: MIT. Test included: yes. Patch file: [84-security-checker-663.patch](fixes/84-security-checker-663.patch)
+
+85. [security-checker: changed files whose names hold a tab or a quote are not matched to findings](fix-85-security-checker-669.md)
+   Project: Sh1n1230/security-checker. Bug report number 669. License: MIT. Test included: yes. Patch file: [85-security-checker-669.patch](fixes/85-security-checker-669.patch)
+
+86. [MyFinances: dates in the Health surplus analysis follow the browser language and not the app language](fix-86-myfinances-512.md)
+   Project: jasonkryst/MyFinances. Bug report number 512. License: MIT. Test included: yes. Patch file: [86-myfinances-512.patch](fixes/86-myfinances-512.patch)
+
+87. [maximem_synap_core: a new client-level memory is missing from cached user fetches for up to five minutes](fix-87-maximem-synap-core-35.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 35. License: Apache-2.0. Test included: yes. Patch file: [87-maximem-synap-core-35.patch](fixes/87-maximem-synap-core-35.patch)
+
+88. [maximem_synap_core: one passing server error from the cloud service permanently fails a MACA job](fix-88-maximem-synap-core-31.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 31. License: Apache-2.0. Test included: yes. Patch file: [88-maximem-synap-core-31.patch](fixes/88-maximem-synap-core-31.patch)
 
 ## How to use a fix
 

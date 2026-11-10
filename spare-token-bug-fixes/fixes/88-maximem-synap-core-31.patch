@@ -1,0 +1,84 @@
+diff --git a/synap/cloud/application/sdk_api/maca_plugin.py b/synap/cloud/application/sdk_api/maca_plugin.py
+index 7df807a..33dcd3b 100644
+--- a/synap/cloud/application/sdk_api/maca_plugin.py
++++ b/synap/cloud/application/sdk_api/maca_plugin.py
+@@ -295,13 +295,21 @@ async def _poll(client: httpx.AsyncClient, job: Job) -> None:
+     while True:
+         try:
+             resp = await client.get(f"{BUILDS_PATH}/{job.build_id}")
+-            failures = 0
+         except httpx.RequestError:
+             failures += 1
+             if failures >= MAX_POLL_FAILURES:
+                 raise _CloudError(NETWORK_MESSAGE) from None
+             resp = None
++        if resp is not None and resp.status_code >= 500:
++            # A 5xx on a status poll (a 502 or 503 from a proxy, say) is not a
++            # verdict on the run, which may still be working and spending
++            # credits on Cloud. Retry it the way a network error is retried.
++            failures += 1
++            if failures >= MAX_POLL_FAILURES:
++                raise _CloudError(_cloud_error(resp))
++            resp = None
+         if resp is not None:
++            failures = 0
+             if resp.status_code != 200:
+                 raise _CloudError(_cloud_error(resp))
+             try:
+diff --git a/synap/tests/application/test_maca_plugin.py b/synap/tests/application/test_maca_plugin.py
+index 4728c00..3c15c63 100644
+--- a/synap/tests/application/test_maca_plugin.py
++++ b/synap/tests/application/test_maca_plugin.py
+@@ -371,6 +371,52 @@ def test_a_run_that_never_finishes_times_out(env, monkeypatch):
+     assert body["status"] == "failed" and "taking longer" in body["message"]
+ 
+ 
++def _poll_answers(cloud, answer):
++    """A fake Cloud whose status poll is answered by ``answer`` (None falls through to ``cloud``)."""
++    def transport(request):
++        if request.method == "GET" and request.url.path == f"{mp.BUILDS_PATH}/b1":
++            resp = answer(request)
++            if resp is not None:
++                return resp
++        return cloud(request)
++    return transport
++
++
++def test_a_passing_5xx_while_polling_does_not_fail_the_job(env, monkeypatch):
++    flaky = [httpx.Response(503, json={"detail": "busy"}), httpx.Response(502, text="bad gateway")]
++    transport = _poll_answers(FakeCloud(), lambda r: flaky.pop(0) if flaky else None)
++    with TestClient(_app(transport, monkeypatch)) as c:
++        body = _wait(c, _start(c).json()["job_id"])
++    assert body["status"] == "succeeded"
++    assert flaky == []
++
++
++def test_a_5xx_on_every_poll_fails_the_job_with_what_cloud_said(env, monkeypatch):
++    polls = []
++
++    def down(request):
++        polls.append(request)
++        return httpx.Response(503, json={"detail": "busy"})
++
++    with TestClient(_app(_poll_answers(FakeCloud(), down), monkeypatch)) as c:
++        body = _wait(c, _start(c).json()["job_id"])
++    assert body["status"] == "failed" and "answered 503" in body["message"]
++    assert len(polls) == mp.MAX_POLL_FAILURES
++
++
++def test_a_4xx_while_polling_still_fails_at_once(env, monkeypatch):
++    polls = []
++
++    def gone(request):
++        polls.append(request)
++        return httpx.Response(404, json={"detail": "no such build"})
++
++    with TestClient(_app(_poll_answers(FakeCloud(), gone), monkeypatch)) as c:
++        body = _wait(c, _start(c).json()["job_id"])
++    assert body["status"] == "failed" and "answered 404" in body["message"]
++    assert len(polls) == 1
++
++
+ def test_a_redirect_is_not_followed(env, monkeypatch):
+     cloud = FakeCloud(submit=lambda r: httpx.Response(302, headers={"location": "https://attacker.example/steal"}))
+     with TestClient(_app(cloud, monkeypatch)) as c:
