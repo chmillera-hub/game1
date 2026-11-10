@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds 232 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 239 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -707,6 +707,27 @@ The shelf holds 232 small AI-written bug fixes (patch files) for forty-seven pub
 
 232. [security-checker: public names in aggregate/base.py have no docstring (Aggregator and aggregate)](spare-token-bug-fixes/fix-232-security-checker-379.md)
    Project: Sh1n1230/security-checker. Bug report number 379. License: MIT. Test included: no. Patch file: [232-security-checker-379.patch](spare-token-bug-fixes/fixes/232-security-checker-379.patch)
+
+233. [security-checker: public names in providers/http/dialects/openai_chat.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response)](spare-token-bug-fixes/fix-233-security-checker-415.md)
+   Project: Sh1n1230/security-checker. Bug report number 415. License: MIT. Test included: no. Patch file: [233-security-checker-415.patch](spare-token-bug-fixes/fixes/233-security-checker-415.patch)
+
+234. [security-checker: public names in providers/http/dialects/ollama_chat.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response)](spare-token-bug-fixes/fix-234-security-checker-414.md)
+   Project: Sh1n1230/security-checker. Bug report number 414. License: MIT. Test included: no. Patch file: [234-security-checker-414.patch](spare-token-bug-fixes/fixes/234-security-checker-414.patch)
+
+235. [security-checker: public names in providers/http/dialects/gemini_generate.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response and explain_error)](spare-token-bug-fixes/fix-235-security-checker-413.md)
+   Project: Sh1n1230/security-checker. Bug report number 413. License: MIT. Test included: no. Patch file: [235-security-checker-413.patch](spare-token-bug-fixes/fixes/235-security-checker-413.patch)
+
+236. [security-checker: public names in providers/http/dialects/anthropic_messages.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response)](spare-token-bug-fixes/fix-236-security-checker-411.md)
+   Project: Sh1n1230/security-checker. Bug report number 411. License: MIT. Test included: no. Patch file: [236-security-checker-411.patch](spare-token-bug-fixes/fixes/236-security-checker-411.patch)
+
+237. [security-checker: public names in providers/http/dialects/base.py have no docstring (build_payload and headers and health_payload and parse_response)](spare-token-bug-fixes/fix-237-security-checker-412.md)
+   Project: Sh1n1230/security-checker. Bug report number 412. License: MIT. Test included: no. Patch file: [237-security-checker-412.patch](spare-token-bug-fixes/fixes/237-security-checker-412.patch)
+
+238. [security-checker: public names in providers/http/transport.py have no docstring (__init__ and aclose and capabilities and health_check)](spare-token-bug-fixes/fix-238-security-checker-416.md)
+   Project: Sh1n1230/security-checker. Bug report number 416. License: MIT. Test included: no. Patch file: [238-security-checker-416.patch](spare-token-bug-fixes/fixes/238-security-checker-416.patch)
+
+239. [security-checker: public names in providers/base.py have no docstring (aclose and apply and capabilities and complete and health_check)](spare-token-bug-fixes/fix-239-security-checker-408.md)
+   Project: Sh1n1230/security-checker. Bug report number 408. License: MIT. Test included: no. Patch file: [239-security-checker-408.patch](spare-token-bug-fixes/fixes/239-security-checker-408.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

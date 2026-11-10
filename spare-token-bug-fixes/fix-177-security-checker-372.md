@@ -42,7 +42,7 @@ The comparisons now use http.HTTPStatus.BAD_REQUEST and http.HTTPStatus.NOT_FOUN
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- A rename of a number into a named constant with no change in behaviour. Nobody ran the lint tool or the project's tests.
+- A rename of a number into a named constant with no change in behaviour. Nobody ran the lint tool or the project's tests. Fix 235 on this shelf adds a docstring on the lines right above so patches 177 and 235 do not apply together: apply one and add the other change by hand.
 
 ## Search words
 

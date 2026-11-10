@@ -1,0 +1,37 @@
+diff --git a/src/security_checker/providers/base.py b/src/security_checker/providers/base.py
+index 4594a69..0544392 100644
+--- a/src/security_checker/providers/base.py
++++ b/src/security_checker/providers/base.py
+@@ -110,13 +110,21 @@ class LLMProvider(Protocol):
+     dialect: str
+ 
+     @property
+-    def capabilities(self) -> Capabilities: ...
++    def capabilities(self) -> Capabilities:
++        """このエンドポイントができること. 文脈長や構造化出力の方式を上位が読む."""
++        ...
+ 
+-    async def complete(self, req: CompletionRequest) -> CompletionResponse: ...
++    async def complete(self, req: CompletionRequest) -> CompletionResponse:
++        """1 リクエスト = 1 判定. 失敗は ProviderError の系統で知らせ、リトライはしない."""
++        ...
+ 
+-    async def health_check(self) -> HealthStatus: ...
++    async def health_check(self) -> HealthStatus:
++        """到達できるかを確かめる. 失敗しても例外にせず HealthStatus で返す."""
++        ...
+ 
+-    async def aclose(self) -> None: ...
++    async def aclose(self) -> None:
++        """保持している資源を解放する. 2 回呼んでも安全であること."""
++        ...
+ 
+ 
+ class CapabilityOverrides(BaseModel):
+@@ -134,5 +142,6 @@ class CapabilityOverrides(BaseModel):
+     output_limit_param: Literal["max_tokens", "max_completion_tokens"] | None = None
+ 
+     def apply(self, base: Capabilities) -> Capabilities:
++        """指定された項目だけを `base` に上書きした写しを返す. None の項目は触らない."""
+         updates = {key: value for key, value in self.model_dump().items() if value is not None}
+         return base.model_copy(update=updates)

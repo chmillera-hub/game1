@@ -1,0 +1,46 @@
+diff --git a/src/security_checker/providers/http/dialects/openai_chat.py b/src/security_checker/providers/http/dialects/openai_chat.py
+index 8afc467..e6e541d 100644
+--- a/src/security_checker/providers/http/dialects/openai_chat.py
++++ b/src/security_checker/providers/http/dialects/openai_chat.py
+@@ -26,14 +26,17 @@ class OpenAIChatDialect:
+     name = "openai_chat"
+ 
+     def __init__(self, options: DialectOptions | None = None) -> None:
++        """`DialectOptions` を受け取る. この形では使わないが、全方言が同じ型を受け取る."""
+         # この形には文脈長やモデル保持の指定が無いため、受け取っても使わない
+         self.options = options or DialectOptions()
+ 
+     def endpoint(self, base_url: str, model: str) -> str:
++        """送信先は `<base_url>/chat/completions`. モデル名は URL に含めない."""
+         # この形はモデルをペイロードで送るため、URL には現れない
+         return f"{base_url.rstrip('/')}/chat/completions"
+ 
+     def headers(self, api_key: str | None) -> dict[str, str]:
++        """JSON の Content-Type と、鍵があれば `Authorization: Bearer` を付ける."""
+         headers = {"Content-Type": "application/json"}
+         if api_key:
+             headers["Authorization"] = f"Bearer {api_key}"
+@@ -47,6 +50,7 @@ class OpenAIChatDialect:
+         capabilities: Capabilities,
+         mode: StructuredMode,
+     ) -> dict[str, Any]:
++        """`/chat/completions` 形式のリクエスト本体を作る. 構造化出力の指定は `mode` に従う."""
+         messages: list[dict[str, str]] = []
+         if capabilities.supports_system_role:
+             messages.append({"role": "system", "content": req.system})
+@@ -81,6 +85,7 @@ class OpenAIChatDialect:
+         return payload
+ 
+     def parse_response(self, payload: dict[str, Any]) -> DialectResponse:
++        """`choices[0].message` から本文・使用量・終了理由を取り出す."""
+         choices = payload.get("choices")
+         if not isinstance(choices, list) or not choices:
+             raise ProviderResponseError("応答に choices がありません")
+@@ -126,6 +131,7 @@ class OpenAIChatDialect:
+         )
+ 
+     def health_payload(self, model: str, capabilities: Capabilities) -> dict[str, Any]:
++        """疎通確認用の最小のリクエスト本体. 出力を 1 トークンに抑えて送る."""
+         return {
+             "model": model,
+             "messages": [{"role": "user", "content": "ping"}],

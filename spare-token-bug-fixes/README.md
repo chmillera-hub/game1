@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-232 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
+239 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 70 of the 232 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 220 of the 232 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 70 of the 239 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 227 of the 239 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -722,6 +722,27 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 232. [security-checker: public names in aggregate/base.py have no docstring (Aggregator and aggregate)](fix-232-security-checker-379.md)
    Project: Sh1n1230/security-checker. Bug report number 379. License: MIT. Test included: no. Patch file: [232-security-checker-379.patch](fixes/232-security-checker-379.patch)
+
+233. [security-checker: public names in providers/http/dialects/openai_chat.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response)](fix-233-security-checker-415.md)
+   Project: Sh1n1230/security-checker. Bug report number 415. License: MIT. Test included: no. Patch file: [233-security-checker-415.patch](fixes/233-security-checker-415.patch)
+
+234. [security-checker: public names in providers/http/dialects/ollama_chat.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response)](fix-234-security-checker-414.md)
+   Project: Sh1n1230/security-checker. Bug report number 414. License: MIT. Test included: no. Patch file: [234-security-checker-414.patch](fixes/234-security-checker-414.patch)
+
+235. [security-checker: public names in providers/http/dialects/gemini_generate.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response and explain_error)](fix-235-security-checker-413.md)
+   Project: Sh1n1230/security-checker. Bug report number 413. License: MIT. Test included: no. Patch file: [235-security-checker-413.patch](fixes/235-security-checker-413.patch)
+
+236. [security-checker: public names in providers/http/dialects/anthropic_messages.py have no docstring (__init__ and build_payload and endpoint and headers and health_payload and parse_response)](fix-236-security-checker-411.md)
+   Project: Sh1n1230/security-checker. Bug report number 411. License: MIT. Test included: no. Patch file: [236-security-checker-411.patch](fixes/236-security-checker-411.patch)
+
+237. [security-checker: public names in providers/http/dialects/base.py have no docstring (build_payload and headers and health_payload and parse_response)](fix-237-security-checker-412.md)
+   Project: Sh1n1230/security-checker. Bug report number 412. License: MIT. Test included: no. Patch file: [237-security-checker-412.patch](fixes/237-security-checker-412.patch)
+
+238. [security-checker: public names in providers/http/transport.py have no docstring (__init__ and aclose and capabilities and health_check)](fix-238-security-checker-416.md)
+   Project: Sh1n1230/security-checker. Bug report number 416. License: MIT. Test included: no. Patch file: [238-security-checker-416.patch](fixes/238-security-checker-416.patch)
+
+239. [security-checker: public names in providers/base.py have no docstring (aclose and apply and capabilities and complete and health_check)](fix-239-security-checker-408.md)
+   Project: Sh1n1230/security-checker. Bug report number 408. License: MIT. Test included: no. Patch file: [239-security-checker-408.patch](fixes/239-security-checker-408.patch)
 
 ## How to use a fix
 

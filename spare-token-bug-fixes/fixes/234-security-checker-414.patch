@@ -1,0 +1,46 @@
+diff --git a/src/security_checker/providers/http/dialects/ollama_chat.py b/src/security_checker/providers/http/dialects/ollama_chat.py
+index d067300..0ba98c1 100644
+--- a/src/security_checker/providers/http/dialects/ollama_chat.py
++++ b/src/security_checker/providers/http/dialects/ollama_chat.py
+@@ -29,14 +29,17 @@ class OllamaChatDialect:
+     name = "ollama_chat"
+ 
+     def __init__(self, options: DialectOptions | None = None) -> None:
++        """num_ctx と keep_alive を受け取る. num_ctx が無ければ既定値を使う."""
+         resolved = options or DialectOptions()
+         self.num_ctx = resolved.num_ctx or DEFAULT_NUM_CTX
+         self.keep_alive = resolved.keep_alive
+ 
+     def endpoint(self, base_url: str, model: str) -> str:
++        """送信先は `<base_url>/api/chat`. モデル名は URL に含めない."""
+         return f"{base_url.rstrip('/')}/api/chat"
+ 
+     def headers(self, api_key: str | None) -> dict[str, str]:
++        """JSON の Content-Type と、鍵があれば `Authorization: Bearer` を付ける."""
+         headers = {"Content-Type": "application/json"}
+         # ローカルで動かす前提の形だが、認証を挟むプロキシの背後に置く構成もある
+         if api_key:
+@@ -51,6 +54,7 @@ class OllamaChatDialect:
+         capabilities: Capabilities,
+         mode: StructuredMode,
+     ) -> dict[str, Any]:
++        """`/api/chat` 形式のリクエスト本体を作る. num_ctx は必ず明示して送る (§9.4)."""
+         messages: list[dict[str, str]] = []
+         if capabilities.supports_system_role:
+             messages.append({"role": "system", "content": req.system})
+@@ -88,6 +92,7 @@ class OllamaChatDialect:
+         return payload
+ 
+     def parse_response(self, payload: dict[str, Any]) -> DialectResponse:
++        """`message.content` から本文を、`prompt_eval_count` / `eval_count` から使用量を取り出す."""
+         message = payload.get("message")
+         if not isinstance(message, dict):
+             raise ProviderResponseError("応答に message がありません")
+@@ -110,6 +115,7 @@ class OllamaChatDialect:
+         )
+ 
+     def health_payload(self, model: str, capabilities: Capabilities) -> dict[str, Any]:
++        """疎通確認用の最小のリクエスト本体. 出力を 1 トークンに抑えて送る."""
+         return {
+             "model": model,
+             "messages": [{"role": "user", "content": "ping"}],

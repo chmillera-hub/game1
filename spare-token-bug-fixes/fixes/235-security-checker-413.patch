@@ -1,0 +1,53 @@
+diff --git a/src/security_checker/providers/http/dialects/gemini_generate.py b/src/security_checker/providers/http/dialects/gemini_generate.py
+index f23ac24..4ce6d1a 100644
+--- a/src/security_checker/providers/http/dialects/gemini_generate.py
++++ b/src/security_checker/providers/http/dialects/gemini_generate.py
+@@ -44,13 +44,16 @@ class GeminiGenerateDialect:
+     name = "gemini_generate"
+ 
+     def __init__(self, options: DialectOptions | None = None) -> None:
++        """`DialectOptions` を受け取る. この形では使わないが、全方言が同じ型を受け取る."""
+         # この形には文脈長やモデル保持の指定が無いため、受け取っても使わない
+         self.options = options or DialectOptions()
+ 
+     def endpoint(self, base_url: str, model: str) -> str:
++        """送信先は `<base_url>/models/<model>:generateContent`. モデル名を URL に含める."""
+         return f"{base_url.rstrip('/')}/models/{model}:generateContent"
+ 
+     def headers(self, api_key: str | None) -> dict[str, str]:
++        """JSON の Content-Type と、鍵があれば `x-goog-api-key` ヘッダを付ける."""
+         headers = {"Content-Type": "application/json"}
+         if api_key:
+             # クエリ文字列ではなくヘッダで渡す。URL はログや履歴に残りうるため
+@@ -65,6 +68,7 @@ class GeminiGenerateDialect:
+         capabilities: Capabilities,
+         mode: StructuredMode,
+     ) -> dict[str, Any]:
++        """`:generateContent` 形式のリクエスト本体を作る. スキーマは responseSchema 用に変換する."""
+         generation: dict[str, Any] = {"maxOutputTokens": output_limit(req, capabilities)}
+         if capabilities.supports_temperature:
+             generation["temperature"] = req.temperature
+@@ -92,6 +96,7 @@ class GeminiGenerateDialect:
+         return payload
+ 
+     def parse_response(self, payload: dict[str, Any]) -> DialectResponse:
++        """`candidates[0]` の parts から本文を、`usageMetadata` から使用量を取り出す."""
+         candidates = payload.get("candidates")
+         if not isinstance(candidates, list) or not candidates:
+             raise ProviderResponseError(_no_candidates_reason(payload))
+@@ -127,6 +132,7 @@ class GeminiGenerateDialect:
+         )
+ 
+     def health_payload(self, model: str, capabilities: Capabilities) -> dict[str, Any]:
++        """疎通確認用の最小のリクエスト本体. 出力を 1 トークンに抑えて送る."""
+         return {
+             "contents": [{"role": "user", "parts": [{"text": "ping"}]}],
+             "generationConfig": {"maxOutputTokens": 1},
+@@ -137,6 +143,7 @@ class GeminiGenerateDialect:
+         return status == 400 and "api key" in body.lower()
+ 
+     def explain_error(self, status: int, body: str) -> str | None:
++        """鍵の不備・モデル名の誤り・未対応のスキーマを、次に取れる行動の文章にする (§20.2)."""
+         lowered = body.lower()
+         if status == 400 and "api key" in lowered:
+             # この形は鍵の不備を 401 ではなく 400 で返すため、認証エラーに見えない
