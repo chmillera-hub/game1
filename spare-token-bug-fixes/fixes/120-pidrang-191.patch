@@ -1,0 +1,35 @@
+diff --git a/apps/pidrang-cli/src/run-cli.spec.ts b/apps/pidrang-cli/src/run-cli.spec.ts
+index 8842135..bf646b9 100644
+--- a/apps/pidrang-cli/src/run-cli.spec.ts
++++ b/apps/pidrang-cli/src/run-cli.spec.ts
+@@ -834,7 +834,7 @@ export const routes: Routes = [
+         "export const routes: Routes = [\n  ...resourceRoutes,\n  { path: 'sign-in', component: SignInPage },\n];",
+       );
+       expect(output()).toContain(
+-        'The app already has its own pages and routes, so pidrang only added the resource routes to src/app/app.routes.ts.',
++        'This is not a new `ng new` app (its start page or its routes file was changed), so pidrang only added the resource routes to src/app/app.routes.ts.',
+       );
+       expect(output()).toContain(
+         "  { path: '', pathMatch: 'full', redirectTo: '/products' },",
+@@ -933,7 +933,7 @@ export const routes: Routes = [
+           await runCli(['init', '--plan', plan], context(undefined, tooling)),
+         ).toBe(0);
+ 
+-        expect(output()).not.toContain('The app already has its own pages');
++        expect(output()).not.toContain('This is not a new `ng new` app');
+         expect(output()).not.toContain("redirectTo: '/products'");
+       },
+     );
+diff --git a/apps/pidrang-cli/src/run-cli.ts b/apps/pidrang-cli/src/run-cli.ts
+index df07ea0..5c75b99 100644
+--- a/apps/pidrang-cli/src/run-cli.ts
++++ b/apps/pidrang-cli/src/run-cli.ts
+@@ -342,7 +342,7 @@ function printExistingAppNotice(
+   }
+   context.out('');
+   context.out(
+-    `The app already has its own pages and routes, so pidrang only added the resource routes to ${layout.routesFile}. To open the first generated page, add this route above the others:`,
++    `This is not a new \`ng new\` app (its start page or its routes file was changed), so pidrang only added the resource routes to ${layout.routesFile}. To open the first generated page, add this route above the others:`,
+   );
+   context.out(
+     `  { path: '', pathMatch: 'full', redirectTo: ${quote(entry.path)} },`,

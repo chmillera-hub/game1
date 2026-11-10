@@ -1,0 +1,90 @@
+diff --git a/.changeset/add-tooling-refusal-label.md b/.changeset/add-tooling-refusal-label.md
+new file mode 100644
+index 0000000..5c5c1ae
+--- /dev/null
++++ b/.changeset/add-tooling-refusal-label.md
+@@ -0,0 +1,5 @@
++---
++'mfeflow': patch
++---
++
++`mfeflow add` in a tooling repo no longer prints a `--features` flag it does not have. The E216 and E107 refusals now read `theming: needs an app ...` and `ci-github: not in a tooling repo ...`. `mfeflow init --kind tooling --features ...` keeps the flag in its message.
+diff --git a/packages/cli/src/commands/add.ts b/packages/cli/src/commands/add.ts
+index 68849b3..8756fdd 100644
+--- a/packages/cli/src/commands/add.ts
++++ b/packages/cli/src/commands/add.ts
+@@ -381,7 +381,8 @@ async function addFeatures(
+   );
+   if (hasNoApps(project) && project.topology !== 'polyrepo') {
+     for (const feature of loaded) {
+-      const refusal = toolingRefusal(feature);
++      // `add` takes feature names as arguments, so the message names the feature alone.
++      const refusal = toolingRefusal(feature, feature.manifest.name);
+       if (refusal) throw refusal;
+     }
+   }
+diff --git a/packages/cli/src/kind-tooling.test.ts b/packages/cli/src/kind-tooling.test.ts
+index 17b7bcf..fed8452 100644
+--- a/packages/cli/src/kind-tooling.test.ts
++++ b/packages/cli/src/kind-tooling.test.ts
+@@ -503,7 +503,9 @@ describe('mfeflow add in a tooling repo', () => {
+       const { code, err } = await add(root, name);
+       expect(code).toBe(2);
+       expect(err).toContain('MFEFLOW_E216');
+-      expect(err).toContain(`--features ${name}: needs an app (`);
++      // `add` has no --features flag: the message names the feature alone.
++      expect(err).toContain(`: ${name}: needs an app (`);
++      expect(err).not.toContain('--features');
+       expect(err).toContain('a tooling repo has none');
+       expect(await readTree(root)).toEqual(before);
+     },
+@@ -515,7 +517,8 @@ describe('mfeflow add in a tooling repo', () => {
+     const { code, err } = await add(root, 'ci-github');
+     expect(code).toBe(2);
+     expect(err).toContain('MFEFLOW_E107');
+-    expect(err).toContain('--features ci-github: not in a tooling repo');
++    expect(err).toContain(': ci-github: not in a tooling repo');
++    expect(err).not.toContain('--features');
+     expect(await readTree(root)).toEqual(before);
+   });
+ 
+diff --git a/packages/cli/src/polyrepo.ts b/packages/cli/src/polyrepo.ts
+index a91fe88..73e08b9 100644
+--- a/packages/cli/src/polyrepo.ts
++++ b/packages/cli/src/polyrepo.ts
+@@ -70,18 +70,22 @@ export function appPartOf(feature: LoadedFeature): string | undefined {
+   return part && `${part.label} goes to ${part.target ?? 'root'}`;
+ }
+ 
+-/** The one place that decides whether a tooling repo takes a feature: the refusal, or undefined. */
+-export function toolingRefusal(feature: LoadedFeature): MfeflowError | undefined {
++/**
++ * The one place that decides whether a tooling repo takes a feature: the refusal, or undefined.
++ * `label` is how the caller's command names the feature: `--features theming` for init, which
++ * takes a flag, and plain `theming` for add, which takes feature names as arguments.
++ */
++export function toolingRefusal(feature: LoadedFeature, label: string): MfeflowError | undefined {
+   const name = feature.manifest.name;
+   const clash = TOOLING_CLASHES[name];
+   if (clash !== undefined) {
+-    return new MfeflowError('E107', `--features ${name}: not in a tooling repo, ${clash}`);
++    return new MfeflowError('E107', `${label}: not in a tooling repo, ${clash}`);
+   }
+   const app = appPartOf(feature);
+   if (app !== undefined) {
+     return new MfeflowError(
+       'E216',
+-      `--features ${name}: needs an app (${app}), and a tooling repo has none. Use a repo with apps, or the shell and remote repos of a polyrepo.`,
++      `${label}: needs an app (${app}), and a tooling repo has none. Use a repo with apps, or the shell and remote repos of a polyrepo.`,
+     );
+   }
+   return undefined;
+@@ -94,7 +98,7 @@ export async function assertToolingFeatures(
+ ): Promise<void> {
+   const loaded = await Promise.all(features.map((name) => loadAny(name, { roots: rt.roots })));
+   for (const feature of loaded) {
+-    const refusal = toolingRefusal(feature);
++    const refusal = toolingRefusal(feature, `--features ${feature.manifest.name}`);
+     if (refusal) throw refusal;
+   }
+ }

@@ -1,0 +1,93 @@
+diff --git a/.github/workflows/preview.yml b/.github/workflows/preview.yml
+index e0dbdfb..e724dbe 100644
+--- a/.github/workflows/preview.yml
++++ b/.github/workflows/preview.yml
+@@ -54,9 +54,13 @@ jobs:
+       - name: Add preview comment
+         if: github.event_name == 'pull_request'
+         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
++        env:
++          # `steps` is a workflow context, not a variable inside github-script, so
++          # the URL is interpolated here and read from the environment below.
++          DEPLOYMENT_URL: ${{ steps.deployment.outputs.page_url }}
+         with:
+           script: |
+-            const deploymentUrl = steps.deployment.outputs.page_url;
++            const deploymentUrl = process.env.DEPLOYMENT_URL;
+             const body = `## 🔍 Preview Deployment
+ 
+             A preview of this PR has been built with **testnet** configuration.
+@@ -71,7 +75,7 @@ jobs:
+ 
+             > **Note:** If this PR requires a wallet (Freighter), please test locally as preview deployments may not have full wallet integration.`;
+ 
+-            github.rest.issues.createComment({
++            await github.rest.issues.createComment({
+               issue_number: context.issue.number,
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+diff --git a/test/preview-workflow.test.ts b/test/preview-workflow.test.ts
+new file mode 100644
+index 0000000..91ae821
+--- /dev/null
++++ b/test/preview-workflow.test.ts
+@@ -0,0 +1,59 @@
++import { describe, expect, it, vi } from 'vitest'
++import fs from 'node:fs'
++import path from 'node:path'
++
++/**
++ * Issue #528: the "Add preview comment" step read `steps.deployment` inside
++ * actions/github-script, where `steps` is not a variable, and did not await
++ * `createComment`. These tests take the script body out of preview.yml and run
++ * it with stand-ins for `github`, `context` and `process`.
++ */
++const workflow = fs.readFileSync(path.resolve('.github/workflows/preview.yml'), 'utf8')
++
++function commentScript(): string {
++  const lines = workflow.split('\n')
++  const start = lines.findIndex((line) => /^\s+script: \|\s*$/.test(line))
++  expect(start, 'preview.yml has a github-script step').toBeGreaterThan(-1)
++  const indent = lines[start].indexOf('script') + 2
++  const body: string[] = []
++  for (const line of lines.slice(start + 1)) {
++    if (line.trim() !== '' && line.search(/\S/) < indent) break
++    body.push(line.slice(indent))
++  }
++  return body.join('\n')
++}
++
++type Comment = { issue_number: number; owner: string; repo: string; body: string }
++
++function run(createComment: (comment: Comment) => Promise<unknown>) {
++  const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (
++    ...args: string[]
++  ) => (...args: unknown[]) => Promise<unknown>
++  const script = new AsyncFunction('github', 'context', 'process', commentScript())
++  const github = { rest: { issues: { createComment } } }
++  const context = { issue: { number: 7 }, repo: { owner: 'ourdao', repo: 'ourdao-frontend' } }
++  const process = { env: { DEPLOYMENT_URL: 'https://preview.example/pr-7/' } }
++  return script(github, context, process)
++}
++
++describe('issue #528: preview comment step', () => {
++  it('passes the deployment URL through env, not the bare steps context', () => {
++    expect(workflow).toContain('DEPLOYMENT_URL: ${{ steps.deployment.outputs.page_url }}')
++    expect(commentScript()).not.toMatch(/\bsteps\./)
++  })
++
++  it('posts a comment that links the deployment URL', async () => {
++    const createComment = vi.fn((comment: Comment) => Promise.resolve(comment))
++    await run(createComment)
++
++    expect(createComment).toHaveBeenCalledTimes(1)
++    const comment = createComment.mock.calls[0][0]
++    expect(comment).toMatchObject({ issue_number: 7, owner: 'ourdao', repo: 'ourdao-frontend' })
++    expect(comment.body).toContain('[View Preview](https://preview.example/pr-7/)')
++  })
++
++  it('fails the step when the comment cannot be posted', async () => {
++    const refused = () => Promise.reject(new Error('403 Forbidden'))
++    await expect(run(refused)).rejects.toThrow('403 Forbidden')
++  })
++})

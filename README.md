@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds 115 small AI-written bug fixes (patch files) for forty-five public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 121 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -356,6 +356,24 @@ The shelf holds 115 small AI-written bug fixes (patch files) for forty-five publ
 
 115. [arkdraw: the viewer in exported HTML files filters link types with a list of forbidden types](spare-token-bug-fixes/fix-115-arkdraw-44.md)
    Project: gabe-santana/arkdraw. Bug report number 44. License: MIT. Test included: yes. Patch file: [115-arkdraw-44.patch](spare-token-bug-fixes/fixes/115-arkdraw-44.patch)
+
+116. [mfeflow: mfeflow add in a tooling repo prints a --features flag that the command does not have](spare-token-bug-fixes/fix-116-mfeflow-99.md)
+   Project: mfeflow/mfeflow. Bug report number 99. License: MIT. Test included: yes. Patch file: [116-mfeflow-99.patch](spare-token-bug-fixes/fixes/116-mfeflow-99.patch)
+
+117. [maximem_synap_core: the document id returned to the caller differs from the id stored on the memories](spare-token-bug-fixes/fix-117-maximem-synap-core-21.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 21. License: Apache-2.0. Test included: yes. Patch file: [117-maximem-synap-core-21.patch](spare-token-bug-fixes/fixes/117-maximem-synap-core-21.patch)
+
+118. [codelens-graph: on Windows unchecking a folder that is spelled with different capital letters fails](spare-token-bug-fixes/fix-118-codelens-graph-36.md)
+   Project: Pranayd555/codelens-graph. Bug report number 36. License: MIT. Test included: yes. Patch file: [118-codelens-graph-36.patch](spare-token-bug-fixes/fixes/118-codelens-graph-36.patch)
+
+119. [ourdao-frontend: the step that posts the preview link on a pull request would stop with an error](spare-token-bug-fixes/fix-119-ourdao-frontend-528.md)
+   Project: ourdao/ourdao-frontend. Bug report number 528. License: MIT. Test included: yes. Patch file: [119-ourdao-frontend-528.patch](spare-token-bug-fixes/fixes/119-ourdao-frontend-528.patch)
+
+120. [pidrang: the notice for an existing app says the app has its own routes when it may have none](spare-token-bug-fixes/fix-120-pidrang-191.md)
+   Project: pidrang/pidrang. Bug report number 191. License: MIT. Test included: yes. Patch file: [120-pidrang-191.patch](spare-token-bug-fixes/fixes/120-pidrang-191.patch)
+
+121. [security-checker: the simple secret check in the pre-commit hook misses several common key formats](spare-token-bug-fixes/fix-121-security-checker-672.md)
+   Project: Sh1n1230/security-checker. Bug report number 672. License: MIT. Test included: yes. Patch file: [121-security-checker-672.patch](spare-token-bug-fixes/fixes/121-security-checker-672.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

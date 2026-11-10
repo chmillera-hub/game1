@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-115 small ready-made bug fixes (patch files) for 45 public open source projects. Free to take.
+121 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and awslabs/social-messaging-agent-runtime-toolkit and dhanushbs10/vynlore and FROWNINGdev/orm-lens and gabe-santana/arkdraw and Hadeva-Dev/dawnmere and Hayuuka/sshhh and himanshu748/devswarm and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and jasonkryst/MyFinances and Jigsaw777/OpenKeet and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maximem-ai/maximem_synap_core and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and ourdao/ourdao-frontend and OWASP/cve-lite-cli and pavlov99/json-rpc and Pranayd555/codelens-graph and prapaa-ai/agav and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and Sh1n1230/security-checker and svayatta/agent-custody and TMHSDigital/Free-Game-Dev-Assets and ujjwalv01/releaseproof and Under-Research-Labs/CONTINUUM and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and awslabs/social-messaging-agent-runtime-toolkit and dhanushbs10/vynlore and FROWNINGdev/orm-lens and gabe-santana/arkdraw and Hadeva-Dev/dawnmere and Hayuuka/sshhh and himanshu748/devswarm and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and jasonkryst/MyFinances and Jigsaw777/OpenKeet and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maximem-ai/maximem_synap_core and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mfeflow/mfeflow and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and ourdao/ourdao-frontend and OWASP/cve-lite-cli and pavlov99/json-rpc and pidrang/pidrang and Pranayd555/codelens-graph and prapaa-ai/agav and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and Sh1n1230/security-checker and svayatta/agent-custody and TMHSDigital/Free-Game-Dev-Assets and ujjwalv01/releaseproof and Under-Research-Labs/CONTINUUM and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 56 of the 115 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 104 of the 115 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 59 of the 121 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 109 of the 121 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -371,6 +371,24 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 115. [arkdraw: the viewer in exported HTML files filters link types with a list of forbidden types](fix-115-arkdraw-44.md)
    Project: gabe-santana/arkdraw. Bug report number 44. License: MIT. Test included: yes. Patch file: [115-arkdraw-44.patch](fixes/115-arkdraw-44.patch)
+
+116. [mfeflow: mfeflow add in a tooling repo prints a --features flag that the command does not have](fix-116-mfeflow-99.md)
+   Project: mfeflow/mfeflow. Bug report number 99. License: MIT. Test included: yes. Patch file: [116-mfeflow-99.patch](fixes/116-mfeflow-99.patch)
+
+117. [maximem_synap_core: the document id returned to the caller differs from the id stored on the memories](fix-117-maximem-synap-core-21.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 21. License: Apache-2.0. Test included: yes. Patch file: [117-maximem-synap-core-21.patch](fixes/117-maximem-synap-core-21.patch)
+
+118. [codelens-graph: on Windows unchecking a folder that is spelled with different capital letters fails](fix-118-codelens-graph-36.md)
+   Project: Pranayd555/codelens-graph. Bug report number 36. License: MIT. Test included: yes. Patch file: [118-codelens-graph-36.patch](fixes/118-codelens-graph-36.patch)
+
+119. [ourdao-frontend: the step that posts the preview link on a pull request would stop with an error](fix-119-ourdao-frontend-528.md)
+   Project: ourdao/ourdao-frontend. Bug report number 528. License: MIT. Test included: yes. Patch file: [119-ourdao-frontend-528.patch](fixes/119-ourdao-frontend-528.patch)
+
+120. [pidrang: the notice for an existing app says the app has its own routes when it may have none](fix-120-pidrang-191.md)
+   Project: pidrang/pidrang. Bug report number 191. License: MIT. Test included: yes. Patch file: [120-pidrang-191.patch](fixes/120-pidrang-191.patch)
+
+121. [security-checker: the simple secret check in the pre-commit hook misses several common key formats](fix-121-security-checker-672.md)
+   Project: Sh1n1230/security-checker. Bug report number 672. License: MIT. Test included: yes. Patch file: [121-security-checker-672.patch](fixes/121-security-checker-672.patch)
 
 ## How to use a fix
 
