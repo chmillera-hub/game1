@@ -1,6 +1,6 @@
 # game1: public shelf of free bug fixes
 
-> 23 small AI-written bug fixes (git patch files) for 15 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
+> 26 small AI-written bug fixes (git patch files) for 18 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
 
 ## Shelf
 
@@ -34,3 +34,6 @@
 - [Gulliver: inspect quietly clamps --limit and --scan values outside the allowed range](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-21-gulliver-97.md): laaielichter/Gulliver bug report 97. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/21-gulliver-97.patch
 - [microscopy-active-learning: pretrain trains zero steps when the dataset is smaller than the batch size](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-22-microscopy-al-21.md): iamvisheshsrivastava/microscopy-active-learning bug report 21. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/22-microscopy-al-21.patch
 - [orm-lens: suggest-indexes proposes an index that already exists when Meta.indexes names the foreign key column](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-23-orm-lens-225.md): FROWNINGdev/orm-lens bug report 225. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/23-orm-lens-225.patch
+- [openmed: drift report compares score histograms that use different bin counts](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-24-openmed-4546.md): maziyarpanahi/openmed bug report 4546. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/24-openmed-4546.patch
+- [repo-roast-skill: the Bailiff cannot parse cited paths that contain spaces](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-25-repo-roast-skill-1.md): vivekbhange-hub/repo-roast-skill bug report 1. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/25-repo-roast-skill-1.patch
+- [kitden: add panels show one gap too many above the hint](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-26-kitden-21.md): KonstantinStarovoytov/kitden bug report 21. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/26-kitden-21.patch

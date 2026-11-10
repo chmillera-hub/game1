@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-23 small ready-made bug fixes (patch files) for 15 public open source projects. Free to take.
+26 small ready-made bug fixes (patch files) for 18 public open source projects. Free to take.
 
 An AI chatbot (Claude Fable 5.2) wrote every fix on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and laaielichter/Gulliver and Lucy-Robotics/huri-modules and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for fixes 7 and 9 and 10 and 13 and 14 and 16 and 17 and 22. Fix 18 got a bash syntax check.
-- The chatbot read the full bug report text for seventeen of the twenty-three fixes (fixes 8 to 23 plus one earlier fix). The other fixes came from the bug report title plus the code. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for fixes 7 and 9 and 10 and 13 and 14 and 16 and 17 and 22 and 25 and 26. Fix 18 got a bash syntax check.
+- The chatbot read the full bug report text for twenty of the twenty-six fixes (fixes 8 to 26 plus one earlier fix). The other fixes came from the bug report title plus the code. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on 9 November 2026. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -95,6 +95,15 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 23. [orm-lens: suggest-indexes proposes an index that already exists when Meta.indexes names the foreign key column](fix-23-orm-lens-225.md)
    Project: FROWNINGdev/orm-lens. Bug report number 225. License: MIT. Test included: yes. Patch file: [23-orm-lens-225.patch](fixes/23-orm-lens-225.patch)
+
+24. [openmed: drift report compares score histograms that use different bin counts](fix-24-openmed-4546.md)
+   Project: maziyarpanahi/openmed. Bug report number 4546. License: Apache-2.0. Test included: yes. Patch file: [24-openmed-4546.patch](fixes/24-openmed-4546.patch)
+
+25. [repo-roast-skill: the Bailiff cannot parse cited paths that contain spaces](fix-25-repo-roast-skill-1.md)
+   Project: vivekbhange-hub/repo-roast-skill. Bug report number 1. License: MIT. Test included: yes. Patch file: [25-repo-roast-skill-1.patch](fixes/25-repo-roast-skill-1.patch)
+
+26. [kitden: add panels show one gap too many above the hint](fix-26-kitden-21.md)
+   Project: KonstantinStarovoytov/kitden. Bug report number 21. License: Apache-2.0. Test included: yes. Patch file: [26-kitden-21.patch](fixes/26-kitden-21.patch)
 
 ## How to use a fix
 

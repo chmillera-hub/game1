@@ -1,0 +1,55 @@
+diff --git a/skills/roast-repo/verdict.py b/skills/roast-repo/verdict.py
+index 76c4fc2..41ac83f 100644
+--- a/skills/roast-repo/verdict.py
++++ b/skills/roast-repo/verdict.py
+@@ -48,6 +48,9 @@ DEFAULT_HEADLINES = {
+ }
+ 
+ LOCATION = re.compile(r"(?<![\w/\\.-])([\w.\-][\w.\-/\\]*?):(\d+)(?:-(\d+))?\b")
++# A citation wrapped whole in backticks, e.g. `docs/My Guide.md:12`. The backticks mark
++# where the path starts and ends, so here it may contain spaces (LOCATION stops at them).
++QUOTED_LOCATION = re.compile(r"`\s*([^`\n]+?):(\d+)(?:-(\d+))?\s*`")
+ 
+ 
+ def tier(score: float) -> str:
+@@ -108,13 +111,15 @@ class Bailiff:
+             if self.facts is None:
+                 return None
+             return None if lookup_fact(self.facts, key) else f"facts key '{key}' does not exist"
+-        matches = list(LOCATION.finditer(ev.replace("`", " ")))
++        matches = list(QUOTED_LOCATION.finditer(ev))
++        unquoted = QUOTED_LOCATION.sub(" ", ev)
++        matches += list(LOCATION.finditer(unquoted.replace("`", " ")))
+         if not matches:
+             return "evidence must be path:line, '$ command -> output' or 'facts.<key>'"
+         if self.repo is None:
+             return None
+         for m in matches:
+-            rel = m.group(1).replace("\\", "/")
++            rel = m.group(1).strip().replace("\\", "/")
+             while rel.startswith("./"):
+                 rel = rel[2:]
+             line = int(m.group(2))
+diff --git a/tests/test_verdict.py b/tests/test_verdict.py
+index 99fe638..0b2e7c7 100644
+--- a/tests/test_verdict.py
++++ b/tests/test_verdict.py
+@@ -43,6 +43,18 @@ class BailiffTests(RepoCase):
+         self.assertIsNone(self.bailiff.check("`src/db.py:50` builds SQL"))
+         self.assertIsNone(self.bailiff.check("./app.py:1"))
+ 
++    def test_accepts_backticked_path_with_spaces(self):
++        (self.repo / "docs").mkdir()
++        (self.repo / "docs" / "My Guide.md").write_text("line\n" * 12, encoding="utf-8")
++        self.assertIsNone(self.bailiff.check("`docs/My Guide.md:12`"))
++        self.assertIsNone(self.bailiff.check("see `docs/My Guide.md:3-5` for the steps"))
++        self.assertIsNone(self.bailiff.check("`docs/My Guide.md:1` and `app.py:3`"))
++        self.assertIn("out of range", self.bailiff.check("`docs/My Guide.md:13`"))
++        self.assertIn("not found", self.bailiff.check("`docs/No Such Guide.md:1`"))
++        # A path outside the repo stays inadmissible however it is quoted.
++        self.assertIsNotNone(self.bailiff.check("`../outside dir/file.py:1`"))
++        self.assertIsNotNone(self.bailiff.check("`/etc/passwd:1`"))
++
+     def test_rejects_missing_file(self):
+         self.assertIn("not found", self.bailiff.check("nope.py:1"))
+ 

@@ -1,0 +1,113 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index b89a831..673e262 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ ### Fixed
+ 
++- `compute_drift_report` raises `DriftInputError` when the reference and
++  observation score histograms have different bin counts, naming both lengths,
++  instead of comparing differently binned windows bucket by bucket (#4546).
+ - Reject missing, repeated, or unsupported content types on the local privacy
+   proxy's chat routes before reading the request body (#5185).
+ 
+diff --git a/openmed/eval/drift_monitor.py b/openmed/eval/drift_monitor.py
+index 4125996..1109917 100644
+--- a/openmed/eval/drift_monitor.py
++++ b/openmed/eval/drift_monitor.py
+@@ -477,6 +477,18 @@ def compute_drift_report(
+         reference_window = _as_window(reference)
+         observation_window = _as_window(observation)
+ 
++        # Score buckets are named by index, so two windows binned differently
++        # would be compared bucket-for-bucket as if they meant the same thing:
++        # PSI would then report a binning change as drift, or hide real drift.
++        reference_bins = len(reference_window.score_histogram)
++        observation_bins = len(observation_window.score_histogram)
++        if reference_bins != observation_bins:
++            raise DriftInputError(
++                "score_histogram bin counts differ: the reference window has "
++                f"{reference_bins} bins and the observation window has "
++                f"{observation_bins} bins"
++            )
++
+         families = tuple(
+             _family_divergence(
+                 family,
+diff --git a/tests/unit/eval/test_drift_monitor.py b/tests/unit/eval/test_drift_monitor.py
+index beab804..78571a5 100644
+--- a/tests/unit/eval/test_drift_monitor.py
++++ b/tests/unit/eval/test_drift_monitor.py
+@@ -24,6 +24,7 @@ from openmed.eval.drift_monitor import (
+     VERDICT_DRIFT,
+     VERDICT_STABLE,
+     DriftAggregateWindow,
++    DriftInputError,
+     DriftPrivacyError,
+     assert_no_raw_text,
+     build_drift_window,
+@@ -268,3 +269,63 @@ def test_computation_opens_no_socket(monkeypatch):
+     )
+     assert report.drift_detected
+     assert attempts == []
++
++
++
++def _window_with_scores(window_id: str, scores: list[int] | None) -> dict:
++    payload = _baseline_window(window_id).to_dict()
++    if scores is None:
++        payload.pop("score_histogram")  # falls back to the all-zero default histogram
++    else:
++        payload["score_histogram"] = scores
++    return payload
++
++
++_TEN_BINS = list(_BASE_SCORES)
++_TWENTY_BINS = [value for value in _BASE_SCORES for _ in range(2)]
++
++
++def test_matching_score_bin_counts_behave_as_before():
++    twenty = list(_TWENTY_BINS)
++    report = compute_drift_report(
++        _window_with_scores("reference", twenty),
++        _window_with_scores("observation", twenty),
++    )
++    assert report.verdict == VERDICT_STABLE
++
++
++@pytest.mark.parametrize(
++    ("reference_scores", "observation_scores", "reference_bins", "observation_bins"),
++    [
++        (_TEN_BINS, _TWENTY_BINS, 10, 20),
++        (_TWENTY_BINS, _TEN_BINS, 20, 10),
++        # The all-zero default histogram has DEFAULT_SCORE_BINS (10) bins and
++        # follows the same rule.
++        (None, _TWENTY_BINS, 10, 20),
++        (_TWENTY_BINS, None, 20, 10),
++    ],
++    ids=["10-vs-20", "20-vs-10", "default-vs-20", "20-vs-default"],
++)
++def test_mismatched_score_bin_counts_are_rejected(
++    reference_scores, observation_scores, reference_bins, observation_bins
++):
++    with pytest.raises(DriftInputError) as exc_info:
++        compute_drift_report(
++            _window_with_scores("reference", reference_scores),
++            _window_with_scores("observation", observation_scores),
++        )
++
++    message = str(exc_info.value)
++    assert f"{reference_bins} bins" in message
++    assert f"{observation_bins} bins" in message
++    # The message names the two lengths only: no bucket values.
++    for value in _BASE_SCORES:
++        assert str(value) not in message
++
++
++def test_default_score_histograms_on_both_sides_still_compare():
++    report = compute_drift_report(
++        _window_with_scores("reference", None),
++        _window_with_scores("observation", None),
++    )
++    assert report.reference_window_id == "reference"

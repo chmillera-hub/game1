@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds twenty-three small AI-written bug fixes (patch files) for fifteen public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds twenty-six small AI-written bug fixes (patch files) for eighteen public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -80,6 +80,15 @@ The shelf holds twenty-three small AI-written bug fixes (patch files) for fiftee
 
 23. [orm-lens: suggest-indexes proposes an index that already exists when Meta.indexes names the foreign key column](spare-token-bug-fixes/fix-23-orm-lens-225.md)
    Project: FROWNINGdev/orm-lens. Bug report number 225. License: MIT. Test included: yes. Patch file: [23-orm-lens-225.patch](spare-token-bug-fixes/fixes/23-orm-lens-225.patch)
+
+24. [openmed: drift report compares score histograms that use different bin counts](spare-token-bug-fixes/fix-24-openmed-4546.md)
+   Project: maziyarpanahi/openmed. Bug report number 4546. License: Apache-2.0. Test included: yes. Patch file: [24-openmed-4546.patch](spare-token-bug-fixes/fixes/24-openmed-4546.patch)
+
+25. [repo-roast-skill: the Bailiff cannot parse cited paths that contain spaces](spare-token-bug-fixes/fix-25-repo-roast-skill-1.md)
+   Project: vivekbhange-hub/repo-roast-skill. Bug report number 1. License: MIT. Test included: yes. Patch file: [25-repo-roast-skill-1.patch](spare-token-bug-fixes/fixes/25-repo-roast-skill-1.patch)
+
+26. [kitden: add panels show one gap too many above the hint](spare-token-bug-fixes/fix-26-kitden-21.md)
+   Project: KonstantinStarovoytov/kitden. Bug report number 21. License: Apache-2.0. Test included: yes. Patch file: [26-kitden-21.patch](spare-token-bug-fixes/fixes/26-kitden-21.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 
