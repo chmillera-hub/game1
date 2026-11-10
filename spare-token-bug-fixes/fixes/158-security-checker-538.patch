@@ -1,0 +1,28 @@
+diff --git a/tests/unit/test_gemini_parse_response_first_candidate.py b/tests/unit/test_gemini_parse_response_first_candidate.py
+new file mode 100644
+index 0000000..c118c91
+--- /dev/null
++++ b/tests/unit/test_gemini_parse_response_first_candidate.py
+@@ -0,0 +1,22 @@
++"""gemini_generate.parse_response: candidates[0] がオブジェクトでない応答はエラーになること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.providers.errors import ProviderResponseError
++from security_checker.providers.http.dialects.gemini_generate import GeminiGenerateDialect
++
++
++@pytest.mark.parametrize("first", ["text", 3, None, ["a"]])
++def test_first_candidate_that_is_not_an_object_is_a_response_error(first: object) -> None:
++    with pytest.raises(ProviderResponseError, match=r"candidates\[0\]"):
++        GeminiGenerateDialect().parse_response({"candidates": [first]})
++
++
++def test_first_candidate_without_content_is_read_as_empty_text() -> None:
++    """対になるケース. オブジェクトであれば、本文が無くてもエラーにはしない."""
++    response = GeminiGenerateDialect().parse_response({"candidates": [{}]})
++
++    assert response.text == ""
++    assert response.finish_reason == "stop"

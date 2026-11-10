@@ -1,0 +1,44 @@
+diff --git a/tests/unit/test_presets_read_errors.py b/tests/unit/test_presets_read_errors.py
+new file mode 100644
+index 0000000..0fe3019
+--- /dev/null
++++ b/tests/unit/test_presets_read_errors.py
+@@ -0,0 +1,38 @@
++"""_read_presets: 読めない・形の違うプリセットファイルは ConfigError になること."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.errors import ConfigError
++from security_checker.providers.presets.loader import HttpPreset, _read_presets
++
++
++def test_invalid_yaml_is_a_config_error_that_names_the_file(tmp_path: Path) -> None:
++    path = tmp_path / "broken.yml"
++    path.write_text("dialect: [unclosed\n", encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="broken.yml"):
++        _read_presets(tmp_path, "user", HttpPreset)
++
++
++def test_unreadable_file_is_a_config_error(tmp_path: Path) -> None:
++    # ディレクトリを *.yml の名前で置くと read_text が OSError になる
++    (tmp_path / "folder.yml").mkdir()
++
++    with pytest.raises(ConfigError, match="folder.yml"):
++        _read_presets(tmp_path, "user", HttpPreset)
++
++
++@pytest.mark.parametrize("text", ["- a\n- b\n", "just text\n", "3\n"])
++def test_top_level_that_is_not_a_mapping_is_a_config_error(tmp_path: Path, text: str) -> None:
++    (tmp_path / "shape.yml").write_text(text, encoding="utf-8")
++
++    with pytest.raises(ConfigError, match="マッピング"):
++        _read_presets(tmp_path, "user", HttpPreset)
++
++
++def test_missing_directory_gives_no_presets(tmp_path: Path) -> None:
++    assert _read_presets(tmp_path / "absent", "user", HttpPreset) == {}

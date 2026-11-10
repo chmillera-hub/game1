@@ -1,0 +1,80 @@
+diff --git a/changelog.md b/changelog.md
+index 2986438..fbcadb8 100644
+--- a/changelog.md
++++ b/changelog.md
+@@ -17,6 +17,7 @@ All notable changes to the **CodeLens Graph** extension will be documented in th
+ - **Calls through an aliased import keep their link** when the imported file is edited (`import { helper as h }`). Previously the link was lost until a full rebuild.
+ - **CodeLens no longer damages your files when updating its section**: front matter in `CLAUDE.md` and similar files is kept, a leftover CodeLens marker no longer causes the text after it to be deleted, and removing the CodeLens block from `.gitignore` no longer merges the lines around it.
+ - `codelens_clear_config` no longer recreates `.codelens` and starts re-indexing right after clearing it.
++- **The MCP usage report's per-tool token figures add up to the session's "Tokens used".** The tool breakdown was priced from a fixed table instead of the logged estimate of each call.
+ - **The graph panel no longer freezes VS Code on large repos.** It built its data with two queries per symbol and drew every symbol, which on a 100k-symbol monorepo blocked the extension host for minutes. It now loads in about a second, and above 1,000 symbols it shows the most connected ones with their neighbours. Search and the filter buttons still find any symbol in the index.
+ 
+ ### Security
+diff --git a/src/mcp/mcpLogger.ts b/src/mcp/mcpLogger.ts
+index 0123a57..048634a 100644
+--- a/src/mcp/mcpLogger.ts
++++ b/src/mcp/mcpLogger.ts
+@@ -21,20 +21,6 @@ export interface ToolCallLog {
+   sessionId:  string;   // groups calls within one MCP session
+ }
+ 
+-// Approximate token cost per tool call (based on typical response sizes)
+-const TOOL_TOKEN_COST: Record<string, number> = {
+-  codelens_triage:       10,
+-  codelens_search:       50,
+-  codelens_node:         80,
+-  codelens_files:        120,
+-  codelens_relations:    100,
+-  codelens_context:      400,
+-  codelens_impact:       300,
+-  codelens_status:       30,
+-  codelens_text_search:  60,
+-  codelens_dependencies: 80,
+-};
+-
+ export class MCPLogger {
+   private logPath: string;
+   private sessionId: string;
+@@ -162,6 +148,7 @@ export function formatUsageReport(logs: ToolCallLog[]): string {
+     const totalTokens   = calls.reduce((s, c) => s + c.tokensEst, 0);
+     const totalDuration = calls.reduce((s, c) => s + c.durationMs, 0);
+     const toolCounts    = calls.reduce((m, c) => { m[c.tool]=(m[c.tool]||0)+1; return m; }, {} as Record<string,number>);
++    const toolTokens    = calls.reduce((m, c) => { m[c.tool]=(m[c.tool]||0)+c.tokensEst; return m; }, {} as Record<string,number>);
+     const contextCalls  = toolCounts['codelens_context'] || 0;
+     const searchCalls   = toolCounts['codelens_search']  || 0;
+     const savedEst      = contextCalls * 1800 + searchCalls * 400;
+@@ -174,8 +161,8 @@ export function formatUsageReport(logs: ToolCallLog[]): string {
+     lines.push(`- Triage used: ${usedTriage ? '✅ yes' : '❌ no — agent skipped codelens_triage'}`);
+     lines.push('- Tool breakdown:');
+     for (const [tool, count] of Object.entries(toolCounts).sort(([,a],[,b]) => b-a)) {
+-      const estCost = TOOL_TOKEN_COST[tool] ?? 50;
+-      lines.push(`  · ${tool} ×${count} (~${estCost * count} tokens)`);
++      // The logged estimate of each call, so the breakdown adds up to "Tokens used".
++      lines.push(`  · ${tool} ×${count} (~${toolTokens[tool] ?? 0} tokens)`);
+     }
+ 
+     // Show individual calls
+diff --git a/test/context/mcp_logger.test.ts b/test/context/mcp_logger.test.ts
+index 43da973..f486167 100644
+--- a/test/context/mcp_logger.test.ts
++++ b/test/context/mcp_logger.test.ts
+@@ -217,8 +217,8 @@ describe('formatUsageReport', () => {
+     const tools = [...old.matchAll(/^ {2}· (\S+) ×(\d+)/gm)].map(m => `${m[1]}×${m[2]}`);
+     assert.equal(tools[0], 'codelens_search×2');
+     assert.deepEqual(new Set(tools), new Set(['codelens_search×2', 'codelens_triage×1', 'codelens_context×1']));
+-    // Unknown tools fall back to the default per-call estimate.
+-    assert.match(sessionBlock(formatUsageReport(logs), 1), /· mystery_tool ×1 \(~50 tokens\)/);
++    // Unknown tools are priced from their logged estimate like every other tool.
++    assert.match(sessionBlock(formatUsageReport(logs), 1), /· mystery_tool ×1 \(~7 tokens\)/);
+   });
+ 
+   it('lists every call with its time, tool, trimmed input and cost', () => {
+@@ -228,7 +228,7 @@ describe('formatUsageReport', () => {
+     assert.match(old, new RegExp(`task="${'z'.repeat(60)}" → 500 tokens`), 'input values are cut to 60 characters');
+   });
+ 
+-  it('per-tool token figures agree with the session\'s "Tokens used"', { todo: 'BUG #28: mcpLogger.ts:403-404 prices the tool breakdown from a static table (TOOL_TOKEN_COST), not the logged tokensEst' }, () => {
++  it('per-tool token figures agree with the session\'s "Tokens used"', () => {
+     const old = sessionBlock(formatUsageReport(logs), 2);
+     const total = Number(old.match(/Tokens used: ~(\d+)/)![1]);
+     const perTool = [...old.matchAll(/^ {2}· \S+ ×\d+ \(~(\d+) tokens\)$/gm)].reduce((s, m) => s + Number(m[1]), 0);

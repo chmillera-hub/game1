@@ -1,0 +1,43 @@
+diff --git a/tests/unit/test_gemini_no_candidates_reason.py b/tests/unit/test_gemini_no_candidates_reason.py
+new file mode 100644
+index 0000000..fd29a2f
+--- /dev/null
++++ b/tests/unit/test_gemini_no_candidates_reason.py
+@@ -0,0 +1,37 @@
++"""gemini_generate._no_candidates_reason: 応答が空の理由を伝えること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.providers.errors import ProviderResponseError
++from security_checker.providers.http.dialects.gemini_generate import (
++    GeminiGenerateDialect,
++    _no_candidates_reason,
++)
++
++
++@pytest.mark.parametrize(
++    "payload",
++    [
++        {},
++        {"promptFeedback": {}},
++        {"promptFeedback": "blocked"},
++        {"promptFeedback": {"blockReason": ""}},
++    ],
++)
++def test_reason_without_a_block_reason_is_the_plain_message(payload: dict[str, object]) -> None:
++    assert _no_candidates_reason(payload) == "応答に candidates がありません"
++
++
++def test_reason_with_a_block_reason_names_it() -> None:
++    """対になるケース. 拒否された理由があればそれを伝える."""
++    reason = _no_candidates_reason({"promptFeedback": {"blockReason": "SAFETY"}})
++
++    assert "blockReason: SAFETY" in reason
++
++
++@pytest.mark.parametrize("candidates", [None, [], "none"])
++def test_parse_response_raises_the_plain_message(candidates: object) -> None:
++    with pytest.raises(ProviderResponseError, match="応答に candidates がありません"):
++        GeminiGenerateDialect().parse_response({"candidates": candidates})

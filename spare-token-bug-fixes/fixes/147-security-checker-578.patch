@@ -1,0 +1,22 @@
+diff --git a/tests/unit/test_scanner_base_excerpt_blank.py b/tests/unit/test_scanner_base_excerpt_blank.py
+new file mode 100644
+index 0000000..041f415
+--- /dev/null
++++ b/tests/unit/test_scanner_base_excerpt_blank.py
+@@ -0,0 +1,16 @@
++"""excerpt: 中身が空白だけの stderr は None になること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.scanners.base import excerpt
++
++
++@pytest.mark.parametrize("data", [b"", b"   \n\t\n"])
++def test_empty_or_blank_stderr_gives_none(data: bytes) -> None:
++    assert excerpt(data) is None
++
++
++def test_surrounding_blank_lines_are_stripped() -> None:
++    assert excerpt(b"\n  boom  \n") == "boom"

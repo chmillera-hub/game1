@@ -1,0 +1,38 @@
+diff --git a/tests/unit/test_preset_match_mismatch.py b/tests/unit/test_preset_match_mismatch.py
+new file mode 100644
+index 0000000..5798d57
+--- /dev/null
++++ b/tests/unit/test_preset_match_mismatch.py
+@@ -0,0 +1,32 @@
++"""PresetMatch.matches: host や model が合わないプリセットは適用されないこと."""
++
++from __future__ import annotations
++
++from security_checker.providers.presets.loader import PresetMatch
++
++BASE_URL = "https://api.example.com/v1"
++
++
++def test_model_pattern_that_does_not_match_is_rejected() -> None:
++    assert PresetMatch(model="^gpt-").matches(BASE_URL, "claude-x") is False
++
++
++def test_matching_host_with_a_model_that_does_not_match_is_rejected() -> None:
++    match = PresetMatch(host="api.example.com", model="^gpt-")
++
++    assert match.matches(BASE_URL, "claude-x") is False
++
++
++def test_different_host_is_rejected() -> None:
++    assert PresetMatch(host="other.example.com").matches(BASE_URL, "gpt-x") is False
++
++
++def test_matching_host_and_model_is_accepted() -> None:
++    """対になるケース. 両方合えば適用される."""
++    match = PresetMatch(host="api.example.com", model="^gpt-")
++
++    assert match.matches(BASE_URL, "gpt-x") is True
++
++
++def test_match_without_any_condition_never_applies() -> None:
++    assert PresetMatch().matches(BASE_URL, "gpt-x") is False

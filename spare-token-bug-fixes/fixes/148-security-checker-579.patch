@@ -1,0 +1,29 @@
+diff --git a/tests/unit/test_scanner_base_relative_path_dot_slash.py b/tests/unit/test_scanner_base_relative_path_dot_slash.py
+new file mode 100644
+index 0000000..9ed31ea
+--- /dev/null
++++ b/tests/unit/test_scanner_base_relative_path_dot_slash.py
+@@ -0,0 +1,23 @@
++"""relative_path: 先頭の "./" を落とすこと."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++from security_checker.scanners.base import relative_path
++
++
++def test_leading_dot_slash_is_removed(tmp_path: Path) -> None:
++    assert relative_path("./src/app.py", tmp_path) == "src/app.py"
++
++
++def test_backslash_form_is_normalized_first(tmp_path: Path) -> None:
++    assert relative_path(".\\src\\app.py", tmp_path) == "src/app.py"
++
++
++def test_only_one_leading_dot_slash_is_removed(tmp_path: Path) -> None:
++    assert relative_path("././src/app.py", tmp_path) == "./src/app.py"
++
++
++def test_path_without_the_prefix_is_unchanged(tmp_path: Path) -> None:
++    assert relative_path("src/app.py", tmp_path) == "src/app.py"

@@ -1,0 +1,32 @@
+diff --git a/tests/unit/test_semgrep_parse_results_shape.py b/tests/unit/test_semgrep_parse_results_shape.py
+new file mode 100644
+index 0000000..5df5fd8
+--- /dev/null
++++ b/tests/unit/test_semgrep_parse_results_shape.py
+@@ -0,0 +1,26 @@
++"""parse_semgrep: results が配列でない出力は「解釈できない」として扱うこと."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from security_checker.scanners.base import UnparseableOutputError
++from security_checker.scanners.semgrep import parse_semgrep
++
++
++@pytest.mark.parametrize("results", [{"check_id": "x"}, "text", 3])
++def test_results_that_is_not_a_list_is_unparseable(tmp_path: Path, results: object) -> None:
++    with pytest.raises(UnparseableOutputError, match="results が配列ではありません"):
++        parse_semgrep({"results": results}, tmp_path)
++
++
++def test_missing_results_is_unparseable(tmp_path: Path) -> None:
++    with pytest.raises(UnparseableOutputError, match="results フィールドがありません"):
++        parse_semgrep({"errors": []}, tmp_path)
++
++
++def test_empty_results_gives_no_candidates_and_no_warnings(tmp_path: Path) -> None:
++    """対になるケース. 空の配列は正常な「検出なし」."""
++    assert parse_semgrep({"results": []}, tmp_path) == ([], [])

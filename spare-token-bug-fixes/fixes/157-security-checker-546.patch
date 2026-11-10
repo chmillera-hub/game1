@@ -1,0 +1,33 @@
+diff --git a/tests/unit/test_ollama_chat_health_payload.py b/tests/unit/test_ollama_chat_health_payload.py
+new file mode 100644
+index 0000000..3d5e058
+--- /dev/null
++++ b/tests/unit/test_ollama_chat_health_payload.py
+@@ -0,0 +1,27 @@
++"""ollama_chat.health_payload: 疎通確認でも num_ctx を明示し、出力は 1 トークンに抑えること."""
++
++from __future__ import annotations
++
++from security_checker.providers.base import Capabilities
++from security_checker.providers.http.dialects.base import DialectOptions
++from security_checker.providers.http.dialects.ollama_chat import (
++    DEFAULT_NUM_CTX,
++    OllamaChatDialect,
++)
++
++
++def test_health_payload_is_a_one_token_ping() -> None:
++    payload = OllamaChatDialect().health_payload("m", Capabilities())
++
++    assert payload == {
++        "model": "m",
++        "messages": [{"role": "user", "content": "ping"}],
++        "stream": False,
++        "options": {"num_ctx": DEFAULT_NUM_CTX, "num_predict": 1},
++    }
++
++
++def test_health_payload_uses_the_configured_num_ctx() -> None:
++    dialect = OllamaChatDialect(DialectOptions(num_ctx=2048))
++
++    assert dialect.health_payload("m", Capabilities())["options"]["num_ctx"] == 2048

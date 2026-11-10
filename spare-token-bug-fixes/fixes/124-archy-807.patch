@@ -1,0 +1,42 @@
+diff --git a/tests/test_summary_counts_pinned.py b/tests/test_summary_counts_pinned.py
+new file mode 100644
+index 0000000..b7d3266
+--- /dev/null
++++ b/tests/test_summary_counts_pinned.py
+@@ -0,0 +1,36 @@
++"""Pin two counts that reach agents and users and had no assertion (#807)."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import networkx as nx
++
++from archy.mcp_runs import run_graph_summary
++from archy.score import _call_stats
++
++
++def test_graph_summary_counts_internal_and_external_edges_apart(tmp_path: Path):
++    """Three modules: a -> b and b -> c are internal; a -> os is the one external edge."""
++    pkg = tmp_path / "p"
++    pkg.mkdir()
++    (pkg / "__init__.py").write_text("")
++    (pkg / "a.py").write_text("import os\nfrom p import b\n")
++    (pkg / "b.py").write_text("from p import c\n")
++    (pkg / "c.py").write_text("")
++
++    dumped = run_graph_summary(tmp_path, top_n=3).model_dump()
++
++    assert dumped["internal_edge_count"] == 2
++    assert dumped["external_edge_count"] == 1
++
++
++def test_call_stats_averages_over_edges_that_carry_calls_only():
++    """Two edges carry calls; 2 + 3 = 5 calls; 5 / 2 = 2.5. The zero-call edge is not counted."""
++    graph = nx.DiGraph()
++    graph.add_edge("a", "b", call_count=0)
++    graph.add_edge("a", "c", call_count=2)
++    graph.add_edge("b", "c", call_count=3)
++    assert graph["a"]["b"]["call_count"] == 0
++
++    assert _call_stats(graph) == (2, 5, 2.5)

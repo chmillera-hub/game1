@@ -1,0 +1,26 @@
+diff --git a/tests/unit/test_semgrep_resolve_config_unknown_bundled.py b/tests/unit/test_semgrep_resolve_config_unknown_bundled.py
+new file mode 100644
+index 0000000..96a4a06
+--- /dev/null
++++ b/tests/unit/test_semgrep_resolve_config_unknown_bundled.py
+@@ -0,0 +1,20 @@
++"""resolve_config: 存在しない同梱ルールの名前は ConfigError になること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.errors import ConfigError
++from security_checker.scanners.semgrep import resolve_config
++
++
++@pytest.mark.parametrize("value", ["bundled:no-such-rule", "bundled:", "bundled:../llm"])
++def test_unknown_bundled_rule_is_a_config_error(value: str) -> None:
++    with pytest.raises(ConfigError, match="未知の同梱ルール"):
++        resolve_config(value)
++
++
++@pytest.mark.parametrize("value", ["p/default", "rules/custom.yml", "auto"])
++def test_value_without_the_bundled_prefix_is_passed_through(value: str) -> None:
++    """対になるケース. レジストリ名やパスは変えずに渡す."""
++    assert resolve_config(value) == value

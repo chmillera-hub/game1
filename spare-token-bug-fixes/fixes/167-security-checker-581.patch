@@ -1,0 +1,64 @@
+diff --git a/tests/unit/test_gitleaks_supports_dir_subcommand.py b/tests/unit/test_gitleaks_supports_dir_subcommand.py
+new file mode 100644
+index 0000000..5a4944e
+--- /dev/null
++++ b/tests/unit/test_gitleaks_supports_dir_subcommand.py
+@@ -0,0 +1,58 @@
++"""GitleaksScanner._supports_dir_subcommand: gitleaks が無い・呼べないときは旧形式を使うこと."""
++
++from __future__ import annotations
++
++import subprocess
++from typing import Any
++
++import pytest
++
++from security_checker.scanners import gitleaks
++from security_checker.scanners.gitleaks import GitleaksScanner
++
++
++def _completed(returncode: int) -> Any:
++    def run(argv: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[bytes]:
++        return subprocess.CompletedProcess(argv, returncode, b"", b"")
++
++    return run
++
++
++def _raise(exc: BaseException) -> Any:
++    def run(*_args: Any, **_kwargs: Any) -> Any:
++        raise exc
++
++    return run
++
++
++def test_missing_gitleaks_does_not_support_dir(monkeypatch: pytest.MonkeyPatch) -> None:
++    monkeypatch.setattr(gitleaks.shutil, "which", lambda _command: None)
++
++    assert GitleaksScanner._supports_dir_subcommand() is False
++
++
++@pytest.mark.parametrize(
++    "exc",
++    [
++        PermissionError("実行できません"),
++        subprocess.TimeoutExpired(cmd="gitleaks", timeout=15),
++    ],
++)
++def test_failed_help_call_does_not_support_dir(
++    monkeypatch: pytest.MonkeyPatch, exc: BaseException
++) -> None:
++    monkeypatch.setattr(gitleaks.shutil, "which", lambda _command: "/fake/bin/gitleaks")
++    monkeypatch.setattr(gitleaks.subprocess, "run", _raise(exc))
++
++    assert GitleaksScanner._supports_dir_subcommand() is False
++
++
++@pytest.mark.parametrize(("returncode", "expected"), [(0, True), (1, False)])
++def test_exit_code_of_the_help_call_decides(
++    monkeypatch: pytest.MonkeyPatch, returncode: int, expected: bool
++) -> None:
++    """対になるケース. `gitleaks dir --help` が 0 で終われば dir を使う."""
++    monkeypatch.setattr(gitleaks.shutil, "which", lambda _command: "/fake/bin/gitleaks")
++    monkeypatch.setattr(gitleaks.subprocess, "run", _completed(returncode))
++
++    assert GitleaksScanner._supports_dir_subcommand() is expected

@@ -1,0 +1,39 @@
+diff --git a/tests/unit/test_cassette_aclose.py b/tests/unit/test_cassette_aclose.py
+new file mode 100644
+index 0000000..0e72f82
+--- /dev/null
++++ b/tests/unit/test_cassette_aclose.py
+@@ -0,0 +1,33 @@
++"""CassetteProvider.aclose: inner があれば閉じ、無ければ何もしないこと."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++from security_checker.testing.cassette import CassetteProvider
++
++
++class _Inner:
++    """aclose が呼ばれた回数だけを数える最小の Provider."""
++
++    model = "inner-model"
++    name = "inner"
++
++    def __init__(self) -> None:
++        self.closed = 0
++
++    async def aclose(self) -> None:
++        self.closed += 1
++
++
++async def test_aclose_closes_the_inner_provider(tmp_path: Path) -> None:
++    inner = _Inner()
++    provider = CassetteProvider(tmp_path / "c.json", inner=inner)  # type: ignore[arg-type]
++
++    await provider.aclose()
++
++    assert inner.closed == 1
++
++
++async def test_aclose_without_an_inner_provider_does_nothing(tmp_path: Path) -> None:
++    await CassetteProvider(tmp_path / "c.json").aclose()

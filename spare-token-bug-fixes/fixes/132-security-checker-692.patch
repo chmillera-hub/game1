@@ -1,0 +1,22 @@
+diff --git a/src/security_checker/github/client.py b/src/security_checker/github/client.py
+index 8fcf3b0..485f92c 100644
+--- a/src/security_checker/github/client.py
++++ b/src/security_checker/github/client.py
+@@ -12,7 +12,7 @@ import os
+ from collections.abc import Callable, Mapping
+ from dataclasses import dataclass, field
+ from pathlib import Path
+-from typing import Any
++from typing import Any, Self
+ 
+ import httpx
+ 
+@@ -103,7 +103,7 @@ class GithubClient:
+     def close(self) -> None:
+         self._client.close()
+ 
+-    def __enter__(self) -> GithubClient:
++    def __enter__(self) -> Self:
+         return self
+ 
+     def __exit__(self, *_: object) -> None:

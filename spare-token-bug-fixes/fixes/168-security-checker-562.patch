@@ -1,0 +1,33 @@
+diff --git a/tests/unit/test_markdown_footer_notes.py b/tests/unit/test_markdown_footer_notes.py
+new file mode 100644
+index 0000000..3a8f58f
+--- /dev/null
++++ b/tests/unit/test_markdown_footer_notes.py
+@@ -0,0 +1,27 @@
++"""report.md のフッタ: 途中停止の理由と監査証跡の場所を載せること."""
++
++from __future__ import annotations
++
++from security_checker.report.markdown import _footer
++from tests.factories import make_candidate, make_report
++
++
++def test_footer_shows_why_the_run_stopped() -> None:
++    report = make_report([make_candidate()], stopped_reason="予算の上限に達しました")
++
++    assert "⚠️ 途中で停止しました: 予算の上限に達しました" in _footer(report)
++
++
++def test_footer_shows_the_trace_directory() -> None:
++    report = make_report([make_candidate()], trace_dir=".security-checker/trace/R1")
++
++    assert "監査証跡: `.security-checker/trace/R1`" in _footer(report)
++
++
++def test_footer_has_neither_line_for_an_ordinary_run() -> None:
++    """対になるケース. 停止も証跡も無ければどちらの行も出ない."""
++    text = "\n".join(_footer(make_report([make_candidate()])))
++
++    assert "途中で停止しました" not in text
++    assert "監査証跡" not in text
++    assert "run `R1`" in text

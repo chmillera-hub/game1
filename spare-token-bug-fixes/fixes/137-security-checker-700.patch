@@ -1,0 +1,87 @@
+diff --git a/src/security_checker/run.py b/src/security_checker/run.py
+index cefc183..968b344 100644
+--- a/src/security_checker/run.py
++++ b/src/security_checker/run.py
+@@ -11,6 +11,7 @@ import asyncio
+ import contextlib
+ import tempfile
+ import time
++import traceback
+ from collections.abc import Sequence
+ from dataclasses import dataclass, field
+ from pathlib import Path
+@@ -224,11 +225,19 @@ async def _run_one(
+         try:
+             return await scanner.scan(target, ctx)
+         except Exception as exc:  # 1 つの失敗で全体を落とさない (§20.2)
++            # report.json には型名と短いメッセージだけを残し、トレースバックは debug ログに出す
++            log.event(
++                "scanner.internal_error",
++                level="debug",
++                scanner=scanner.name,
++                error_type=type(exc).__name__,
++                traceback=traceback.format_exc(),
++            )
+             return ScanResult(
+                 scanner=scanner.name,
+                 category=scanner.category,
+                 status=ScanStatus.FAILED,
+-                reason=f"内部エラー: {exc}",
++                reason=f"内部エラー: {type(exc).__name__}: {exc}",
+             )
+ 
+ 
+diff --git a/tests/unit/test_run_scanner_internal_error.py b/tests/unit/test_run_scanner_internal_error.py
+new file mode 100644
+index 0000000..2bcbe59
+--- /dev/null
++++ b/tests/unit/test_run_scanner_internal_error.py
+@@ -0,0 +1,48 @@
++"""スキャナの内部エラーに例外の型名が残り、トレースバックが debug ログに出ること."""
++
++from __future__ import annotations
++
++import io
++
++from security_checker.config.schema import Config
++from security_checker.models.enums import ScanStatus
++from security_checker.observability import logging as log
++from security_checker.run import run_scan
++from security_checker.testing.fakes import FakeScanner
++
++
++async def test_internal_error_reason_names_the_exception_type(tmp_path):
++    scanners = [FakeScanner("boom", raises=KeyError("x"))]
++
++    outcome = await run_scan(Config(), tmp_path, base_dir=tmp_path, scanners=scanners)
++
++    (run,) = outcome.report.scanners
++    assert run.status is ScanStatus.FAILED
++    assert run.reason == "内部エラー: KeyError: 'x'"
++
++
++async def test_internal_error_traceback_goes_to_the_debug_log(tmp_path):
++    stream = io.StringIO()
++    log.configure(level="debug", fmt="json", stream=stream)
++    try:
++        scanners = [FakeScanner("boom", raises=KeyError("x"))]
++        await run_scan(Config(), tmp_path, base_dir=tmp_path, scanners=scanners)
++    finally:
++        log.disable()
++
++    lines = [line for line in stream.getvalue().splitlines() if "scanner.internal_error" in line]
++    assert len(lines) == 1
++    assert "KeyError" in lines[0]
++    assert "Traceback" in lines[0]
++
++
++async def test_internal_error_traceback_stays_out_of_the_info_log(tmp_path):
++    stream = io.StringIO()
++    log.configure(level="info", fmt="json", stream=stream)
++    try:
++        scanners = [FakeScanner("boom", raises=KeyError("x"))]
++        await run_scan(Config(), tmp_path, base_dir=tmp_path, scanners=scanners)
++    finally:
++        log.disable()
++
++    assert "Traceback" not in stream.getvalue()

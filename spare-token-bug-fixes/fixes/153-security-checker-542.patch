@@ -1,0 +1,37 @@
+diff --git a/tests/unit/test_gemini_convert_any_of_edges.py b/tests/unit/test_gemini_convert_any_of_edges.py
+new file mode 100644
+index 0000000..57bff6f
+--- /dev/null
++++ b/tests/unit/test_gemini_convert_any_of_edges.py
+@@ -0,0 +1,31 @@
++"""gemini_generate._convert_any_of: null だけの union と description の引き継ぎ."""
++
++from __future__ import annotations
++
++from security_checker.providers.http.dialects.gemini_generate import _convert_any_of
++
++
++def test_union_of_null_only_becomes_a_nullable_string() -> None:
++    node = {"anyOf": [{"type": "null"}]}
++
++    assert _convert_any_of(node, defs={}) == {"type": "STRING", "nullable": True}
++
++
++def test_empty_union_becomes_a_nullable_string() -> None:
++    assert _convert_any_of({"anyOf": []}, defs={}) == {"type": "STRING", "nullable": True}
++
++
++def test_description_of_the_union_is_carried_to_the_chosen_branch() -> None:
++    node = {"anyOf": [{"type": "string"}, {"type": "null"}], "description": "理由"}
++
++    assert _convert_any_of(node, defs={}) == {
++        "type": "STRING",
++        "nullable": True,
++        "description": "理由",
++    }
++
++
++def test_description_of_the_branch_is_not_overwritten() -> None:
++    node = {"anyOf": [{"type": "string", "description": "枝"}], "description": "親"}
++
++    assert _convert_any_of(node, defs={})["description"] == "枝"

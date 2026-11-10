@@ -1,0 +1,70 @@
+diff --git a/src/archy/layers_check.py b/src/archy/layers_check.py
+index c0593dd..358c269 100644
+--- a/src/archy/layers_check.py
++++ b/src/archy/layers_check.py
+@@ -161,9 +161,12 @@ def contracts_unverified(
+     return (
+         coverage.governs_nothing
+         or coverage.governs_no_edges
+-        or bool(coverage.exact_pattern_hints)
++        # The two clauses marked "implied" can never decide the result: a hint
++        # is computed from the unlayered list and an edge is ungoverned only
++        # when one endpoint is unlayered. Kept as documentation (#808).
++        or bool(coverage.exact_pattern_hints)  # implied by unlayered_modules
+         or bool(coverage.unlayered_modules)
+-        or coverage.edges_governed < coverage.edges_total
++        or coverage.edges_governed < coverage.edges_total  # implied by unlayered_modules
+     )
+ 
+ 
+diff --git a/tests/test_transitive_hint_beside_violation.py b/tests/test_transitive_hint_beside_violation.py
+new file mode 100644
+index 0000000..1e988f8
+--- /dev/null
++++ b/tests/test_transitive_hint_beside_violation.py
+@@ -0,0 +1,45 @@
++"""The "cannot prove there is no transitive path" hint stays off beside a concrete violation (#808)."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++from archy.mcp_runs import run_check
++
++
++def _project(root: Path, core_source: str) -> None:
++    """Layers ui and core with `forbid core -> ui` plus one unlayered module (app.other)."""
++    for package in ("app", "app/ui", "app/core"):
++        (root / package).mkdir(exist_ok=True)
++        (root / package / "__init__.py").write_text("")
++    (root / "app" / "ui" / "x.py").write_text("x = 1\n")
++    (root / "app" / "core" / "y.py").write_text(core_source)
++    (root / "app" / "other.py").write_text("z = 1\n")
++    (root / "archy.yaml").write_text(
++        "layers:\n"
++        "  ui:\n    modules: ['app.ui.**']\n"
++        "  core:\n    modules: ['app.core.**']\n"
++        "forbid:\n  - {from: core, to: ui}\n"
++    )
++
++
++def test_no_transitive_hint_when_the_run_found_a_concrete_violation(tmp_path: Path):
++    _project(tmp_path, "from app.ui import x\n")
++
++    dumped = run_check(tmp_path, config_path=None).model_dump()
++
++    # Asserted first so the fixture provably reaches the suppression branch.
++    assert len(dumped["violations"]) == 1
++    assert dumped["coverage"]["unlayered_modules"]
++    assert dumped["transitive_unverified_reason"] is None
++
++
++def test_transitive_hint_present_for_the_same_project_without_the_violation(tmp_path: Path):
++    """The paired case: the test above cannot pass by the reason being always absent."""
++    _project(tmp_path, "y = 1\n")
++
++    dumped = run_check(tmp_path, config_path=None).model_dump()
++
++    assert dumped["violations"] == []
++    assert dumped["coverage"]["unlayered_modules"]
++    assert dumped["transitive_unverified_reason"]

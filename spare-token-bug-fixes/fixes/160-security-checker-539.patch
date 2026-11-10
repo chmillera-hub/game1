@@ -1,0 +1,21 @@
+diff --git a/tests/unit/test_gemini_health_payload.py b/tests/unit/test_gemini_health_payload.py
+new file mode 100644
+index 0000000..20af283
+--- /dev/null
++++ b/tests/unit/test_gemini_health_payload.py
+@@ -0,0 +1,15 @@
++"""gemini_generate.health_payload: 疎通確認は 1 トークンの ping であること."""
++
++from __future__ import annotations
++
++from security_checker.providers.base import Capabilities
++from security_checker.providers.http.dialects.gemini_generate import GeminiGenerateDialect
++
++
++def test_health_payload_is_a_one_token_ping() -> None:
++    payload = GeminiGenerateDialect().health_payload("gemini-x", Capabilities())
++
++    assert payload == {
++        "contents": [{"role": "user", "parts": [{"text": "ping"}]}],
++        "generationConfig": {"maxOutputTokens": 1},
++    }

@@ -1,0 +1,30 @@
+diff --git a/tests/unit/test_transport_retry_after_unreadable.py b/tests/unit/test_transport_retry_after_unreadable.py
+new file mode 100644
+index 0000000..2a0a3c8
+--- /dev/null
++++ b/tests/unit/test_transport_retry_after_unreadable.py
+@@ -0,0 +1,24 @@
++"""_retry_after: 数値でも HTTP-date でもない Retry-After は None になること."""
++
++from __future__ import annotations
++
++import httpx
++
++from security_checker.providers.http.transport import _retry_after
++
++
++def test_unreadable_retry_after_is_none() -> None:
++    response = httpx.Response(429, headers={"Retry-After": "soon"})
++
++    assert _retry_after(response) is None
++
++
++def test_numeric_retry_after_is_seconds() -> None:
++    """対になるケース. 読める値はそのまま秒数になる."""
++    response = httpx.Response(429, headers={"Retry-After": "2.5"})
++
++    assert _retry_after(response) == 2.5
++
++
++def test_missing_retry_after_is_none() -> None:
++    assert _retry_after(httpx.Response(429)) is None

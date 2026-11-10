@@ -1,0 +1,17 @@
+diff --git a/contrib/host-audit/hooks/pre-commit b/contrib/host-audit/hooks/pre-commit
+index 6234647..21ba654 100755
+--- a/contrib/host-audit/hooks/pre-commit
++++ b/contrib/host-audit/hooks/pre-commit
+@@ -18,7 +18,11 @@ if command -v gitleaks >/dev/null 2>&1; then
+     exit 1
+   fi
+ else
+-  # gitleaks が無い場合の簡易パターン検査
++  # gitleaks が無い場合の簡易パターン検査。黙って切り替えると gitleaks で検査されていると
++  # 思い込まれるので 1 行で知らせる (SECURITY_CHECKER_HOOK_QUIET=1 で抑止)
++  if [[ "${SECURITY_CHECKER_HOOK_QUIET:-}" != "1" ]]; then
++    echo "⚠️  gitleaks が見つからないため簡易検査のみ実行します (導入: https://github.com/gitleaks/gitleaks#installing)" >&2
++  fi
+   if git diff --cached -U0 | grep -E '^\+' | grep -qE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[bp]-[0-9A-Za-z-]{20,}|-----BEGIN .*PRIVATE KEY'; then
+     echo "❌ コミットにシークレットらしき文字列が含まれています"
+     echo "   誤検知なら: git commit --no-verify"

@@ -1,0 +1,23 @@
+diff --git a/tests/unit/test_filters_compile_question_mark.py b/tests/unit/test_filters_compile_question_mark.py
+new file mode 100644
+index 0000000..b4bca1d
+--- /dev/null
++++ b/tests/unit/test_filters_compile_question_mark.py
+@@ -0,0 +1,17 @@
++"""_compile: `?` は `/` 以外のちょうど 1 文字に一致すること."""
++
++from __future__ import annotations
++
++from security_checker.scanners.filters import _compile
++
++
++def test_question_mark_matches_exactly_one_character() -> None:
++    pattern = _compile("src/a?.py")
++
++    assert pattern.match("src/ab.py")
++    assert not pattern.match("src/a.py")
++    assert not pattern.match("src/abc.py")
++
++
++def test_question_mark_does_not_match_a_path_separator() -> None:
++    assert not _compile("src?a.py").match("src/a.py")

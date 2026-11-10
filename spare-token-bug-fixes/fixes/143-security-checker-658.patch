@@ -1,0 +1,38 @@
+diff --git a/docs/README.md b/docs/README.md
+new file mode 100644
+index 0000000..653eea9
+--- /dev/null
++++ b/docs/README.md
+@@ -0,0 +1,32 @@
++# ドキュメントの目次
++
++目的別の案内です。初めての方は [getting-started.md](getting-started.md) から読んでください。
++
++## 試す
++
++- [getting-started.md](getting-started.md) — はじめに。手元で 1 回動かすまで
++
++## 導入する
++
++- [github-actions.md](github-actions.md) — GitHub Actions で使う。PR ごとに動かす
++- [adoption.md](adoption.md) — 複数のリポジトリへの導入と、必須チェックにするまで
++
++## 設定する
++
++- [configuration.md](configuration.md) — 設定の全項目
++- [scanners.md](scanners.md) — スキャナ
++- [aggregation.md](aggregation.md) — 集約。複数の Reviewer の判定をどうまとめるか
++- [prompts.md](prompts.md) — プロンプト
++
++## 拡張する
++
++- [providers.md](providers.md) — Reviewer を足す
++- [process-transport.md](process-transport.md) — `process` transport。API キーなしで Reviewer を用意する
++- [evaluation.md](evaluation.md) — 評価 (eval)
++
++## 設計を知る
++
++- [security-model.md](security-model.md) — セキュリティモデル。何が外部に送られるか
++- [DESIGN.md](DESIGN.md) — security-checker v2 の設計書
++- [adr/](adr/README.md) — 設計上の決定の記録 (ADR)
++- [NEXT-STEPS.md](NEXT-STEPS.md) — v2 の残作業と手続き書

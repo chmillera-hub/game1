@@ -1,0 +1,57 @@
+diff --git a/tests/unit/test_cassette_health_check.py b/tests/unit/test_cassette_health_check.py
+new file mode 100644
+index 0000000..e0673f5
+--- /dev/null
++++ b/tests/unit/test_cassette_health_check.py
+@@ -0,0 +1,51 @@
++"""CassetteProvider.health_check: 記録モードだけ inner に問い合わせること."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++from security_checker.providers.base import HealthStatus
++from security_checker.testing.cassette import CassetteProvider
++
++
++class _Inner:
++    """health_check が呼ばれた回数だけを数える最小の Provider."""
++
++    model = "inner-model"
++    name = "inner"
++
++    def __init__(self) -> None:
++        self.health_checks = 0
++
++    async def health_check(self) -> HealthStatus:
++        self.health_checks += 1
++        return HealthStatus(ok=False, detail="inner says no")
++
++
++async def test_record_mode_asks_the_inner_provider(tmp_path: Path) -> None:
++    inner = _Inner()
++    provider = CassetteProvider(tmp_path / "c.json", inner=inner, record=True)  # type: ignore[arg-type]
++
++    status = await provider.health_check()
++
++    assert inner.health_checks == 1
++    assert status.ok is False
++    assert status.detail == "inner says no"
++
++
++async def test_replay_mode_with_an_inner_provider_does_not_ask_it(tmp_path: Path) -> None:
++    inner = _Inner()
++    provider = CassetteProvider(tmp_path / "c.json", inner=inner)  # type: ignore[arg-type]
++
++    status = await provider.health_check()
++
++    assert inner.health_checks == 0
++    assert status.ok is True
++    assert status.detail == "cassette"
++
++
++async def test_replay_mode_without_an_inner_provider_is_ok(tmp_path: Path) -> None:
++    status = await CassetteProvider(tmp_path / "c.json").health_check()
++
++    assert status.ok is True
++    assert status.detail == "cassette"

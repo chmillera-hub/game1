@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-121 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
+171 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 59 of the 121 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 109 of the 121 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 66 of the 171 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 159 of the 171 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -389,6 +389,156 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 121. [security-checker: the simple secret check in the pre-commit hook misses several common key formats](fix-121-security-checker-672.md)
    Project: Sh1n1230/security-checker. Bug report number 672. License: MIT. Test included: yes. Patch file: [121-security-checker-672.patch](fixes/121-security-checker-672.patch)
+
+122. [Archy: writing a header into a file with no docstring pushes the shebang line and the coding line down](fix-122-archy-784.md)
+   Project: hslee16/Archy. Bug report number 784. License: MIT. Test included: yes. Patch file: [122-archy-784.patch](fixes/122-archy-784.patch)
+
+123. [Archy: no test checks that a project that meets the layer floor exactly passes the MCP check](fix-123-archy-805.md)
+   Project: hslee16/Archy. Bug report number 805. License: MIT. Test included: yes. Patch file: [123-archy-805.patch](fixes/123-archy-805.patch)
+
+124. [Archy: the external edge count of the graph summary and the call statistics of the score have no test](fix-124-archy-807.md)
+   Project: hslee16/Archy. Bug report number 807. License: MIT. Test included: yes. Patch file: [124-archy-807.patch](fixes/124-archy-807.patch)
+
+125. [Archy: no test checks that the transitive hint stays away when the check already found a violation](fix-125-archy-808.md)
+   Project: hslee16/Archy. Bug report number 808. License: MIT. Test included: yes. Patch file: [125-archy-808.patch](fixes/125-archy-808.patch)
+
+126. [SMART toolkit: a config file with the same key written twice silently loses the first block](fix-126-social-messaging-agent-runtime-toolkit-65.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 65. License: Apache-2.0. Test included: yes. Patch file: [126-social-messaging-agent-runtime-toolkit-65.patch](fixes/126-social-messaging-agent-runtime-toolkit-65.patch)
+
+127. [SMART toolkit docs: the scheduling page says one-shot schedules fire once without the conditions](fix-127-social-messaging-agent-runtime-toolkit-61.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 61. License: Apache-2.0. Test included: no. Patch file: [127-social-messaging-agent-runtime-toolkit-61.patch](fixes/127-social-messaging-agent-runtime-toolkit-61.patch)
+
+128. [SMART admin console: the State views list the scheduler's firing records as users](fix-128-social-messaging-agent-runtime-toolkit-74.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 74. License: Apache-2.0. Test included: yes. Patch file: [128-social-messaging-agent-runtime-toolkit-74.patch](fixes/128-social-messaging-agent-runtime-toolkit-74.patch)
+
+129. [SMART admin console: the Events action View full payload only shows the summary](fix-129-social-messaging-agent-runtime-toolkit-87.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 87. License: Apache-2.0. Test included: no. Patch file: [129-social-messaging-agent-runtime-toolkit-87.patch](fixes/129-social-messaging-agent-runtime-toolkit-87.patch)
+
+130. [SMART toolkit: no test keeps the conditions next to the at-most-once promise in the docs](fix-130-social-messaging-agent-runtime-toolkit-63.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 63. License: Apache-2.0. Test included: yes. Patch file: [130-social-messaging-agent-runtime-toolkit-63.patch](fixes/130-social-messaging-agent-runtime-toolkit-63.patch)
+
+131. [SMART toolkit docs: the security notes do not say how to log access to two unlogged buckets](fix-131-social-messaging-agent-runtime-toolkit-93.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 93. License: Apache-2.0. Test included: no. Patch file: [131-social-messaging-agent-runtime-toolkit-93.patch](fixes/131-social-messaging-agent-runtime-toolkit-93.patch)
+
+132. [security-checker: GithubClient.__enter__ is typed to return the parent class and not Self](fix-132-security-checker-692.md)
+   Project: Sh1n1230/security-checker. Bug report number 692. License: MIT. Test included: no. Patch file: [132-security-checker-692.patch](fixes/132-security-checker-692.patch)
+
+133. [security-checker: parse_trivy overwrites its own loop variables in three places](fix-133-security-checker-678.md)
+   Project: Sh1n1230/security-checker. Bug report number 678. License: MIT. Test included: no. Patch file: [133-security-checker-678.patch](fixes/133-security-checker-678.patch)
+
+134. [security-checker: the raw-sarif CI job runs apt-get every time to install jq that is already there](fix-134-security-checker-653.md)
+   Project: Sh1n1230/security-checker. Bug report number 653. License: MIT. Test included: no. Patch file: [134-security-checker-653.patch](fixes/134-security-checker-653.patch)
+
+135. [security-checker: the protected branches of the pre-push hook cannot be changed without editing the hook](fix-135-security-checker-674.md)
+   Project: Sh1n1230/security-checker. Bug report number 674. License: MIT. Test included: yes. Patch file: [135-security-checker-674.patch](fixes/135-security-checker-674.patch)
+
+136. [security-checker: the pre-commit hook does not say when gitleaks is missing and only the simple check runs](fix-136-security-checker-673.md)
+   Project: Sh1n1230/security-checker. Bug report number 673. License: MIT. Test included: no. Patch file: [136-security-checker-673.patch](fixes/136-security-checker-673.patch)
+
+137. [security-checker: a scanner's internal error is recorded without the exception type or a traceback](fix-137-security-checker-700.md)
+   Project: Sh1n1230/security-checker. Bug report number 700. License: MIT. Test included: yes. Patch file: [137-security-checker-700.patch](fixes/137-security-checker-700.patch)
+
+138. [codelens-graph: files with the .cjs extension are not indexed at all](fix-138-codelens-graph-47.md)
+   Project: Pranayd555/codelens-graph. Bug report number 47. License: MIT. Test included: yes. Patch file: [138-codelens-graph-47.patch](fixes/138-codelens-graph-47.patch)
+
+139. [codelens-graph: the per-tool token figures in the MCP usage report do not add up to the session total](fix-139-codelens-graph-28.md)
+   Project: Pranayd555/codelens-graph. Bug report number 28. License: MIT. Test included: yes. Patch file: [139-codelens-graph-28.patch](fixes/139-codelens-graph-28.patch)
+
+140. [codelens-graph: an unused FileWatcher class still sits in the code with its own tests](fix-140-codelens-graph-49.md)
+   Project: Pranayd555/codelens-graph. Bug report number 49. License: MIT. Test included: no. Patch file: [140-codelens-graph-49.patch](fixes/140-codelens-graph-49.patch)
+
+141. [devswarm: the last event of a model stream is dropped when the stream ends without a newline](fix-141-devswarm-6.md)
+   Project: himanshu748/devswarm. Bug report number 6. License: MIT. Test included: yes. Patch file: [141-devswarm-6.patch](fixes/141-devswarm-6.patch)
+
+142. [security-checker: six small spots the lint tool flags can be written more simply](fix-142-security-checker-690.md)
+   Project: Sh1n1230/security-checker. Bug report number 690. License: MIT. Test included: no. Patch file: [142-security-checker-690.patch](fixes/142-security-checker-690.patch)
+
+143. [security-checker docs: the docs folder has no table of contents](fix-143-security-checker-658.md)
+   Project: Sh1n1230/security-checker. Bug report number 658. License: MIT. Test included: no. Patch file: [143-security-checker-658.patch](fixes/143-security-checker-658.patch)
+
+144. [security-checker: no test covers a CVSS score of zero in severity_from_score](fix-144-security-checker-583.md)
+   Project: Sh1n1230/security-checker. Bug report number 583. License: MIT. Test included: yes. Patch file: [144-security-checker-583.patch](fixes/144-security-checker-583.patch)
+
+145. [security-checker: no test covers a max_severity that is not a number in _group_severity](fix-145-security-checker-584.md)
+   Project: Sh1n1230/security-checker. Bug report number 584. License: MIT. Test included: yes. Patch file: [145-security-checker-584.patch](fixes/145-security-checker-584.patch)
+
+146. [security-checker: no test checks that _fixed_version skips the fixed version of another package](fix-146-security-checker-585.md)
+   Project: Sh1n1230/security-checker. Bug report number 585. License: MIT. Test included: yes. Patch file: [146-security-checker-585.patch](fixes/146-security-checker-585.patch)
+
+147. [security-checker: no test covers a blank stderr in the excerpt helper](fix-147-security-checker-578.md)
+   Project: Sh1n1230/security-checker. Bug report number 578. License: MIT. Test included: yes. Patch file: [147-security-checker-578.patch](fixes/147-security-checker-578.patch)
+
+148. [security-checker: no test covers a path that starts with ./ in relative_path](fix-148-security-checker-579.md)
+   Project: Sh1n1230/security-checker. Bug report number 579. License: MIT. Test included: yes. Patch file: [148-security-checker-579.patch](fixes/148-security-checker-579.patch)
+
+149. [security-checker: no test covers the question mark in exclude patterns](fix-149-security-checker-580.md)
+   Project: Sh1n1230/security-checker. Bug report number 580. License: MIT. Test included: yes. Patch file: [149-security-checker-580.patch](fixes/149-security-checker-580.patch)
+
+150. [security-checker: no test covers a Retry-After header that is neither a number nor a date](fix-150-security-checker-549.md)
+   Project: Sh1n1230/security-checker. Bug report number 549. License: MIT. Test included: yes. Patch file: [150-security-checker-549.patch](fixes/150-security-checker-549.patch)
+
+151. [security-checker: no test covers a missing bundled rules folder](fix-151-security-checker-570.md)
+   Project: Sh1n1230/security-checker. Bug report number 570. License: MIT. Test included: yes. Patch file: [151-security-checker-570.patch](fixes/151-security-checker-570.patch)
+
+152. [security-checker: no test covers a schema node that is not a dictionary in the Gemini conversion](fix-152-security-checker-541.md)
+   Project: Sh1n1230/security-checker. Bug report number 541. License: MIT. Test included: yes. Patch file: [152-security-checker-541.patch](fixes/152-security-checker-541.patch)
+
+153. [security-checker: no test covers a null-only union or a carried description in the Gemini conversion](fix-153-security-checker-542.md)
+   Project: Sh1n1230/security-checker. Bug report number 542. License: MIT. Test included: yes. Patch file: [153-security-checker-542.patch](fixes/153-security-checker-542.patch)
+
+154. [security-checker: no test covers a type list of only null in the Gemini conversion](fix-154-security-checker-543.md)
+   Project: Sh1n1230/security-checker. Bug report number 543. License: MIT. Test included: yes. Patch file: [154-security-checker-543.patch](fixes/154-security-checker-543.patch)
+
+155. [security-checker: no test covers a preset whose model pattern does not match](fix-155-security-checker-550.md)
+   Project: Sh1n1230/security-checker. Bug report number 550. License: MIT. Test included: yes. Patch file: [155-security-checker-550.patch](fixes/155-security-checker-550.patch)
+
+156. [security-checker: no test covers a missing or non-text message content in the Ollama reply parser](fix-156-security-checker-545.md)
+   Project: Sh1n1230/security-checker. Bug report number 545. License: MIT. Test included: yes. Patch file: [156-security-checker-545.patch](fixes/156-security-checker-545.patch)
+
+157. [security-checker: no test covers the health check payload of the Ollama dialect](fix-157-security-checker-546.md)
+   Project: Sh1n1230/security-checker. Bug report number 546. License: MIT. Test included: yes. Patch file: [157-security-checker-546.patch](fixes/157-security-checker-546.patch)
+
+158. [security-checker: no test covers a first candidate that is not an object in the Gemini reply parser](fix-158-security-checker-538.md)
+   Project: Sh1n1230/security-checker. Bug report number 538. License: MIT. Test included: yes. Patch file: [158-security-checker-538.patch](fixes/158-security-checker-538.patch)
+
+159. [security-checker: no test covers the plain reason for a Gemini reply with no candidates](fix-159-security-checker-544.md)
+   Project: Sh1n1230/security-checker. Bug report number 544. License: MIT. Test included: yes. Patch file: [159-security-checker-544.patch](fixes/159-security-checker-544.patch)
+
+160. [security-checker: no test covers the health check payload of the Gemini dialect](fix-160-security-checker-539.md)
+   Project: Sh1n1230/security-checker. Bug report number 539. License: MIT. Test included: yes. Patch file: [160-security-checker-539.patch](fixes/160-security-checker-539.patch)
+
+161. [security-checker: no test covers a preset file that cannot be read or has the wrong shape](fix-161-security-checker-551.md)
+   Project: Sh1n1230/security-checker. Bug report number 551. License: MIT. Test included: yes. Patch file: [161-security-checker-551.patch](fixes/161-security-checker-551.patch)
+
+162. [security-checker: no test covers resolve_http_preset when nothing matches](fix-162-security-checker-552.md)
+   Project: Sh1n1230/security-checker. Bug report number 552. License: MIT. Test included: yes. Patch file: [162-security-checker-552.patch](fixes/162-security-checker-552.patch)
+
+163. [security-checker: no test covers a cassette file with another version](fix-163-security-checker-594.md)
+   Project: Sh1n1230/security-checker. Bug report number 594. License: MIT. Test included: yes. Patch file: [163-security-checker-594.patch](fixes/163-security-checker-594.patch)
+
+164. [security-checker: no test covers the health check of the cassette provider](fix-164-security-checker-595.md)
+   Project: Sh1n1230/security-checker. Bug report number 595. License: MIT. Test included: yes. Patch file: [164-security-checker-595.patch](fixes/164-security-checker-595.patch)
+
+165. [security-checker: no test covers closing the cassette provider](fix-165-security-checker-596.md)
+   Project: Sh1n1230/security-checker. Bug report number 596. License: MIT. Test included: yes. Patch file: [165-security-checker-596.patch](fixes/165-security-checker-596.patch)
+
+166. [security-checker: no test covers a version check that fails in probe_command](fix-166-security-checker-577.md)
+   Project: Sh1n1230/security-checker. Bug report number 577. License: MIT. Test included: yes. Patch file: [166-security-checker-577.patch](fixes/166-security-checker-577.patch)
+
+167. [security-checker: no test covers a missing or failing gitleaks in the dir subcommand check](fix-167-security-checker-581.md)
+   Project: Sh1n1230/security-checker. Bug report number 581. License: MIT. Test included: yes. Patch file: [167-security-checker-581.patch](fixes/167-security-checker-581.patch)
+
+168. [security-checker: no test covers the stop reason and the trace folder in the report footer](fix-168-security-checker-562.md)
+   Project: Sh1n1230/security-checker. Bug report number 562. License: MIT. Test included: yes. Patch file: [168-security-checker-562.patch](fixes/168-security-checker-562.patch)
+
+169. [security-checker: no test covers the row limit of the candidates table in the report](fix-169-security-checker-561.md)
+   Project: Sh1n1230/security-checker. Bug report number 561. License: MIT. Test included: yes. Patch file: [169-security-checker-561.patch](fixes/169-security-checker-561.patch)
+
+170. [security-checker: no test covers an unknown bundled rule name in resolve_config](fix-170-security-checker-590.md)
+   Project: Sh1n1230/security-checker. Bug report number 590. License: MIT. Test included: yes. Patch file: [170-security-checker-590.patch](fixes/170-security-checker-590.patch)
+
+171. [security-checker: no test covers semgrep output whose results field is not a list](fix-171-security-checker-589.md)
+   Project: Sh1n1230/security-checker. Bug report number 589. License: MIT. Test included: yes. Patch file: [171-security-checker-589.patch](fixes/171-security-checker-589.patch)
 
 ## How to use a fix
 

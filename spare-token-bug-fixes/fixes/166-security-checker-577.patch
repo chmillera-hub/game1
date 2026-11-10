@@ -1,0 +1,55 @@
+diff --git a/tests/unit/test_scanner_base_probe_command_failure.py b/tests/unit/test_scanner_base_probe_command_failure.py
+new file mode 100644
+index 0000000..0d5debe
+--- /dev/null
++++ b/tests/unit/test_scanner_base_probe_command_failure.py
+@@ -0,0 +1,49 @@
++"""probe_command: バージョン取得に失敗しても「導入済み」として理由を返すこと."""
++
++from __future__ import annotations
++
++import subprocess
++from typing import Any
++
++import pytest
++
++from security_checker.scanners import base
++from security_checker.scanners.base import probe_command
++
++
++def _raise(exc: BaseException) -> Any:
++    def run(*_args: Any, **_kwargs: Any) -> Any:
++        raise exc
++
++    return run
++
++
++@pytest.mark.parametrize(
++    "exc",
++    [
++        PermissionError("実行できません"),
++        subprocess.TimeoutExpired(cmd="tool", timeout=15),
++    ],
++)
++def test_failed_version_call_keeps_the_tool_available(
++    monkeypatch: pytest.MonkeyPatch, exc: BaseException
++) -> None:
++    monkeypatch.setattr(base.shutil, "which", lambda _command: "/fake/bin/tool")
++    monkeypatch.setattr(base.subprocess, "run", _raise(exc))
++
++    status = probe_command("tool")
++
++    assert status.available is True
++    assert status.version is None
++    assert status.reason is not None
++    assert status.reason.startswith("バージョン取得に失敗しました")
++
++
++def test_missing_command_is_not_available(monkeypatch: pytest.MonkeyPatch) -> None:
++    """対になるケース. コマンド自体が無ければ available は False."""
++    monkeypatch.setattr(base.shutil, "which", lambda _command: None)
++
++    status = probe_command("tool")
++
++    assert status.available is False
++    assert status.reason == "tool が見つかりません"

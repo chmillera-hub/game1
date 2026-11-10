@@ -1,0 +1,83 @@
+diff --git a/src/security_checker/aggregate/consensus.py b/src/security_checker/aggregate/consensus.py
+index eb5bd04..b3f06a7 100644
+--- a/src/security_checker/aggregate/consensus.py
++++ b/src/security_checker/aggregate/consensus.py
+@@ -277,7 +277,7 @@ def _headline(verdict: ReviewVerdict, limit: int = SUMMARY_LIMIT) -> str:
+ 
+ def _first_sentence(text: str, limit: int) -> str:
+     """先頭の 1 文を返す. 収まらなければ文・節の区切りまで戻して詰める."""
+-    line = " ".join(text.split("\n")[0].split()).strip()
++    line = " ".join(text.split("\n", maxsplit=1)[0].split()).strip()
+     if len(line) <= limit:
+         return line
+     window = line[:limit]
+diff --git a/src/security_checker/context/builder.py b/src/security_checker/context/builder.py
+index 5fa69f4..4456afc 100644
+--- a/src/security_checker/context/builder.py
++++ b/src/security_checker/context/builder.py
+@@ -178,10 +178,7 @@ def _mask_long_tokens_on_line(text: str, candidate: Candidate) -> str:
+     """
+     if candidate.location is None:
+         return text
+-    masked_lines: list[str] = []
+-    for line in text.splitlines():
+-        masked_lines.append(_mask_quoted(line))
+-    return "\n".join(masked_lines)
++    return "\n".join(_mask_quoted(line) for line in text.splitlines())
+ 
+ 
+ def _mask_detected_lines(text: str, first_line: int, candidate: Candidate) -> str:
+diff --git a/src/security_checker/providers/http/dialects/anthropic_messages.py b/src/security_checker/providers/http/dialects/anthropic_messages.py
+index 62bcf33..272d7b8 100644
+--- a/src/security_checker/providers/http/dialects/anthropic_messages.py
++++ b/src/security_checker/providers/http/dialects/anthropic_messages.py
+@@ -44,8 +44,7 @@ class AnthropicMessagesDialect:
+         # base_url に /v1 を含めて書く人と含めない人の両方がいる。
+         # どちらでも同じ URL になるよう正規化する (二重の /v1 を作らない)。
+         trimmed = base_url.rstrip("/")
+-        if trimmed.endswith("/v1"):
+-            trimmed = trimmed[: -len("/v1")]
++        trimmed = trimmed.removesuffix("/v1")
+         return f"{trimmed}/v1/messages"
+ 
+     def headers(self, api_key: str | None) -> dict[str, str]:
+diff --git a/src/security_checker/providers/process/runner.py b/src/security_checker/providers/process/runner.py
+index 49e2670..ff3c89c 100644
+--- a/src/security_checker/providers/process/runner.py
++++ b/src/security_checker/providers/process/runner.py
+@@ -120,7 +120,6 @@ class ProcessProvider:
+ 
+     async def aclose(self) -> None:
+         """プロセスは 1 回ごとに完結するため、保持する資源はない."""
+-        return None
+ 
+     # --- 内部 -------------------------------------------------------------
+ 
+diff --git a/src/security_checker/scanners/base.py b/src/security_checker/scanners/base.py
+index bb8f154..b640e3e 100644
+--- a/src/security_checker/scanners/base.py
++++ b/src/security_checker/scanners/base.py
+@@ -262,9 +262,7 @@ def relative_path(raw_path: str, root: Path) -> str:
+             cleaned = candidate.resolve().relative_to(root.resolve()).as_posix()
+         except ValueError:
+             cleaned = candidate.name
+-    if cleaned.startswith("./"):
+-        cleaned = cleaned[2:]
+-    return cleaned
++    return cleaned.removeprefix("./")
+ 
+ 
+ def as_dict(value: Any) -> dict[str, Any]:
+diff --git a/src/security_checker/scanners/osv.py b/src/security_checker/scanners/osv.py
+index e1f2901..1e54742 100644
+--- a/src/security_checker/scanners/osv.py
++++ b/src/security_checker/scanners/osv.py
+@@ -132,7 +132,7 @@ def parse_osv(
+                     continue
+                 vulns = [vulns_by_id[i] for i in group_ids if i in vulns_by_id]
+                 aliases = [a for a in as_dict(group).get("aliases") or [] if isinstance(a, str)]
+-                primary = sorted(group_ids)[0]
++                primary = min(group_ids)
+                 summary = next(
+                     (str(v["summary"]) for v in vulns if isinstance(v.get("summary"), str)), ""
+                 )

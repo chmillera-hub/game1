@@ -1,0 +1,24 @@
+diff --git a/tests/unit/test_osv_severity_from_score_zero.py b/tests/unit/test_osv_severity_from_score_zero.py
+new file mode 100644
+index 0000000..922d107
+--- /dev/null
++++ b/tests/unit/test_osv_severity_from_score_zero.py
+@@ -0,0 +1,18 @@
++"""severity_from_score の下端: 0 以下の CVSS 基本値は NONE になること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.models.enums import Severity
++from security_checker.scanners.osv import severity_from_score
++
++
++@pytest.mark.parametrize("score", [0.0, -1.0])
++def test_score_of_zero_or_less_is_none(score: float) -> None:
++    assert severity_from_score(score) is Severity.NONE
++
++
++def test_smallest_positive_score_is_low() -> None:
++    """境界の反対側. 0 を少しでも超えれば LOW で、NONE にはならない."""
++    assert severity_from_score(0.1) is Severity.LOW

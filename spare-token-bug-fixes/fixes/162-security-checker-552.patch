@@ -1,0 +1,35 @@
+diff --git a/tests/unit/test_presets_resolve_no_match.py b/tests/unit/test_presets_resolve_no_match.py
+new file mode 100644
+index 0000000..a54940d
+--- /dev/null
++++ b/tests/unit/test_presets_resolve_no_match.py
+@@ -0,0 +1,29 @@
++"""resolve_http_preset: 名前も一致するパターンも無ければ None を返すこと."""
++
++from __future__ import annotations
++
++from security_checker.providers.presets.loader import HttpPreset, resolve_http_preset
++
++PRESETS = {
++    "local": HttpPreset(name="local", dialect="ollama_chat", base_url="http://localhost:11434"),
++}
++
++
++def test_no_preset_when_no_pattern_matches() -> None:
++    resolved = resolve_http_preset(
++        PRESETS, name=None, base_url="https://api.example.com/v1", model="gpt-x"
++    )
++
++    assert resolved is None
++
++
++def test_no_preset_without_a_base_url_or_a_model() -> None:
++    assert resolve_http_preset(PRESETS, name=None, base_url=None, model="gpt-x") is None
++    assert resolve_http_preset(PRESETS, name=None, base_url="https://x.test", model=None) is None
++
++
++def test_named_preset_is_still_found() -> None:
++    """対になるケース. 名前で指定すればパターンに関係なく返る."""
++    resolved = resolve_http_preset(PRESETS, name="local", base_url=None, model=None)
++
++    assert resolved is PRESETS["local"]

@@ -1,0 +1,15 @@
+diff --git a/.github/workflows/security.yml b/.github/workflows/security.yml
+index 4f18ef0..b2b03a4 100644
+--- a/.github/workflows/security.yml
++++ b/.github/workflows/security.yml
+@@ -52,8 +52,8 @@ jobs:
+         shell: bash
+         run: |
+           set -euo pipefail
+-          sudo apt-get update -qq
+-          sudo apt-get install -y -qq jq
++          # jq は GitHub ホストの ubuntu ランナーに標準で入っている。apt は使わず存在だけ確かめる
++          command -v jq >/dev/null || { echo "jq が見つかりません" >&2; exit 1; }
+           # action.yml と同じく、版と sha256 を固定して取得する (scripts/scanner-versions.sh)
+           BIN="$RUNNER_TEMP/security-checker-bin"
+           scripts/install-scanners.sh "$BIN"

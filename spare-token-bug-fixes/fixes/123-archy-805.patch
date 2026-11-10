@@ -1,0 +1,55 @@
+diff --git a/tests/test_mcp_check.py b/tests/test_mcp_check.py
+index 404ea34..1c7f191 100644
+--- a/tests/test_mcp_check.py
++++ b/tests/test_mcp_check.py
+@@ -63,6 +63,50 @@ def test_check_passed_respects_the_layer_presence_floor(tmp_path: Path):
+     assert sorted(dumped["coverage"]["empty_layers"]) == ["routes", "services"]
+ 
+ 
++def _three_layer_project(root: Path, floor: int) -> None:
++    """Two populated layers (ui and core) and one empty layer (data)."""
++    for package in ("app", "app/ui", "app/core"):
++        (root / package).mkdir(exist_ok=True)
++        (root / package / "__init__.py").write_text("")
++    (root / "app" / "ui" / "x.py").write_text("x = 1\n")
++    (root / "app" / "core" / "y.py").write_text("y = 1\n")
++    (root / "archy.yaml").write_text(
++        f"min_layers_present: {floor}\n"
++        "layers:\n"
++        "  ui:\n    modules: ['app.ui.**']\n"
++        "  core:\n    modules: ['app.core.**']\n"
++        "  data:\n    modules: ['app.data.**']\n"
++    )
++
++
++def test_check_passes_when_the_layer_presence_floor_is_met_exactly(tmp_path: Path):
++    """The boundary of the floor: `layers_present == min_layers_present` passes (#805).
++
++    The floor test above sits far from the boundary (0 present against 2), so
++    the comparison could become `<=` unnoticed and fail a project that meets
++    the floor exactly while `archy check` on the same project exits 0.
++    """
++    _three_layer_project(tmp_path, floor=2)
++
++    dumped = run_check(tmp_path, config_path=None).model_dump()
++
++    # Asserted first so the fixture provably sits on the boundary.
++    assert dumped["coverage"]["layers_present"] == 2
++    assert dumped["min_layers_present"] == 2
++    assert dumped["passed"] is True
++    assert dumped["presence_fails"] is False
++
++
++def test_check_fails_one_layer_below_the_layer_presence_floor(tmp_path: Path):
++    _three_layer_project(tmp_path, floor=3)
++
++    dumped = run_check(tmp_path, config_path=None).model_dump()
++
++    assert dumped["coverage"]["layers_present"] == 2
++    assert dumped["passed"] is False
++    assert dumped["presence_fails"] is True
++
++
+ @pytest.mark.parametrize("relative", [True, False], ids=["relative", "absolute"])
+ def test_check_config_path_is_relative_to_project(
+     tmp_path: Path,

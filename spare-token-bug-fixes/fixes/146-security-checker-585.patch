@@ -1,0 +1,30 @@
+diff --git a/tests/unit/test_osv_fixed_version_other_package.py b/tests/unit/test_osv_fixed_version_other_package.py
+new file mode 100644
+index 0000000..105cb8e
+--- /dev/null
++++ b/tests/unit/test_osv_fixed_version_other_package.py
+@@ -0,0 +1,24 @@
++"""_fixed_version: 別のパッケージの修正版を拾わないこと."""
++
++from __future__ import annotations
++
++from typing import Any
++
++from security_checker.scanners.osv import _fixed_version
++
++
++def _affected(name: str, fixed: str) -> dict[str, Any]:
++    events = [{"introduced": "0"}, {"fixed": fixed}]
++    return {"package": {"name": name}, "ranges": [{"events": events}]}
++
++
++def test_fixed_version_of_another_package_is_skipped() -> None:
++    vulns = [{"affected": [_affected("other", "9.9.9"), _affected("target", "1.2.3")]}]
++
++    assert _fixed_version(vulns, "target") == "1.2.3"
++
++
++def test_no_fixed_version_when_only_other_packages_are_affected() -> None:
++    vulns = [{"affected": [_affected("other", "9.9.9")]}]
++
++    assert _fixed_version(vulns, "target") is None

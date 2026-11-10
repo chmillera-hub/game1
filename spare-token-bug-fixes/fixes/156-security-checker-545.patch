@@ -1,0 +1,32 @@
+diff --git a/tests/unit/test_ollama_chat_parse_response_content.py b/tests/unit/test_ollama_chat_parse_response_content.py
+new file mode 100644
+index 0000000..aba235c
+--- /dev/null
++++ b/tests/unit/test_ollama_chat_parse_response_content.py
+@@ -0,0 +1,26 @@
++"""ollama_chat.parse_response: message.content が無い・文字列でないときの振る舞い."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.providers.errors import ProviderResponseError
++from security_checker.providers.http.dialects.ollama_chat import OllamaChatDialect
++
++
++def test_null_content_is_read_as_empty_text() -> None:
++    response = OllamaChatDialect().parse_response({"message": {"content": None}})
++
++    assert response.text == ""
++
++
++def test_missing_content_is_read_as_empty_text() -> None:
++    response = OllamaChatDialect().parse_response({"message": {"role": "assistant"}})
++
++    assert response.text == ""
++
++
++@pytest.mark.parametrize("content", [["a", "b"], {"text": "a"}, 3])
++def test_content_that_is_not_a_string_is_a_response_error(content: object) -> None:
++    with pytest.raises(ProviderResponseError, match=r"message\.content"):
++        OllamaChatDialect().parse_response({"message": {"content": content}})

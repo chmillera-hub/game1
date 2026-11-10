@@ -1,0 +1,25 @@
+diff --git a/tests/unit/test_gemini_convert_non_dict_node.py b/tests/unit/test_gemini_convert_non_dict_node.py
+new file mode 100644
+index 0000000..5f7fadf
+--- /dev/null
++++ b/tests/unit/test_gemini_convert_non_dict_node.py
+@@ -0,0 +1,19 @@
++"""gemini_generate._convert: 辞書でないノードは空のスキーマになること."""
++
++from __future__ import annotations
++
++import pytest
++
++from security_checker.providers.http.dialects.gemini_generate import _convert
++
++
++@pytest.mark.parametrize("node", [None, "string", 3, ["type", "string"], True])
++def test_non_dict_node_becomes_an_empty_schema(node: object) -> None:
++    assert _convert(node, defs={}) == {}
++
++
++def test_non_dict_items_becomes_an_empty_schema_inside_an_array() -> None:
++    """配列の items が辞書でなくても落ちず、空のスキーマとして送られる."""
++    converted = _convert({"type": "array", "items": True}, defs={})
++
++    assert converted == {"type": "ARRAY", "items": {}}
