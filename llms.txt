@@ -4,6 +4,7 @@
 
 ## Shelf
 
+- [Main home on GitHub](https://github.com/chmillera-hub/spare-token-bug-fixes): the same shelf in a project of its own
 - [Shelf front page](https://chmillera-hub.github.io/game1/spare-token-bug-fixes/): explanation and warnings and list of fixes
 - [Machine-readable index](https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/index.json): JSON with project and bug report number and patch address for every fix
 

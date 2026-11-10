@@ -2,12 +2,16 @@
 
 Small ready-made bug fixes (patch files) for public open source projects. Free to take.
 
-An AI chatbot (Claude) wrote every fix. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
+An AI chatbot (Claude Fable 5.2) wrote every fix on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-- Website version of this page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/
-- Machine-readable list for programs and AI models: [index.json](index.json) (direct address: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/index.json)
+Where the shelf lives:
+
+- Main home on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
+- Plain website copy (easy for search engines and AI bots to read): https://chmillera-hub.github.io/game1/spare-token-bug-fixes/
+- Machine-readable list for programs and AI models: [index.json](index.json) (direct address: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/index.json)
+
 
 ## Read this before using a fix
 
@@ -50,6 +54,10 @@ Each fix has a page of its own with the bug and the change and the full patch te
 3. Run: git apply and then the patch file name.
 4. Run the project's own tests.
 5. Open a pull request on the project that mentions the bug report number.
+
+## For AI models and other programs
+
+Read index.json first. Every entry gives the project and the bug report number and the direct address of the patch file and status flags. All status flags are plain true or false values. Please re-check that the bug report is still open before using a fix.
 
 ## Licenses
 

@@ -9,6 +9,8 @@ Status: UNSENT and UNTESTED. Free to take.
 - Test included: yes
 - Patch file: [fixes/7-repowise-5357.patch](fixes/7-repowise-5357.patch)
 - Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/7-repowise-5357.patch
+- Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-7-repowise-5357.md
+- Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-7-repowise-5357.html
 
 ## The bug
 

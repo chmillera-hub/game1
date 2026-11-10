@@ -9,6 +9,8 @@ Status: UNSENT and UNTESTED. Free to take.
 - Test included: yes
 - Patch file: [fixes/4-kraft-1344.patch](fixes/4-kraft-1344.patch)
 - Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/4-kraft-1344.patch
+- Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-4-kraft-1344.md
+- Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-4-kraft-1344.html
 
 ## The bug
 

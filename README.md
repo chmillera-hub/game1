@@ -8,6 +8,8 @@ This project holds two separate things.
 
 ## About the bug fix shelf
 
+Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
+
 The shelf holds seven small AI-written bug fixes (patch files) for six public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)

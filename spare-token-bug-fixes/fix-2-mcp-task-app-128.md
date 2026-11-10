@@ -9,6 +9,8 @@ Status: UNSENT and UNTESTED. Free to take.
 - Test included: no
 - Patch file: [fixes/2-mcp-task-app-128.patch](fixes/2-mcp-task-app-128.patch)
 - Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/2-mcp-task-app-128.patch
+- Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-2-mcp-task-app-128.md
+- Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-2-mcp-task-app-128.html
 
 ## The bug
 
