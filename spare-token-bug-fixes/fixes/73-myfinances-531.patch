@@ -1,0 +1,70 @@
+diff --git a/server/src/app.js b/server/src/app.js
+index 05fb99a..4a1da42 100644
+--- a/server/src/app.js
++++ b/server/src/app.js
+@@ -88,6 +88,20 @@ export function createApp() {
+ 
+     // eslint-disable-next-line no-unused-vars
+     app.use((err, req, res, next) => {
++        // Client errors raised by middleware carry their own status: the JSON
++        // body parser sets 400 for malformed JSON and 413 for an oversize
++        // body. Answer with that status and skip the stack trace; only
++        // server faults are logged.
++        const status = err?.status ?? err?.statusCode;
++        if (Number.isInteger(status) && status >= 400 && status < 500) {
++            const tooLarge = status === 413;
++            return res.status(status).json({
++                error: {
++                    code: tooLarge ? 'PAYLOAD_TOO_LARGE' : 'BAD_REQUEST',
++                    message: tooLarge ? 'Request body is too large' : 'Bad request',
++                },
++            });
++        }
+         console.error(err);
+         res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' } });
+     });
+diff --git a/server/test/errorHandler.test.js b/server/test/errorHandler.test.js
+new file mode 100644
+index 0000000..983a2d7
+--- /dev/null
++++ b/server/test/errorHandler.test.js
+@@ -0,0 +1,39 @@
++import { test, before, after } from 'node:test';
++import assert from 'node:assert/strict';
++import { createApp } from '../src/app.js';
++
++// The final error handler must keep a client error's own status (issue #531):
++// malformed JSON is 400 and an oversize body is 413, not 500 INTERNAL_ERROR.
++
++let server, baseUrl;
++
++before(() => {
++    const app = createApp();
++    server = app.listen(0);
++    baseUrl = `http://127.0.0.1:${server.address().port}`;
++});
++
++after(() => server.close());
++
++test('malformed JSON body returns 400 BAD_REQUEST', async () => {
++    const res = await fetch(`${baseUrl}/auth/login`, {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: '{"email": ',
++    });
++    assert.equal(res.status, 400);
++    const body = await res.json();
++    assert.equal(body.error.code, 'BAD_REQUEST');
++});
++
++test('oversize JSON body returns 413 PAYLOAD_TOO_LARGE', async () => {
++    // express.json is mounted with limit: '1mb'.
++    const res = await fetch(`${baseUrl}/auth/login`, {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ padding: 'x'.repeat(2 * 1024 * 1024) }),
++    });
++    assert.equal(res.status, 413);
++    const body = await res.json();
++    assert.equal(body.error.code, 'PAYLOAD_TOO_LARGE');
++});

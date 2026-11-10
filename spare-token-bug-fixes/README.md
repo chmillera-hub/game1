@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-68 small ready-made bug fixes (patch files) for 34 public open source projects. Free to take.
+73 small ready-made bug fixes (patch files) for 39 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and Jigsaw777/OpenKeet and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and prapaa-ai/agav and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and svayatta/agent-custody and TMHSDigital/Free-Game-Dev-Assets and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and awslabs/social-messaging-agent-runtime-toolkit and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and jasonkryst/MyFinances and Jigsaw777/OpenKeet and JimmyDi/loop and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maximem-ai/maximem_synap_core and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and prapaa-ai/agav and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and Sh1n1230/security-checker and svayatta/agent-custody and TMHSDigital/Free-Game-Dev-Assets and Under-Research-Labs/CONTINUUM and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 29 of the 68 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 61 of the 68 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 32 of the 73 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 66 of the 73 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -230,6 +230,21 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 68. [OpenKeet: a newly added document is not ticked when building an interview pack](fix-68-openkeet-15.md)
    Project: Jigsaw777/OpenKeet. Bug report number 15. License: MIT. Test included: yes. Patch file: [68-openkeet-15.patch](fixes/68-openkeet-15.patch)
+
+69. [CONTINUUM: the recovery advice for an unreadable constraints file names a command that does not exist](fix-69-continuum-1969.md)
+   Project: Under-Research-Labs/CONTINUUM. Bug report number 1969. License: Apache-2.0. Test included: yes. Patch file: [69-continuum-1969.patch](fixes/69-continuum-1969.patch)
+
+70. [maximem_synap_core: two different lists of search queries can share one cache entry](fix-70-maximem-synap-core-34.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 34. License: Apache-2.0. Test included: yes. Patch file: [70-maximem-synap-core-34.patch](fixes/70-maximem-synap-core-34.patch)
+
+71. [security-checker: run_all.sh stops with an unbound variable error when --domain has no value](fix-71-security-checker-676.md)
+   Project: Sh1n1230/security-checker. Bug report number 676. License: MIT. Test included: yes. Patch file: [71-security-checker-676.patch](fixes/71-security-checker-676.patch)
+
+72. [SMART toolkit: socialagent templates validate fails in a project that has no templates.yaml](fix-72-social-messaging-agent-runtime-toolkit-83.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 83. License: Apache-2.0. Test included: yes. Patch file: [72-social-messaging-agent-runtime-toolkit-83.patch](fixes/72-social-messaging-agent-runtime-toolkit-83.patch)
+
+73. [MyFinances: the server answers 500 for a malformed JSON body or an oversize body](fix-73-myfinances-531.md)
+   Project: jasonkryst/MyFinances. Bug report number 531. License: MIT. Test included: yes. Patch file: [73-myfinances-531.patch](fixes/73-myfinances-531.patch)
 
 ## How to use a fix
 

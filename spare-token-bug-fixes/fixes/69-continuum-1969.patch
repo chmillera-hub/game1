@@ -1,0 +1,65 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 955adbc..0341723 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -281,6 +281,11 @@ Test counts: ~4400 collected on a minimal env.
+   are configured.
+ ### Fixed
+ 
++- **Unreadable-registry guidance names a command that exists (#1969).** The
++  human step for an unreadable constraints registry told the operator to rerun
++  `continuum assess <run_id>`, and no `assess` subcommand exists. The step now
++  names `continuum validate <run_id>`, the read-only re-assessment command.
++
+ - **The daemon's active-run probe and detached startup deadline work on
+   server-backed storage (#1855).** The probe gated on `Path(db).exists()`,
+   which is never true for a `postgresql://` URL, so the daemon silently bound
+diff --git a/src/continuum/recovery/guidance.py b/src/continuum/recovery/guidance.py
+index 579ac4f..484ce85 100644
+--- a/src/continuum/recovery/guidance.py
++++ b/src/continuum/recovery/guidance.py
+@@ -140,7 +140,7 @@ def human_steps_for(
+             if step.target.startswith("registry"):
+                 steps.append(
+                     f"repair unreadable constraints registry file (.continuum/constraints.json), "
+-                    f"then rerun `continuum assess {run_id}`"
++                    f"then rerun `continuum validate {run_id}`"
+                 )
+             elif step.target.startswith("pin:") or any(
+                 e.component is Component.PIN and e.component_id == step.target for e in statuses
+diff --git a/tests/test_unreadable_registry_guidance_command.py b/tests/test_unreadable_registry_guidance_command.py
+new file mode 100644
+index 0000000..8b01b0b
+--- /dev/null
++++ b/tests/test_unreadable_registry_guidance_command.py
+@@ -0,0 +1,30 @@
++"""The unreadable-registry human step must name a CLI command that exists (#1969)."""
++
++from __future__ import annotations
++
++from types import SimpleNamespace
++
++from continuum.models import RecoveryMode
++from continuum.recovery.guidance import human_steps_for
++from continuum.recovery.planner import RepairKind, RepairPlan, RepairStep
++
++
++def test_unreadable_registry_step_points_at_validate_not_assess() -> None:
++    plan = RepairPlan(
++        steps=[
++            RepairStep(
++                kind=RepairKind.HUMAN_REVIEW,
++                target="registry",
++                reason="constraints registry is unreadable",
++            )
++        ]
++    )
++    decision = SimpleNamespace(mode=RecoveryMode.REQUEST_HUMAN, plan=plan, uncertain_actions=())
++
++    steps = human_steps_for(decision, run_id="run_1")
++
++    registry_steps = [s for s in steps if "repair unreadable constraints registry file" in s]
++    assert len(registry_steps) == 1, steps
++    assert "`continuum validate run_1`" in registry_steps[0]
++    # `assess` is RecoveryEngine.assess, a method; it is not a CLI subcommand.
++    assert "continuum assess" not in registry_steps[0]

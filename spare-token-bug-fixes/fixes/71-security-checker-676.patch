@@ -1,0 +1,52 @@
+diff --git a/contrib/host-audit/run_all.sh b/contrib/host-audit/run_all.sh
+index 417262b..5983a8f 100755
+--- a/contrib/host-audit/run_all.sh
++++ b/contrib/host-audit/run_all.sh
+@@ -8,7 +8,13 @@ PROJECT=""
+ DOMAIN=""
+ while [[ $# -gt 0 ]]; do
+   case "$1" in
+-    --domain) DOMAIN="$2"; shift 2 ;;
++    --domain)
++      if [[ $# -lt 2 ]]; then
++        echo "--domain には値が必要です" >&2
++        echo "使い方: ./run_all.sh [検査対象プロジェクトのパス] [--domain example.com]" >&2
++        exit 2
++      fi
++      DOMAIN="$2"; shift 2 ;;
+     *) PROJECT="$1"; shift ;;
+   esac
+ done
+diff --git a/tests/unit/test_contrib_run_all.py b/tests/unit/test_contrib_run_all.py
+new file mode 100644
+index 0000000..2f0ac19
+--- /dev/null
++++ b/tests/unit/test_contrib_run_all.py
+@@ -0,0 +1,27 @@
++"""contrib/host-audit/run_all.sh の引数解析。"""
++
++from __future__ import annotations
++
++import shutil
++import subprocess
++from pathlib import Path
++
++import pytest
++
++RUN_ALL = Path(__file__).resolve().parents[2] / "contrib" / "host-audit" / "run_all.sh"
++
++
++@pytest.mark.skipif(shutil.which("bash") is None, reason="bash が必要")
++def test_domain_without_value_prints_usage_and_exits_2() -> None:
++    """--domain に値が無いとき、unbound variable ではなく使い方を出して exit 2 にする。"""
++    result = subprocess.run(
++        ["bash", str(RUN_ALL), "--domain"],
++        capture_output=True,
++        text=True,
++        timeout=30,
++        check=False,
++    )
++
++    assert result.returncode == 2
++    assert "使い方" in result.stderr
++    assert "unbound variable" not in result.stderr

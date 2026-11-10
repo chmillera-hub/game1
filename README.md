@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds sixty-eight small AI-written bug fixes (patch files) for thirty-four public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds seventy-three small AI-written bug fixes (patch files) for thirty-nine public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -215,6 +215,21 @@ The shelf holds sixty-eight small AI-written bug fixes (patch files) for thirty-
 
 68. [OpenKeet: a newly added document is not ticked when building an interview pack](spare-token-bug-fixes/fix-68-openkeet-15.md)
    Project: Jigsaw777/OpenKeet. Bug report number 15. License: MIT. Test included: yes. Patch file: [68-openkeet-15.patch](spare-token-bug-fixes/fixes/68-openkeet-15.patch)
+
+69. [CONTINUUM: the recovery advice for an unreadable constraints file names a command that does not exist](spare-token-bug-fixes/fix-69-continuum-1969.md)
+   Project: Under-Research-Labs/CONTINUUM. Bug report number 1969. License: Apache-2.0. Test included: yes. Patch file: [69-continuum-1969.patch](spare-token-bug-fixes/fixes/69-continuum-1969.patch)
+
+70. [maximem_synap_core: two different lists of search queries can share one cache entry](spare-token-bug-fixes/fix-70-maximem-synap-core-34.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 34. License: Apache-2.0. Test included: yes. Patch file: [70-maximem-synap-core-34.patch](spare-token-bug-fixes/fixes/70-maximem-synap-core-34.patch)
+
+71. [security-checker: run_all.sh stops with an unbound variable error when --domain has no value](spare-token-bug-fixes/fix-71-security-checker-676.md)
+   Project: Sh1n1230/security-checker. Bug report number 676. License: MIT. Test included: yes. Patch file: [71-security-checker-676.patch](spare-token-bug-fixes/fixes/71-security-checker-676.patch)
+
+72. [SMART toolkit: socialagent templates validate fails in a project that has no templates.yaml](spare-token-bug-fixes/fix-72-social-messaging-agent-runtime-toolkit-83.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 83. License: Apache-2.0. Test included: yes. Patch file: [72-social-messaging-agent-runtime-toolkit-83.patch](spare-token-bug-fixes/fixes/72-social-messaging-agent-runtime-toolkit-83.patch)
+
+73. [MyFinances: the server answers 500 for a malformed JSON body or an oversize body](spare-token-bug-fixes/fix-73-myfinances-531.md)
+   Project: jasonkryst/MyFinances. Bug report number 531. License: MIT. Test included: yes. Patch file: [73-myfinances-531.patch](spare-token-bug-fixes/fixes/73-myfinances-531.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 
