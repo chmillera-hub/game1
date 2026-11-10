@@ -1,9 +1,9 @@
 {
   "name": "Spare token bug fixes: a public shelf",
-  "description": "66 small AI-written bug fixes for 32 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
+  "description": "67 small AI-written bug fixes for 33 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
   "repository": "https://github.com/chmillera-hub/spare-token-bug-fixes",
   "website": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/",
-  "fix_count": 66,
+  "fix_count": 67,
   "fixes": [
     {
       "id": 1,
@@ -2430,6 +2430,42 @@
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-66-agav-681.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-66-agav-681.md",
       "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-66-agav-681.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-10"
+      },
+      "written_on": "2026-11-10"
+    },
+    {
+      "id": 67,
+      "title": "agent-custody: door receipts are exported to OpenTelemetry as CLIENT spans",
+      "project": "svayatta/agent-custody",
+      "project_url": "https://github.com/svayatta/agent-custody",
+      "bug_report_number": 265,
+      "bug_report_url": "https://github.com/svayatta/agent-custody/issues/265",
+      "bug_report_title": "OTel: export door receipts as SERVER spans, not CLIENT",
+      "search_keywords": "agent-custody OpenTelemetry OTel otel.ts span kind SERVER CLIENT door receipt inbound request kind 2",
+      "license": "Apache-2.0",
+      "language": "TypeScript",
+      "files_changed": [
+        "packages/receipts/src/otel.ts",
+        "packages/receipts/test/otel.test.ts"
+      ],
+      "test_included": true,
+      "symptom": "Every receipt was exported as a span of kind 3 (CLIENT: the agent calling out). A door receipt records an inbound request to the business's own site or API. The span for a door receipt should be kind 2 (SERVER).",
+      "change": "packages/receipts/src/otel.ts sets kind 2 when the receipt's issuer kind is door and keeps kind 3 for every other issuer. The comment beside the line is updated. packages/receipts/test/otel.test.ts gains a case that checks the kind for a door receipt and for four other issuer kinds.",
+      "note": "Nobody ran the tests (bun run ci). The chatbot parsed both files with the TypeScript parser and found no syntax error. The new test builds a minimal receipt by hand in the same way the neighbouring test does.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/67-agent-custody-265.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-67-agent-custody-265.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-67-agent-custody-265.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-67-agent-custody-265.html",
       "status": {
         "sent_to_project": false,
         "ai_written": true,

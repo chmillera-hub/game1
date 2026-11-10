@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds sixty-six small AI-written bug fixes (patch files) for thirty-two public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds sixty-seven small AI-written bug fixes (patch files) for thirty-three public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -209,6 +209,9 @@ The shelf holds sixty-six small AI-written bug fixes (patch files) for thirty-tw
 
 66. [agav: /undo with a mistyped argument reverts a file](spare-token-bug-fixes/fix-66-agav-681.md)
    Project: prapaa-ai/agav. Bug report number 681. License: Apache-2.0. Test included: yes. Patch file: [66-agav-681.patch](spare-token-bug-fixes/fixes/66-agav-681.patch)
+
+67. [agent-custody: door receipts are exported to OpenTelemetry as CLIENT spans](spare-token-bug-fixes/fix-67-agent-custody-265.md)
+   Project: svayatta/agent-custody. Bug report number 265. License: Apache-2.0. Test included: yes. Patch file: [67-agent-custody-265.patch](spare-token-bug-fixes/fixes/67-agent-custody-265.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 
