@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds seven small AI-written bug fixes (patch files) for six public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds twelve small AI-written bug fixes (patch files) for eight public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -32,6 +32,21 @@ The shelf holds seven small AI-written bug fixes (patch files) for six public pr
 
 7. [repowise: a heading inside a code fence is treated as a real section heading](spare-token-bug-fixes/fix-7-repowise-5357.md)
    Project: repowise-dev/repowise. Bug report number 5357. License: AGPL-3.0. Test included: yes. Patch file: [7-repowise-5357.patch](spare-token-bug-fixes/fixes/7-repowise-5357.patch)
+
+8. [orm-lens: objects = models.Manager() is parsed as a model field and drift fails the build](spare-token-bug-fixes/fix-8-orm-lens-219.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 219. License: MIT. Test included: yes. Patch file: [8-orm-lens-219.patch](spare-token-bug-fixes/fixes/8-orm-lens-219.patch)
+
+9. [orm-lens: @receiver with a list or tuple of signals becomes one unknown custom edge](spare-token-bug-fixes/fix-9-orm-lens-221.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 221. License: MIT. Test included: yes. Patch file: [9-orm-lens-221.patch](spare-token-bug-fixes/fixes/9-orm-lens-221.patch)
+
+10. [Gulliver: check accepts a negative --min-rows and a negative or NaN or infinite --max-change](spare-token-bug-fixes/fix-10-gulliver-106.md)
+   Project: laaielichter/Gulliver. Bug report number 106. License: MIT. Test included: yes. Patch file: [10-gulliver-106.patch](spare-token-bug-fixes/fixes/10-gulliver-106.patch)
+
+11. [wheelgap: a private-index lockfile package with no file list is still looked up on PyPI](spare-token-bug-fixes/fix-11-wheelgap-145.md)
+   Project: wheelgap/wheelgap. Bug report number 145. License: MIT. Test included: yes. Patch file: [11-wheelgap-145.patch](spare-token-bug-fixes/fixes/11-wheelgap-145.patch)
+
+12. [repowise: test_tool_overview.py fails when run alone because ov.health does not exist yet](spare-token-bug-fixes/fix-12-repowise-5368.md)
+   Project: repowise-dev/repowise. Bug report number 5368. License: AGPL-3.0. Test included: yes. Patch file: [12-repowise-5368.patch](spare-token-bug-fixes/fixes/12-repowise-5368.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

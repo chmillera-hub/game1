@@ -8,7 +8,7 @@ Status: UNSENT and UNTESTED. Free to take.
 - Language: Python
 - Test included: yes
 - Patch file: [fixes/4-kraft-1344.patch](fixes/4-kraft-1344.patch)
-- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/4-kraft-1344.patch
+- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/4-kraft-1344.patch
 - Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-4-kraft-1344.md
 - Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-4-kraft-1344.html
 
@@ -37,8 +37,10 @@ The fix makes update_repo use the shared helpers transport._detail and transport
 
 - An AI chatbot (Claude) wrote this fix. No human has reviewed the fix.
 - Nobody has run the fix against the project's own test suite.
+- The chatbot worked from the bug report title plus the code and did not read the full bug report text.
 - Nobody has checked whether someone else already sent a fix for the same bug.
 - The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
 
 ## Search words

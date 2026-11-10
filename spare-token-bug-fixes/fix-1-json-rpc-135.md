@@ -8,7 +8,7 @@ Status: UNSENT and UNTESTED. Free to take.
 - Language: Python
 - Test included: yes
 - Patch file: [fixes/1-json-rpc-135.patch](fixes/1-json-rpc-135.patch)
-- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/1-json-rpc-135.patch
+- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/1-json-rpc-135.patch
 - Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-1-json-rpc-135.md
 - Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-1-json-rpc-135.html
 
@@ -40,6 +40,7 @@ The error setter in jsonrpc1.py and jsonrpc2.py removed a key named value that n
 - Nobody has run the fix against the project's own test suite.
 - Nobody has checked whether someone else already sent a fix for the same bug.
 - The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
 
 ## Search words

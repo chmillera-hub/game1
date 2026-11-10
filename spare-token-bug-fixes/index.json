@@ -1,8 +1,9 @@
 {
   "name": "Spare token bug fixes: a public shelf",
-  "description": "Small AI-written bug fixes for public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
+  "description": "12 small AI-written bug fixes for 8 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
   "repository": "https://github.com/chmillera-hub/spare-token-bug-fixes",
   "website": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/",
+  "fix_count": 12,
   "fixes": [
     {
       "id": 1,
@@ -21,6 +22,7 @@
       "test_included": true,
       "symptom": "A JSON-RPC response object that already holds a result keeps the result after code sets an error on the response. The response then carries both a result and an error. The JSON-RPC rules allow only one of the two.",
       "change": "The error setter in jsonrpc1.py and jsonrpc2.py removed a key named value that never exists. The fix removes the key named result and only when the error is set to a real value. A new test named test_error_setter_removes_result covers the case.",
+      "note": null,
       "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/1-json-rpc-135.patch",
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-1-json-rpc-135.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-1-json-rpc-135.md",
@@ -30,7 +32,10 @@
         "ai_written": true,
         "human_reviewed": false,
         "project_tests_run": false,
-        "duplicate_check_done": false
+        "duplicate_check_done": false,
+        "full_bug_report_read": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
       },
       "written_on": "2026-11-09"
     },
@@ -50,6 +55,7 @@
       "test_included": false,
       "symptom": "Every new task shows the same task_started time. The time shown is the moment the program started and not the moment the task was created.",
       "change": "The code called datetime.now() once when the program loaded and reused that one value as the default. The fix passes the function datetime.now to SQLAlchemy and uses Field(default_factory=datetime.now) in the Pydantic model so each task gets a fresh time. No test is included. The project looks like a teaching project so the maintainer may prefer that students fix the bug.",
+      "note": null,
       "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/2-mcp-task-app-128.patch",
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-2-mcp-task-app-128.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-2-mcp-task-app-128.md",
@@ -59,7 +65,10 @@
         "ai_written": true,
         "human_reviewed": false,
         "project_tests_run": false,
-        "duplicate_check_done": false
+        "duplicate_check_done": false,
+        "full_bug_report_read": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
       },
       "written_on": "2026-11-09"
     },
@@ -79,6 +88,7 @@
       "test_included": true,
       "symptom": "Running the spend command with a very large --days number such as 10000000 crashes with OverflowError: date value out of range instead of showing a clear message.",
       "change": "The fix wraps the date arithmetic in runaway.py in a try block and returns the error message \"--days is too large.\" with a suggested next step. A new test covers two huge values.",
+      "note": null,
       "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/3-gulliver-107.patch",
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-3-gulliver-107.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-3-gulliver-107.md",
@@ -88,7 +98,10 @@
         "ai_written": true,
         "human_reviewed": false,
         "project_tests_run": false,
-        "duplicate_check_done": false
+        "duplicate_check_done": false,
+        "full_bug_report_read": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
       },
       "written_on": "2026-11-09"
     },
@@ -108,6 +121,7 @@
       "test_included": true,
       "symptom": "The client call update_repo parsed the server reply with code of its own. A reply with status 200 and a body that is not JSON (for example an HTML page from a proxy) slipped through as a fake success. The other client calls report that case as a bad response.",
       "change": "The fix makes update_repo use the shared helpers transport._detail and transport._json in src/kraft/client/actions.py. A new parametrized test case named text-200-patch covers the HTML reply.",
+      "note": null,
       "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/4-kraft-1344.patch",
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-4-kraft-1344.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-4-kraft-1344.md",
@@ -117,7 +131,10 @@
         "ai_written": true,
         "human_reviewed": false,
         "project_tests_run": false,
-        "duplicate_check_done": false
+        "duplicate_check_done": false,
+        "full_bug_report_read": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
       },
       "written_on": "2026-11-09"
     },
@@ -137,6 +154,7 @@
       "test_included": true,
       "symptom": "Giving the period reader a very large number of minutes or hours or days or weeks crashes with OverflowError instead of a clear error.",
       "change": "The fix wraps the timedelta creation in parse_period in src/gulliver/incremental.py and raises ValueError with the message \"period is too large\". One new test line covers the case.",
+      "note": null,
       "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/5-gulliver-108.patch",
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-5-gulliver-108.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-5-gulliver-108.md",
@@ -146,7 +164,10 @@
         "ai_written": true,
         "human_reviewed": false,
         "project_tests_run": false,
-        "duplicate_check_done": false
+        "duplicate_check_done": false,
+        "full_bug_report_read": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
       },
       "written_on": "2026-11-09"
     },
@@ -168,6 +189,7 @@
       "test_included": false,
       "symptom": "Five places in the web interface tell people to type observal pull. The real command is observal agent pull. A person who copies the shown command gets an error.",
       "change": "The fix changes the shown text to observal agent pull in preview-panel.tsx and home.tsx and teamspace-detail.tsx and teamspaces.tsx. Text change only. No test is included.",
+      "note": null,
       "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/6-agenticresourceregistry-1971.patch",
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-6-agenticresourceregistry-1971.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-6-agenticresourceregistry-1971.md",
@@ -177,7 +199,10 @@
         "ai_written": true,
         "human_reviewed": false,
         "project_tests_run": false,
-        "duplicate_check_done": false
+        "duplicate_check_done": false,
+        "full_bug_report_read": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
       },
       "written_on": "2026-11-09"
     },
@@ -197,6 +222,7 @@
       "test_included": true,
       "symptom": "When a generated page contains a code sample with a line that starts with # or ## the section embedder treats that line as the start of a new section and cuts or replaces the wrong part of the page.",
       "change": "The fix adds a helper named _section_span in overview_tables.py that tracks code fences made of three backticks or three tildes and ignores headings inside fences. embed_section now uses the helper. A new test covers the reported case. The chatbot also ran a separate comparison on 200000 random pages with no fences and found no difference from the old behaviour.",
+      "note": null,
       "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/7-repowise-5357.patch",
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-7-repowise-5357.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-7-repowise-5357.md",
@@ -206,7 +232,185 @@
         "ai_written": true,
         "human_reviewed": false,
         "project_tests_run": false,
-        "duplicate_check_done": false
+        "duplicate_check_done": false,
+        "full_bug_report_read": false,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 8,
+      "title": "orm-lens: objects = models.Manager() is parsed as a model field and drift fails the build",
+      "project": "FROWNINGdev/orm-lens",
+      "project_url": "https://github.com/FROWNINGdev/orm-lens",
+      "bug_report_number": 219,
+      "bug_report_url": "https://github.com/FROWNINGdev/orm-lens/issues/219",
+      "license": "MIT",
+      "language": "Python and TypeScript",
+      "files_changed": [
+        "CHANGELOG.md",
+        "cli/orm_lens/parser.py",
+        "cli/tests/fixtures/golden/saleor.snapshot.json",
+        "cli/tests/test_manager_is_not_a_field.py",
+        "src/parser.ts",
+        "test/taggable-manager.test.js"
+      ],
+      "test_included": true,
+      "symptom": "A Django model that declares an explicit manager such as objects = models.Manager() gets a field named objects of type Manager. The drift command then reports \"declared but never migrated: objects\" and exits with code 1 on a healthy project. The ER diagram shows Manager objects as a column.",
+      "change": "The fix adds a small set named _NOT_A_FIELD holding Manager and QuerySet in cli/orm_lens/parser.py and skips those assignments including calls that span several lines. TaggableManager stays a relation. The same change is mirrored in the TypeScript parser src/parser.ts. The stored snapshot saleor.snapshot.json loses its one Manager entry. New tests cover the parser and the drift command. A changelog line is included.",
+      "note": "Fix 8 and fix 9 both add text at the same spot in CHANGELOG.md. Applying both needs a small manual merge of CHANGELOG.md.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/8-orm-lens-219.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-8-orm-lens-219.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-8-orm-lens-219.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-8-orm-lens-219.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 9,
+      "title": "orm-lens: @receiver with a list or tuple of signals becomes one unknown custom edge",
+      "project": "FROWNINGdev/orm-lens",
+      "project_url": "https://github.com/FROWNINGdev/orm-lens",
+      "bug_report_number": 221,
+      "bug_report_url": "https://github.com/FROWNINGdev/orm-lens/issues/221",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "CHANGELOG.md",
+        "cli/orm_lens/signals_parser.py",
+        "cli/tests/test_new_cli_commands.py",
+        "cli/tests/test_signals_parser.py"
+      ],
+      "test_included": true,
+      "symptom": "Django's receiver() accepts one signal or a list or tuple of signals. For @receiver([post_save, post_delete], sender=Attachment) the signals command records a single edge with the signal name <unknown> and labels the edge custom. The cascade command then leaves list-form post_delete receivers out of its warning about receivers that will not run for DB_CASCADE rows.",
+      "change": "The fix replaces _signal_arg_name with _signal_arg_names in cli/orm_lens/signals_parser.py. The new helper returns one name per signal for a single signal or a list or a tuple. signal_graph adds one edge per name and keeps <unknown> only when nothing is readable. New tests cover the list form and the tuple form and the cascade warning. A changelog line is included. The chatbot checked the helper logic with a separate script on seven cases.",
+      "note": "Fix 8 and fix 9 both add text at the same spot in CHANGELOG.md. Applying both needs a small manual merge of CHANGELOG.md.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/9-orm-lens-221.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-9-orm-lens-221.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-9-orm-lens-221.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-9-orm-lens-221.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 10,
+      "title": "Gulliver: check accepts a negative --min-rows and a negative or NaN or infinite --max-change",
+      "project": "laaielichter/Gulliver",
+      "project_url": "https://github.com/laaielichter/Gulliver",
+      "bug_report_number": 106,
+      "bug_report_url": "https://github.com/laaielichter/Gulliver/issues/106",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "CHANGELOG.md",
+        "src/gulliver/checks.py",
+        "tests/test_checks.py",
+        "tests/test_cli_and_mcp.py"
+      ],
+      "test_included": true,
+      "symptom": "The command gulliver check accepts --min-rows -5 and the check can then never fail. --max-change -5 always fails even when the row count did not change. --max-change nan can never fail.",
+      "change": "parse_spec in src/gulliver/checks.py now raises ValueError for a negative min_rows and for a max_change_pct that is negative or NaN or infinite. The check command turns the error into status error with exit code 1 before any query runs. Zero stays valid for both. New tests go through parse_spec and through the command line. A changelog line is included.",
+      "note": null,
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/10-gulliver-106.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-10-gulliver-106.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-10-gulliver-106.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-10-gulliver-106.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 11,
+      "title": "wheelgap: a private-index lockfile package with no file list is still looked up on PyPI",
+      "project": "wheelgap/wheelgap",
+      "project_url": "https://github.com/wheelgap/wheelgap",
+      "bug_report_number": 145,
+      "bug_report_url": "https://github.com/wheelgap/wheelgap/issues/145",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "CHANGELOG.md",
+        "src/wheelgap/cli.py",
+        "src/wheelgap/pypi.py",
+        "tests/test_cli.py",
+        "tests/test_pypi.py"
+      ],
+      "test_included": true,
+      "symptom": "An old-format poetry.lock records hashes under [metadata.hashes] and gives packages no file list. A package from a private index in such a lock file is looked up on pypi.org by name. The internal package name gets sent to a public server and a public package with the same name can be reported in place of the internal one.",
+      "change": "fill_all in src/wheelgap/pypi.py now marks a package with no files and a non-PyPI registry as skipped with the reason private index before any lookup. The --offline check in src/wheelgap/cli.py no longer counts such a package as needing the index. A PyPI package with no file list is still looked up. One existing test that asserted the old behaviour is replaced. New tests cover the function and the command line. A changelog line is included.",
+      "note": "The --offline change goes one step beyond the bug report text. A maintainer may prefer to drop that one line.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/11-wheelgap-145.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-11-wheelgap-145.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-11-wheelgap-145.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-11-wheelgap-145.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 12,
+      "title": "repowise: test_tool_overview.py fails when run alone because ov.health does not exist yet",
+      "project": "repowise-dev/repowise",
+      "project_url": "https://github.com/repowise-dev/repowise",
+      "bug_report_number": 5368,
+      "bug_report_url": "https://github.com/repowise-dev/repowise/issues/5368",
+      "license": "AGPL-3.0",
+      "language": "Python (test only)",
+      "files_changed": [
+        "tests/unit/server/mcp/test_tool_overview.py"
+      ],
+      "test_included": true,
+      "symptom": "Running tests/unit/server/mcp/test_tool_overview.py alone fails with AttributeError: module 'repowise.server.mcp_server.tool_overview' has no attribute 'health'. The package loads its submodules lazily so ov.health only exists after another test imports the submodule.",
+      "change": "The test now imports repowise.server.mcp_server.tool_overview.health itself and patches _get_health_metrics on that module. One test changed. No product code changed.",
+      "note": "The bug report already had one comment on 9 November 2026 and the chatbot could not read comments. Someone may already be working on the bug report.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/12-repowise-5368.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-12-repowise-5368.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-12-repowise-5368.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-12-repowise-5368.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
       },
       "written_on": "2026-11-09"
     }

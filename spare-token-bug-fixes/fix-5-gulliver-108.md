@@ -8,7 +8,7 @@ Status: UNSENT and UNTESTED. Free to take.
 - Language: Python
 - Test included: yes
 - Patch file: [fixes/5-gulliver-108.patch](fixes/5-gulliver-108.patch)
-- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/game1/claude/word-equation-game-Dju9I/spare-token-bug-fixes/fixes/5-gulliver-108.patch
+- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/5-gulliver-108.patch
 - Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-5-gulliver-108.md
 - Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-5-gulliver-108.html
 
@@ -37,8 +37,10 @@ The fix wraps the timedelta creation in parse_period in src/gulliver/incremental
 
 - An AI chatbot (Claude) wrote this fix. No human has reviewed the fix.
 - Nobody has run the fix against the project's own test suite.
+- The chatbot worked from the bug report title plus the code and did not read the full bug report text.
 - Nobody has checked whether someone else already sent a fix for the same bug.
 - The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
 
 ## Search words
