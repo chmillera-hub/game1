@@ -909,9 +909,9 @@
     // number, or one for each boss in that order), and Supply for their kit. In rounds
     // every unit is a turn, so its size is what tells: in the lab, the three bosses alone
     // fell to half of the strongest armies (the ones that took the elite cards all the
-    // way), seven units to one in ten; with five it is about one in four with Auto, one in
-    // two with the best-suited army, and next to none of the armies that only ever took
-    // medium cards.
+    // way), seven units to one in ten; with five it is about one in six with Auto, one in
+    // three with the best-suited army, and none of the armies that only ever took medium
+    // cards.
     megaUnits: 5,
     megaLevel: 2,
     megaKit: 0,
@@ -927,8 +927,8 @@
     // The clock, in rounds. Fatigue sets in for everyone on round `overtime`, if it has not
     // already (see the engine's fatigue), until one side is left. It is there to end a
     // stalemate, not to settle the fight: a medium battle takes about 13 rounds and a
-    // boss about 20, and with fatigue from round 12 nine boss battles in ten were ended
-    // by it (and a lone healed tank outlasted armies it could never have beaten). A shrine is held by
+    // boss about 20, and with fatigue from round 12 more than half of the medium battles
+    // and nine boss battles in ten ran into it. A shrine is held by
     // starting `holdNeed` rounds in a row on it. Buildings send their first reinforcement
     // in round `first` and one more every `every` rounds after. A fast-win goal allows
     // `swift` rounds for each step of the enemy's size (see the swift goal).
@@ -1218,8 +1218,24 @@
     const addObject = (type, rows, xs) => {
       const t = pickTile(rows, xs) || pickTile([0, 1, 2], [...Array(BOARD).keys()]);
       if (!t) return false;
-      units.push({ type, level: 1, x: t[0], y: t[1], facing: 2, baseHp: Math.round(UNITS[type].hp * BUILDING_HP[act]) });
-      used.add(t[0] + ',' + t[1]);
+      const obj = { type, level: 1, x: t[0], y: t[1], facing: 2, baseHp: Math.round(UNITS[type].hp * BUILDING_HP[act]) };
+      units.push(obj);
+      // Never where it seals someone in (a banner between two kegs walls off the archer
+      // behind it): then it goes on the next open tile that leaves everyone a way out.
+      if (sealedIn(units, BOARD, BOARD)) {
+        const all = [...Array(BOARD).keys()];
+        search: for (const [ys, cols] of [[rows, xs], [[0, 1, 2], all]])
+          for (const y of ys)
+            for (const x of cols) {
+              if (!open(x, y)) continue;
+              obj.x = x;
+              obj.y = y;
+              if (!sealedIn(units, BOARD, BOARD)) break search;
+              obj.x = t[0];
+              obj.y = t[1];
+            }
+      }
+      used.add(obj.x + ',' + obj.y);
       return true;
     };
     switch (primary) {
@@ -2900,7 +2916,7 @@
   // Each call for another suggestion (variant 1, 2, 3 ...) is a different plan, so a lost
   // battle can be tried another way at a tap: the usual army first; then fewer, better
   // units (one less than the usual army, then two, then three, the best-suited for this
-  // enemy, the Supply saved going to their levels and kit); after that, or where the army
+  // enemy, the Supply saved going to their levels, then their kit); after that, or where the army
   // is too small to shrink, the usual army with its priorities shuffled.
   const AUTO_FEWER = 3;
   // How many units besides the Cleric plan `variant` fields: the usual army's less one,
@@ -2987,58 +3003,54 @@
     if (!pick.some((r) => isAttacker(r.type))) return core ? autoPlace(run, enc, [core]) : [];
     // The Cleric is upgraded last, after the units picked for this fight.
     if (core) pick.push(pick.splice(pick.indexOf(core), 1)[0]);
-    // Spend what is left: levels on the best units, then owned items in open slots.
-    for (let guard = 0; guard < 30; guard++) {
-      const left = supply - pick.reduce((t, r) => t + unitCost(run, r), 0);
-      if (left <= 0) break;
-      let did = false;
+    // Spend what is left, one purchase at a time, each time the first of these that fits:
+    // Level 2 on the best units, owned items in open slots, Level 3, one more unit. A
+    // smaller army (the next plans) takes its Level 3s before its kit: fewer units have
+    // fewer turns in a round, and a level does more for each of them than an item does.
+    const buyLevel2 = (left) => {
       for (const r of pick) {
         if (r.load.lv >= 2) continue;
         // Priced by trying it: Level 2 also loses the Recruiter's Bell discount.
         const before = unitCost(run, r);
         r.load.lv = 2;
-        if (unitCost(run, r) - before <= left) {
-          did = true;
-          break;
-        }
+        if (unitCost(run, r) - before <= left) return true;
         r.load.lv = 1;
       }
-      if (!did) {
-        // Siege gear first when buildings must fall; left in the pack otherwise.
-        const siegeNeeded = siegeTargets(enc) > 0;
-        // Side-grades (0 Supply, a trade more than an upgrade) are yours to choose; real
-        // upgrades go in before free ones.
-        const items = freeItems(run).filter((i) => i.kind !== 'scroll' && !itemDef(i).side && (siegeNeeded || !isSiegeItem(itemDef(i))));
-        items.sort((a, b) => (siegeNeeded ? isSiegeItem(itemDef(b)) - isSiegeItem(itemDef(a)) : 0) || itemDef(b).cost - itemDef(a).cost);
-        for (const it of items) {
-          const d = itemDef(it);
-          if (d.cost > left) continue;
-          const holder = pick.find((r) => assignItem(run, r.id, it.uid));
-          if (holder) {
-            did = true;
-            break;
-          }
+      return false;
+    };
+    const buyItem = (left) => {
+      // Siege gear first when buildings must fall; left in the pack otherwise.
+      const siegeNeeded = siegeTargets(enc) > 0;
+      // Side-grades (0 Supply, a trade more than an upgrade) are yours to choose; real
+      // upgrades go in before free ones.
+      const items = freeItems(run).filter((i) => i.kind !== 'scroll' && !itemDef(i).side && (siegeNeeded || !isSiegeItem(itemDef(i))));
+      items.sort((a, b) => (siegeNeeded ? isSiegeItem(itemDef(b)) - isSiegeItem(itemDef(a)) : 0) || itemDef(b).cost - itemDef(a).cost);
+      for (const it of items) {
+        if (itemDef(it).cost > left) continue;
+        if (pick.find((r) => assignItem(run, r.id, it.uid))) return true;
+      }
+      return false;
+    };
+    const buyLevel3 = (left) => {
+      for (const r of pick) {
+        if (r.load.lv !== 2) continue;
+        if (D.levelCost(r.type, 3) - D.levelCost(r.type, 2) <= left) {
+          r.load.lv = 3;
+          return true;
         }
       }
-      if (!did) {
-        for (const r of pick) {
-          if (r.load.lv >= 3) continue;
-          if (D.levelCost(r.type, 3) - D.levelCost(r.type, 2) <= left && r.load.lv === 2) {
-            r.load.lv = 3;
-            did = true;
-            break;
-          }
-        }
-      }
-      if (!did && !focus) {
-        // No field limit: Supply left over after all that buys one more unit.
-        const extra = pool.find((r) => !pick.includes(r) && unitCost(run, r) <= left);
-        if (extra) {
-          pick.push(extra);
-          did = true;
-        }
-      }
-      if (!did) break;
+      return false;
+    };
+    // No field limit: Supply left over after all that buys one more unit.
+    const buyUnit = (left) => {
+      const extra = pool.find((r) => !pick.includes(r) && unitCost(run, r) <= left);
+      if (extra) pick.push(extra);
+      return !!extra;
+    };
+    const steps = focus && BAL.autoLevels ? [buyLevel2, buyLevel3, buyItem] : focus ? [buyLevel2, buyItem, buyLevel3] : [buyLevel2, buyItem, buyLevel3, buyUnit];
+    for (let guard = 0; guard < 40; guard++) {
+      const left = supply - pick.reduce((t, r) => t + unitCost(run, r), 0);
+      if (left <= 0 || !steps.some((buy) => buy(left))) break;
     }
     return autoPlace(run, enc, pick);
   }

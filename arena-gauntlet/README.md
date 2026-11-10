@@ -5,11 +5,47 @@ battles (think Tactics Arena Online meets Slay the Spire). Scout the enemy army,
 spend Supply on a counter-army, set it up, and watch it fight across three acts to
 the Ashen Tyrant, and, if your army is up to it, the Eclipse Wyrm beyond.
 
-## The balance pass
+## Rounds, and the balance behind them
 
-The campaign had become easy to win without looking, and one plan beat every other:
-put every level and every item on one unit, field it with the Cleric and tap Begin
-battle. This pass makes the game harder, in a particular way:
+**Rounds.** A battle is played in rounds: in a round every unit of both armies takes
+one turn, in order of Speed, the fastest first, whichever side it is on (two fast
+enemies, then your Scout, then more of theirs, then your Knight). Before, the two sides
+took turns, one unit each, back and forth, so an army of two got as many actions as an
+army of eight and one decked-out unit with the Cleric was the best army in the game;
+an earlier balance pass patched that with two rules (marching for free, a rest after
+acting). Rounds make the patches unnecessary: every unit you field is one more turn
+each round. The rules are under How it works (Rounds, Cooldowns, Fatigue).
+
+What came with them:
+
+- **Cooldowns** stay, but a unit cooling down still takes its turn and may move in it:
+  close in, step back, get in the way.
+- **The clock counts rounds.** A shrine is held for two round starts, survival takes 6
+  or 7 rounds, buildings send a reinforcement every second or third round, and every
+  unit of a tiring side loses its side's number as its turn comes: 1 in the first
+  round, one more each round after. Fatigue for everyone comes on round 20. It is
+  there to end a stalemate, not to settle the fight: a medium battle takes about 13
+  rounds (one in seven reaches round 20) and a two-boss battle about 20 (half of
+  them do). Tried at round 12, more than half of the medium battles and nine boss
+  battles in ten ran into it.
+- **Levels cost less**: +1 Supply for Level 2 and +3 for Level 3 (30% and 80% of a
+  dear unit's own cost, where that is more), for the same +30% and +60% HP and +20%
+  and +40% damage. A level buys no extra turn in the round, so it had to be priced
+  under another body to be worth taking at all.
+- **Bosses come as three cards** (see The road): Easy, one of the boss with a small
+  guard; Medium, two with a guard; Elite, three and two Shacklers. Any of them ends
+  the act; they pay by the card.
+- **Auto** pays for Level 2 on each unit before it adds the next one, and its next
+  plans (tap Auto again) field fewer units with the Supply saved spent on Level 3
+  before any kit.
+- **Playback is faster.** Rounds mean three or four times as many unit turns to
+  watch, so 1x plays at four fifths of the animations' full pace (it was half) and
+  the beat before each unit's turn is short: a medium battle takes about two minutes
+  to watch at 1x and one at 2x.
+- **The final challenge** fields five (the Wyrm, the Death Knight, the Lich and two
+  Drakes) and two Shacklers.
+
+**The aims** are the ones the balance pass before it set:
 
 - an army left as it was after the last battle (a player who just taps Begin battle)
   loses a medium battle more often than it wins, and seldom collects everything;
@@ -17,98 +53,95 @@ battle. This pass makes the game harder, in a particular way:
   and collects everything a battle has to give (the win, all the gold in its
   buildings, the loot, every bonus goal) with another try or two;
 - no one shape of army is the answer everywhere: not a lone carry, not the widest
-  army, not the same army every time.
+  army, not the same army every time;
+- and now: fielding more units is worth it.
 
 **How it was measured.** `tests/balance.js`, the balance lab, plays whole campaigns
 with the usual simulated player, and at every card on the way (easy, medium, elite,
-each boss, the final challenge) hands the battle to a set of test armies, several
-tries each: the army of the last battle unchanged ("blind"); Auto's army and its
-next three plans; armies of nothing but Level 1, Level 2 or Level 3 units, bare and
-with every slot filled; armies with the magic or the steel left at home; and a lone
-Level 3 unit with everything on it and the Cleric. "Adjusted" is the best of six
-line-ups, chosen on half of the tries and scored on the other half. About 450,000
-battles went into the tuning; the tables below are the last run on the numbers as
-they now stand (20 campaigns, 4 tries per army per card).
+the boss's three, the final challenge) hands the battle to a set of test armies,
+several tries each: the army of the last battle unchanged ("blind"); Auto's army and
+its next plans; your two or three best-suited units with everything you own on them;
+armies of nothing but Level 1, Level 2 or Level 3 units, bare and with every slot
+filled; armies with the magic or the steel left at home; and a lone Level 3 unit with
+every slot filled with the best kit in the game, and the Cleric. "Adjusted" is the
+best of eight line-ups from your own roster, chosen on half of the tries and scored
+on the other half. About 450,000 battles went into the balance pass and 320,000 more
+into rounds; the tables below are the last run on the numbers as they now stand (32
+campaigns, 4 tries per army per card; 2 for the made-up armies).
 
-**What was wrong.** Auto's army won 88% of medium battles and 91% of bosses, and the
-army of the last battle, untouched, 80% and 89%. Any Level 3 unit with all its kit
-and a Cleric won 94 to 100% of easy, medium and boss battles, and most of them the
-final challenge too (84 to 100%), which no whole army ever won. The cause was the pace of a
-battle more than its numbers. Walking used up a side's whole turn, so the enemy
-spent half its turns marching and arrived one unit at a time; a two-unit army's carry
-took nearly every one of its side's turns; and nothing the enemy had could out-damage
-a healed Level 3 unit. Bigger enemy armies barely moved the result.
-
-**What changed.**
-
-- **The pace** (see Taking turns): marching is free, so a side walks its whole army
-  and still gets its one action; a unit that has acted catches its breath for its
-  side's next two turns, so an army of two acts two turns in three and an army of
-  three or more every turn; fatigue comes once a side turn.
-- **Enemy armies** are sized by the card and by who they are: an Easy army is under
-  half a Medium one, with no relics, no Shacklers and half the reinforcements; each
-  army has its own weight, fitted in the lab so a wolf pack is as hard as a coven;
-  weak enemy units hit harder (orcs, brutes, goblins, wargs, skeletons, trolls), and
-  spare Supply buys them levels, up to Level 3 from Act I.
-- **Enemy relics** by faction, and **who resists what**: greenskins turn spells
-  aside, the dead, plate and stone turn steel, spellcasters turn magic. The scout
-  report's first two lines say what gets through this army and what it hits with,
-  and Auto picks for both.
-- **Shacklers** on every elite, on about half the medium armies from Act II, on the
-  later bosses and the final challenge: the unit on the field that answers a carry.
-- **Levels and carries**: a level gives more (+30% and +60% HP, +20% and +40%
-  damage) and costs a dear unit more (60% and 150% of its own Supply, at least 2 and
-  5); an attack that strikes several at once feeds its lifesteal from its hardest
-  hit only; the Dragon hits a little softer.
-- **Missions**: each is worth its own share of the budget, so a commander to slay or
-  a den to raze is about as hard as a plain fight; outlasting the waves takes 19 or
-  25 turns; castle walls and towers hold no gold and a castle's gold is in its gate;
-  the "no losses" goal became "lose at most one unit"; a won battle's victory lap
-  tires your army by one more a turn, however late.
-- **Bosses** wear down after your second defeat by one, so no army is ever stuck
-  (see The road); the Lich brings a bigger guard.
-- **The final challenge** is three bosses at Level 2, two Shacklers and two relics.
-- **Auto**, tapped again, offers a different plan: the usual army with one, two or
-  three units fewer and the Supply spent on the rest.
+**What rounds changed, measured.** In rounds, with levels at their old prices,
+armies of Level 1 units won 59% of medium battles, Level 2 armies 41% and Level 3
+armies 22%: bodies were everything. At the new prices the three are within ten
+points of each other (see below). Auto, which filled the usual army size with Level
+1 units first, won 41% of Act III's medium battles where an army of Level 2 units
+won 62%; paying for the levels first brought it to 50% on the same cards. And each
+enemy army's weight was fitted again, so that the three acts are equally hard (Auto
+now wins 55%, 54% and 55% of their medium battles).
 
 **Where it landed.** Wins, and wins that collected everything:
 
-| Card | Army left as it was | Auto | Adjusted | Auto, before |
-| --- | --- | --- | --- | --- |
-| Easy | 91% / 59% | 96% / 68% | 96% / 75% | 90% / 51% |
-| Medium | 40% / 19% | 56% / 30% | 59% / 35% | 88% / 42% |
-| Elite | 27% / 12% | 40% / 20% | 42% / 20% | 52% / 19% |
-| Boss | 47% / 27% | 62% / 42% | 68% / 45% | 91% / 52% |
+| Card | Army left as it was | Auto | Adjusted |
+| --- | --- | --- | --- |
+| Easy | 95% / 82% | 97% / 86% | 98% / 89% |
+| Medium | 45% / 30% | 55% / 38% | 60% / 41% |
+| Elite | 28% / 15% | 37% / 21% | 43% / 24% |
+| Boss, Easy (one) | 99% / 91% | 98% / 93% | 99% / 94% |
+| Boss, Medium (two) | 41% / 28% | 50% / 38% | 63% / 45% |
+| Boss, Elite (three and two Shacklers) | 22% / 17% | 35% / 27% | 42% / 32% |
 
-Wins by the shape of the army (medium / elite / boss cards):
+Army size, with your own roster (medium / elite / boss Medium / boss Elite cards):
 
-| Army | Now | Before |
-| --- | --- | --- |
-| Level 1 units, as many as the Supply buys | 49% / 43% / 62% | 91% / 66% / 82% |
-| Level 2 units | 44% / 35% / 62% | 91% / 64% / 90% |
-| Level 3 units | 42% / 23% / 61% | 91% / 57% / 94% |
-| The same with every slot filled (half as many units) | 18 to 29% / 3 to 11% / 24 to 38% | 81 to 91% / 19 to 40% / 79 to 97% |
-| A Level 3 Dragon, Paladin or Frost Giant, all its kit, and the Cleric | 56 to 59% / 4 to 6% / 45 to 51% | 100% / 6 to 9% / 100% (Dragon, Frost Giant) |
-| A Level 3 Knight or Berserker, all its kit, and the Cleric | 18 to 32% / 1% / 8 to 24% | 95 to 98% / 2% / 94 to 100% |
+| Army | Wins |
+| --- | --- |
+| Auto's usual army (6 units with the Cleric, at Level 2) | 55% / 37% / 50% / 35% |
+| Auto's next plan: one unit fewer, the Supply spent on levels | 55% / 32% / 55% / 30% |
+| Two fewer (4 units, at Level 3) | 47% / 24% / 50% / 26% |
+| Three fewer | 40% / 16% / 41% / 19% |
+| Your three best-suited units and the Cleric, with everything you own on them | 30% / 13% / 21% / 5% |
+| Your two best-suited units and the Cleric, the same | 18% / 6% / 12% / 2% |
 
-So bodies win battles (the wide army is the best on an elite) and levels keep them
-alive: a Level 3 army meets "lose at most one unit" in 86% of its wins, a Level 1
-army in 22%. A legendary carry is about as good as a whole army on a medium card,
-but only where no Shackler stands: against one it wins one battle in five, where a
-whole army wins three. The scout report says which it is.
+Made-up armies, picked from the whole catalogue for the enemy at hand:
+
+| Army | Wins |
+| --- | --- |
+| Level 1 units, as many as the Supply buys (about 8) | 49% / 38% / 43% / 21% |
+| Level 2 units (about 6) | 57% / 42% / 54% / 38% |
+| Level 3 units (about 4) | 58% / 32% / 60% / 34% |
+| The same with every slot filled (half as many units) | 7 to 14% / 2 to 4% / 0 to 9% / 0 to 2% |
+| A Level 3 Dragon, Paladin or Frost Giant, the best kit in the game in every slot, and the Cleric | 18 to 37% / 2 to 6% / 12 to 32% / 6 to 22% |
+| A Level 3 Knight, the same | 48% / 2% / 28% / 0% |
+| A Level 3 Berserker, the same | 10% / 1% / 13% / 1% |
+
+So an army needs its numbers: Auto's usual army and the same with one unit traded
+for levels do equally well (the taller one better against bosses), and every unit
+taken out after that costs about eight points on a medium card. Levels are worth
+their price: a Level 2 or Level 3 army does as well as a bigger Level 1 one, and
+loses fewer (a Level 3 army meets "lose at most one unit" in 73% of its wins, a
+Level 1 army in 32%). And kit is the last thing to spend on, not the first: four
+units at Level 2 with everything you own on them win 30% of medium battles where
+four at Level 3 win 47%, and the made-up armies with every slot filled, at half the
+size, win next to nothing. Adjusting pays most against a boss, where the best of
+your line-ups wins 63% of the two-boss cards and Auto's usual army 50%.
 
 Whole campaigns played with nothing but Auto's plans (20 on each route, 12 tries
-allowed per battle) all reach the end: 1.2 tries per battle on the Easy cards, 1.6
-on Medium, 1.8 on Elite. The final challenge fell to the strongest armies (elite
-cards all the way) about one time in three, to armies that only took medium cards
-one time in thirty, and to a lone carry never.
+allowed per battle, a card easier after each loss) all reach the end: 1.05 tries per
+battle on the Easy cards, 1.5 on Medium, 1.9 on Elite. The final challenge fell to
+the strongest armies (elite cards all the way) one time in six with Auto and one in
+three to an army picked for it; 7 of those 20 campaigns beat it within their 12
+tries. Armies that only took medium cards never beat it, nor did a lone carry.
 
-**What it does not do.** An army left as it was still wins four medium battles in
-ten, not two: last battle's army is a sensible army, and nothing short of an
-arbitrary penalty separates it further from an adjusted one. What it seldom does is
-collect everything (one battle in five). And everything means the simulated player:
-it places units by rule and never plans a turn, so a person who thinks should do
-better than "adjusted" here, at collecting above all.
+**What it does not do.** One lone carry still has its day: a Level 3 Knight with the
+best kit in the game in every slot wins 78% of Act I's medium battles and 84% of its
+two-boss cards, against armies that hit with little but steel and field no Shackler
+(none of Act I's medium armies does), because its shield turns most of what they
+have. It wins 43% and 23% of the medium battles of Acts II and III, none of their
+bosses, and 2% of elites anywhere. No player has that kit in Act I: with what a
+campaign actually owns by then, the two best units and the Cleric win 24% of Act I's
+medium battles. An army left as it was still wins four medium battles in ten, not
+two: last battle's army is a sensible army, and nothing short of an arbitrary penalty
+separates it further from an adjusted one. And everything here is the simulated
+player: it places units by rule and never plans a turn, so a person who thinks should
+do better than "adjusted", at collecting above all.
 
 ## Experiment: the fun pass (branch `arena-gauntlet-fun-experiment`)
 
@@ -292,11 +325,11 @@ on a phone turned sideways, but portrait works too.
   weakening each one it passes, and leaves it standing past them. Two Drakes and two
   Level 3 Shacklers stand with them, all three bosses are Level 2, and the army
   carries two relics. It is a set army, the same whatever your Supply, and it is
-  meant to break most armies: in the simulations it fell about one time in four to
+  meant to break most armies: in the simulations it fell about one time in six to
   the strongest armies with Auto (ones that took the elite cards all the way and
-  their relics with them), one time in two to the best-suited of their line-ups,
-  next to never to armies that only ever took medium cards, and never to a lone
-  carry. Losing to it
+  their relics with them), one time in three to an army picked for it from the
+  whole catalogue, never to armies that only ever took medium cards, and never to
+  a lone carry. Losing to it
   costs you nothing. Lose, and Try
   again takes you straight back to the War Room with the same plan, as many times as
   you like. Whatever army last fought the Wyrm, won or lost, takes your campaign's
@@ -469,7 +502,7 @@ on a phone turned sideways, but portrait works too.
   shields up front against steel, magic resistance against spells. The scout report's
   first two lines say both. Tap Auto again and it offers another plan, not the same
   army reshuffled: one unit fewer than the usual army, then two, then three, the
-  best-suited ones, with the Supply saved spent on their levels and kit; after that
+  best-suited ones, with the Supply saved spent on their levels (Level 3 before any kit); after that
   the usual army with its priorities shuffled. If a bonus goal asks for a unit, Auto
   always fields it, and the War Room lists that unit first.
   Auto never fields a Lightning or Barrier Ward: a ward is only as good as the exact
@@ -974,9 +1007,11 @@ node tests/music.test.js         # the music's notation: every bar the right len
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
 node tests/deathknight.test.js   # the Eclipse Wyrm's Death Knight and its charge
-node tests/tempo.test.js         # the pace of a battle: free marching, rest after acting, fatigue once a turn
-node tests/sizing.test.js        # how hard the enemy is: tiers, enemy relics, who resists what, level costs, the final challenge
-node tests/fatigue.test.js       # fatigue on hundreds of real battles: each side its own timer, one unit a turn, 1, 2, 3
+node tests/rounds.test.js        # rounds: every unit one turn a round, by Speed; cooldowns that still move; newcomers next round
+node tests/tempo.test.js         # the older tempo, kept for comparison (rounds: false): free marching, rest after acting
+node tests/queue.test.js         # ...and its unit queue
+node tests/sizing.test.js        # how hard the enemy is: tiers, a boss's three cards, enemy relics, who resists what, level costs, the clock, the final challenge
+node tests/fatigue.test.js       # fatigue on hundreds of real battles: each side its own timer, every unit the round's number as its turn comes
 node tests/beats.test.js         # what the board shows as a unit's turn comes: one step a beat, in order, numbers never on each other
 node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
 node tests/fun.test.js           # the trigger passives and relics: crits, executions, explosions, bounces, the dead rising

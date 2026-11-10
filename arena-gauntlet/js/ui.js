@@ -23,9 +23,12 @@
   const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // Battle speed, 1x or 2x: the fast-forward button switches it (an old 4x setting plays
-  // at 2x). At 1x a battle plays at about half the animations' full pace, easy to follow.
+  // at 2x). In rounds every unit takes a turn each round, three or four times the unit
+  // turns of the older tempo, so 1x plays at four fifths of the animations' full pace
+  // (it was half) and the pause before each unit's turn is short (see sideMoves): a
+  // medium battle takes about two minutes to watch at 1x, one at 2x.
   const speedOf = () => (UI.prefs.speed > 1 || UI.prefs.fast ? 2 : 1);
-  const BASE_PACE = 0.512;
+  const BASE_PACE = 0.8;
   const paceOf = () => speedOf() * BASE_PACE;
   const pause = (ms) => sleep(ms / paceOf());
   const stars = (n) => (n > 1 ? '★'.repeat(n) : '');
@@ -2826,7 +2829,7 @@
       if (star && wr.dep.has(star.id)) why += ` ${star.name} the ${UNITS[star.type].name} is in for the bonus goal.`;
       // Another tap, another plan: fewer, better units after the usual army.
       const few = fewer;
-      const plan = few ? ` A smaller army this time: your ${few} best-suited units with the Cleric, the Supply saved spent on their levels and kit. Tap Auto again for another plan.` : wr.auto === 1 ? ' Tap Auto again for another plan.' : '';
+      const plan = few ? ` A smaller army this time: your ${few} best-suited units with the Cleric, the Supply saved spent on their levels, then their kit. Tap Auto again for another plan.` : wr.auto === 1 ? ' Tap Auto again for another plan.' : '';
       if (n('magic') + n('phys')) toast(`Auto: ${got}. ${why}${plan}`, 6000);
     };
     $('#wrClear').onclick = () => {
@@ -3455,7 +3458,10 @@
       B.acting = u.uid;
       renderBattle();
       b.ov = Object.assign({}, b.ov, { select: [u.x, u.y] });
-      await pause(380);
+      // A beat to see whose turn it is: a short one when the unit only moves or passes
+      // (its walk shows who it is), a longer one before it strikes.
+      const acts = plan && ['act', 'moveAct', 'actMove', 'loot', 'moveLoot'].includes(plan.kind);
+      await pause(acts ? 260 : 110);
       if (UI.battle !== B) return; // you left the battle meanwhile
     }
     AI.runPlan(s, plan, opts);
