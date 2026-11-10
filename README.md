@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds seventeen small AI-written bug fixes (patch files) for twelve public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds twenty-three small AI-written bug fixes (patch files) for fifteen public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -62,6 +62,24 @@ The shelf holds seventeen small AI-written bug fixes (patch files) for twelve pu
 
 17. [spatialmath-python: InterpSplineSE3 rejects negative start times and mishandles a zero time span](spare-token-bug-fixes/fix-17-spatialmath-287.md)
    Project: rai-opensource/spatialmath-python. Bug report number 287. License: MIT. Test included: yes. Patch file: [17-spatialmath-287.patch](spare-token-bug-fixes/fixes/17-spatialmath-287.patch)
+
+18. [huri-modules: test_install.sh reads $target before setting the variable (SC2318)](spare-token-bug-fixes/fix-18-huri-modules-14.md)
+   Project: Lucy-Robotics/huri-modules. Bug report number 14. License: GPL-3.0. Test included: no. Patch file: [18-huri-modules-14.patch](spare-token-bug-fixes/fixes/18-huri-modules-14.patch)
+
+19. [huri-modules: RemoteEmbedder ignores --no-verify-ssl and never verifies TLS](spare-token-bug-fixes/fix-19-huri-modules-12.md)
+   Project: Lucy-Robotics/huri-modules. Bug report number 12. License: GPL-3.0. Test included: yes. Patch file: [19-huri-modules-12.patch](spare-token-bug-fixes/fixes/19-huri-modules-12.patch)
+
+20. [agent-blueprint: lint rule unused-produced-field ignores fields read by policies.escalation](spare-token-bug-fixes/fix-20-agent-blueprint-84.md)
+   Project: ahmetatar/agent-blueprint. Bug report number 84. License: MIT. Test included: yes. Patch file: [20-agent-blueprint-84.patch](spare-token-bug-fixes/fixes/20-agent-blueprint-84.patch)
+
+21. [Gulliver: inspect quietly clamps --limit and --scan values outside the allowed range](spare-token-bug-fixes/fix-21-gulliver-97.md)
+   Project: laaielichter/Gulliver. Bug report number 97. License: MIT. Test included: yes. Patch file: [21-gulliver-97.patch](spare-token-bug-fixes/fixes/21-gulliver-97.patch)
+
+22. [microscopy-active-learning: pretrain trains zero steps when the dataset is smaller than the batch size](spare-token-bug-fixes/fix-22-microscopy-al-21.md)
+   Project: iamvisheshsrivastava/microscopy-active-learning. Bug report number 21. License: MIT. Test included: yes. Patch file: [22-microscopy-al-21.patch](spare-token-bug-fixes/fixes/22-microscopy-al-21.patch)
+
+23. [orm-lens: suggest-indexes proposes an index that already exists when Meta.indexes names the foreign key column](spare-token-bug-fixes/fix-23-orm-lens-225.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 225. License: MIT. Test included: yes. Patch file: [23-orm-lens-225.patch](spare-token-bug-fixes/fixes/23-orm-lens-225.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

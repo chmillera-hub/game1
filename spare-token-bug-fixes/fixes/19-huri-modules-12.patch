@@ -1,0 +1,104 @@
+diff --git a/meta/pyproject.toml b/meta/pyproject.toml
+index c652c5b..8ab197d 100644
+--- a/meta/pyproject.toml
++++ b/meta/pyproject.toml
+@@ -24,8 +24,8 @@ stt = ["huri-module-stt==0.1.0"]
+ tag = ["huri-module-tag==0.1.0"]
+ emo = ["huri-module-emo[model]==0.1.0"]
+ eag = ["huri-module-emo==0.1.0"]
+-rag = ["huri-module-rag[rag]==0.1.0"]
+-qag = ["huri-module-rag==0.1.0"]
++rag = ["huri-module-rag[rag]==0.1.1"]
++qag = ["huri-module-rag==0.1.1"]
+ tts = ["huri-module-tts[piper]==0.1.0"]
+ # The module only: CosyVoice itself is not pip-installable (install.sh adds it).
+ tts-cosyvoice = ["huri-module-tts[cosyvoice]==0.1.0"]
+diff --git a/packages/huri-module-rag/huri_rag/ingestion.py b/packages/huri-module-rag/huri_rag/ingestion.py
+index d02ceb2..0a9699a 100644
+--- a/packages/huri-module-rag/huri_rag/ingestion.py
++++ b/packages/huri-module-rag/huri_rag/ingestion.py
+@@ -33,10 +33,12 @@ class RemoteEmbedder:
+     the existing ``.tolist()`` / ``len(...)`` call sites keep working unchanged.
+     """
+ 
+-    def __init__(self, url: str, model_name: str):
++    def __init__(self, url: str, model_name: str, verify_ssl: bool = True):
+         self.url = url.rstrip("/")
+         self.model_name = model_name
+-        self._client = httpx.Client(timeout=60.0, verify=False)
++        # TLS is verified unless the caller opts out (``--no-verify-ssl``, for
++        # self-signed LAN certificates), the same as the Qdrant client.
++        self._client = httpx.Client(timeout=60.0, verify=verify_ssl)
+ 
+     def encode(self, text: str, normalize_embeddings: bool = True) -> np.ndarray:
+         resp = self._client.post(
+@@ -535,7 +537,9 @@ def main():
+                 f"Embedding remotely via {args.embedding_url} "
+                 f"(model={args.embedding_model})"
+             )
+-            model = RemoteEmbedder(args.embedding_url, args.embedding_model)
++            model = RemoteEmbedder(
++                args.embedding_url, args.embedding_model, verify_ssl=verify_ssl
++            )
+         else:
+             from sentence_transformers import SentenceTransformer
+ 
+diff --git a/packages/huri-module-rag/pyproject.toml b/packages/huri-module-rag/pyproject.toml
+index 61fa29c..06e834f 100644
+--- a/packages/huri-module-rag/pyproject.toml
++++ b/packages/huri-module-rag/pyproject.toml
+@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "huri-module-rag"
+-version = "0.1.0"
++version = "0.1.1"
+ description = "HuRI module: Retrieval-augmented answers with long-term memory (Qdrant + an OpenAI-compatible LLM), and the question aggregator"
+ readme = "README.md"
+ requires-python = ">=3.10"
+diff --git a/packages/huri-module-rag/tests/test_ingestion.py b/packages/huri-module-rag/tests/test_ingestion.py
+new file mode 100644
+index 0000000..f603545
+--- /dev/null
++++ b/packages/huri-module-rag/tests/test_ingestion.py
+@@ -0,0 +1,40 @@
++"""The ingestion tool's remote embedder: TLS verification follows the caller."""
++
++import pytest
++
++# huri_rag.ingestion needs the `rag` extra (httpx, qdrant-client, numpy).
++pytest.importorskip("httpx")
++pytest.importorskip("qdrant_client")
++pytest.importorskip("numpy")
++
++from huri_rag import ingestion  # noqa: E402
++
++
++class _RecordingClient:
++    """Stands in for httpx.Client: records how it was built, opens no socket."""
++
++    calls: list[dict] = []
++
++    def __init__(self, **kwargs):
++        type(self).calls.append(kwargs)
++
++
++@pytest.fixture
++def client_calls(monkeypatch):
++    _RecordingClient.calls = []
++    monkeypatch.setattr(ingestion.httpx, "Client", _RecordingClient)
++    return _RecordingClient.calls
++
++
++def test_remote_embedder_verifies_tls_by_default(client_calls):
++    ingestion.RemoteEmbedder("https://embeddings.example/", "some-model")
++    assert [call["verify"] for call in client_calls] == [True]
++
++
++@pytest.mark.parametrize("verify_ssl", [True, False])
++def test_remote_embedder_passes_verify_ssl_to_the_client(client_calls, verify_ssl):
++    embedder = ingestion.RemoteEmbedder(
++        "https://embeddings.example/", "some-model", verify_ssl=verify_ssl
++    )
++    assert [call["verify"] for call in client_calls] == [verify_ssl]
++    assert embedder.url == "https://embeddings.example"

@@ -1,0 +1,107 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 2b83cc0..2268b03 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project aims to follow Semanti
+ 
+ ## [Unreleased]
+ 
++### Fixed
++
++- `abp lint` no longer reports `unused-produced-field` for the `confidence`
++  state field when `policies.escalation` has both `on_low_confidence` and
++  `confidence_threshold` set: the generated runtime routes on that field.
++
+ ### Security
+ 
+ - **Breaking:** the deployed `/invoke` endpoint now authenticates callers and
+diff --git a/src/agent_blueprint/linting.py b/src/agent_blueprint/linting.py
+index d37a0a3..4a89438 100644
+--- a/src/agent_blueprint/linting.py
++++ b/src/agent_blueprint/linting.py
+@@ -474,6 +474,17 @@ def _lint_contract_usage(spec: BlueprintSpec) -> list[LintFinding]:
+         consumed_state_fields.update(spec.output.schema_def.keys())
+     for contract in spec.contracts.nodes.values():
+         consumed_state_fields.update(contract.requires)
++    # Low-confidence escalation reads the `confidence` state field at runtime:
++    # the generated `_apply_low_confidence_escalation` routes on it whenever the
++    # policy has both a target and a threshold. Mirror that condition exactly so
++    # the field the escalation guarantee depends on is not reported as unused.
++    escalation = spec.policies.escalation if spec.policies else None
++    if (
++        escalation is not None
++        and escalation.on_low_confidence is not None
++        and escalation.confidence_threshold is not None
++    ):
++        consumed_state_fields.add("confidence")
+ 
+     for node_id, contract in spec.contracts.nodes.items():
+         for field_name in contract.produces:
+@@ -482,7 +493,7 @@ def _lint_contract_usage(spec: BlueprintSpec) -> list[LintFinding]:
+                 severity=LintSeverity.warning,
+                 code="unused-produced-field",
+                 location=f"contracts.nodes.{node_id}.produces",
+-                message=f"Node '{node_id}' produces state field '{field_name}' but no route, output, or node requirement consumes it",
++                message=f"Node '{node_id}' produces state field '{field_name}' but no route, output, node requirement, or escalation policy consumes it",
+                 autofixable=False,
+             ))
+ 
+diff --git a/tests/test_linting_unused_produced_field.py b/tests/test_linting_unused_produced_field.py
+new file mode 100644
+index 0000000..3ea36e8
+--- /dev/null
++++ b/tests/test_linting_unused_produced_field.py
+@@ -0,0 +1,53 @@
++"""Tests for the unused-produced-field lint check and the escalation policy."""
++
++from agent_blueprint.ir.compiler import compile_blueprint
++from agent_blueprint.linting import lint_blueprint
++from agent_blueprint.models.blueprint import BlueprintSpec
++
++
++def lint(raw: dict):
++    spec = BlueprintSpec.model_validate(raw)
++    return [
++        f for f in lint_blueprint(spec, compile_blueprint(spec))
++        if f.code == "unused-produced-field"
++    ]
++
++
++def _raw(policies: dict | None = None) -> dict:
++    raw = {
++        "blueprint": {"name": "escalation-consumes-confidence"},
++        "state": {"fields": {
++            "messages": {"type": "list[message]", "reducer": "append"},
++            "confidence": {"type": "number", "nullable": True},
++        }},
++        "graph": {
++            "entry_point": "router",
++            "nodes": {"router": {"type": "function"}, "esc": {"type": "function"}},
++            "edges": [{"from": "router", "to": "END"}, {"from": "esc", "to": "END"}],
++        },
++        "contracts": {"nodes": {"router": {"produces": ["confidence"]}}},
++    }
++    if policies:
++        raw["policies"] = policies
++    return raw
++
++
++class TestUnusedProducedField:
++    def test_field_read_by_escalation_policy_is_consumed(self):
++        # The generated runtime routes on `confidence` when the policy has a
++        # target and a threshold, so the field is consumed.
++        findings = lint(_raw({
++            "escalation": {"on_low_confidence": "esc", "confidence_threshold": 0.7},
++        }))
++        assert findings == []
++
++    def test_warning_still_fires_without_an_escalation_policy(self):
++        findings = lint(_raw())
++        assert len(findings) == 1
++        assert "confidence" in findings[0].message
++        assert findings[0].location == "contracts.nodes.router.produces"
++
++    def test_warning_still_fires_when_the_policy_has_no_threshold(self):
++        # Without a threshold the runtime never reads `confidence`.
++        findings = lint(_raw({"escalation": {"on_low_confidence": "esc"}}))
++        assert len(findings) == 1

@@ -45,6 +45,7 @@ parse_spec in src/gulliver/checks.py now raises ValueError for a negative min_ro
 - The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
+- Fix 10 and fix 21 both add text at the same spots in CHANGELOG.md and tests/test_cli_and_mcp.py. Applying both needs a small manual merge.
 
 ## Search words
 

@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-17 small ready-made bug fixes (patch files) for 12 public open source projects. Free to take.
+23 small ready-made bug fixes (patch files) for 15 public open source projects. Free to take.
 
 An AI chatbot (Claude Fable 5.2) wrote every fix on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and FROWNINGdev/orm-lens and itsOmidKarami/kraft and laaielichter/Gulliver and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and laaielichter/Gulliver and Lucy-Robotics/huri-modules and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for fixes 7 and 9 and 10 and 13 and 14 and 16 and 17.
-- The chatbot read the full bug report text for eleven of the seventeen fixes (fixes 8 to 17 plus one earlier fix). The other fixes came from the bug report title plus the code. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for fixes 7 and 9 and 10 and 13 and 14 and 16 and 17 and 22. Fix 18 got a bash syntax check.
+- The chatbot read the full bug report text for seventeen of the twenty-three fixes (fixes 8 to 23 plus one earlier fix). The other fixes came from the bug report title plus the code. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on 9 November 2026. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -77,6 +77,24 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 17. [spatialmath-python: InterpSplineSE3 rejects negative start times and mishandles a zero time span](fix-17-spatialmath-287.md)
    Project: rai-opensource/spatialmath-python. Bug report number 287. License: MIT. Test included: yes. Patch file: [17-spatialmath-287.patch](fixes/17-spatialmath-287.patch)
+
+18. [huri-modules: test_install.sh reads $target before setting the variable (SC2318)](fix-18-huri-modules-14.md)
+   Project: Lucy-Robotics/huri-modules. Bug report number 14. License: GPL-3.0. Test included: no. Patch file: [18-huri-modules-14.patch](fixes/18-huri-modules-14.patch)
+
+19. [huri-modules: RemoteEmbedder ignores --no-verify-ssl and never verifies TLS](fix-19-huri-modules-12.md)
+   Project: Lucy-Robotics/huri-modules. Bug report number 12. License: GPL-3.0. Test included: yes. Patch file: [19-huri-modules-12.patch](fixes/19-huri-modules-12.patch)
+
+20. [agent-blueprint: lint rule unused-produced-field ignores fields read by policies.escalation](fix-20-agent-blueprint-84.md)
+   Project: ahmetatar/agent-blueprint. Bug report number 84. License: MIT. Test included: yes. Patch file: [20-agent-blueprint-84.patch](fixes/20-agent-blueprint-84.patch)
+
+21. [Gulliver: inspect quietly clamps --limit and --scan values outside the allowed range](fix-21-gulliver-97.md)
+   Project: laaielichter/Gulliver. Bug report number 97. License: MIT. Test included: yes. Patch file: [21-gulliver-97.patch](fixes/21-gulliver-97.patch)
+
+22. [microscopy-active-learning: pretrain trains zero steps when the dataset is smaller than the batch size](fix-22-microscopy-al-21.md)
+   Project: iamvisheshsrivastava/microscopy-active-learning. Bug report number 21. License: MIT. Test included: yes. Patch file: [22-microscopy-al-21.patch](fixes/22-microscopy-al-21.patch)
+
+23. [orm-lens: suggest-indexes proposes an index that already exists when Meta.indexes names the foreign key column](fix-23-orm-lens-225.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 225. License: MIT. Test included: yes. Patch file: [23-orm-lens-225.patch](fixes/23-orm-lens-225.patch)
 
 ## How to use a fix
 

@@ -1,0 +1,99 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 5e325bb..61ce753 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -34,6 +34,7 @@
+ - @abu-tahir-0 for five fixes on their first day: strict `check --range` bounds (#85), one row-count history per connection (#86), whole-number and non-boolean budget limits (#84), refusing unknown `gulliver.toml` sections (#83) and GV013 for leading `_` (#82).
+ 
+ ### Fixed
++- `inspect --limit N` refuses a value outside 1-200 and `inspect --sensitive --scan N` refuses a value outside 0-1000 with `status: error` and a `next_step` (exit 1), the ranges the MCP tool already enforces, instead of quietly clamping them. `--limit` is still ignored when a table is named and `--scan 0` still means no value scan (#97).
+ - `spend --days N`, `calibration --days N` and `top --limit N` refuse a value below 1 with `status: error` and a `next_step`, and exit 1 instead of quietly reporting an empty or off-by-one window. `top --analyze` refuses a negative value too, while `--analyze 0` still lists the groups without analysing them (#92).
+ - `check --range` refuses `nan`, infinite and non-numeric bounds and an inverted `min > max` before any query runs, naming the column. Before, `nan` / `inf` reached the engine as column names and an inverted range silently failed every row (#74, #85).
+ - `check --max-change` keys the row-count history on the resolved connection name, so a check with and without `-c default` shares one history. Histories saved under the old key are still read and migrated (#75, #86).
+diff --git a/src/gulliver/core.py b/src/gulliver/core.py
+index 116fb92..db4c790 100644
+--- a/src/gulliver/core.py
++++ b/src/gulliver/core.py
+@@ -112,8 +112,25 @@ def status(settings: Settings) -> dict[str, Any]:
+ 
+ 
+ # -- inspect ---------------------------------------------------------------------------
++def _whole_number_in(value: Any, low: int, high: int) -> bool:
++    return isinstance(value, int) and not isinstance(value, bool) and low <= value <= high
++
++
++def inspect_limit_error(table: str | None, limit: Any) -> dict[str, Any] | None:
++    """The error for an `inspect` --limit outside 1-200 (the range MCP enforces), or None.
++
++    The limit only applies to the table listing, so it is not checked when a table is named."""
++    if table or _whole_number_in(limit, 1, 200):
++        return None
++    return _error("--limit must be a whole number from 1 to 200.",
++                  "Use a limit in that range, for example --limit 25.")
++
++
+ def inspect(settings: Settings, connection: str | None = None, table: str | None = None,
+             limit: int = 25) -> dict[str, Any]:
++    refused = inspect_limit_error(table, limit)
++    if refused:
++        return refused
+     try:
+         with _engine(settings, connection) as (conn, engine):
+             if table:
+diff --git a/src/gulliver/guard.py b/src/gulliver/guard.py
+index 40fd334..6b94a6a 100644
+--- a/src/gulliver/guard.py
++++ b/src/gulliver/guard.py
+@@ -1170,10 +1170,17 @@ def inspect_sensitive(settings: Settings, connection: str | None = None, table:
+                       limit: int = 25, scan_rows: int = 0) -> dict[str, Any]:
+     """Sensitive columns per table: by name and cached value tags (free), or by sampling text values
+     (scan_rows > 0, one budget-gated LIMIT query per table; values never leave Gulliver, only tags)."""
+-    from .core import _engine, _error
++    from .core import _engine, _error, _whole_number_in, inspect_limit_error
+     from .engines import EngineError, dialect_for
+     from .features import Blocked, _gated_run
+ 
++    refused = inspect_limit_error(table, limit)
++    if refused:
++        return refused
++    if not _whole_number_in(scan_rows, 0, 1000):
++        return _error("--scan must be a whole number from 0 to 1000.",
++                      "Use a row count in that range, for example --scan 200, or 0 for no value scan.")
++
+     try:
+         with _engine(settings, connection) as (conn, engine):
+             if table:
+diff --git a/tests/test_cli_and_mcp.py b/tests/test_cli_and_mcp.py
+index 7e1d67f..1900fdc 100644
+--- a/tests/test_cli_and_mcp.py
++++ b/tests/test_cli_and_mcp.py
+@@ -97,3 +97,29 @@ def test_cli_translate_output_file(tmp_path, capsys):
+     data = json.loads(capsys.readouterr().out)
+     assert data["warnings"]  # still printed
+     assert out.read_text(encoding="utf-8") == data["sql"]
++
++
++def test_inspect_refuses_limit_and_scan_outside_the_mcp_range(settings, demo_db, capsys):
++    from gulliver import core
++    from gulliver.guard import inspect_sensitive
++
++    for limit in (0, -1, 201, 500):
++        res = core.inspect(settings, limit=limit)
++        assert res["status"] == "error" and "--limit" in res["error"] and res["next_step"], limit
++        res = inspect_sensitive(settings, limit=limit)
++        assert res["status"] == "error" and "--limit" in res["error"], limit
++        assert main(["--dsn", demo_db, "inspect", "--limit", str(limit), "--json"]) == 1
++        assert "--limit" in json.loads(capsys.readouterr().out)["error"]
++    for scan in (-5, 1001, 5000):
++        res = inspect_sensitive(settings, scan_rows=scan)
++        assert res["status"] == "error" and "--scan" in res["error"] and res["next_step"], scan
++        assert main(["--dsn", demo_db, "inspect", "--sensitive", f"--scan={scan}", "--json"]) == 1
++        assert "--scan" in json.loads(capsys.readouterr().out)["error"]
++
++    # The edges of the range stay valid, and --limit is still ignored when a table is named.
++    for limit in (1, 200):
++        assert core.inspect(settings, limit=limit)["status"] == "ok"
++    assert core.inspect(settings, table="events", limit=0)["status"] == "ok"
++    assert inspect_sensitive(settings, scan_rows=0)["status"] == "ok"
++    assert main(["--dsn", demo_db, "inspect", "events", "--limit", "500", "--json"]) == 0
++    assert json.loads(capsys.readouterr().out)["status"] == "ok"
