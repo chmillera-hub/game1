@@ -1,6 +1,7 @@
-// The pace of a battle: free marching and rest after acting, the two rules that sit on the
-// unit rotation (tests/queue.test.js), fatigue as the game plays it (once a side turn), and
-// what an attack on several at once feeds its wielder.
+// The older tempo, kept for comparison in the balance lab (the game itself plays in rounds:
+// tests/rounds.test.js). In it the sides alternate, and two rules sit on the unit rotation
+// (tests/queue.test.js): free marching and rest after acting, with fatigue once a side
+// turn. Also here: what an attack on several at once feeds its wielder.
 // Run: node tests/tempo.test.js
 const assert = require('assert');
 const AG = require('./load')(['rng.js', 'data.js', 'engine.js', 'ai.js']);
@@ -18,7 +19,7 @@ function test(name, fn) {
 }
 
 function battle(units, opts = {}) {
-  return E.createBattle(Object.assign({ w: 9, h: 9, terrain: new Array(81).fill(0), units, relics: { P: [], E: [] }, seed: 7, queue: true }, opts));
+  return E.createBattle(Object.assign({ w: 9, h: 9, terrain: new Array(81).fill(0), units, relics: { P: [], E: [] }, seed: 7, queue: true, rounds: false, rest: E.TEMPO.rest, march: E.TEMPO.march }, opts));
 }
 
 // The enemy's units stay where they are, one after the other, until you are up.
@@ -49,8 +50,11 @@ function strike(s, target) {
 
 const drain = (s) => s.events.splice(0);
 
-test('the game plays with both rules on: rest 2, marching free; a battle can switch them off', () => {
-  assert.deepStrictEqual(E.TEMPO, { rest: 2, march: true });
+test('the older tempo has both rules on: rest 2, marching free; a battle can switch them off', () => {
+  assert.deepStrictEqual(E.TEMPO, { rounds: true, rest: 2, march: true });
+  // In rounds, how the game plays, neither applies.
+  const r = battle([{ type: 'scout', team: 'P', x: 4, y: 8 }, { type: 'golem', team: 'E', x: 4, y: 0 }], { rounds: true });
+  assert.ok(r.rounds && r.rest === 0 && r.march === false);
   const s = battle([{ type: 'scout', team: 'P', x: 4, y: 8 }, { type: 'golem', team: 'E', x: 4, y: 0 }]);
   assert.strictEqual(s.rest, 2);
   assert.strictEqual(s.march, true);

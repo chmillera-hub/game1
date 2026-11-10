@@ -32,11 +32,12 @@ const runAt = (seed, act, xp) => {
 const card = (run, tier, id) => R.genEncounter(run, { id: id || 'n', row: 2, kind: tier === 'elite' ? 'elite' : 'battle', tier, mult: R.TIERS[tier].mult }, null, []);
 
 test('a level costs a flat price for ordinary units, a share of its own cost for a dear one', () => {
-  assert.deepStrictEqual([D.levelCost('scout', 2), D.levelCost('scout', 3)], [2, 5]);
-  assert.deepStrictEqual([D.levelCost('knight', 2), D.levelCost('knight', 3)], [2, 5]);
-  assert.deepStrictEqual([D.levelCost('witch', 2), D.levelCost('witch', 3)], [2, 6]);
-  assert.deepStrictEqual([D.levelCost('frostgiant', 2), D.levelCost('frostgiant', 3)], [4, 11]);
-  assert.deepStrictEqual([D.levelCost('dragon', 2), D.levelCost('dragon', 3)], [5, 12]);
+  // A level buys no extra turn in the round, so it costs well under another body.
+  assert.deepStrictEqual([D.levelCost('scout', 2), D.levelCost('scout', 3)], [1, 3]);
+  assert.deepStrictEqual([D.levelCost('knight', 2), D.levelCost('knight', 3)], [1, 3]);
+  assert.deepStrictEqual([D.levelCost('witch', 2), D.levelCost('witch', 3)], [1, 3]);
+  assert.deepStrictEqual([D.levelCost('frostgiant', 2), D.levelCost('frostgiant', 3)], [2, 6]);
+  assert.deepStrictEqual([D.levelCost('dragon', 2), D.levelCost('dragon', 3)], [2, 6]);
   assert.strictEqual(D.levelCost('knight', 1), 0);
   // The War Room charges it, and so does an enemy army's budget.
   const run = runAt(3, 2);
@@ -45,8 +46,8 @@ test('a level costs a flat price for ordinary units, a share of its own cost for
   const base = R.unitCost(run, dr);
   dr.load.lv = 3;
   R.normalizeLoad(run, dr);
-  assert.ok(R.unitCost(run, dr) - base >= 12, `a Level 3 Dragon costs at least 12 more (${R.unitCost(run, dr) - base})`);
-  assert.strictEqual(R.specCost({ type: 'dragon', level: 3 }) - R.specCost({ type: 'dragon', level: 1 }), 12);
+  assert.ok(R.unitCost(run, dr) - base >= 6, `a Level 3 Dragon costs at least 6 more (${R.unitCost(run, dr) - base})`);
+  assert.strictEqual(R.specCost({ type: 'dragon', level: 3 }) - R.specCost({ type: 'dragon', level: 1 }), 6);
 });
 
 test('a level is worth more than it was: +30% and +60% HP, +20% and +40% damage', () => {
@@ -172,12 +173,13 @@ test('the tiers: an Easy card is under half a medium army; an elite one fields S
   assert.ok(m.budget > 0.7 * R.supplyFor(run), `${m.budget} against your ${R.supplyFor(run)}`);
 });
 
-test('the final challenge is a set army: the Wyrm, the Death Knight and the Lich, two Shacklers and two relics', () => {
+test('the final challenge is a set army: the Wyrm, the Death Knight, the Lich and two Drakes, two Shacklers and two relics', () => {
   for (const xp of [150, 300, 420]) {
     const run = runAt(7, 3, xp);
     const enc = R.genEncounter(run, { id: 'mega', row: 7, kind: 'boss', tier: 'mega', mega: true }, null, []);
     const f = fighters(enc);
-    assert.deepStrictEqual(f.map((u) => u.type).sort(), ['death_knight', 'lich', 'shackler', 'shackler', 'void_wyrm'], `whatever your Supply (${R.supplyFor(run)})`);
+    assert.deepStrictEqual(f.map((u) => u.type).sort(), ['death_knight', 'drake', 'drake', 'lich', 'shackler', 'shackler', 'void_wyrm'], `whatever your Supply (${R.supplyFor(run)})`);
+    assert.strictEqual(R.BAL.megaUnits, 5);
     assert.strictEqual(R.BAL.megaLevel, 2, 'its three bosses at Level 2');
     for (const u of f) if (D.UNITS[u.type].boss) assert.strictEqual(u.level || 1, R.BAL.megaLevel);
     assert.strictEqual(enc.relics.length, 2);
@@ -187,7 +189,9 @@ test('the final challenge is a set army: the Wyrm, the Death Knight and the Lich
 });
 
 test('outlasting them takes about a battle\'s length, and their commander is a veteran', () => {
-  assert.deepStrictEqual(R.BAL.surviveTurns.slice(1), [19, 25, 25]);
+  // Counted in rounds: every unit of both armies has a turn in each.
+  assert.deepStrictEqual(R.BAL.surviveTurns.slice(1), [6, 7, 7]);
+  assert.deepStrictEqual(R.BAL.surviveWaves.slice(1), [[2, 3, 4], [1, 3, 4, 5], [1, 3, 4, 5]]);
   let survive = 0;
   let commander = 0;
   for (let seed = 1; seed <= 60 && (survive < 3 || commander < 3); seed++) {
@@ -299,18 +303,64 @@ test('a castle\'s gold is the gate\'s to give: none in the guardhouses behind th
   assert.ok(seen >= 3);
 });
 
-test('an elite commander brings no bigger army: a monster with half again its HP is no shortcut', () => {
-  assert.ok(R.BAL.share.commander.elite < R.BAL.share.commander.normal);
-  assert.ok(R.BAL.share.commander.elite < 1 && R.BAL.share.commander.normal > 1);
+test('a commander to slay is no shortcut: a veteran with half again its HP, and no bigger army around it', () => {
+  // (When each side had one action a turn, killing one unit to win was worth a bigger
+  // army around it. In rounds its whole guard acts every round.)
+  assert.ok(R.BAL.share.commander.normal <= 1 && R.BAL.share.commander.elite <= 1);
+  // What each mission is worth, fitted in the lab: buildings to break or reinforcements
+  // on the way mean a smaller army up front.
+  assert.ok(R.BAL.share.raze < R.BAL.share.totems && R.BAL.share.totems < R.BAL.share.rout);
+  assert.ok(R.BAL.share.banner > R.BAL.share.rout);
 });
 
-test('a boss wears down: nothing for two defeats, then 6% of its fighters\' HP a defeat, to 30%', () => {
+test('an act\'s boss comes as three cards: one, two or three of it, the last with Shacklers', () => {
+  assert.deepStrictEqual(R.BOSS_TIERS, ['bossEasy', 'boss', 'bossElite']);
+  assert.deepStrictEqual(R.BOSS_TIERS.map((t) => [R.TIERS[t].name, R.TIERS[t].bosses, !!R.TIERS[t].bossRelic, !!R.TIERS[t].relic]), [['Easy', 1, false, false], ['Medium', 2, true, false], ['Elite', 3, true, true]]);
+  for (const act of [1, 2, 3]) {
+    for (let seed = 1; seed <= 6; seed++) {
+      const run = runAt(seed, act);
+      // To the boss of this act: the round deals its three cards.
+      run.step = run.plan.findIndex((st) => st.kind === 'boss') - 1;
+      run.pending = { type: 'x' };
+      R.completeNode(run);
+      assert.deepStrictEqual(run.offer.map((o) => o.tier), R.BOSS_TIERS, `act ${act}: three cards`);
+      const boss = R.bossOf(run);
+      const count = (o, t) => o.enc.units.filter((u) => u.type === t).length;
+      assert.deepStrictEqual(run.offer.map((o) => count(o, boss)), [1, 2, 3], `act ${act}: one, two and three ${boss}`);
+      const [easy, medium, elite] = run.offer;
+      assert.strictEqual(count(easy, 'shackler'), 0, 'none on the Easy card');
+      assert.strictEqual(count(elite, 'shackler'), 2, 'the Elite card: two Shacklers');
+      // Three bosses are an army: nothing else but their Shacklers (and what guards loot).
+      assert.ok(fighters(elite.enc).every((u) => u.type === boss || u.type === 'shackler' || u.post), `act ${act}: ${fighters(elite.enc).map((u) => u.type)}`);
+      assert.ok(R.encSupply(easy.enc).army < R.encSupply(medium.enc).army && R.encSupply(medium.enc).army < R.encSupply(elite.enc).army);
+      for (const o of run.offer) assert.strictEqual(o.enc.objective, 'boss');
+      assert.ok(/Slay both bosses/.test(R.objectiveInfo(run, medium.enc).primary) && /all 3 bosses/.test(R.objectiveInfo(run, elite.enc).primary) && /Slay the boss\./.test(R.objectiveInfo(run, easy.enc).primary));
+      // What they pay: less and no boss relic on Easy; a boss relic on Medium (Acts I and
+      // II); the Elite adds a relic of its own.
+      const pay = run.offer.map((o) => R.challengeReward(run, o));
+      assert.ok(pay[0].gold < pay[1].gold && pay[1].gold < pay[2].gold);
+      assert.deepStrictEqual(pay.map((p) => !!p.bossRelic), act < 3 ? [false, true, true] : [false, false, false]);
+      assert.ok(!pay[0].relic && !pay[1].relic && pay[2].relic);
+      // Any of the three ends the act.
+      R.chooseChallenge(run, 0);
+      assert.strictEqual(run.pending.tier, 'bossEasy');
+      R.backToChoice(run);
+      assert.strictEqual(run.offer.length, 3, 'a defeat (or a change of mind) brings the three back');
+    }
+  }
+});
+
+test('a boss\'s Easy card wears down: nothing for two defeats, then 6% of its fighters\' HP a defeat, to 30%', () => {
   const run = runAt(4, 2);
-  const boss = { enc: { kind: 'boss', units: [] }, tier: 'boss' };
-  const at = (n, o) => R.wornDown(run, Object.assign({}, o || boss, { attempts: n }));
+  const easy = { enc: { kind: 'boss', units: [] }, tier: 'bossEasy' };
+  const at = (n, o) => R.wornDown(run, Object.assign({}, o || easy, { attempts: n }));
   assert.deepStrictEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 20].map((n) => at(n)), [0, 0, 0, 0.06, 0.12, 0.18, 0.24, 0.3, 0.3, 0.3]);
-  // Only where there is no easier card: never a round's cards, never the final challenge.
+  // Only where there is no easier card: not a boss's other cards, never a round's cards,
+  // never the final challenge.
+  assert.strictEqual(at(9, { enc: { kind: 'boss' }, tier: 'boss' }), 0);
+  assert.strictEqual(at(9, { enc: { kind: 'boss' }, tier: 'bossElite' }), 0);
   assert.strictEqual(at(9, { enc: { kind: 'battle' }, tier: 'medium' }), 0);
+  assert.strictEqual(at(9, { enc: { kind: 'battle' }, tier: 'easy' }), 0);
   assert.strictEqual(at(9, { enc: { kind: 'elite' }, tier: 'elite' }), 0);
   assert.strictEqual(at(9, { enc: { kind: 'boss' }, tier: 'mega' }), 0);
   // A battle an event started is retried as it is, so it wears down too.
@@ -318,8 +368,8 @@ test('a boss wears down: nothing for two defeats, then 6% of its fighters\' HP a
   // In the battle: its fighters start hurt, its buildings and wreckage do not.
   const r1 = runAt(6, 1);
   r1.offer = null;
-  const enc = R.genEncounter(r1, { id: 'b', row: 7, kind: 'boss', tier: 'boss' }, null, []);
-  r1.pending = { type: 'battle', nodeId: 'b', node: { id: 'b' }, tier: 'boss', enc, attempt: 5 };
+  const enc = R.genEncounter(r1, { id: 'b', row: 7, kind: 'boss', tier: 'bossEasy', bosses: 1, mult: R.TIERS.bossEasy.mult }, null, []);
+  r1.pending = { type: 'battle', nodeId: 'b', node: { id: 'b' }, tier: 'bossEasy', enc, attempt: 5 };
   const dep = R.autoDeploy(r1, 0);
   const s = E.createBattle(R.battleConfig(r1, dep));
   const foes = s.units.filter((u) => u.team === 'E');
@@ -332,6 +382,37 @@ test('a boss wears down: nothing for two defeats, then 6% of its fighters\' HP a
   // Fresh again without the defeats.
   r1.pending.attempt = 2;
   assert.ok(E.createBattle(R.battleConfig(r1, dep)).units.every((u) => u.hp === u.maxHp));
+});
+
+test('the clock counts rounds: fatigue for everyone, the shrine, reinforcements, a fast win', () => {
+  assert.strictEqual(R.OVERTIME, R.BAL.overtime);
+  assert.ok(R.BAL.overtime >= 8 && R.BAL.overtime <= 20);
+  assert.strictEqual(R.BAL.holdNeed, 2);
+  let seen = 0;
+  for (let seed = 1; seed <= 60 && seen < 6; seed++) {
+    for (const act of [1, 2, 3]) {
+      const run = runAt(seed, act);
+      const enc = card(run, 'medium', 'c' + seed);
+      assert.strictEqual(enc.tm, 3, 'timed for rounds');
+      const cfg = (() => {
+        run.offer = null;
+        run.pending = { type: 'battle', nodeId: 'n', node: { id: 'n' }, tier: 'medium', enc, attempt: 0 };
+        return R.battleConfig(run, R.autoDeploy(run, 0));
+      })();
+      assert.strictEqual(cfg.overtime, R.BAL.overtime);
+      assert.ok(cfg.queue && E.createBattle(cfg).rounds, 'the game plays in rounds');
+      if (enc.hold) assert.strictEqual(enc.hold.need, 2);
+      const sw = enc.bonus.find((b) => b.type === 'swift');
+      if (sw) assert.ok(sw.turns >= 6 && sw.turns <= R.BAL.overtime + 6, `win within ${sw.turns} rounds`);
+      if (enc.primary === 'raze') {
+        seen++;
+        const first = Math.min(...enc.waves.map((w) => w.turn));
+        assert.strictEqual(first, R.BAL.spawn.raze.first);
+        assert.ok(enc.waves.every((w) => (w.turn - first) % R.BAL.spawn.raze.every === 0));
+      }
+    }
+  }
+  assert.ok(seen >= 3);
 });
 
 console.log(`sizing: ${passed} tests passed`);

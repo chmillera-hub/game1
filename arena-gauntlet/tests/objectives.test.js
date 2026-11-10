@@ -55,8 +55,13 @@ test('the wagon nearest its way out is hit first', () => {
     ],
     { objective: 'destroy', cartExit: 0 }
   );
-  E.pass(s); // the wagons roll one tile toward the left edge
-  assert.ok(s.units[1].alive && s.units[1].x < s.units[2].x);
+  // The Archer, the fastest there, is up first (the wagons roll as each round closes).
+  assert.ok(s.side === 'P' && s.units[1].alive && s.units[1].x < s.units[2].x);
+  assert.strictEqual(firstTarget(s), s.units[1]);
+  // A round on, the wagons have rolled toward the left edge, and the same one comes first.
+  for (let i = 0; i < 6 && s.turn === 1; i++) E.pass(s);
+  toPlayer(s);
+  assert.ok(s.turn === 2 && s.units[1].x < 3, 'the wagons rolled as the round closed');
   assert.strictEqual(firstTarget(s), s.units[1]);
 });
 

@@ -40,7 +40,7 @@ test('goal results name what was met and what was missed', () => {
   const { run, s, dep } = wonBattle();
   const goals = R.goalResults(run, s, dep);
   assert.deepStrictEqual(goals.map((g) => g.done), [true, false]);
-  assert.ok(/Win within 1 turns/.test(goals[1].text) && goals[1].reward);
+  assert.ok(/Win within 1 rounds/.test(goals[1].text) && goals[1].reward);
   R.finishBattle(run, s, dep);
   assert.deepStrictEqual(run.pending.objectives.map((o) => o.done), [true, false], 'the rewards agree');
 });

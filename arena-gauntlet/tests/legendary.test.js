@@ -127,17 +127,23 @@ test('each new legendary uses its big act in battle, and its cooldown is long', 
     const s = E.createBattle({ w: 9, h: 9, terrain: new Array(81).fill(0), units, seed: 7, objective: 'all', loot: [], goals: [], waves: [], queue: true, overtime: 30, turnLimit: 40, relics: { P: [], E: [] } });
     const me = s.units[0];
     let acts = 0;
-    let rest = 0;
+    let turns = 0;
+    let all = 0;
     for (let g = 0; g < 4000 && !s.over; g++) {
       AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0.3 });
       for (const e of s.events) {
+        if (e.t === 'action' && e.uid === me.uid) all++;
         if (e.t === 'action' && e.uid === me.uid && !e.ai) acts++;
-        if (e.t === 'sitout' && e.uid === me.uid && e.why !== 'passive') rest++;
+        if (e.t === 'turn' && e.uid === me.uid) turns++;
       }
       s.events.length = 0;
     }
     assert.ok(acts >= 1, `${t} used ${D.UNITS[t].act.name}`);
-    assert.ok(rest >= 2 * Math.min(acts, 2) || !me.alive, `${t} rested between them (${acts} acts, ${rest} turns resting)`);
+    // Its turn comes every round, but after acting it cools down for `rec` of them (it may
+    // move meanwhile): never more than one action in rec + 1 turns.
+    const rec = D.UNITS[t].rec;
+    assert.ok(rec >= 3);
+    assert.ok(turns + 1 >= 1 + (all - 1) * (rec + 1) || !me.alive, `${t} cooled down between its actions (${all} actions in ${turns + 1} turns)`);
   }
 });
 

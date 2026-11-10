@@ -1794,7 +1794,7 @@
           // A unit passing its turn (cooling down, or holding its ground) plays on its own,
           // with whatever its turn brought (its fatigue hit, poison): the next unit's turn
           // starts only after it, so a run of passes reads one unit at a time.
-          if (e.t === 'sitout' || (e.t === 'pass' && e.uid && !e.auto)) break;
+          if (e.t === 'sitout' || (e.t === 'pass' && e.uid && !e.auto && !e.cool)) break;
         }
         await this.playBeats(group, state);
       }
@@ -2411,8 +2411,10 @@
             if (e.wait > 0) v.wait = e.wait - 1;
             break;
           case 'pass':
-            // The unit whose turn it is could act, and holds its ground instead.
-            if (!v || e.auto) break;
+            // The unit whose turn it is could act, and holds its ground instead. (One that
+            // is cooling down and stays put only counts its cooldown off.)
+            if (v && e.cool && e.wait > 0) v.wait = e.wait - 1;
+            if (!v || e.auto || e.cool) break;
             any = true;
             this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: 'HOLDS GROUND' });
             break;
@@ -2998,7 +3000,7 @@
   const BEAT_MIN = 420;
   // The word after a floating number (-16 FATIGUE), as a share of the number's size.
   const TAG_SIZE = 0.72;
-  const beatShows = (e) => !!e.uid && BEAT_EVENTS.has(e.t) && !(e.t === 'sitout' && (e.why === 'passive' || e.why === 'stay')) && !(e.t === 'pass' && e.auto);
+  const beatShows = (e) => !!e.uid && BEAT_EVENTS.has(e.t) && !(e.t === 'sitout' && (e.why === 'passive' || e.why === 'stay')) && !(e.t === 'pass' && (e.auto || e.cool));
 
   // Small static portrait of a unit for cards and lists.
   function portrait(canvas, type, team, opts) {

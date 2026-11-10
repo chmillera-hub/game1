@@ -574,7 +574,7 @@
     thornwall: 'Its shrubs are tougher and prick melee attackers.',
     ironwood: 'Its shrubs have 40% physical and magic resistance.',
     ridedown: 'After moving 3 or more tiles, its basic attack shoves the target back 1 tile.',
-    stormcaller: 'At the start of each of its turns, lightning strikes the nearest enemy within 3 tiles for 5.',
+    stormcaller: 'At the start of each round, lightning strikes the nearest enemy within 3 tiles for 5.',
     midas: 'Every enemy it slays earns 6 gold.',
     thunderstep: 'Enemies adjacent to where it stops moving take 6 magic damage.',
     volatile: 'Explodes when destroyed, hurting everything adjacent to it.',
@@ -582,7 +582,7 @@
     big: 'Huge: cannot be shoved or dragged.',
     martyr: 'When it falls, heals allies within 2 tiles for 20.',
     structure: 'A structure: you can win without destroying it.',
-    spawner: 'Sends reinforcements every few turns until it is destroyed.',
+    spawner: 'Sends reinforcements every few rounds until it is destroyed.',
   };
 
   const MATERIAL_TEXT = {
@@ -607,7 +607,7 @@
       if (waves.length) {
         const n = waves.reduce((t, w) => t + w.units.length, 0);
         const next = waves[0];
-        out.push(`${n} more on the way. Next: ${next.units.map((x) => UNITS[x.type].name).join(', ')} at the end of turn ${next.turn}.`);
+        out.push(`${n} more on the way. Next: ${next.units.map((x) => UNITS[x.type].name).join(', ')} as round ${next.turn} ends.`);
       } else out.push('It has nobody left to send.');
     }
     if (P.guard) out.push(`Adjacent allies take ${pct(P.guard)} less damage.`);
@@ -679,8 +679,8 @@
       const acting = B && B.s.act && B.s.act.uid === u.uid;
       chips.push(...statusChips(u));
       if (acting) chips.push('<span class="chip warn">Acting</span>');
-      else if (u.wait > 0) chips.push(`<span class="chip">${ic('hourglass')} Cooldown ${u.wait}</span>`);
-      else if (!u.nonCombat && u.para === 0 && u.team === (B && B.s.side)) chips.push('<span class="chip good">Ready</span>');
+      else if (u.wait > 0) chips.push(`<span class="chip"${B && B.s.rounds ? ` title="Cooling down: on its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'} it can move, not act"` : ''}>${ic('hourglass')} Cooldown ${u.wait}</span>`);
+      else if (B && B.s.rounds ? B.s.due === u.uid : !u.nonCombat && u.para === 0 && u.team === (B && B.s.side)) chips.push(`<span class="chip good">${B && B.s.rounds ? 'Its turn' : 'Ready'}</span>`);
     }
     // The enchantment: tap it to read what it does.
     if (u.enchant && ENCHANTS[u.enchant]) chips.push(`<button type="button" class="chip magic tap" data-ench="${u.enchant}" title="${esc(ENCHANTS[u.enchant].desc)}">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</button>`);
@@ -1396,7 +1396,9 @@
     const sub = mega
       ? 'The campaign is already won. This fight is not meant to be won: it is for a super victory.'
       : st.kind === 'boss'
-        ? `Defeat ${esc(UNITS[R.bossOf(run)].name)} to ${run.act >= 3 ? 'win the campaign' : 'end the act'}.`
+        ? offer.length > 1
+          ? `Defeat ${esc(UNITS[R.bossOf(run)].name)} to ${run.act >= 3 ? 'win the campaign' : 'end the act'}: one of them on the Easy card, two on the Medium, three with two Shacklers on the Elite. Easy pays less and no boss relic; Elite adds a relic. Lose, and you come back here to choose again.`
+          : `Defeat ${esc(UNITS[R.bossOf(run)].name)} to ${run.act >= 3 ? 'win the campaign' : 'end the act'}.`
         : `Round ${st.round + 1} of ${R.FIGHTS}. Easy pays less, elite pays more and drops a relic (now and then an easy or medium one does too). What each pays is set now: losing or reloading never changes it. Lose, and you come back here to choose again.`;
     const card = (o, i) => {
       const rw = R.challengeReward(run, o);
@@ -1405,8 +1407,12 @@
         : [`${ic('gold')} ~${rw.gold} gold`, `${ic('crown')} ${rw.xp} XP`, rw.spoils ? `pick 1 of ${rw.spoils} spoils` : '', rw.relic ? `${ic('gem')} ${rw.lucky ? 'a lucky relic: ' : 'relic: '}${RELICS[rw.relic] ? esc(RELICS[rw.relic].name) : 'yes'}` : '', rw.bossRelic ? `${ic('gem')} a boss relic` : '']
             .filter(Boolean)
             .join(' · ');
-      return `<button class="card challenge tier-${o.tier}" data-ch="${i}" data-choose>
-        <div class="ch-top"><span class="tier-chip tier-${o.tier}">${R.TIERS[o.tier].name}</span>${o.attempts ? `<span class="small muted">${o.attempts} ${o.attempts === 1 ? 'try' : 'tries'} so far</span>` : ''}</div>
+      const T = R.TIERS[o.tier];
+      // A boss card wears its difficulty's colour, and says how many of the boss it holds.
+      const look = T.bosses ? { bossEasy: 'easy', boss: 'medium', bossElite: 'elite' }[o.tier] : o.tier;
+      const bossN = T.bosses ? o.enc.units.filter((u) => UNITS[u.type] && UNITS[u.type].boss).length : 0;
+      return `<button class="card challenge tier-${look} ${T.bosses ? 'boss-card' : ''}" data-ch="${i}" data-choose>
+        <div class="ch-top"><span class="tier-chip tier-${look}">${T.name}${bossN ? ` · ${bossN} ${bossN === 1 ? 'boss' : 'bosses'}` : ''}</span>${o.attempts ? `<span class="small muted">${o.attempts} ${o.attempts === 1 ? 'try' : 'tries'} so far</span>` : ''}</div>
         <canvas class="ch-thumb" data-thumb="${i}"></canvas>
         <div class="title">${esc(o.enc.name)}</div>
         <div class="ch-goals">${objectivesHTML(o.enc)}</div>
@@ -1483,7 +1489,7 @@
     const p = UI.run && UI.run.pending;
     if (inBattle || !UI.wr || !p || p.type !== 'battle') return '';
     if (p.fromEvent) return `<div class="origin event">${battleOrigin(UI.run).html}</div>`;
-    if (p.tier === 'boss') return '';
+    if (R.TIERS[p.tier] && R.TIERS[p.tier].bosses && (UI.run.offer || []).length < 2) return '';
     return `<button class="btn wide" id="muOther">${ic('undo')} ${p.tier === 'mega' ? 'Back to the final choice' : 'Choose another battle'}</button>`;
   }
 
@@ -1894,7 +1900,7 @@
       ${unitInfoHTML(u, { name: r.name })}
       <div class="lo-sec"><div class="eyebrow">Level</div>
         <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
-        <p class="small muted">Level 2: ${levelGain(2)}, a second ability, a second talent slot and a second skill slot. Level 3: ${levelGain(3)}, its Mastery, a third talent slot and a second gear slot. A dear unit's levels cost more: 60% and 150% of its own cost, where that is more than +${LEVEL_COST[2]} and +${LEVEL_COST[3]}.</p></div>
+        <p class="small muted">Level 2: ${levelGain(2)}, a second ability, a second talent slot and a second skill slot. Level 3: ${levelGain(3)}, its Mastery, a third talent slot and a second gear slot. A dear unit's levels cost more: ${Math.round(D.LEVEL_SHARE[2] * 100)}% and ${Math.round(D.LEVEL_SHARE[3] * 100)}% of its own cost, where that is more than +${LEVEL_COST[2]} and +${LEVEL_COST[3]}.</p></div>
       ${kitSection(run, r, 'talent')}
       ${kitSection(run, r, 'skill')}
       ${kitSection(run, r, 'gear')}
@@ -2150,12 +2156,12 @@
     const h = s.hold;
     if (h && h.x === x && h.y === y) {
       name('Shrine', 'flag');
-      f.lines.push(`Start ${h.need} of your turns in a row with one of your units standing on it to complete the mission.${h.count ? ` Held for ${h.count} so far.` : ''}`);
+      f.lines.push(`Start ${h.need} rounds in a row with one of your units standing on it to complete the mission.${h.count ? ` Held for ${h.count} so far.` : ''}`);
     }
     for (const fx of s.tfx || []) {
       if (fx.x !== x || fx.y !== y) continue;
       const mine = fx.team === 'P';
-      const left = `${fx.turns} more turn${fx.turns === 1 ? '' : 's'}`;
+      const left = `${fx.turns} more round${fx.turns === 1 ? '' : 's'}`;
       if (fx.kind === 'fire') {
         name('Wall of Fire', 'fire');
         f.lines.push(`${mine ? 'Your fire: enemy' : 'Enemy fire: your'} units that step in or start their turn here take ${fx.dmg || 6} magic damage. Burns for ${left}.`);
@@ -2265,7 +2271,7 @@
     }
     // A mission done is the win: both sides' fatigue timers switch on, and the battle goes on
     // while your army grabs what else it can.
-    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done: the win is yours! Both sides tire now (enemy −${E.fatigueHit(s, 'E')}, yours −${E.fatigueHit(s, 'P')}, one more each turn). Grab what else you can, or Finish now.</span>`;
+    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done: the win is yours! Both sides tire now (each enemy unit −${E.fatigueHit(s, 'E')} as its turn comes, each of yours −${E.fatigueHit(s, 'P')}, one more each round). Grab what else you can, or Finish now.</span>`;
     else if (info.key !== 'rout') status += ` <span class="small muted">Do it and the win is yours: both sides start to tire.</span>`;
     const lines = [`<div class="obj primary ${s && s.routed ? 'done' : ''}">${ic('flag')}<span><b>${esc(info.short)}.</b> ${esc(info.primary)}${status}</span></div>`];
     const wl = wavesLine(enc, s);
@@ -2328,14 +2334,14 @@
     }
     for (const o of info.bonus) {
       const state = bonusState(s, o.b);
-      const prog = o.b.type === 'ambush' && state !== 'done' ? ` (${s.stats.waveKills || 0}/${o.b.n})` : o.b.type === 'swift' && !state && !s.won ? ` (turn ${s.turn})` : '';
+      const prog = o.b.type === 'ambush' && state !== 'done' ? ` (${s.stats.waveKills || 0}/${o.b.n})` : o.b.type === 'swift' && !state && !s.won ? ` (round ${s.turn})` : '';
       lines.push(`<div class="gl bonus ${state}">${ic(state === 'done' ? 'check' : state === 'failed' ? 'close' : 'star')}<span>${esc(o.short || o.text)}${prog}${state === 'failed' ? '' : tag(esc(o.reward), 'reward')}</span></div>`);
     }
     const waves = E.waveSummary(s).filter((w) => w.team === 'E');
     if (waves.length) {
       const next = Math.min(...waves.map((w) => w.turn));
       const n = waves.filter((w) => w.turn === next).reduce((t, w) => t + w.types.length, 0);
-      lines.push(`<div class="gl waves">${ic('hourglass')}<span>Reinforcements: ${n} on turn ${next}${waves.length > 1 ? `, ${waves.reduce((t, w) => t + w.types.length, 0) - n} more later` : ''}</span></div>`);
+      lines.push(`<div class="gl waves">${ic('hourglass')}<span>Reinforcements: ${n} as round ${next} ends${waves.length > 1 ? `, ${waves.reduce((t, w) => t + w.types.length, 0) - n} more later` : ''}</span></div>`);
     }
     return `<div class="goalbar" aria-label="Battle goals">${lines.join('')}</div>`;
   }
@@ -2349,9 +2355,9 @@
     const next = Math.min(...waves.map((w) => w.turn));
     const n = waves.filter((w) => w.turn === next).reduce((t, w) => t + w.types.length, 0);
     const rest = waves.reduce((t, w) => t + w.types.length, 0) - n;
-    // Waves mark their landing tiles a turn ahead.
+    // Waves mark their landing tiles as the round they arrive in opens.
     const now = !!s && waves.some((w) => w.turn === next && w.marks);
-    const when = now ? "after the enemy's next move. Red tiles show where; a unit standing on one blocks that arrival but takes 10 damage" : `on turn ${next}, after the enemy moves`;
+    const when = now ? 'as this round ends. Red tiles show where; a unit standing on one blocks that arrival but takes 10 damage' : `as round ${next} ends`;
     const more = rest > 0 ? ` ${rest} more after that${waves.some((w) => w.src) ? ' unless their buildings fall' : ''}.` : '';
     return `<div class="obj waves ${now ? 'now' : ''}">${ic('hourglass')}<span><b>Reinforcements.</b> ${n} arriving ${when}.${more}</span></div>`;
   }
@@ -2374,7 +2380,12 @@
     }
     const st = R.curStep(run);
     if (p.tier === 'mega') return { short: 'Final challenge', html: `${ic('skull')}<span><b>The final challenge</b>, which you chose to face. Back takes you to the choice to call it a day.</span>` };
-    if (p.tier === 'boss') return { short: 'Boss battle', html: `${ic('crown')}<span><b>The act's boss</b>: the one battle this round, no choice to make.</span>` };
+    if (R.TIERS[p.tier] && R.TIERS[p.tier].bosses) {
+      const n = p.enc.units.filter((u) => UNITS[u.type] && UNITS[u.type].boss).length;
+      return (run.offer || []).length > 1
+        ? { short: 'Boss battle', html: `${ic('crown')}<span><b>The act's boss: you picked the ${R.TIERS[p.tier].name.toLowerCase()} card</b> (${n === 1 ? 'one of them' : n === 2 ? 'two of them' : 'three of them, and two Shacklers'}). Other battles (below, or in the menu) takes you back to choose again.</span>` }
+        : { short: 'Boss battle', html: `${ic('crown')}<span><b>The act's boss</b>: the one battle this round, no choice to make.</span>` };
+    }
     const round = st && st.kind === 'fight' ? `Round ${st.round + 1} of ${R.FIGHTS}` : 'This round';
     return { short: `${R.TIERS[p.tier] ? R.TIERS[p.tier].name : ''} battle`, html: `${ic('flag')}<span><b>${round}: you picked the ${R.TIERS[p.tier] ? R.TIERS[p.tier].name.toLowerCase() : ''} battle.</b> Other battles (below, or in the menu) takes you back to the three on offer.</span>` };
   }
@@ -2394,8 +2405,8 @@
       const names = (w) => w.units.map((u) => UNITS[u.type].name + (u.level > 1 ? ` (Lv ${u.level})` : '')).join(', ');
       if (src) {
         const b = s.byId[src];
-        rows.push(`<li><b>${esc(UNITS[b.type].name)}</b> (${esc(UNITS[b.type].material || 'stone')}): ${list.map((w) => `${esc(names(w))} on turn ${w.turn}`).join(' · ')}. Destroy it to stop the rest.</li>`);
-      } else rows.push(...list.map((w) => `<li><b>Turn ${w.turn}:</b> ${esc(names(w))}, from the far edge.</li>`));
+        rows.push(`<li><b>${esc(UNITS[b.type].name)}</b> (${esc(UNITS[b.type].material || 'stone')}): ${list.map((w) => `${esc(names(w))} in round ${w.turn}`).join(' · ')}. Destroy it to stop the rest.</li>`);
+      } else rows.push(...list.map((w) => `<li><b>Round ${w.turn}:</b> ${esc(names(w))}, from the far edge.</li>`));
     }
     return `<div class="reinf"><div class="eyebrow">${ic('hourglass')} Reinforcements</div><ul>${rows.join('')}</ul></div>`;
   }
@@ -3315,11 +3326,10 @@
     UI.boardDragMove = UI.boardDragEnd = null;
     battleTools();
     UI.battle.log = [];
-    showBanner(s.side === 'E' ? 'Enemy moves first' : 'Your turn', s.side === 'E');
+    showBanner('Round 1', false);
     sfx(s.side === 'E' ? 'enemyturn' : 'turn');
     renderBattle();
-    // The enemy opens the battle; then the sides take turns, one unit each, in the order
-    // of each side's unit queue.
+    // The first round opens: every unit of both armies takes its turn in it, fastest first.
     UI.battle.busy = true;
     await pause(800);
     if (UI.battle && UI.battle.s === s) await runBattle();
@@ -3503,10 +3513,12 @@
   function turnLine(s) {
     const tired = ['E', 'P'].filter((t) => E.tiring(s, t)).map((t) => `${t === 'E' ? 'enemy' : 'yours'} −${E.fatigueHit(s, t)}`);
     const clock = tired.length ? `<span class="overtime">Fatigue: ${tired.join(' · ')}</span>${tired.length < 2 && s.overtime && !s.inOvertime ? ` · all at ${s.overtime}` : ''}` : s.overtime ? `fatigue at ${s.overtime}` : '';
-    if (s.cleanup) return `Turn ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span> · ${clock}`;
-    if (s.won) return `Turn ${s.turn} · <span class="reward">Won</span> · ${clock}`;
-    if (clock) return `Turn ${s.turn} · ${clock}`;
-    return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
+    // A battle counts rounds (every unit's turn); the older tempo, turns.
+    const T = s.rounds ? 'Round' : 'Turn';
+    if (s.cleanup) return `${T} ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span> · ${clock}`;
+    if (s.won) return `${T} ${s.turn} · <span class="reward">Won</span> · ${clock}`;
+    if (clock) return `${T} ${s.turn} · ${clock}`;
+    return `${T} ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
   }
 
   // Whose a unit is: yours or the enemy's, or in a Hall of Fame match, which army's.
@@ -3524,7 +3536,7 @@
   }
 
   // (A unit that could move and stays where it is, 'stay', passes without a line.)
-  const SIT_OUT = { cooldown: 'cooling down', rest: 'catching its breath', para: 'paralyzed', held: "held in a Shackler's net", hold: 'holding its net', idle: 'nothing in reach' };
+  const SIT_OUT = { cooldown: 'cooling down', rest: 'catching its breath', para: 'paralyzed', held: "held in a Shackler's net", hold: 'holding its net', idle: 'nothing it could do' };
   // "Cass, Osric and Jarek pass (cooling down)." for units that passed in a row.
   function passLine(passes) {
     // "Enemy" once, and repeats counted: "Enemy Orc Warrior ×2 and Orc Shaman pass".
@@ -3638,21 +3650,24 @@
           const passes = [[logName(v), e.why]];
           add({ team: v.team, passes, batch, html: passLine(passes) });
         }
+      } else if (e.t === 'round' && e.turn > 1) {
+        finish();
+        add({ team: 'O', html: `<span class="muted">Round ${e.turn}</span>` });
       } else if (e.t === 'routed') {
         finish();
         const was = e.was || {};
         const on = [!was.E && 'the enemy', !was.P && 'your army'].filter(Boolean);
-        add({ team: 'O', html: `<b class="overtime">Mission done: the win is yours!</b> ${on.length ? `${on.length > 1 ? 'Both sides\' fatigue switches on, each' : `Fatigue switches on for ${on[0]}`} from 1: the first unit up each turn loses HP, acting or not, one more every turn its side takes.` : ''}${was.E || was.P ? ` ${was.E && was.P ? 'Both sides were' : was.E ? 'The enemy was' : 'Your army was'} already tiring and carr${was.E && was.P ? 'y' : 'ies'} on as before.` : ''} The battle goes on, reinforcements and all: grab what else you can (gold, loot, an ambush bonus) before fatigue wears your army down (it cannot cost you the win), or tap Finish now.` });
+        add({ team: 'O', html: `<b class="overtime">Mission done: the win is yours!</b> ${on.length ? `${on.length > 1 ? 'Both sides\' fatigue switches on, each' : `Fatigue switches on for ${on[0]}`} from 1: each of its units loses that much HP as its turn comes, acting or not, one more every round.` : ''}${was.E || was.P ? ` ${was.E && was.P ? 'Both sides were' : was.E ? 'The enemy was' : 'Your army was'} already tiring and carr${was.E && was.P ? 'y' : 'ies'} on as before.` : ''} The battle goes on, reinforcements and all: grab what else you can (gold, loot, an ambush bonus) before fatigue wears your army down (it cannot cost you the win), or tap Finish now.` });
       } else if (e.t === 'cleanup') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}), ${e.was ? `its fatigue still counting on (next −${e.next})` : 'but its fatigue sets in now: the first of your units up each turn loses HP, acting or not, 1, then 2, 3 and so on'}, one more every turn. It goes on until everything is collected or your army has fallen.` });
+        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}), ${e.was ? `its fatigue still counting on (next −${e.next})` : 'but its fatigue sets in now: each of your units loses HP as its turn comes, acting or not, 1 this round, then 2, 3 and so on'}, one more every round. It goes on until everything is collected or your army has fallen.` });
       } else if (e.t === 'overtime') {
         finish();
         const was = e.was || {};
-        if (!was.E && !was.P) add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Each side's fatigue starts at 1: the first unit up each turn loses its side's next number, acting or not, one more every turn that side takes.` });
-        else if (was.E && was.P) add({ team: 'O', html: `<b class="overtime">Turn ${e.turn}: fatigue for everyone.</b> Both sides already tire, so nothing changes.` });
-        else add({ team: 'O', html: `<b class="overtime">Turn ${e.turn}: fatigue for everyone.</b> ${was.E ? 'Your army' : 'The enemy'} now tires too, from 1. ${was.E ? 'The enemy\'s' : 'Yours'} carries on as before.` });
-      } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
+        if (!was.E && !was.P) add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Each side's fatigue starts at 1: every unit loses its side's number as its turn comes, acting or not, and the number grows by two every round.` });
+        else if (was.E && was.P) add({ team: 'O', html: `<b class="overtime">Round ${e.turn}: fatigue for everyone.</b> Both sides already tire, so nothing changes.` });
+        else add({ team: 'O', html: `<b class="overtime">Round ${e.turn}: fatigue for everyone.</b> ${was.E ? 'Your army' : 'The enemy'} now tires too, from 1. ${was.E ? 'The enemy\'s' : 'Yours'} carries on as before.` });
+      } else if (e.t === 'pass' && !e.auto && !e.cool && e.uid && s.byId[e.uid]) {
         finish();
         add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
       }
@@ -3660,10 +3675,57 @@
     finish();
   }
 
-  // Whose turns come next, both sides interleaved as their turns alternate. Every unit
+  // The turn order: the unit whose turn it is, the rest of this round's units, then the next
+  // round's, both armies together in order of Speed. A number marks where a new round begins.
+  // A unit that will pass (paralyzed, held, holding its net) is greyed; one cooling down
+  // wears its cooldown: it has its turn, to move in, but cannot act.
+  function orderHTML(s, n) {
+    const items = E.turnOrder(s, n).filter((x) => s.byId[x.uid]);
+    let round = s.turn;
+    return `<div class="queue rounds">${items
+      .map((x, i) => {
+        const v = s.byId[x.uid];
+        const name = esc(v.team === 'P' ? v.name : UNITS[v.type].name);
+        const tag =
+          x.why === 'cooldown'
+            ? `<b class="q-cd" title="Cooling down: passes this turn">${x.wait}</b>`
+            : x.why === 'para'
+              ? `<b class="q-cd para" title="Paralyzed: passes this turn">${x.para}</b>`
+              : x.why === 'held'
+                ? `<b class="q-cd para" title="Held in a Shackler's net: passes until it is freed">net</b>`
+                : x.why === 'hold'
+                  ? `<b class="q-cd" title="Holding its net: passes this turn">net</b>`
+                  : x.cool
+                    ? `<b class="q-cd cool" title="Cooling down: it can move this turn, not act">${x.wait}</b>`
+                    : '';
+        const tip =
+          x.why === 'cooldown'
+            ? ` · cooling down (${x.wait}): passes this turn`
+            : x.why === 'para'
+              ? ' · paralyzed: passes this turn'
+              : x.why === 'held'
+                ? " · held in a Shackler's net: passes until it is freed"
+                : x.why === 'hold'
+                  ? ' · holding its net: passes this turn'
+                  : x.why
+                    ? ' · never acts: passes every turn'
+                    : x.cool
+                      ? ` · cooling down (${x.wait}): it can move this turn, not act`
+                      : '';
+        const mark = x.round !== round ? `<div class="q-round" title="Round ${x.round} begins here">R${x.round}</div>` : '';
+        round = x.round;
+        const cls = i === 0 ? 'now' : x.why ? 'pass' : '';
+        return `${mark}<div class="q-item team-${v.team} ${cls}" data-quid="${v.uid}" role="button" title="${esc(logName(v))} · Speed ${v.spd}${tip}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas>${tag}<span>${name}</span></div>`;
+      })
+      .join('')}</div>`;
+  }
+
+  // The older tempo's strip: whose turns come next, both sides interleaved as their turns
+  // alternate. Every unit
   // shows: one cooling down (the number is its cooldown) or paralyzed passes its turn when
   // it comes, and the next in line acts.
   function queueHTML(s, n) {
+    if (s.rounds) return orderHTML(s, n);
     const a = E.upcoming(s, s.side, n);
     const b = E.upcoming(s, E.other(s.side), n);
     const items = [];
@@ -3793,10 +3855,10 @@
     const s = B.s;
     const actor = B.acting && s.byId[B.acting];
     return `${actor && actor.alive ? unitInfoHTML(actor, { status: true }) : ''}
-      <div class="eyebrow">Turn order</div>
-      ${queueHTML(s, 10)}
+      <div class="eyebrow">Turn order${s.rounds ? ' · fastest first, both armies' : ''}</div>
+      ${queueHTML(s, s.rounds ? 16 : 10)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
-      ${s.won && !s.over ? `<div class="hint">${ic('check')} <b>${s.cleanup ? 'The enemy army is beaten' : 'Mission done'}: the win is yours.</b> ${s.cleanup ? `Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, loot, and the Specters guarding treasure (a coin or two each).` : 'The battle goes on while your army grabs what else it can, and every enemy it cuts down still earns a gold or two.'} Its fatigue is on (next −${E.fatigueHit(s, 'P')}, one more every turn it takes), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
+      ${s.won && !s.over ? `<div class="hint">${ic('check')} <b>${s.cleanup ? 'The enemy army is beaten' : 'Mission done'}: the win is yours.</b> ${s.cleanup ? `Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, loot, and the Specters guarding treasure (a coin or two each).` : 'The battle goes on while your army grabs what else it can, and every enemy it cuts down still earns a gold or two.'} Its fatigue is on (each unit −${E.fatigueHit(s, 'P')} as its turn comes, one more every round), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>${B.focus.uid && missionTarget(s.byId[B.focus.uid]) ? ' ' + vipCheck : ''}. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       <div class="eyebrow">Mission details</div>
       ${objectivesHTML(B.enc, s)}
@@ -3831,8 +3893,8 @@
     } else if (!auto && (s.side !== 'P' || B.busy)) {
       const actor = B.acting && s.byId[B.acting];
       panel = actor && actor.alive
-        ? `${unitInfoHTML(actor, { status: true })}<div class="hint">Enemy turn: their ${esc(UNITS[actor.type].name)}. Your turn comes next.</div>`
-        : `<div class="hint">${s.side === 'P' ? 'Resolving…' : 'The enemy is choosing a unit. The fast-forward button speeds things up.'}</div>`;
+        ? `${unitInfoHTML(actor, { status: true })}<div class="hint">Their ${esc(UNITS[actor.type].name)}'s turn. Units go in order of Speed, both armies together.</div>`
+        : `<div class="hint">${s.side === 'P' ? 'Resolving…' : 'An enemy unit is up. The fast-forward button speeds things up.'}</div>`;
     } else if (B.mode === 'unit' && u) {
       const moved = A && A.moved;
       const acted = A && A.acted;
@@ -3912,11 +3974,11 @@
             : isShrub(u)
             ? `${esc(UNITS[u.type].desc)} Make it the Priority and your army gathers around it and holds there.`
             : u.team === 'E'
-            ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 0 ? ` (cooling down: it passes its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'})` : ''}.`
+            ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 0 ? ` (cooling down: on its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'} it can move, not act)` : ''}.`
             : inProgress && s.act.uid !== u.uid
-              ? `${esc(s.byId[s.act.uid].name)} is mid-turn. Finish it first: one unit a turn.`
+              ? `${esc(s.byId[s.act.uid].name)} is mid-turn. Finish it first.`
               : u.wait > 0
-                ? `Cooling down: it passes its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'}, losing 1 off its cooldown each time.`
+                ? `Cooling down: on its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'} it can move but not act, losing 1 off its cooldown each time.`
                 : u.para > 0
                   ? `Paralyzed: it passes its next ${u.para === 1 ? 'turn' : u.para + ' turns'}.`
                   : 'Cannot act right now.'
@@ -3934,7 +3996,7 @@
       const ready = usefulReady(s);
       panel = `<div class="hint">${
         ready.length
-          ? `${esc(ready[0].name)}'s turn (units go in speed order): tap it to move, act, or both. Long-press any unit for details.`
+          ? `${esc(ready[0].name)}'s turn (units go in order of Speed): tap it to move, act, or both. Long-press any unit for details.`
           : 'None of your units can act right now. Pass.'
       }</div>
         ${ready.length ? `<div class="roster">${ready
@@ -3958,7 +4020,19 @@
           ? `${info.short} ${goals.filter((x) => !x.alive).length}/${goals.length}`
           : info.short;
     B.goalLine = goal;
-    const sideName = B.exhibition ? (s.side === 'P' ? B.exhibition.a.name : B.exhibition.b.name) : s.side === 'P' ? 'Your turn' : 'Enemy turn';
+    // Whose turn it is: the unit's own name (in a Hall of Fame match, its army's).
+    const turnUnit = (B.acting && s.byId[B.acting]) || (s.due && s.byId[s.due]) || null;
+    const sideName = B.exhibition
+      ? s.side === 'P'
+        ? B.exhibition.a.name
+        : B.exhibition.b.name
+      : s.rounds && turnUnit
+        ? turnUnit.team === 'P'
+          ? turnUnit.name
+          : `Enemy ${UNITS[turnUnit.type].name}`
+        : s.side === 'P'
+          ? 'Your turn'
+          : 'Enemy turn';
     $('#topbar').innerHTML = `<div class="title"><b>${B.paused && auto ? 'Paused' : esc(sideName)}</b>
       <span>${turnLine(s)} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' && !inProgress ? endBtn(false) : ''}
@@ -5629,7 +5703,7 @@
           <li>Every unit picks 1 of 3 abilities at Level 1, and 1 of 3 more at Level 2. Stronger picks cost more Supply.</li>
           <li><b>Active abilities</b> have 1 to 3 uses a battle that never come back, and most a cooldown of their own: after a use they wait that many of the unit's turns. Using one is the unit's action for the turn, instead of its attack.</li>
           <li>${ic('star')} <b>Talents</b> are class passives. Every class has at least three. Each new unit brings one you do not own yet (only once you own them all does one repeat), and you find more in shops and battle spoils, only for classes in your army. A unit has one talent slot per level (three at Level 3); mix and match any you own. Each copy fits one unit at a time.</li>
-          <li>Level 2 (+${LEVEL_COST[2]} Supply): ${levelGain(2)}, the second ability and a second skill slot. Level 3 (+${LEVEL_COST[3]}): ${levelGain(3)}, a Mastery and a second gear slot. The levels of a dear unit cost more: 60% of its own cost for Level 2 and 150% for Level 3, where that is more (a Dragon Tyrant, 8 Supply: +5 and +12).</li>
+          <li>Level 2 (+${LEVEL_COST[2]} Supply): ${levelGain(2)}, the second ability and a second skill slot. Level 3 (+${LEVEL_COST[3]}): ${levelGain(3)}, a Mastery and a second gear slot. The levels of a dear unit cost more: ${Math.round(D.LEVEL_SHARE[2] * 100)}% of its own cost for Level 2 and ${Math.round(D.LEVEL_SHARE[3] * 100)}% for Level 3, where that is more (a Dragon Tyrant, ${UNITS.dragon.cost} Supply: +${D.levelCost('dragon', 2)} and +${D.levelCost('dragon', 3)}). A level buys no extra turn in the round, so it costs well under another unit: an army of Level 3 units does about as well as a bigger one of Level 1 units.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
           <li><b>Setup guide</b>: put a unit on the board and it asks about its kit, one question at a time (level, abilities, talents, skills, gear). Answer No to skip one, or Done to stop.</li>
           <li><b>The bench is bare</b>: units on the bench are plain base units. Levels, abilities, talents, skills and gear go on a unit once it is on the board; taking it off sends everything back to your pack. A card's cost badge shows the base price and a small +N for its loadout. Your plan for a battle stays put if you lose or step away, and a new battle opens with your last army.</li>
@@ -5641,17 +5715,15 @@
         <ul>
           <li><b>Distances</b>: <b>adjacent</b> always means the 4 tiles touching a unit's sides; diagonals never count. "Within 2 tiles" counts steps up, down, left and right, never diagonally. A <b>3x3</b> area is a tile and all 8 tiles around it. The little grid after these words shows the tiles that count.</li>
           <li><b>Auto battle</b>: you set up the army in the war room (units, levels, talents, skills, gear, where they stand) and tap <b>Begin battle</b>. Your army then fights on its own; you watch. Lost? Change the army and try again, as often as you like.</li>
-          <li>The sides take turns, and the enemy goes first. Each turn, one unit of the side acts: it attacks or uses an ability (moving first, if it likes), and faces.</li>
-          <li><b>Marching is free</b>: a unit whose turn comes and only moves, or stays where it is, has had its go and hands the turn to the next unit in line. So an army closes in together instead of one unit a turn, and a turn rarely passes without a blow struck. Each unit still goes at most once a turn, and a turn ends as soon as one unit has acted.</li>
-          <li><b>Catching its breath</b>: a unit that has acted sits out its side's next ${E.TEMPO.rest} turns, whatever its cooldown ("zz" on its portrait in the turn order). An army with fewer than ${E.TEMPO.rest + 1} fighters has turns nobody can take, and they pass: one hero, however strong, cannot keep an army's pace alone.</li>
-          <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next; tap a face in it for that unit's full details.</li>
-          <li>Acting starts a unit's <b>cooldown</b> (CD on its card). Its turns still come, but it passes that many of them: it passes at once, its cooldown drops by one, and the next unit in line goes. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, pass too. The turn order shows every unit's turn: a unit about to pass is greyed out with its cooldown on its portrait. Poison, burns, regen and fatigue come on passed turns too.</li>
-          <li><b>A unit's turn, step by step</b>: what comes with a unit's turn always comes in this order: its fatigue hit (if it is the first of its side up this turn), then poison, then burns, then fire underfoot, then regen; only then does it act, or pass with its cooldown dropping by one ("PASS COOLDOWN 2→1" over its head). Each step shows over the unit's head on its own beat ("-16 FATIGUE", then "-5 POISON", then "+3 REGEN"), never two at once, even at 2× speed, and the numbers stack top to bottom in the order they happened instead of landing on each other.</li>
-          <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
+          <li><b>Rounds</b>: a battle is played in rounds. In a round every unit of both armies takes one turn, in order of Speed (<b>SPD</b> on their cards), the fastest first, whichever side it is on: a fast enemy or two, then your Scout (SPD 8), then the rest, down to a Knight (SPD 2) and a Cleric (SPD 1). Units of equal Speed alternate between the sides, yours first. On its turn a unit moves, acts (attacks or uses an ability), or both, and then faces. Every unit you field is one more turn each round.</li>
+          <li><b>Turn order</b>: the strip under the board shows whose turn it is, who is still to come this round, and the start of the next: a number marks where a new round begins. Tap a face in it for that unit's full details. Whoever joins a round under way (reinforcements, the raised, a wolf leaping free) has its first turn in the next.</li>
+          <li>Acting starts a unit's <b>cooldown</b> (CD on its card): for that many of its next turns it cannot act. Its turn still comes every round, and it may move in it (close in, step back, get in the way); its cooldown drops by one each time, and its portrait in the turn order wears the number. Moving alone never starts a cooldown. Paralyzed units, units held in a net and units with nothing they could do pass their turn (greyed out in the turn order). Poison, burns, regen and fatigue come every turn, acting or passing.</li>
+          <li><b>A unit's turn, step by step</b>: what comes with a unit's turn always comes in this order: its fatigue hit (if its side is tiring), then poison, then burns, then fire underfoot, then regen; only then does it move and act, or pass. Each step shows over the unit's head on its own beat ("-4 FATIGUE", then "-5 POISON", then "+3 REGEN"), never two at once, even at 2× speed, and the numbers stack top to bottom in the order they happened instead of landing on each other.</li>
+          <li>Durations such as "roots for 2 turns" count the affected unit's own turns. What frames a round counts rounds: marks, fire on the ground, reinforcements, the shrine, fatigue, and the round counter itself.</li>
           <li><b>Regen</b> heals a unit whenever its turn comes, acting or passing: paralyzed, cooling down, rooted or dazzled, it still heals. Only poison stops it (a poisoned unit cannot heal at all). It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>A mission done is the win</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves wins the battle there and then: nothing after it can take the win away. The battle goes on, though: both sides' fatigue switches on (see Fatigue), so the enemy wears down while your army grabs what else it can, a few more barricades, the loot or a bonus goal, before fatigue wears it down too. Reinforcements keep marching in (until turn ${R.OVERTIME}), so the ambush bonus is still there to chase, or you can leave them be and go for the gold. And every enemy unit your army cuts down, before the win or after, is worth a coin or two: 1 gold, 2 for a big one (3 Supply or more). Tap <b>Finish now</b> whenever you like. "Lose at most one unit" and "win within N turns" goals are judged at the moment the mission was done. Rushing the mission is a way to beat an army too tough to grind down.</li>
+          <li><b>A mission done is the win</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves wins the battle there and then: nothing after it can take the win away. The battle goes on, though: both sides' fatigue switches on (see Fatigue), so the enemy wears down while your army grabs what else it can, a few more barricades, the loot or a bonus goal, before fatigue wears it down too. Reinforcements keep marching in (until round ${R.OVERTIME}), so the ambush bonus is still there to chase, or you can leave them be and go for the gold. And every enemy unit your army cuts down, before the win or after, is worth a coin or two: 1 gold, 2 for a big one (3 Supply or more). Tap <b>Finish now</b> whenever you like. "Lose at most one unit" and "win within N rounds" goals are judged at the moment the mission was done. Rushing the mission is a way to beat an army too tough to grind down.</li>
           <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your fatigue switches on that moment, from 1 (or carries on, if it was on already). It cannot cost you the battle, and there is no time limit: it ends when nothing worth having is left, when your army has fallen, or when you tap Finish now. Few-losses and fast-win goals count from the moment the army fell.</li>
-          <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, the first of its units whose turn comes each turn loses HP, past physical resistance and shields, before it moves, acts or passes: never a whole side at once, always one unit a turn. A side's first hit is 1, then 2, 3 and so on, one more every turn it takes (two more, from turn ${R.OVERTIME}, when fatigue is on for everyone; but only ever one more for your army once the win is yours, so it has time to gather what is left). The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On turn ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. From turn ${R.OVERTIME} no more reinforcements come. The top bar shows each side's next hit. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, each of its units loses HP as its turn comes, past physical resistance and shields, before it moves, acts or passes: never a whole side at once, always the unit whose turn it is. A side's number is 1 in the first round it tires, then 2, 3 and so on, one more every round (two more, from round ${R.OVERTIME}, when fatigue is on for everyone; but only ever one more for your army once the win is yours, so it has time to gather what is left). An army tires the same whatever its size. The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On round ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. From round ${R.OVERTIME} no more reinforcements come. The top bar shows each side's number. Big units and regen last longest. The last side standing wins.</li>
           <li><b>The AI knows your positioning picks</b>: the battles play themselves, but your army's AI is built to play to every relic, talent, skill and piece of gear that depends on where units stand. With the Lone Wolf Pelt it keeps your units apart; with the Phalanx Standard it closes ranks; Guardians escort the fragile; flankers go round the side or back; Thunderstep units end their moves adjacent to enemies; a Furgon grows its shrubs across the path of enemy melee units heading for your Cleric (or your most wounded unit); Ricochet and Shrapnel pick targets in a crowd; and so on. Each such pick says how the AI plays it, at the end of its description ("The AI keeps your units apart.").</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
@@ -5659,8 +5731,9 @@
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack, and so do burns: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source again only refreshes its own. Poisoned units cannot heal, regen included. Only buildings (wagons, cages, wards and shrubs included) and skeletons (Skeletons, Skeleton Archers, the Bone Colossus, the Lich) are immune to poison; Specters, the Death Knight, golems and every other unit can be poisoned. Burns catch on everything, buildings and skeletons included (a burning building burns once a round) and never stop healing or regen: "IMMUNE TO POISON" floats over a unit the poison did not take on. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li><b>Enemy relics</b>: enemy armies carry relics too, the same ones you collect, working for them: one on a medium battle in Act I, more in later acts and on elites and bosses, none on an Easy card. Which ones depends on who they are (greenskins hit harder, soldiers close ranks, spellcasters cast faster, outlaws stab from behind). The scout report lists them with what each does to you.</li>
           <li><b>Who resists what</b>: greenskins (orcs, goblins, wargs) wear war paint that turns spells aside, so steel is the answer to them; the dead, plate-clad soldiers and golems shrug off steel, so bring magic; spellcasters resist magic and hit with it, so bring steel and magic resistance. The scout report's first two lines say which damage gets through this army and what it hits with, and Auto picks for both.</li>
-          <li><b>Shacklers</b>: every elite army fields one (two from Act II on), and from Act II so do some other armies and the bosses (never on an Easy card). It hits weakly, but it throws a chain-net at your biggest hitter and holds the chain: that unit cannot move or act while the Shackler holds on (3 of the Shackler's own turns, doing nothing else meanwhile), and then it throws again, as often as it likes. No cure, rally or immunity slips the net. A glowing chain shows who holds whom. Shacklers are tough (64 HP at Level 1, 30% physical and 50% magic resistance), and a shimmering Spell Shield eats the first physical or magic hit on one (then pops): even a decked-out Dragon needs a few blows. Kill the Shackler, paralyze it, or shove or drag it, and the net falls away: a carry needs an army that can break the chain. Your units go for a Shackler holding one of theirs.</li>
-          <li><b>Worn down</b>: a boss leaves you no easier card to pick instead, so no army is ever stuck at one. Your first ${R.BAL.wear.after} defeats by a boss change nothing: that is your room to adjust. Every defeat after that tells on its army: its fighters start the rematch ${Math.round(R.BAL.wear.step * 100)}% further short of full HP, down to ${Math.round(R.BAL.wear.max * 100)}% short. The boss's card and the scout report say how worn it is. (A battle an event starts works the same way; the final challenge never wears down.)</li>
+          <li><b>Shacklers</b>: every elite army fields one (two from Act II on), and from Act II so do some other armies and the bosses on their Medium card; a boss's Elite card has two (never on an Easy card). It hits weakly, but it throws a chain-net at your biggest hitter and holds the chain: that unit cannot move or act while the Shackler holds on (3 of the Shackler's own turns, doing nothing else meanwhile), and then it throws again, as often as it likes. No cure, rally or immunity slips the net. A glowing chain shows who holds whom. Shacklers are tough (64 HP at Level 1, 30% physical and 50% magic resistance), and a shimmering Spell Shield eats the first physical or magic hit on one (then pops): even a decked-out Dragon needs a few blows. Kill the Shackler, paralyze it, or shove or drag it, and the net falls away: a carry needs an army that can break the chain. Your units go for a Shackler holding one of theirs.</li>
+          <li><b>Bosses</b>: an act's boss comes as three cards, and any of them ends the act. <b>Easy</b>: one of the boss monster with a small guard; it pays less and no boss relic. <b>Medium</b>: two of it. <b>Elite</b>: three of it and two Shacklers, for a relic on top of the boss relic. Slay every one of them to win.</li>
+          <li><b>Worn down</b>: a boss's Easy card leaves you no easier one to pick instead, so no army is ever stuck at a boss. Your first ${R.BAL.wear.after} defeats by that card change nothing: that is your room to adjust. Every defeat after that tells on its army: its fighters start the rematch ${Math.round(R.BAL.wear.step * 100)}% further short of full HP, down to ${Math.round(R.BAL.wear.max * 100)}% short. The card and the scout report say how worn it is. (A battle an event starts works the same way; the final challenge never wears down.)</li>
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board.</li>
           <li><b>Priority</b>: tap an enemy unit, a building, a barricade with gold, a chest, the shrine, any empty tile, a boulder, tree or shrub while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. A boulder, tree or shrub works the same way: your army gathers around it without trying to cut it down. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
@@ -5697,7 +5770,7 @@
         </ul>
         <h4>Reinforcements</h4>
         <ul>
-          <li>Some battles bring enemy reinforcements on set turns: from the far edge, or out of tents, crypts, dens, portals and guardhouses. The war room shows the schedule; badges on buildings count down the turns.</li>
+          <li>Some battles bring enemy reinforcements in set rounds: from the far edge, or out of tents, crypts, dens, portals and guardhouses. They arrive as the round ends and take their first turns in the next. The war room shows the schedule; badges on buildings count down the rounds.</li>
           <li>They arrive after the enemy's move. A turn ahead, red tiles mark where they will appear: a unit standing on one <b>blocks</b> that arrival, but takes 10 damage.</li>
           <li>Destroy a building and everything it had left to send is cut off.</li>
         </ul>

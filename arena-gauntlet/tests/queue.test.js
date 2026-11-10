@@ -22,7 +22,7 @@ function test(name, fn) {
 function battle(units, opts = {}) {
   const w = 9;
   const h = 9;
-  return E.createBattle(Object.assign({ w, h, terrain: new Array(w * h).fill(0), units, relics: { P: [], E: [] }, seed: 7, queue: true, rest: 0, march: false }, opts));
+  return E.createBattle(Object.assign({ w, h, terrain: new Array(w * h).fill(0), units, relics: { P: [], E: [] }, seed: 7, queue: true, rounds: false, rest: 0, march: false }, opts));
 }
 
 // The enemy passes until it is the player's turn.

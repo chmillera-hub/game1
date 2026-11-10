@@ -15,10 +15,12 @@
   // Unit levels are bought per battle with Supply.
   const MAX_LEVEL = 3;
   // Extra Supply for a level, on top of the unit's base cost: LEVEL_COST for ordinary units,
-  // more for the dear ones, whose levels multiply far bigger numbers: Level 2 costs 60% of
-  // the unit's own cost and Level 3 150%, where that is more (see levelCost).
-  const LEVEL_COST = [0, 0, 2, 5];
-  const LEVEL_SHARE = [0, 0, 0.6, 1.5];
+  // more for the dear ones, whose levels multiply far bigger numbers: Level 2 costs 30% of
+  // the unit's own cost and Level 3 80%, where that is more (see levelCost). A level buys
+  // no extra turn in the round, so it is priced well under another body: in the lab, armies
+  // of Level 1, 2 and 3 units do about as well as each other at these prices.
+  const LEVEL_COST = [0, 0, 1, 3];
+  const LEVEL_SHARE = [0, 0, 0.3, 0.8];
   const LEVEL_HP = [1, 1, 1.3, 1.6];
   const LEVEL_POW = [1, 1, 1.2, 1.4];
   const SKILL_SLOTS = [0, 1, 2, 2];
@@ -177,7 +179,7 @@
     bw_reach: { name: 'Wide Field', cost: 2, desc: 'Its aura reaches 5 tiles.', mod: { props: { auraR: 1 } } },
     bw_reflect: { name: 'Reflection', cost: 0, desc: 'Enemies that strike it in melee take 6 damage.', mod: { props: { thorns: 6 } } },
     bw_shatter: { name: 'Shatter Shield', cost: 1, desc: 'When it is destroyed, every ally in its aura gains a 20-HP shield.', mod: { traits: ['shatter'] } },
-    bw_purge: { name: 'Purging Pulse', cost: 1, desc: 'At the start of your turn, allies in its aura are cured of roots and burns.', mod: { traits: ['purge'] } },
+    bw_purge: { name: 'Purging Pulse', cost: 1, desc: 'At the start of each round, allies in its aura are cured of roots and burns.', mod: { traits: ['purge'] } },
 
     // Enchantress
     e_far: { name: 'Far Song', cost: 0, desc: '+1 range, and its song hurts paralyzed enemies 50% more.', mod: { stat: { range: 1 }, traits: ['cruelsong'] } },
@@ -866,7 +868,7 @@
     // ------------------------------------------------ bosses
     golem_king: {
       name: 'Golem King', rarity: 'boss', cost: 12, role: 'tank', boss: true,
-      hp: 135, pow: 22, armor: 0.5, res: -0.15, block: 0, rec: 2, move: 2,
+      hp: 150, pow: 22, armor: 0.5, res: -0.15, block: 0, rec: 2, move: 2,
       act: { name: 'Earthshatter', kind: 'quake', range: [1, 1], dmg: 'phys' },
       extra: [{ name: 'Boulder Hurl', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, uses: 3, cd: 2 }],
       traits: ['stoneskin', 'big'], tags: ['construct', 'big'], props: { guard: 0.2 },
@@ -875,7 +877,7 @@
     },
     warlord: {
       name: 'Grukk the Warlord', rarity: 'boss', cost: 12, role: 'melee', boss: true,
-      hp: 150, pow: 23, armor: 0.2, res: 0.4, block: 0.3, rec: 2, move: 3,
+      hp: 140, pow: 22, armor: 0.2, res: 0.4, block: 0.3, rec: 2, move: 3,
       act: { name: 'Brutal Cleave', kind: 'cleave', range: [1, 1], dmg: 'phys' },
       extra: [
         { name: 'War Roar', kind: 'drum', radius: 3, noHeal: true, uses: 2, cd: 3 },
@@ -887,7 +889,7 @@
     },
     witch_queen: {
       name: 'Witch Queen', rarity: 'boss', cost: 13, role: 'caster', boss: true,
-      hp: 126, pow: 18, armor: 0.1, res: 0.5, block: 0.3, rec: 2, move: 3,
+      hp: 162, pow: 22, armor: 0.15, res: 0.5, block: 0.3, rec: 2, move: 3,
       act: { name: 'Hexstorm', kind: 'cross', len: 4, dmg: 'magic', ff: false },
       extra: [{ name: 'Hex', kind: 'strike', range: [1, 5], arc: true, fx: { mark: 2 }, uses: 3, cd: 2 }],
       traits: [], tags: ['human', 'caster', 'big'],
@@ -896,9 +898,9 @@
     },
     lich: {
       name: 'The Lich', rarity: 'boss', cost: 13, role: 'caster', boss: true,
-      hp: 122, pow: 18, armor: 0.25, res: 0.4, block: 0, rec: 2, move: 3,
+      hp: 95, pow: 16, armor: 0.25, res: 0.4, block: 0, rec: 2, move: 3,
       act: { name: 'Frost Bolt', kind: 'strike', range: [1, 4], dmg: 'magic', arc: true, fx: { root: 1 } },
-      extra: [{ name: 'Raise Dead', kind: 'raise', range: [1, 2], max: 4, uses: 3, cd: 2 }],
+      extra: [{ name: 'Raise Dead', kind: 'raise', range: [1, 2], max: 4, uses: 2, cd: 2 }],
       traits: ['flying', 'undead', 'skeletal'], tags: ['undead', 'big'],
       desc: 'A dead sorcerer-king. Its frost roots its victims, and the dead rise at its call.',
       tip: 'Blessed weapons and Smite hurt it badly. Its skeletons crumble when it dies.',
@@ -1079,7 +1081,7 @@
 
   // Enchantments are bound to one unit forever and raise its Supply cost.
   const ENCHANTS = {
-    stormcaller: { name: 'Stormcaller', surcharge: 2, desc: 'At the start of your turn, lightning strikes the nearest enemy within 3 tiles for 5 magic damage.', mod: { traits: ['stormcaller'] } },
+    stormcaller: { name: 'Stormcaller', surcharge: 2, desc: 'At the start of each round, lightning strikes the nearest enemy within 3 tiles for 5 magic damage.', mod: { traits: ['stormcaller'] } },
     bloodforged: { name: 'Bloodforged', surcharge: 2, desc: '+10 max HP. Heals for 25% of the damage it deals (of its hardest hit, when one attack strikes several).', req: 'damage', mod: { stat: { hp: 10 }, props: { lifesteal: 0.25 } } },
     runeward: { name: 'Runeward', surcharge: 1, desc: '+20% magic resistance. Immune to paralysis.', mod: { stat: { res: 0.2 }, traits: ['paraproof'] } },
     phoenix_soul: { name: 'Phoenix Soul', surcharge: 3, desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
@@ -1182,12 +1184,12 @@
     kings_ransom: { name: "King's Ransom", tier: 'boss', desc: 'Gain 150 gold now and 20 extra gold after each victory.' },
     crown_command: { name: 'Crown of Command', tier: 'boss', desc: '+2 Supply in every battle, and 25% more XP.' },
     sacred_chalice: { name: 'Sacred Chalice', tier: 'boss', desc: 'Your units have +2 Regen.' },
-    echo_drum: { name: 'War Drum of Ages', tier: 'boss', desc: 'Every tenth turn, one great beat: your whole army heals 25 and flies into a frenzy, +25% damage for 3 turns.' },
+    echo_drum: { name: 'War Drum of Ages', tier: 'boss', desc: 'Every fourth round, one great beat: your whole army heals 25 and flies into a frenzy, +25% damage for 3 turns.' },
     cursed_blade: { name: 'Bloodthirst Blade', tier: 'event', desc: 'Your units deal 20% more damage and take 10% more damage.' },
     // Legendary: a huge edge with a real price. Found from the second half of Act 2 on.
     worldbreaker: { name: 'Worldbreaker', tier: 'legendary', desc: 'Your units deal 40% more damage. Price: you have 4 less Supply in every battle.' },
     mountain_heart: { name: 'Heart of the Mountain', tier: 'legendary', desc: 'Your units have 40% more max HP. Price: you have 4 less Supply in every battle.' },
-    storm_banner: { name: 'Storm Banner', tier: 'legendary', desc: 'At the start of your turn, lightning leaps from each of your units to the nearest enemy within 3 tiles for 5 magic damage. Price: you have 3 less Supply in every battle.' },
+    storm_banner: { name: 'Storm Banner', tier: 'legendary', desc: 'At the start of each round, lightning leaps from each of your units to the nearest enemy within 3 tiles for 5 magic damage. Price: you have 3 less Supply in every battle.' },
     blood_moon: { name: 'Blood Moon', tier: 'legendary', desc: 'Your units heal for 25% of the damage they deal (of the hardest hit, when one attack strikes several). Price: they take 15% more damage.' },
   };
 
@@ -1287,58 +1289,58 @@
   const ENCOUNTERS = {
     1: {
       normal: [
-        { name: 'Bandit Ambush', faction: 'rogues', k: 1.03, more: 1, units: ['cutthroat', 'cutthroat', 'crossbow', 'scout'], spawner: 'war_tent', stance: 'aggressive', pool: ['cutthroat', 'crossbow', 'scout'] },
-        { name: 'Goblin Raiders', faction: 'greenskins', k: 0.96, more: 2, units: ['goblin_archer', 'goblin_archer', 'sapper', 'orc'], spawner: 'war_tent', stance: 'aggressive', pool: ['goblin_archer', 'sapper', 'orc'] },
-        { name: 'Warg Riders', faction: 'greenskins', k: 1.19, more: 1, units: ['warg', 'warg', 'orc', 'goblin_archer'], spawner: 'den', stance: 'aggressive', pool: ['warg', 'goblin_archer'] },
-        { name: "Smugglers' Convoy", faction: 'rogues', k: 1.04, more: 1, units: ['cutthroat', 'crossbow', 'scout'], layout: 'convoy', spawner: 'war_tent', stance: 'balanced', pool: ['cutthroat', 'scout'] },
-        { name: 'Border Keep', faction: 'soldiers', k: 0.97, units: ['knight', 'archer', 'castellan'], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['archer', 'knight'] },
-        { name: 'Mercenary Company', faction: 'soldiers', k: 1.26, units: ['knight', 'archer', 'cleric', 'scout'], spawner: 'war_tent', stance: 'balanced', pool: ['knight', 'archer', 'scout'] },
-        { name: 'Orc Warband', faction: 'greenskins', k: 1.46, more: 1, units: ['orc', 'orc', 'shaman', 'goblin_archer'], spawner: 'war_tent', stance: 'balanced', pool: ['orc', 'goblin_archer'] },
+        { name: 'Bandit Ambush', faction: 'rogues', k: 1.01, more: 1, units: ['cutthroat', 'cutthroat', 'crossbow', 'scout'], spawner: 'war_tent', stance: 'aggressive', pool: ['cutthroat', 'crossbow', 'scout'] },
+        { name: 'Goblin Raiders', faction: 'greenskins', k: 1.59, more: 2, units: ['goblin_archer', 'goblin_archer', 'sapper', 'orc'], spawner: 'war_tent', stance: 'aggressive', pool: ['goblin_archer', 'sapper', 'orc'] },
+        { name: 'Warg Riders', faction: 'greenskins', k: 1.29, more: 1, units: ['warg', 'warg', 'orc', 'goblin_archer'], spawner: 'den', stance: 'aggressive', pool: ['warg', 'goblin_archer'] },
+        { name: "Smugglers' Convoy", faction: 'rogues', k: 0.82, more: 1, units: ['cutthroat', 'crossbow', 'scout'], layout: 'convoy', spawner: 'war_tent', stance: 'balanced', pool: ['cutthroat', 'scout'] },
+        { name: 'Border Keep', faction: 'soldiers', k: 1.15, units: ['knight', 'archer', 'castellan'], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['archer', 'knight'] },
+        { name: 'Mercenary Company', faction: 'soldiers', k: 1.23, units: ['knight', 'archer', 'cleric', 'scout'], spawner: 'war_tent', stance: 'balanced', pool: ['knight', 'archer', 'scout'] },
+        { name: 'Orc Warband', faction: 'greenskins', k: 2.17, more: 2, units: ['orc', 'orc', 'shaman', 'goblin_archer'], spawner: 'war_tent', stance: 'balanced', pool: ['orc', 'goblin_archer'] },
       ],
       elite: [
-        { name: "Warchief's Guard", faction: 'greenskins', k: 0.55, units: ['brute', 'brute', 'shaman', 'orc'], lv: [2, 1, 1, 2], spawner: 'war_tent', stance: 'balanced', pool: ['orc'] },
-        { name: 'Goblin Powder Camp', faction: 'greenskins', k: 1.03, units: ['sapper', 'sapper', 'goblin_archer', 'goblin_archer', 'orc'], layout: 'camp', spawner: 'war_tent', stance: 'aggressive', pool: ['sapper', 'goblin_archer'] },
-        { name: 'Knights of the March', faction: 'soldiers', k: 0.76, units: ['knight', 'knight', 'archer', 'cleric'], lv: [2, 2, 1, 1], spawner: 'war_tent', stance: 'balanced', pool: ['knight', 'archer'] },
+        { name: "Warchief's Guard", faction: 'greenskins', k: 0.86, units: ['brute', 'brute', 'shaman', 'orc'], lv: [2, 1, 1, 2], spawner: 'war_tent', stance: 'balanced', pool: ['orc'] },
+        { name: 'Goblin Powder Camp', faction: 'greenskins', k: 1.14, units: ['sapper', 'sapper', 'goblin_archer', 'goblin_archer', 'orc'], layout: 'camp', spawner: 'war_tent', stance: 'aggressive', pool: ['sapper', 'goblin_archer'] },
+        { name: 'Knights of the March', faction: 'soldiers', k: 0.98, units: ['knight', 'knight', 'archer', 'cleric'], lv: [2, 2, 1, 1], spawner: 'war_tent', stance: 'balanced', pool: ['knight', 'archer'] },
       ],
       boss: {
-        golem_king: { name: 'The Golem King', faction: 'soldiers', units: ['golem_king', 'knight', 'archer', 'archer', 'cleric'], stance: 'balanced', pool: ['knight', 'archer'] },
-        warlord: { name: 'Grukk the Warlord', faction: 'greenskins', k: 1.1, units: ['warlord', 'orc', 'shaman', 'goblin_archer', 'sapper'], stance: 'aggressive', pool: ['orc', 'goblin_archer', 'sapper'] },
+        golem_king: { name: 'The Golem King', faction: 'soldiers', k: 1.12, units: ['golem_king', 'knight', 'archer', 'archer', 'cleric'], stance: 'balanced', pool: ['knight', 'archer'] },
+        warlord: { name: 'Grukk the Warlord', faction: 'greenskins', k: 1.2, units: ['warlord', 'orc', 'shaman', 'goblin_archer', 'sapper'], stance: 'aggressive', pool: ['orc', 'goblin_archer', 'sapper'] },
       },
     },
     2: {
       normal: [
-        { name: 'The Restless Dead', faction: 'undead', k: 1.08, more: 2, units: ['skeleton', 'skeleton', 'skelarcher', 'specter'], spawner: 'crypt', stance: 'aggressive', pool: ['skeleton', 'skelarcher'] },
-        { name: "Necromancer's Circle", faction: 'undead', shacklers: 1, more: 1, units: ['necromancer', 'skeleton', 'skeleton', 'specter'], spawner: 'crypt', stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
-        { name: 'Spider Nest', faction: 'beasts', k: 1.1, more: 1, units: ['spider', 'spider', 'wisp', 'wolf'], spawner: 'den', stance: 'aggressive', pool: ['spider', 'wolf'] },
-        { name: 'Troll Bridge', faction: 'beasts', k: 1.15, more: 1, units: ['troll', 'goblin_archer', 'goblin_archer', 'wolf'], spawner: 'den', stance: 'balanced', pool: ['goblin_archer', 'wolf'] },
-        { name: 'Witch Circle', faction: 'arcane', k: 0.77, shacklers: 1, units: ['witch', 'enchantress', 'knight', 'wisp'], spawner: 'portal', stance: 'balanced', pool: ['knight', 'wisp'] },
-        { name: 'Wolf Pack', faction: 'beasts', k: 1.32, more: 2, units: ['wolf', 'wolf', 'wolf', 'beastrider'], spawner: 'den', stance: 'aggressive', pool: ['wolf', 'beastrider'] },
-        { name: 'Bog Raiders', faction: 'rogues', k: 0.79, shacklers: 1, units: ['berserker', 'berserker', 'wisp', 'cutthroat'], layout: 'convoy', spawner: 'portal', stance: 'aggressive', pool: ['berserker', 'cutthroat'] },
+        { name: 'The Restless Dead', faction: 'undead', k: 0.98, more: 2, units: ['skeleton', 'skeleton', 'skelarcher', 'specter'], spawner: 'crypt', stance: 'aggressive', pool: ['skeleton', 'skelarcher'] },
+        { name: "Necromancer's Circle", faction: 'undead', k: 0.97, shacklers: 1, more: 1, units: ['necromancer', 'skeleton', 'skeleton', 'specter'], spawner: 'crypt', stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
+        { name: 'Spider Nest', faction: 'beasts', k: 1.01, more: 1, units: ['spider', 'spider', 'wisp', 'wolf'], spawner: 'den', stance: 'aggressive', pool: ['spider', 'wolf'] },
+        { name: 'Troll Bridge', faction: 'beasts', k: 1.2, more: 1, units: ['troll', 'goblin_archer', 'goblin_archer', 'wolf'], spawner: 'den', stance: 'balanced', pool: ['goblin_archer', 'wolf'] },
+        { name: 'Witch Circle', faction: 'arcane', k: 0.88, shacklers: 1, units: ['witch', 'enchantress', 'knight', 'wisp'], spawner: 'portal', stance: 'balanced', pool: ['knight', 'wisp'] },
+        { name: 'Wolf Pack', faction: 'beasts', k: 1.05, more: 2, units: ['wolf', 'wolf', 'wolf', 'beastrider'], spawner: 'den', stance: 'aggressive', pool: ['wolf', 'beastrider'] },
+        { name: 'Bog Raiders', faction: 'rogues', k: 0.77, shacklers: 1, units: ['berserker', 'berserker', 'wisp', 'cutthroat'], layout: 'convoy', spawner: 'portal', stance: 'aggressive', pool: ['berserker', 'cutthroat'] },
       ],
       elite: [
-        { name: 'The Coven', faction: 'arcane', k: 1.08, units: ['witch', 'witch', 'barrier', 'knight', 'knight'], spawner: 'portal', stance: 'balanced', pool: ['knight'] },
-        { name: 'Bone Colossus', faction: 'undead', k: 0.79, units: ['colossus', 'necromancer', 'skeleton', 'skelarcher'], spawner: 'crypt', stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
-        { name: 'Troll Kin', faction: 'beasts', k: 0.66, units: ['troll', 'troll', 'spider', 'shaman'], spawner: 'den', stance: 'aggressive', pool: ['spider', 'wolf'] },
+        { name: 'The Coven', faction: 'arcane', k: 1.32, units: ['witch', 'witch', 'barrier', 'knight', 'knight'], spawner: 'portal', stance: 'balanced', pool: ['knight'] },
+        { name: 'Bone Colossus', faction: 'undead', k: 0.62, units: ['colossus', 'necromancer', 'skeleton', 'skelarcher'], spawner: 'crypt', stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
+        { name: 'Troll Kin', faction: 'beasts', k: 0.68, units: ['troll', 'troll', 'spider', 'shaman'], spawner: 'den', stance: 'aggressive', pool: ['spider', 'wolf'] },
       ],
       boss: {
-        witch_queen: { name: 'The Witch Queen', faction: 'arcane', k: 0.93, shacklers: 1, units: ['witch_queen', 'enchantress', 'wisp', 'knight', 'knight', 'witch'], stance: 'balanced', pool: ['knight', 'wisp'] },
-        lich: { name: 'The Lich', faction: 'undead', k: 1.3, shacklers: 1, units: ['lich', 'specter', 'skeleton', 'skeleton', 'skelarcher', 'necromancer'], lv: [2, 1, 1, 1, 1, 1], stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
+        witch_queen: { name: 'The Witch Queen', faction: 'arcane', k: 1, shacklers: 1, units: ['witch_queen', 'enchantress', 'wisp', 'knight', 'knight', 'witch'], stance: 'balanced', pool: ['knight', 'wisp'] },
+        lich: { name: 'The Lich', faction: 'undead', k: 0.95, shacklers: 1, units: ['lich', 'specter', 'skeleton', 'skeleton', 'skelarcher', 'necromancer'], stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
       },
     },
     3: {
       normal: [
-        { name: 'Spire Garrison', faction: 'soldiers', k: 0.98, shacklers: 1, units: ['castellan', 'knight', 'knight', 'archer'], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['knight', 'archer'] },
-        { name: 'Cult of Flame', faction: 'arcane', k: 0.66, units: ['pyromancer', 'pyromancer', 'enchantress', 'golem'], spawner: 'portal', stance: 'balanced', pool: ['golem', 'knight'] },
-        { name: 'Drake Keepers', faction: 'dragons', k: 0.59, units: ['drake', 'drake', 'knight', 'cleric'], spawner: 'den', stance: 'balanced', pool: ['knight', 'archer'] },
-        { name: 'Iron Legion', faction: 'soldiers', k: 1.05, shacklers: 1, units: ['knight', 'knight', 'mageknight', 'archer', 'archer', 'cleric'], spawner: 'guardhouse', stance: 'defensive', pool: ['knight', 'archer'] },
-        { name: 'Orc Vanguard', faction: 'greenskins', k: 0.6, more: 1, units: ['brute', 'orc', 'orc', 'shaman', 'warg'], lv: [1, 2, 2, 1, 1], spawner: 'war_tent', stance: 'aggressive', pool: ['orc', 'warg'] },
-        { name: 'Shadow Strike', faction: 'rogues', k: 0.91, shacklers: 1, units: ['assassin', 'assassin', 'enchantress', 'scout', 'cutthroat'], spawner: 'portal', stance: 'aggressive', pool: ['assassin', 'scout'] },
-        { name: 'Storm Battery', faction: 'arcane', k: 0.98, shacklers: 1, units: ['lightning', 'barrier', 'pyromancer', 'archer', 'archer'], layout: 'camp', spawner: 'guardhouse', stance: 'defensive', pool: ['archer', 'knight'] },
+        { name: 'Spire Garrison', faction: 'soldiers', k: 0.84, shacklers: 1, units: ['castellan', 'knight', 'knight', 'archer'], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['knight', 'archer'] },
+        { name: 'Cult of Flame', faction: 'arcane', k: 0.85, units: ['pyromancer', 'pyromancer', 'enchantress', 'golem'], spawner: 'portal', stance: 'balanced', pool: ['golem', 'knight'] },
+        { name: 'Drake Keepers', faction: 'dragons', k: 0.72, units: ['drake', 'drake', 'knight', 'cleric'], spawner: 'den', stance: 'balanced', pool: ['knight', 'archer'] },
+        { name: 'Iron Legion', faction: 'soldiers', k: 0.79, shacklers: 1, units: ['knight', 'knight', 'mageknight', 'archer', 'archer', 'cleric'], spawner: 'guardhouse', stance: 'defensive', pool: ['knight', 'archer'] },
+        { name: 'Orc Vanguard', faction: 'greenskins', k: 1.11, more: 1, units: ['brute', 'orc', 'orc', 'shaman', 'warg'], lv: [1, 2, 2, 1, 1], spawner: 'war_tent', stance: 'aggressive', pool: ['orc', 'warg'] },
+        { name: 'Shadow Strike', faction: 'rogues', k: 0.74, shacklers: 1, units: ['assassin', 'assassin', 'enchantress', 'scout', 'cutthroat'], spawner: 'portal', stance: 'aggressive', pool: ['assassin', 'scout'] },
+        { name: 'Storm Battery', faction: 'arcane', k: 0.77, shacklers: 1, units: ['lightning', 'barrier', 'pyromancer', 'archer', 'archer'], layout: 'camp', spawner: 'guardhouse', stance: 'defensive', pool: ['archer', 'knight'] },
       ],
       elite: [
-        { name: 'Dragon Brood', faction: 'dragons', k: 0.92, units: ['dragon', 'drake', 'cleric', 'knight'], spawner: 'den', stance: 'aggressive', pool: ['knight'] },
-        { name: 'Champions of the Spire', faction: 'soldiers', k: 1.06, units: ['knight', 'assassin', 'pyromancer', 'cleric', 'archer'], lv: [3, 3, 2, 2, 1], spawner: 'guardhouse', stance: 'balanced', pool: ['knight', 'archer'] },
-        { name: 'The Inner Keep', faction: 'soldiers', k: 1.04, units: ['castellan', 'mageknight', 'mageknight', 'crossbow', 'cleric'], lv: [3, 1, 1, 1, 1], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['crossbow', 'knight'] },
+        { name: 'Dragon Brood', faction: 'dragons', k: 0.78, units: ['dragon', 'drake', 'cleric', 'knight'], spawner: 'den', stance: 'aggressive', pool: ['knight'] },
+        { name: 'Champions of the Spire', faction: 'soldiers', k: 0.88, units: ['knight', 'assassin', 'pyromancer', 'cleric', 'archer'], lv: [3, 3, 2, 2, 1], spawner: 'guardhouse', stance: 'balanced', pool: ['knight', 'archer'] },
+        { name: 'The Inner Keep', faction: 'soldiers', k: 0.76, units: ['castellan', 'mageknight', 'mageknight', 'crossbow', 'cleric'], lv: [3, 1, 1, 1, 1], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['crossbow', 'knight'] },
       ],
       boss: {
         ashen_tyrant: { name: 'The Ashen Tyrant', faction: 'dragons', k: 0.95, shacklers: 1, units: ['ashen_tyrant', 'pyromancer', 'knight', 'knight', 'drake', 'cleric'], stance: 'balanced', pool: ['knight', 'archer'] },

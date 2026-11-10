@@ -23,8 +23,9 @@ async function test(name, fn) {
 // What shows over a unit's head, in the order a turn brings it.
 const RANK = { fatigue: 0, poison: 1, burn: 2, fire: 2.5, regen: 3, sitout: 4, pass: 4 };
 const SHOWS = new Set(['dmg', 'heal', 'sitout', 'pass', 'healblock', 'scorch', 'curse', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
-// (A ward that never acts, and a unit that could move and stays where it is, pass silently.)
-const shows = (e) => !!e.uid && SHOWS.has(e.t) && !(e.t === 'sitout' && (e.why === 'passive' || e.why === 'stay')) && !(e.t === 'pass' && e.auto);
+// (A ward that never acts, a unit that could move and stays where it is, and one that is
+// cooling down and stays put, pass silently.)
+const shows = (e) => !!e.uid && SHOWS.has(e.t) && !(e.t === 'sitout' && (e.why === 'passive' || e.why === 'stay')) && !(e.t === 'pass' && (e.auto || e.cool));
 const kind = (e) => (e.t === 'dmg' ? e.dmgType : e.t === 'heal' && e.why === 'regen' ? 'regen' : e.t);
 
 // A board that records what it would play, beat by beat, instead of drawing it.
@@ -95,11 +96,11 @@ const seen = { battles: 0, beats: 0, steps: 0, ordered: 0 };
         }
         for (let j = 0; j < evs.length; j++) {
           const e = evs[j];
-          if (['move', 'action', 'done'].includes(e.t)) open.delete(e.uid);
+          if (['move', 'action', 'done'].includes(e.t) || (e.t === 'pass' && e.cool)) open.delete(e.uid);
           // Fire underfoot: the burn that comes with a scorch, after any burn the unit carries.
           const fire = e.t === 'dmg' && j > 0 && evs[j - 1].t === 'scorch' && evs[j - 1].uid === e.uid;
           const r = fire ? RANK.fire : RANK[kind(e)];
-          if (r == null || !e.uid || (e.t === 'pass' && e.auto)) continue;
+          if (r == null || !e.uid || (e.t === 'pass' && (e.auto || e.cool))) continue;
           seen.steps++;
           const prev = open.get(e.uid);
           if (prev != null) {

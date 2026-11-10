@@ -1,4 +1,7 @@
-// AI-vs-AI battle simulations. Run: node tests/sim.js [battles]
+// AI-vs-AI battle simulations: random armies of equal Supply against each other, played in
+// rounds as the game is, and how often each unit type was on the winning side (a rough
+// guide to what a unit is worth for its cost).
+// Run: node tests/sim.js [battles] [Supply a side]     WITH_LEGENDS=1 adds the legendaries
 const AG = require('./load')(['rng.js', 'data.js', 'engine.js', 'ai.js']);
 const E = AG.Engine;
 const { UNITS, RECRUITABLE } = AG.Data;
@@ -68,7 +71,7 @@ function runBattle(seed, pPool, ePool, budget, opts = {}) {
     ...place(rng, randomArmy(rng, budget, 'P', pPool), 'P', w, h),
     ...place(rng, randomArmy(rng, budget, 'E', ePool), 'E', w, h),
   ];
-  const s = E.createBattle({ w, h, terrain: terrain(rng, w, h), units, seed, relics: { P: [], E: [] } });
+  const s = E.createBattle({ w, h, terrain: terrain(rng, w, h), units, seed, relics: { P: [], E: [] }, queue: true, overtime: 20, turnLimit: 60 });
   let actions = 0;
   const t0 = Date.now();
   while (!s.over) {
@@ -76,7 +79,7 @@ function runBattle(seed, pPool, ePool, budget, opts = {}) {
     AG.AI.playTurn(s, team, { stance: team === 'P' ? opts.pStance || 'balanced' : opts.eStance || 'balanced', temp: 0.8 });
     actions++;
     s.events.length = 0;
-    if (actions > 4000) throw new Error('runaway battle');
+    if (actions > 20000) throw new Error('runaway battle');
   }
   return { winner: s.winner, turns: s.turn, timeout: !!s.timeout, ms: Date.now() - t0, comp: units.map((u) => u.team + ':' + u.type) };
 }
@@ -89,7 +92,7 @@ let ms = 0;
 let maxMs = 0;
 const typeWins = {};
 for (let i = 0; i < N; i++) {
-  const r = runBattle(1000 + i, pool, pool, 14);
+  const r = runBattle(1000 + i, pool, pool, +process.argv[3] || 20);
   wins[r.winner]++;
   turns += r.turns;
   if (r.timeout) timeouts++;
@@ -102,7 +105,7 @@ for (let i = 0; i < N; i++) {
     if (team === r.winner) typeWins[type].w++;
   }
 }
-console.log(`battles=${N} P=${wins.P} E=${wins.E} avgTurns=${(turns / N).toFixed(1)} timeouts=${timeouts} avgMs=${(ms / N).toFixed(0)} maxMs=${maxMs}`);
+console.log(`battles=${N} P=${wins.P} E=${wins.E} avgRounds=${(turns / N).toFixed(1)} timeouts=${timeouts} avgMs=${(ms / N).toFixed(0)} maxMs=${maxMs}`);
 const rows = Object.entries(typeWins)
   .map(([t, v]) => [t, v.w / v.n, v.n])
   .sort((a, b) => b[1] - a[1]);

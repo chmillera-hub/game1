@@ -40,6 +40,7 @@ const TRIES = +process.argv[3] || 2;
 const OUT = process.env.OUT || 'balance-rows.jsonl';
 const SEED0 = +process.env.SEED0 || 9000;
 const HOST = process.env.HOST || 'medium';
+const RANK = { easy: 0, medium: 1, elite: 2 };
 const ONLY = process.env.CANDS ? process.env.CANDS.split(',') : null;
 const ONLY_TIERS = process.env.TIERS ? process.env.TIERS.split(',') : null;
 const ONLY_MISSIONS = process.env.MISSIONS ? process.env.MISSIONS.split(',') : null;
@@ -60,7 +61,10 @@ function applyTune(json) {
       if (o[k] == null) o[k] = {};
       o = o[k];
     }
-    o[parts[parts.length - 1]] = v;
+    // A table the game holds on to (level costs, level stats) is changed in place.
+    const last = parts[parts.length - 1];
+    if (Array.isArray(o[last]) && Array.isArray(v)) o[last].splice(0, o[last].length, ...v);
+    else o[last] = v;
   }
 }
 if (process.env.TUNE) applyTune(process.env.TUNE);
@@ -520,24 +524,26 @@ function hostCampaign(i, t0, onCards) {
         R.endRun(run);
         continue;
       }
-      let tier = offer.length === 1 ? offer[0].tier : HOST;
+      // Cards come easiest first (easy, medium, elite; a boss's three the same way), so the
+      // host picks by place: its usual tier, or the one card there is.
+      let at = offer.length === 1 ? 0 : RANK[HOST];
       let res;
       let tries = 0;
       do {
-        R.chooseChallenge(run, offer.findIndex((o) => o.tier === tier));
+        R.chooseChallenge(run, at);
         res = hostBattle(run);
         tries++;
         if (!res.won) {
           R.backToChoice(run);
           // The host must get through: after two losses it steps down a tier, and if even
           // the easy card will not fall (four more losses) it goes round the cards.
-          if (offer.length > 1 && tries >= 2) tier = tier === 'elite' ? 'medium' : 'easy';
-          if (offer.length > 1 && tries >= 6) tier = ['easy', 'medium', 'elite', 'easy'][Math.floor((tries - 6) / 2) % 4];
+          if (offer.length > 1 && tries >= 2) at = Math.max(0, at - 1);
+          if (offer.length > 1 && tries >= 6) at = [0, 1, 2, 0][Math.floor((tries - 6) / 2) % 4];
         }
       } while (!res.won && tries < (offer.length === 1 ? 40 : 30));
       if (!res.won) {
         stuck = true;
-        stuckAt = `${tier} ${offer.map((o) => o.enc.name).join(' / ')}`;
+        stuckAt = `${offer[at].tier} ${offer.map((o) => o.enc.name).join(' / ')}`;
       }
       continue;
     }

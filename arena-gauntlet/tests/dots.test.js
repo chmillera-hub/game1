@@ -22,7 +22,7 @@ function battle(units) {
   const terrain = new Array(81).fill(E.T_GRASS);
   // (Turns are ended by hand here to step the clock: the bare rotation, with no rest and no
   // free marching, where ending a turn always hands over to the other side.)
-  return E.createBattle({ w: 9, h: 9, terrain, seed: 1, objective: 'all', loot: [], goals: [], waves: [], relics: { P: [], E: [] }, queue: true, rest: 0, march: false, units });
+  return E.createBattle({ w: 9, h: 9, terrain, seed: 1, objective: 'all', loot: [], goals: [], waves: [], relics: { P: [], E: [] }, queue: true, rounds: false, rest: 0, march: false, units });
 }
 const POISON = { poison: [3, 6] };
 const BURN = { burn: [3, 6] };

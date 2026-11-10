@@ -176,7 +176,7 @@ Crown of the Old King, Aegis of Dawn, Dragon Scale (flat stat bumps). In:
   and says who wears it. Hall matches still roll for it), **Mirror Aegis** (each unit's first hit bounces back), **Necromancer's Bell**
   (a 1 in 3 chance slain enemies rise as your skeletons), **Glass Crown** (cursed: +40%
   damage, -25% max HP).
-- Boss: **War Drum of Ages** (every tenth turn, one great beat: the army heals 25 and frenzies for 3 turns, announced once over the army).
+- Boss: **War Drum of Ages** (every fourth round, one great beat: the army heals 25 and frenzies for 3 turns, announced once over the army).
 
 Second pass: the remaining plain "+X physical resistance / +X HP / +X% damage" picks, talents, skills,
 gear and enchantments each got a mechanic of their own. Kept as they were, on purpose:
@@ -264,13 +264,19 @@ on a phone turned sideways, but portrait works too.
   take an easier one); the War Room's Other battles button goes back too. A medium
   battle is meant to be lost about as often as won until the army suits it; the Easy
   card (under half the army, no relics, no Shacklers, half the reinforcements) is the
-  way on for an army that does not, and it pays less. A boss has no easier card, so
-  it **wears down** instead: your first two defeats by a boss change nothing (that is
-  your room to adjust), and every defeat after that leaves its fighters 6% further
-  short of full HP at the start of the rematch, down to 30% short. Its card and the
-  scout report say how worn it is, so no army is ever stuck at a boss. (A battle an
-  event starts works the same way; the final challenge never wears down.) See The
-  balance pass for the numbers.
+  way on for an army that does not, and it pays less.
+- **Bosses**: the act's boss comes as three cards too, and any of them ends the act.
+  **Easy**: one of the boss monster with a small guard; it pays less (50 gold, two
+  spoils) and no boss relic. **Medium**: two of it, with a guard; 75 gold, three
+  spoils and, in Acts I and II, a boss relic to choose. **Elite**: three of it and
+  two Shacklers, nothing else (three bosses are an army); 110 gold, the boss relic
+  and a relic of its own on top. The mission is to slay every one of them. The Easy
+  card is the way past a boss for any army; so that none is ever stuck even there,
+  that card **wears down**: its first two defeats of you change nothing (your room
+  to adjust), and every one after leaves its fighters 6% further short of full HP at
+  the start of the rematch, down to 30% short. The card and the scout report say how
+  worn it is. (A battle an event starts works the same way; the final challenge
+  never wears down.) See The balance pass for the numbers.
 - **Enemies never heal**: your army has its Cleric; the enemy has nothing that mends,
   bosses included, and nothing that rises again once it falls. Chip away at a horde
   and it stays chipped. Orc Shamans' war drums only whip the warband into a frenzy, a
@@ -283,13 +289,14 @@ on a phone turned sideways, but portrait works too.
   the Lich at its side and the **Death Knight** at the front: a reaper in black robes
   whose greatsword sweeps every adjacent enemy, and whose Reaper's Charge (3 uses,
   cooldown 2) runs up to 4 tiles straight through a line of enemies, cutting and
-  weakening each one it passes, and leaves it standing past them. Two Level 3
-  Shacklers stand with them, all three bosses are Level 2, and the army carries two
-  relics. It is a set army, the same whatever your Supply, and it is meant to break
-  most armies: in the simulations it fell about one time in three to the strongest
-  armies (ones that took the elite cards all the way and their relics with them),
-  one time in thirty to armies that only ever took medium cards, and never to a
-  lone carry. Losing to it
+  weakening each one it passes, and leaves it standing past them. Two Drakes and two
+  Level 3 Shacklers stand with them, all three bosses are Level 2, and the army
+  carries two relics. It is a set army, the same whatever your Supply, and it is
+  meant to break most armies: in the simulations it fell about one time in four to
+  the strongest armies with Auto (ones that took the elite cards all the way and
+  their relics with them), one time in two to the best-suited of their line-ups,
+  next to never to armies that only ever took medium cards, and never to a lone
+  carry. Losing to it
   costs you nothing. Lose, and Try
   again takes you straight back to the War Room with the same plan, as many times as
   you like. Whatever army last fought the Wyrm, won or lost, takes your campaign's
@@ -441,16 +448,19 @@ on a phone turned sideways, but portrait works too.
 - **Army size**: there is no limit on how many units you recruit, or on how many
   take the field. Supply is the only limit: eight cheap Archers or four
   veterans, your call. Your commander level sets how big enemy armies get and
-  how many units Auto starts from (Auto then spends what Supply is left on
-  levels, items and, if it fits, one more unit).
+  how many units Auto fields to begin with. Auto pays for Level 2 on each unit
+  before it adds the next one (a level is the cheapest strength there is), then
+  spends what Supply is left on items, Level 3 and, if it fits, one more unit.
 - **Supply**: each battle gives you Supply to spend. A unit costs its base price,
   plus its level, plus any ability, skill, gear or enchantment it carries.
-  Spend it however you like: two Level 1 Knights (3 + 3), or one Level 2 Knight
-  (3 + 2) with an extra ability. Loadouts are free to change between battles, for
-  units on the field. A level costs +2 (Level 2) or +5 (Level 3) for ordinary units,
-  and more for the dear ones, whose levels multiply far bigger numbers: 60% of the
-  unit's own cost for Level 2 and 150% for Level 3, where that is more (a Dragon
-  Tyrant, 8 Supply: +5 and +12; a Witch, 4: +2 and +6).
+  Spend it however you like: two Level 1 Knights (3 + 3), or one Level 3 Knight
+  (3 + 3). Loadouts are free to change between battles, for
+  units on the field. A level costs +1 (Level 2) or +3 (Level 3) for ordinary units,
+  and more for the dear ones, whose levels multiply far bigger numbers: 30% of the
+  unit's own cost for Level 2 and 80% for Level 3, where that is more (a Dragon
+  Tyrant, 8 Supply: +2 and +6). A level buys no extra turn in the round, so it is
+  priced well under another body: an army of Level 3 units does about as well as a
+  bigger one of Level 1 units (see The balance pass).
 - **Auto**: the War Room's Auto button builds an army for you. It weighs how much
   of a physical blow gets through this enemy (its armor, and the blows it blocks
   from the front) against how much of a spell does (its magic resistance): magic
@@ -480,9 +490,9 @@ on a phone turned sideways, but portrait works too.
   4"): after a use it waits that many of the unit's turns, on top of the unit's own
   cooldown, so a strong one cannot come out every turn. Using one is the unit's action
   for the turn, in place of its attack (Blink included). For example, the Archer chooses Snare Shot or Smoke
-  Screen. Level 2 (+2 Supply, more for a dear unit: see Supply) gets +30% HP and
+  Screen. Level 2 (+1 Supply, more for a dear unit: see Supply) gets +30% HP and
   +20% damage, another skill slot, a talent slot and a second ability pick. Level 3
-  (+5) is +60% HP and +40% damage in all, and adds a class mastery, a third talent
+  (+3) is +60% HP and +40% damage in all, and adds a class mastery, a third talent
   slot and a second gear slot.
 - **Talents**: the passives that cost Supply (Shield Wall, Riposte, Poison Arrows
   and the like) are class talents. Every unit you get brings one talent of its
@@ -596,45 +606,45 @@ on a phone turned sideways, but portrait works too.
   asleep, but grabs it if a unit can reach it in one move.
 - **Playing for the mission**: your army also knows the mission and its bonus goals.
   It goes for the Commander when killing it completes the mission, hits the wagon nearest its way out
-  first, presses harder toward the end of a "win within N turns" goal (but never off
+  first, presses harder toward the end of a "win within N rounds" goal (but never off
   a shrine it must hold), and values hitting the enemies that arrive in waves more while
   an "ambush the reinforcements" goal is open.
-- **Taking turns**: the sides alternate, one action a turn, and the enemy goes
-  first. Each side's units take its turns in a rotation, faster units first (Speed,
-  SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board
-  shows who is next, units only.
-- **Marching is free**: a unit whose turn comes and only moves, or stays where it
-  is, has had its go and hands the turn to the next unit in line. A side's turn ends
-  when one of its units acts (attacks, or uses an ability), or when all have had
-  their go. So an army closes in together instead of one unit a turn, a turn rarely
-  passes without a blow struck, and a big army's numbers tell: before, an army on
-  the march spent half its turns walking, and whoever stood still fought it one unit
-  at a time. Each unit still goes at most once a turn.
-- **Catching its breath**: a unit that has acted sits out its side's next two
-  turns, whatever its cooldown ("zz" on its portrait in the turn order, "PASS
-  CATCHING ITS BREATH" over its head). No unit takes more than one turn in three of
-  its side's. An army with three fighters or more never notices; one with fewer has
-  turns nobody can take, and they pass. This is what stops one decked-out hero and
-  a Cleric from taking most of an army's turns between them.
-- **Cooldowns**: acting starts a unit's cooldown (CD on its card). Its turns still
-  come in the rotation, but it passes that many of them: when its turn comes it
-  passes at once, its cooldown ticks down by one, and the next unit in line goes.
-  Moving alone never starts a cooldown. Paralyzed units, and units with nothing in
-  reach, pass too; when every unit of a side passes, the side passes. Bosses pass
-  their first turn. The turn order strip shows every unit's turn, passes included:
-  a unit about to pass is greyed out with its cooldown on its portrait (a yellow
-  number for paralysis), and the number counts down as its turns pass. Over its head
-  the board says so: "PASS COOLDOWN 2→1" (the badge by its health bar drops to 1 at
-  the same moment), "PASS PARALYZED", "PASS HOLDS GROUND" (it could act and stays put),
-  or plain "PASS"; the battle log gathers a row of passes into one line ("Cass, Osric
-  and Jarek pass (cooling down).").
+- **Rounds**: a battle is played in rounds. In a round every unit of both armies
+  takes one turn, in order of Speed (SPD on the card), the fastest first, whichever
+  side it is on: a fast enemy or two, then your Scout (8), then the rest, down to a
+  Knight (2) and a Cleric (1). Units of equal Speed alternate between the sides,
+  yours first. On its turn a unit moves, acts (attacks or uses an ability), or both,
+  and then faces. So every unit you field is one more turn each round, and an
+  army's numbers tell. A strip under the board shows whose turn it is, who is still
+  to come this round, and the start of the next ("R4" marks where a new round
+  begins); the top bar names the unit and the round. Whoever joins a round under way
+  (reinforcements, the raised, a wolf leaping free) takes its first turn in the
+  next. What frames a round counts rounds: reinforcements land as a round closes,
+  wagons roll then, fire on the ground burns out round by round, the shrine counts
+  round starts, and so do fatigue and the War Drum.
+  (Before, the sides alternated one action at a time, so an army of two had as many
+  actions as an army of eight, and two rules, free marching and a rest after acting,
+  patched that. That older tempo is still in the engine, switched off, for comparison
+  in the balance lab: `rounds: false` in a battle's config; tests/queue.test.js and
+  tests/tempo.test.js keep it honest.)
+- **Cooldowns**: acting starts a unit's cooldown (CD on its card): for that many of
+  its next turns it cannot act. Its turn still comes every round, and it may move in
+  it: close in, step back, get in the way. Its cooldown ticks down by one each time,
+  and its portrait in the turn order wears the number. Moving alone never starts a
+  cooldown. Paralyzed units, units held in a net and units with nothing they could
+  do pass their turn (greyed out in the turn order), and so does a unit cooling down
+  that cannot move (a Lightning Ward). Bosses cool down through their first turn.
+  Over its head the board says so: "PASS COOLDOWN 2→1" (the badge by its health bar
+  drops to 1 at the same moment), "PASS PARALYZED", "PASS HOLDS GROUND" (it could
+  act and stays put), or plain "PASS"; a unit that is cooling down and stays where it
+  is counts its cooldown off quietly.
 - **A unit's turn, step by step**: whatever comes with a unit's turn comes in one
-  fixed order, acting or passing: its fatigue hit (if it is the first of its side up
-  this turn), then a Cursed Idol's 4, then poison,
-  then burns, then fire underfoot, then regen, and only then does it act, or pass with
-  its cooldown ticking down. The board plays each step as a beat of its own over the unit's head ("-16
-  FATIGUE", then "-5 POISON", then "-4 BURN", then "+3 REGEN", then "PASS COOLDOWN
-  2→1"), never two at once on one unit and never closer together than about 0.4
+  fixed order, acting or passing: its fatigue hit (if its side is tiring), then a
+  Cursed Idol's 4, then poison,
+  then burns, then fire underfoot, then regen, and only then does it move and act, or
+  pass. The board plays each step as a beat of its own over the unit's head ("-4
+  FATIGUE", then "-5 POISON", then "-4 BURN", then "+3 REGEN"), never two at once on
+  one unit and never closer together than about 0.4
   seconds, at 2× speed too. Floating numbers never land on each other: a new one starts
   just below the ones still showing, and they all rise at one pace, so a run of them
   reads as a list, top to bottom in the order it happened. The next unit's turn starts
@@ -663,29 +673,28 @@ on a phone turned sideways, but portrait works too.
   units that have regen of their own. Sources add up with no cap;
   unit cards and the battle log show it.
 - **Fatigue**: each side has a fatigue timer of its own, off at first. Once a side's
-  timer is on, the first of its units whose turn comes in each of its turns loses HP,
-  acting or passing (cooling down, paralyzed, or a Barrier Ward, which never acts),
-  past physical resistance and shields, before it moves or acts: never a whole side
-  at once, always one unit a turn. (Marching is free, so a turn can bring every
-  unit's turn: fatigue still comes once.) A side's first hit is 1, then 2, 3 and so
-  on, one more every turn it takes; from turn 30, when fatigue is on for everyone,
-  two more a turn, so a battle that long is soon settled (not for your army once
-  the win is yours: its victory lap tires it by one more a turn, however late, so
-  there is time to gather what the field still holds). A unit that **falls** to
-  fatigue (or to poison or fire as its turn comes) ends its side's turn there. The
-  two sides count apart (the enemy can be at 9 while you are at 2), and nothing ever
+  timer is on, each of its units loses HP as its turn comes, acting or passing
+  (cooling down, paralyzed, or a Barrier Ward, which never acts), past physical
+  resistance and shields, before it moves or acts: never a whole side at once,
+  always the unit whose turn it is. A side's number is 1 in the first round it
+  tires, then 2, 3 and so on, one more every round; from round 20, when fatigue
+  is on for everyone, two more a round, so a battle that long is soon settled (not
+  for your army once the win is yours: its victory lap tires it by one more a
+  round, however late, so there is time to gather what the field still holds). An
+  army tires the same whatever its size: every unit by the round's number. The two
+  sides count apart (the enemy can be at 9 while you are at 2), and nothing ever
   resets or doubles a count.
   - **Your timer** switches on when you do the mission (see Missions), when the enemy
-    army falls with something left to collect (see Cleanup), or on turn 30.
-  - **The enemy's timer** switches on when you do the mission, or on turn 30.
-  - **Turn 30** switches on every timer still off, each at 1; a timer already on
+    army falls with something left to collect (see Cleanup), or on round 20.
+  - **The enemy's timer** switches on when you do the mission, or on round 20.
+  - **Round 20** switches on every timer still off, each at 1; a timer already on
     carries on untouched.
   Each hit plays on its own moment on the board (a unit that falls to it included) and
   gets its own line in the battle log. tests/fatigue.test.js plays hundreds of battles
   of every kind and checks every hit for exactly this. Fatigue comes first in a unit's
   turn, before its poison, burns and regen. Poison and burns tick on passed turns too.
   A short banner marks each switch ("Fatigue triggered!", "Your army tires too!"), and
-  the top bar shows each side's next hit. From turn 30 no more reinforcements come
+  the top bar shows each side's number. From round 20 no more reinforcements come
   (completing the mission does not stop them). Big units and regen last
   longest; the last side standing wins.
 - **Cleanup**: when the enemy army falls while the field still holds something worth
@@ -698,9 +707,9 @@ on a phone turned sideways, but portrait works too.
   yours already, and your army goes round collecting: it breaks the buildings, cuts
   down any guards still at their posts (the specters by the Lost Tome) and takes the
   loot, gold and quest rewards and all. This is the victory lap, and it is not free:
-  your fatigue timer switches on the moment the enemy army falls, whatever the turn,
-  at 1 (if it is on already, after the mission or turn 30, it just carries on). The
-  first of your units up each turn loses HP, one more every turn. So collect fast:
+  your fatigue timer switches on the moment the enemy army falls, whatever the round,
+  at 1 (if it is on already, after the mission or round 20, it just carries
+  on). Each of your units loses that much HP as its turn comes, one more every round. So collect fast:
   you may get some of it and not all (siege damage breaks stone quickest). There is no time limit: the cleanup ends, with your win, only when
   everything worth having is taken or broken, or when your army has fallen to its
   fatigue, or when you tap Finish now (the menu's Retreat becomes Finish the battle). The top bar counts what is left and your
@@ -748,8 +757,8 @@ on a phone turned sideways, but portrait works too.
   unit with an area attack). Some monsters (the bosses' breaths) spare their own.
   Area spells that only hinder, like roots or smoke, never touch allies.
 - **Combat**: block works from the front, half from the side, never from behind.
-  Roots, weakness, paralysis and frenzy count the affected unit's own turns; a mark
-  counts the attacker side's turns.
+  Roots, weakness, paralysis, frenzy and marks all count the affected unit's own
+  turns, one a round.
 - **Board features**: tap a rock, tree, water, lava, a treasure chest, the shrine,
   fire, smoke, caltrops or a red landing tile to see what it does: whether it blocks
   movement or attacks, what loot pays and which tiles wake its guards, and how long
@@ -765,13 +774,13 @@ on a phone turned sideways, but portrait works too.
   Commander, hold a shrine, survive the waves, topple three war totems (each whips
   the enemies within 2 tiles into a frenzy, 25% more damage, until it falls), raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
-  Outlasting the waves takes 19 turns in Act I and 25 after it, about as long as a
+  Outlasting the waves takes 6 rounds in Act I and 7 after it, about as long as a
   battle lasts. A building sends four units before it falls silent, two on an Easy
   card. **Getting it done is the win**: nothing after it can take the win away. The battle
   goes on, though. Both fatigue timers switch on, each at 1 (one already on carries
   on), so the enemy wears down while your army grabs what else it can, a few more
   barricades, the loot or a bonus goal, before fatigue wears it down too.
-  Reinforcements keep marching in (until turn 30), so an ambush bonus is still there to
+  Reinforcements keep marching in (until round 20), so an ambush bonus is still there to
   chase, or you can leave them be and go for the gold. Every enemy unit your army cuts
   down, at any point in the battle, before the win or after (not a building, not a
   summoned shrub; ones that fall to their own fatigue do not count), is worth a coin or
@@ -779,7 +788,7 @@ on a phone turned sideways, but portrait works too.
   battle's gold. Enemy buildings pay their own salvage whenever they break. If your army falls after that, the win still stands; tap Finish now (or
   Finish the battle in the menu) to take it whenever you like. So rushing the mission
   is a way past an army too tough to grind down. "Lose at most one unit" and "win
-  within N turns" goals are judged at the moment the mission was done. A banner ("Mission done:
+  within N rounds" goals are judged at the moment the mission was done. A banner ("Mission done:
   you win!") and the battle log say when it happens, the top bar shows both sides'
   fatigue, and the mission line turns to "Won".
   Bonus goals (ghost-guarded loot, fast wins, wins with no more than one unit down,
@@ -804,14 +813,15 @@ on a phone turned sideways, but portrait works too.
 - **Shacklers (the answer to a carry)**: one decked-out Level 3 unit with a Cleric
   could roll through armies that have no answer to it. So every elite army fields a
   Shackler (two from Act II on, levelled with the act), within its Supply, and from
-  Act II so do some other armies (about half of them: the scout report says so), the
-  bosses, and the final challenge (two); never an army on an Easy card. It is the
+  Act II so do some other armies (about half of them: the scout report says so) and
+  the bosses on their Medium card; a boss's Elite card and the final challenge have
+  two; never an army on an Easy card. It is the
   Dota-style answer to a carry (Shadow
   Shaman's shackles, Bane's grip): it hits weakly, but it throws a chain-net at your
   biggest hitter and holds the chain, and that unit cannot move or act while the
-  Shackler holds on, for 3 of the Shackler's own turns (doing nothing else meanwhile);
-  then it throws again, as often as it likes. Counted in its own turns, each hold lasts
-  longer the bigger the enemy army. No cure, rally or immunity slips the net; bosses are
+  Shackler holds on, for 3 of the Shackler's own turns, which is three rounds (doing
+  nothing else meanwhile); then it throws again, as often as it likes. No cure, rally
+  or immunity slips the net; bosses are
   too big to hold. A glowing chain runs from the Shackler to its prey. Shacklers are
   tough (64 HP at Level 1, 30% physical and 50% magic resistance) and a Spell Shield eats the
   first physical or magic hit on one, so even a decked-out Level 3 Dragon
@@ -821,7 +831,7 @@ on a phone turned sideways, but portrait works too.
   the Shackler is just there on the field, for you to plan around.
 - **Enemy relics**: enemy armies carry relics too, the same ones you collect, working
   for the other side: one on a medium battle in Act I, two in Act II, three in Act
-  III; two or three on an elite, one or two on a boss, two on the final challenge,
+  III; two or three on an elite, one or two on a boss's Medium and Elite cards, two on the final challenge,
   none on an Easy card. Which ones depends on who they are: greenskins hit harder
   (Titan Gauntlet, Trophy Rack, Lucky Coin), soldiers close ranks (Phalanx Standard,
   Thorned Mail), spellcasters cast faster and further (Mana Crystal, Storm Jar),
@@ -865,10 +875,10 @@ on a phone turned sideways, but portrait works too.
   about one win in four), and loses its last units to fatigue doing so (still a win,
   and nobody is lost for good). Their HP bars
   show from the start, and the boss line in the goals says how much gold waits there.
-- **Reinforcements**: some battles send enemy waves on set turns, from the far
+- **Reinforcements**: some battles send enemy waves on set rounds, from the far
   edge or out of buildings. The War Room shows the schedule, and badges count
-  down on each building. Waves land after the enemy's move; a turn ahead, red
-  tiles mark where. Standing on one blocks that arrival at a cost of 10 HP.
+  down on each building. Waves land as their round ends (they take their first
+  turns in the next); a round ahead, red tiles mark where. Standing on one blocks that arrival at a cost of 10 HP.
   Destroy a building and its remaining waves are cut off.
 - **Defeat**: lose as often as you need. You go back to the round's choice of
   battles; a battle an event started is fought again from the War Room.

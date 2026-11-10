@@ -539,12 +539,22 @@
     easy: { name: 'Easy', kind: 'battle', mult: 0.45, gold: [10, 14], xp: 0.75, spoils: 2, relicChance: 0.06 },
     medium: { name: 'Medium', kind: 'battle', mult: 1, gold: [14, 20], xp: 1, spoils: 3, relicChance: 0.1 },
     elite: { name: 'Elite', kind: 'elite', mult: 1.25, gold: [30, 38], xp: 1, spoils: 3, relic: true, extraUnits: 1 },
-    boss: { name: 'Boss', kind: 'boss', mult: 1, gold: [75, 75], xp: 1, spoils: 3 },
+    // An act's boss comes as three cards too: one, two or three of the boss monster
+    // (`bosses`), the last with two Shacklers at its side and no other retinue: three
+    // bosses are an army. The Easy one pays less and no boss relic; the Elite one, a
+    // relic on top.
+    bossEasy: { name: 'Easy', kind: 'boss', mult: 0.7, gold: [50, 50], xp: 0.75, spoils: 2, bosses: 1 },
+    boss: { name: 'Medium', kind: 'boss', mult: 1.27, gold: [75, 75], xp: 1, spoils: 3, bosses: 2, bossRelic: true },
+    bossElite: { name: 'Elite', kind: 'boss', mult: 1.15, gold: [110, 110], xp: 1.25, spoils: 3, bosses: 3, bossRelic: true, relic: true },
     mega: { name: 'Final challenge', kind: 'boss', mult: 1, gold: [0, 0], xp: 1, spoils: 0 },
   };
 
-  // Arrive at the current step: a round deals three challenges to pick from (the boss and
-  // the final challenge, one); the event and the merchant open at once.
+  // The three cards of an act's boss, easiest first.
+  const BOSS_TIERS = ['bossEasy', 'boss', 'bossElite'];
+
+  // Arrive at the current step: a round deals three challenges to pick from, and so does
+  // the act's boss (the final challenge is one card); the event and the merchant open at
+  // once.
   function enterStep(run) {
     const st = curStep(run);
     run.offer = null;
@@ -552,11 +562,11 @@
     if (!st) return;
     const tag = run.act + ':' + run.step;
     if (st.kind === 'fight' || st.kind === 'boss' || st.kind === 'mega') {
-      const tiers = st.kind === 'fight' ? ['easy', 'medium', 'elite'] : [st.kind];
+      const tiers = st.kind === 'fight' ? ['easy', 'medium', 'elite'] : st.kind === 'boss' ? BOSS_TIERS : [st.kind];
       const seen = run.recentEnc.slice();
       run.offer = tiers.map((tier) => {
         const T = TIERS[tier];
-        const node = { id: 's' + run.step + tier, row: st.kind === 'fight' ? ROUND_ROW[st.round] : 6, kind: T.kind, tier, mult: T.mult, mega: tier === 'mega' };
+        const node = { id: 's' + run.step + tier, row: st.kind === 'fight' ? ROUND_ROW[st.round] : 6, kind: T.kind, tier, mult: T.mult, mega: tier === 'mega', bosses: T.bosses || 0 };
         const enc = genEncounter(run, node, null, seen);
         seen.push(enc.name);
         return { tier, node, enc, attempts: 0, reward: rollReward(run, node, T, enc.kind) };
@@ -603,7 +613,7 @@
       out.relic = rollRelic(run, rng, kind);
       out.lucky = !!(lucky && out.relic);
     }
-    if (kind === 'boss' && !node.mega && run.act < 3) {
+    if (kind === 'boss' && !node.mega && run.act < 3 && T.bossRelic) {
       out.bossRelics = [];
       for (let i = 0; i < 3; i++) {
         const id = pickRelic(run, rng, ['boss'], out.bossRelics);
@@ -618,7 +628,7 @@
     const T = TIERS[o.tier];
     const pre = o.reward;
     const out = { gold: (pre ? pre.gold : Math.round((T.gold[0] + T.gold[1]) / 2)) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: pre ? pre.relic : T.relic ? true : null, lucky: !!(pre && pre.lucky) };
-    if (o.tier === 'boss') out.bossRelic = run.act < 3;
+    if (T.bossRelic) out.bossRelic = run.act < 3;
     return out;
   }
 
@@ -770,18 +780,13 @@
   const WRECK_GOLD = 8;
   // Powder kegs strewn across the final challenge's field.
   const MEGA_KEGS = 6;
-  // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
+  // Turns count rounds: in a round every unit of both armies has one turn, fastest first.
   // A backstop only: fatigue ends battles long before it.
-  const TURN_LIMIT = 250;
-  // Fatigue sets in for everyone on this turn, if it has not already: each side's own count,
-  // one unit at a time as its turn comes (see the engine's fatigue), until one side is left.
-  const OVERTIME = 30;
-  const HOLD_NEED = 4;
+  const TURN_LIMIT = 60;
 
   // When buildings send their reinforcements: the first, then one every few turns.
   function spawnRhythm(primary, act, group) {
-    if (primary !== 'raze') return { first: 4, every: 8 };
-    return { first: 3, every: act >= 2 && group !== 'normal' ? 6 : 7 };
+    return BAL.spawn[primary === 'raze' ? 'raze' : 'siege'];
   }
   const TOTEM_BY_ACT = { 1: 'totem', 2: 'hexstone', 3: 'obelisk' };
   // Buildings a mission is about breaking: they scale with the act.
@@ -898,41 +903,54 @@
     cap: { normal: 1.0, elite: 1.2, boss: 1.15 },
     // What that buys, by kind of battle. A medium army fields about one and a half times
     // your Supply: your Cleric, your relics and your healing are worth the rest.
-    scale: { normal: 1.7, elite: 1.1, boss: 1.25 },
+    scale: { normal: 1.78, elite: 1.17, boss: 1.25 },
     // The optional final challenge is meant to break most armies: how many of its line-up
-    // take the field (the three bosses first), the bosses' level (one number, or one for
-    // each boss in that order), and Supply for their kit. An enemy army acts once a turn
-    // like yours, so three bosses that hit hard are worse news than nine units that do not.
-    // In the lab, Level 1 bosses fell to nearly half of the strongest armies (the ones
-    // that took the elite cards all the way), Level 3 to one in ten; at Level 2 it is four
-    // in ten with Auto, one in four with an army left as it was, and none of the armies
-    // that only ever took medium cards.
-    megaUnits: 3,
+    // take the field (the three bosses first, then its Drakes), the bosses' level (one
+    // number, or one for each boss in that order), and Supply for their kit. In rounds
+    // every unit is a turn, so its size is what tells: in the lab, the three bosses alone
+    // fell to half of the strongest armies (the ones that took the elite cards all the
+    // way), seven units to one in ten; with five it is about one in four with Auto, one in
+    // two with the best-suited army, and next to none of the armies that only ever took
+    // medium cards.
+    megaUnits: 5,
     megaLevel: 2,
     megaKit: 0,
     // Your Supply runs 2 ahead of what enemy armies are sized for: the extra is yours, for
     // abilities and kit, not a cue for bigger enemies.
     lag: 2,
     // What the budget is worth by mission, so each is about as hard: buildings to break or
-    // reinforcements on the way mean a smaller army up front, a mission that ends early
-    // (their commander slain, a banner burnt) a bigger one, a plain fight to the last a
-    // slightly smaller one. (An elite's commander is a monster with half again its HP:
-    // no shortcut, so no bigger army around it.)
-    share: { rout: 0.9, banner: 1.15, prison: 1.05, hold: 1.05, commander: { normal: 1.28, elite: 0.95 }, survive: 1.3, totems: 0.6, raze: 0.44 },
+    // reinforcements on the way mean a smaller army up front, a banner to burn a slightly
+    // bigger one. (A commander to slay is no shortcut in rounds, where its whole guard
+    // acts every round, and it is a veteran with half again its HP: no bigger army around
+    // it.) Fitted in the lab, like each army's own weight (`k` in ENCOUNTERS).
+    share: { rout: 0.85, banner: 1.12, prison: 1.02, hold: 0.94, commander: { normal: 0.96, elite: 0.95 }, survive: 0.82, totems: 0.6, raze: 0.44 },
+    // The clock, in rounds. Fatigue sets in for everyone on round `overtime`, if it has not
+    // already (see the engine's fatigue), until one side is left. It is there to end a
+    // stalemate, not to settle the fight: a medium battle takes about 13 rounds and a
+    // boss about 20, and with fatigue from round 12 nine boss battles in ten were ended
+    // by it (and a lone healed tank outlasted armies it could never have beaten). A shrine is held by
+    // starting `holdNeed` rounds in a row on it. Buildings send their first reinforcement
+    // in round `first` and one more every `every` rounds after. A fast-win goal allows
+    // `swift` rounds for each step of the enemy's size (see the swift goal).
+    overtime: 20,
+    holdNeed: 2,
+    spawn: { raze: { first: 2, every: 2 }, siege: { first: 2, every: 3 } },
+    swift: 1.6,
     // A survival battle's whole enemy, the waves included, as a multiple of the budget, and
     // how many turns you must outlast it, by act: about as long as a battle takes, or
-    // holding out is no feat.
+    // holding out is no feat. Its waves land as these turns close.
     surviveAll: 3,
-    surviveTurns: [0, 19, 25, 25],
+    surviveTurns: [0, 6, 7, 7],
+    surviveWaves: [null, [2, 3, 4], [1, 3, 4, 5], [1, 3, 4, 5]],
     // How many units each enemy building sends before it falls silent. On an Easy card
     // half as many: what comes out of a building is not bought from the budget, so an Easy
     // battle would otherwise hide a second army in its dens.
     spawns: { easy: 2, other: 4 },
     // Their commander is a veteran: this much of its kind's HP.
     commanderHp: 1.5,
-    // A boss leaves you no easier card to fall back on. So that no army is ever stuck at
-    // one, each defeat it hands you after the first `after` wears its army down: its units
-    // start the rematch `step` further short of full HP, down to `max`.
+    // A boss's Easy card leaves you no easier one to fall back on. So that no army is ever
+    // stuck at a boss, each defeat that card hands you after the first `after` wears its
+    // army down: its units start the rematch `step` further short of full HP, down to `max`.
     wear: { after: 2, step: 0.06, max: 0.3 },
     // Enemy armies stay near your usual army size (this many over it), and never above
     // `maxUnits`; spare Supply buys levels instead.
@@ -941,11 +959,14 @@
     // Relics an enemy army carries, by act (index 1 to 3), by tier (see FACTIONS): what
     // answers the relics you have piled up. None on an Easy card.
     relics: { easy: [0, 0, 0, 0], medium: [0, 1, 2, 3], elite: [0, 2, 3, 3], boss: [0, 1, 1, 2], mega: [0, 2, 2, 2] },
+    // Auto pays for Level 2 on every unit it fields before it adds the next one (see
+    // autoDeploy). Off, it fills the usual army size first, as it did when levels were dear.
+    autoLevels: true,
     // Shacklers by act (index 1 to 3), by tier: units that pin down your biggest hitter, so
     // a single carry has to be backed by an army that can break the chain. They are part
     // of the army, first in line, so trimming to the budget never drops them. (Some armies
     // field one of their own on top: `shacklers` on their line in ENCOUNTERS.)
-    shacklers: { elite: [0, 1, 2, 2] },
+    shacklers: { elite: [0, 1, 2, 2], bossElite: [0, 2, 2, 2] },
   };
 
   function enemyBudget(run, node, kind) {
@@ -1010,7 +1031,8 @@
   // harder cards.
   function foeRelics(run, node, kind, tpl) {
     const group = kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'normal';
-    const table = BAL.relics[node.mega ? 'mega' : group === 'normal' ? node.tier || 'medium' : group] || [];
+    // (A boss's Easy card carries none, like any Easy card.)
+    const table = BAL.relics[node.mega ? 'mega' : node.tier === 'bossEasy' ? 'easy' : group === 'normal' ? node.tier || 'medium' : group] || [];
     const n = table[run.act] || 0;
     const pool = ((D.FACTIONS[tpl.faction] || {}).relics || []).filter((id) => RELICS[id]);
     if (!n || !pool.length) return [];
@@ -1041,6 +1063,12 @@
     const sh = BAL.share[primary];
     let budget = fullBudget * ((sh && typeof sh === 'object' ? sh[group] || sh.normal : sh) || 1);
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
+    // An act's boss: one, two or three of the boss monster, by the card (see TIERS).
+    const copies = group === 'boss' && !node.mega ? Math.max(1, node.bosses || 1) : 1;
+    if (copies > 1) {
+      const at = units.findIndex((u) => UNITS[u.type].boss);
+      for (let i = 1; i < copies; i++) units.splice(at + 1, 0, Object.assign({}, units[at]));
+    }
     // The final challenge is a set army, not one sized to yours: its three bosses at the
     // level BAL.megaLevel says, and the first BAL.megaUnits of its line-up.
     if (node.mega) {
@@ -1053,7 +1081,9 @@
     const fighters = tpl.pool.filter((t) => !ENEMY_HEALERS.includes(t));
     for (const u of units) if (ENEMY_HEALERS.includes(u.type)) u.type = rng.pick(fighters.length ? fighters : ['knight']);
     // Shacklers first in line, levelled with the act (see BAL.shacklers).
-    const shacklers = ((BAL.shacklers[node.mega ? 'mega' : node.tier] || BAL.shacklers[group === 'normal' ? '' : group] || [])[act] || 0) + (node.tier === 'easy' ? 0 : tpl.shacklers || 0);
+    // (A boss's Easy card has none; its Elite card has its two, whoever the boss is.)
+    const ownShacklers = node.tier === 'easy' || node.tier === 'bossEasy' || node.tier === 'bossElite' ? 0 : tpl.shacklers || 0;
+    const shacklers = ((BAL.shacklers[node.mega ? 'mega' : node.tier] || BAL.shacklers[group === 'normal' ? '' : group] || [])[act] || 0) + ownShacklers;
     for (let i = 0; i < shacklers; i++) units.unshift({ type: 'shackler', level: Math.min(3, act) });
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
     if (node.mega) fullBudget = budget = cost() + BAL.megaKit;
@@ -1062,9 +1092,11 @@
     const tierExtra = (TIERS[node.tier] && TIERS[node.tier].extraUnits) || 0;
     const maxUnits = node.mega ? units.length : Math.min(BAL.maxUnits, armySize(run) + BAL.extraUnits[group] + tierExtra + (tpl.more || 0));
     // Trimmed to the budget from the back of the line, but never below two fighters of its
-    // own (Shacklers and bosses aside), whatever the budget says.
+    // own (Shacklers and bosses aside), whatever the budget says. (Two or three bosses are
+    // an army by themselves: they may stand alone.)
     const own = () => units.filter((u) => u.type !== 'shackler' && !UNITS[u.type].boss).length;
-    while ((cost() + structures > budget + 0.5 && own() > 2) || units.length > maxUnits) {
+    const minOwn = copies > 1 ? 0 : 2;
+    while ((cost() + structures > budget + 0.5 && own() > minOwn) || units.length > maxUnits) {
       let i = units.length - 1;
       while (i >= 0 && (UNITS[units[i].type].boss || (units[i].type === 'shackler' && own() > 0))) i--;
       if (i < 0) break;
@@ -1180,8 +1212,8 @@
       bonus: [],
       // The relics this army carries (a roll of its own, so nothing else shifts).
       relics: foeRelics(run, node, kind, tpl),
-      // Timings made for one unit a turn (see retime).
-      tm: 2,
+      // Timings made for rounds (see retime).
+      tm: 3,
     };
     const addObject = (type, rows, xs) => {
       const t = pickTile(rows, xs) || pickTile([0, 1, 2], [...Array(BOARD).keys()]);
@@ -1219,7 +1251,7 @@
       case 'hold': {
         const t = pickTile([4, 3, 5], [3, 4, 5, 2, 6]);
         if (t) {
-          enc.hold = { x: t[0], y: t[1], need: HOLD_NEED };
+          enc.hold = { x: t[0], y: t[1], need: BAL.holdNeed };
           enc.objective = 'hold';
           if (enc.stance === 'defensive') enc.stance = 'balanced';
         }
@@ -1253,7 +1285,7 @@
     } else if (primary === 'survive') {
       const tiles = [];
       for (const y of [0, 1]) for (let x = 0; x < BOARD; x++) if (terrain[y * BOARD + x] === 0) tiles.push([x, y]);
-      const turns = act === 1 ? [3, 7, 11] : [2, 6, 10, 14];
+      const turns = BAL.surviveWaves[act];
       const share = (fullBudget * BAL.surviveAll - budget) / turns.length;
       for (const t of turns) enc.waves.push({ turn: t, tiles, units: waveOf(rng, run, pool, share, group, 3) });
     }
@@ -1334,7 +1366,7 @@
       const c = rng.weighted(opts);
       if (c === 'swift') {
         const foes = units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure')).length;
-        enc.bonus.push({ type: 'swift', turns: Math.round(3.75 * (4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0))) });
+        enc.bonus.push({ type: 'swift', turns: Math.round(BAL.swift * (4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0))) });
       } else if (c === 'muster') enc.bonus.push({ type: 'muster', rid: rng.pick(muster).id });
       else if (c === 'ambush') enc.bonus.push({ type: 'ambush', n: Math.min(3, arriving) });
       else enc.bonus.push({ type: 'flawless' });
@@ -1443,20 +1475,21 @@
     // How often each building sends someone: the gap between its first two waves.
     const own = (enc.waves || []).filter((w) => w.from && w.from === (enc.waves || []).find((x) => x.from).from);
     const every = own.length > 1 ? own[1].turn - own[0].turn : 3;
+    const bossCount = enc.units.filter((u) => UNITS[u.type] && UNITS[u.type].boss).length;
     const P = {
       rout: `Every enemy fighter must fall.${typesWith('structure').length ? ' Buildings do not need to.' : ''}`,
-      boss: 'Slay the boss. Its retinue will scatter.',
+      boss: bossCount > 1 ? `Slay ${bossCount === 2 ? 'both' : 'all ' + bossCount} bosses. Their retinue will scatter.` : 'Slay the boss. Its retinue will scatter.',
       banner: 'Burn the War Banner, or defeat every enemy. Enemies near their banner hit 15% harder.',
       prison: 'Break the prison cage, or defeat all the guards. The freed prisoner joins your army.',
       commander: 'Assassinate the enemy Commander (crowned), or defeat them all.',
-      hold: `Hold the shrine: start ${enc.hold ? enc.hold.need : HOLD_NEED} of your turns in a row with a unit on it. Or defeat every enemy.`,
-      survive: `Survive ${enc.surviveTurns || 12} turns while waves of reinforcements march in from the far edge. Or defeat them all.`,
-      gate: `Break the Castle Gate, or defeat the whole garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} turns until destroyed.` : ''} Towers and walls do not need to fall.`,
+      hold: `Hold the shrine: start ${enc.hold ? enc.hold.need : BAL.holdNeed} rounds in a row with a unit on it. Or defeat every enemy.`,
+      survive: `Survive ${enc.surviveTurns || 7} rounds while waves of reinforcements march in from the far edge. Or defeat them all.`,
+      gate: `Break the Castle Gate, or defeat the whole garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} rounds until destroyed.` : ''} Towers and walls do not need to fall.`,
       totems: `Topple all ${totems.length} ${tName}s, or defeat every enemy. Each whips enemies within 2 tiles into a frenzy (25% more damage).`,
-      raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} turns until it falls.`,
+      raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} rounds until it falls.`,
       convoy: 'Break every Loot Wagon before it escapes off the left edge, or defeat the whole escort.',
     };
-    const short = { rout: 'Defeat them all', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 12} turns`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
+    const short = { rout: 'Defeat them all', boss: bossCount > 1 ? `Slay ${bossCount === 2 ? 'both' : 'the ' + bossCount} bosses` : 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 7} rounds`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
     const wrecks = enc.units.filter((u) => u.type === 'wreckage');
     if (wrecks.length) P.boss += ` Then break the wreckage for its gold (${wrecks.reduce((t, u) => t + (u.bounty || 0), 0)} in ${wrecks.length} carts) before your army's fatigue tells.`;
     const key = enc.primary || (enc.objective === 'boss' ? 'boss' : 'rout');
@@ -1470,7 +1503,7 @@
             reward: b.kind === 'chest' ? `+${25 + 10 * run.act} gold` : b.kind === 'tome' ? 'Choose a skill' : 'A relic',
           };
         case 'swift':
-          return { b, text: `Win within ${b.turns} turns.`, short: `Win within ${b.turns} turns`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: `Win within ${b.turns} rounds.`, short: `Win within ${b.turns} rounds`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'flawless':
           return { b, text: 'Win with no more than one of your units down.', short: 'Lose at most one unit', reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'plunder':
@@ -1612,14 +1645,14 @@
 
   // ------------------------------------------------------------ battles
 
-  // How worn a boss's army is by the defeats it has handed you (see BAL.wear): the share of
-  // their HP its units start the next battle without. Only where there is no easier card to
-  // take instead: an act's boss, or a battle an event started. Never the final challenge,
-  // which is there to be lost. `o`: a card on offer; without it, the battle at hand.
+  // How worn an army is by the defeats it has handed you (see BAL.wear): the share of
+  // their HP its fighters start the next battle without. Only where there is no easier card
+  // to take instead: a boss's Easy card, or a battle an event started. `o`: a card on
+  // offer; without it, the battle at hand.
   function wornDown(run, o) {
     const p = o || run.pending;
     if (!p || !p.enc) return 0;
-    const lone = !!p.fromEvent || (p.enc.kind === 'boss' && p.tier !== 'mega' && !(p.node && p.node.mega));
+    const lone = !!p.fromEvent || p.tier === 'bossEasy';
     if (!lone) return 0;
     const losses = p.wear != null ? p.wear : (o ? o.attempts : p.attempt) || 0;
     return Math.min(BAL.wear.max, Math.round(100 * BAL.wear.step * Math.max(0, losses - BAL.wear.after)) / 100);
@@ -1657,7 +1690,7 @@
       waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w, { units: w.units.map((u) => Object.assign({ foe: true, supply: enemyCost(u), hurt: hurt(u.type) }, u)) })),
       // Both sides take their turns in a speed-ordered unit rotation.
       queue: true,
-      overtime: OVERTIME,
+      overtime: BAL.overtime,
     };
   }
 
@@ -2911,14 +2944,29 @@
       spent += unitCost(run, core); // an enchantment's surcharge, if it has one
     }
     const others = () => pick.filter((r) => !r.core).length;
+    // A level is the cheapest strength there is (a unit gets one turn a round whatever its
+    // level, so Level 2 is priced far under another body): every unit Auto fields is paid
+    // up to Level 2 before the next one joins. `held` is the Supply kept back for that.
+    const lv2 = (r) => {
+      if (!BAL.autoLevels || r.core) return 0;
+      const was = unitCost(run, r);
+      r.load.lv = 2;
+      const up = unitCost(run, r) - was;
+      r.load.lv = 1;
+      return up;
+    };
+    let held = 0;
     // A unit a bonus goal asks for always goes in, so you can see the goal is in reach.
     const wanted = bonusUnit(run, enc);
     if (wanted && !pick.includes(wanted) && unitCost(run, wanted) <= supply) {
       pick.push(wanted);
       spent += unitCost(run, wanted);
+      held += lv2(wanted);
     }
     while (others() < cap) {
-      const open = pool.filter((r) => !pick.includes(r) && spent + unitCost(run, r) <= supply);
+      let open = pool.filter((r) => !pick.includes(r) && spent + held + unitCost(run, r) + lv2(r) <= supply);
+      // (Two fighters before any level: a lone unit at Level 2 is no army.)
+      if (!open.length && others() < 2) open = pool.filter((r) => !pick.includes(r) && spent + unitCost(run, r) <= supply);
       if (!open.length) break;
       const attackers = pick.filter((p) => isAttacker(p.type));
       // Supporting units wait until two attackers are in, and fill at most a third of the army.
@@ -2934,6 +2982,7 @@
       }
       pick.push(r);
       spent += unitCost(run, r);
+      held += lv2(r);
     }
     if (!pick.some((r) => isAttacker(r.type))) return core ? autoPlace(run, enc, [core]) : [];
     // The Cleric is upgraded last, after the units picked for this fight.
@@ -3090,13 +3139,14 @@
 
   // ------------------------------------------------------------ saving
 
-  // A battle planned back when every unit moved each turn: stretch its timings to the
-  // one-unit-a-turn rhythm.
+  // A battle planned under an older turn rhythm (a saved campaign from before rounds): its
+  // timings are set again for rounds, where every unit has a turn in each.
   function retime(run, enc) {
-    if (!enc || enc.tm === 2) return;
-    enc.tm = 2;
+    if (!enc || enc.tm === 3) return;
+    const was = enc.tm || 1;
+    enc.tm = 3;
     const group = enc.kind === 'boss' ? 'boss' : enc.kind === 'elite' ? 'elite' : 'normal';
-    if (enc.hold) enc.hold.need = HOLD_NEED;
+    if (enc.hold) enc.hold.need = BAL.holdNeed;
     if (enc.surviveTurns) enc.surviveTurns = BAL.surviveTurns[run.act];
     const waves = enc.waves || [];
     const { first, every } = spawnRhythm(enc.primary, run.act, group);
@@ -3108,9 +3158,10 @@
       }
     }
     const edge = waves.filter((w) => !w.from);
-    const turns = run.act === 1 ? [3, 7] : [2, 6, 10];
-    edge.forEach((w, i) => (w.turn = turns[Math.min(i, turns.length - 1)] + Math.max(0, i - turns.length + 1) * 4));
-    for (const b of enc.bonus || []) if (b.type === 'swift') b.turns = Math.round(b.turns * 2.5);
+    const turns = BAL.surviveWaves[run.act] || BAL.surviveWaves[3];
+    edge.forEach((w, i) => (w.turn = turns[Math.min(i, turns.length - 1)] + Math.max(0, i - turns.length + 1)));
+    // A fast-win goal counted in the old one-unit turns (3.75 a step) or older (1.5 a step).
+    for (const b of enc.bonus || []) if (b.type === 'swift') b.turns = Math.max(3, Math.round((b.turns / (was === 2 ? 3.75 : 1.5)) * BAL.swift));
   }
 
   // ------------------------------------------------------------ hall of fame
@@ -3730,7 +3781,7 @@
     };
     place(a, 'P');
     place(b, 'E');
-    return { w: BOARD, h: BOARD, terrain, units, relics: { P: (a.relics || []).slice(), E: (b.relics || []).slice() }, seed, objective: 'all', loot: [], goals: [], cartExit: 0, turnLimit: TURN_LIMIT, waves: [], queue: true, overtime: OVERTIME };
+    return { w: BOARD, h: BOARD, terrain, units, relics: { P: (a.relics || []).slice(), E: (b.relics || []).slice() }, seed, objective: 'all', loot: [], goals: [], cartExit: 0, turnLimit: TURN_LIMIT, waves: [], queue: true, overtime: BAL.overtime };
   }
 
   // Play a Hall match out at once, both sides on the AI. Returns 'P' (a) or 'E' (b).
@@ -3883,6 +3934,7 @@
       }
       delete r.lastCarry;
       if (r.pending && r.pending.type === 'battle') retime(r, r.pending.enc);
+      for (const o of r.offer || []) if (o && o.enc) retime(r, o.enc);
       grantPickedTalents(r);
       // Saves from before every army had its Cleric.
       if (r.roster) ensureCore(r);
@@ -4004,7 +4056,11 @@
   }
 
   AG.Run = {
-    FIGHTS, TIERS, BAL, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
+    FIGHTS, TIERS, BOSS_TIERS, BAL, LEAN_GOLD, EVENTS, LOOT_NAMES,
+    // The turn fatigue sets in for everyone (the lab may change it: read it when needed).
+    get OVERTIME() {
+      return BAL.overtime;
+    },
     crownHolder, crownedIn, gainRelic,
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, veteranSupply, VETERAN_XP, supplyFor, armySize, gainXp,

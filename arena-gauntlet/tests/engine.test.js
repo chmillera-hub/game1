@@ -598,7 +598,7 @@ test('the enemy army down with gold, goals or loot still on the field: the battl
   assert.strictEqual(s.stats.bounty, 12 + totem.salvage);
 });
 
-test('mid-cleanup your fatigue sets in at once: 1, then 2, 3 and so on, one more for every turn one of your units takes', () => {
+test('mid-cleanup your fatigue sets in at once: each of your units loses 1 as its turn comes, 2 the round after, and so on', () => {
   const s = board(
     [
       { type: 'knight', team: 'P', x: 4, y: 5 },
@@ -612,28 +612,46 @@ test('mid-cleanup your fatigue sets in at once: 1, then 2, 3 and so on, one more
   const [kn, ar, cl, sc, totem] = s.units;
   totem.hp = totem.maxHp = 999;
   sc.hp = 1;
-  E.endTurn(s);
-  // Your first unit to act takes the scout down; fatigue is still far off (turn 30).
-  while (!s.over && !s.cleanup) {
-    if (s.side === 'P' && s.due) act(s, s.byId[s.due], { kind: 'unit', uid: sc.uid });
+  // Your first unit that can reach the scout takes it down; fatigue is still far off.
+  let guard = 0;
+  while (!s.over && !s.cleanup && guard++ < 50) {
+    const u = s.byId[s.due];
+    if (s.side === 'P' && E.targetsFrom(s, u, 0).some((t) => t.uid === sc.uid)) act(s, u, { kind: 'unit', uid: sc.uid });
     else E.endTurn(s);
   }
   assert.ok(s.cleanup && !s.inOvertime && E.fatigueHit(s, 'E') === 0, 'the clock has no fatigue yet');
   assert.strictEqual(E.cleanupHit(s), 1);
   assert.strictEqual(E.fatigueHit(s, 'P'), 1);
+  const began = s.turn;
   const hits = [];
-  let guard = 0;
-  while (!s.over && hits.length < 7 && guard++ < 200) {
-    const n = s.events.length;
+  guard = 0;
+  s.events.length = 0;
+  while (!s.over && s.turn < began + 4 && guard++ < 200) {
+    const round = s.turn;
     if (s.side === 'P') AG.AI.playTurn(s, 'P', { stance: 'balanced', temp: 0 });
     else E.endTurn(s);
-    for (const e of s.events.slice(n)) if (e.t === 'dmg' && e.dmgType === 'fatigue') {
+    // (A turn's events: the end of this unit's turn, then the start of the next one's,
+    // which may be the first of a new round.)
+    let r = round;
+    for (const e of s.events.splice(0)) {
+      if (e.t === 'round') r = e.turn;
+      if (e.t !== 'dmg' || e.dmgType !== 'fatigue') continue;
       assert.strictEqual(s.byId[e.uid].team, 'P', 'only your side tires');
-      hits.push(e.amount);
+      hits.push({ round: r, uid: e.uid, amount: e.amount });
     }
   }
-  assert.deepStrictEqual(hits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
-  assert.strictEqual(E.cleanupHit(s), s.tire.P.n + 1, 'your own count');
+  assert.ok(hits.length >= 6, `${hits.length} hits`);
+  // One number a round for the whole army, 1 in the round the cleanup began in; each unit
+  // once a round, as its turn comes.
+  for (const h of hits) assert.strictEqual(h.amount, h.round - began + 1, `round ${h.round}: ${h.amount}`);
+  const seen = new Set();
+  for (const h of hits) {
+    assert.ok(!seen.has(h.round + ':' + h.uid), 'once a round each');
+    seen.add(h.round + ':' + h.uid);
+  }
+  // The round after it began, all three tire.
+  assert.strictEqual(hits.filter((h) => h.round === began + 1).length, [kn, ar, cl].filter((u) => u.alive || hits.some((h) => h.uid === u.uid && h.round === began + 1)).length);
+  assert.strictEqual(E.cleanupHit(s), E.fatigueHit(s, 'P'), 'your own count');
 });
 
 test('wreckage: left be while the fight is on, broken for its gold once the enemy army falls', () => {

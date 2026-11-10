@@ -144,22 +144,24 @@ for (let i = +process.env.FIRST || 0; i < N; i++) {
       const offer = run.offer;
       assert.ok(offer && offer.length, 'a challenge on offer');
       const act = run.act;
-      let tier = offer.length === 1 ? offer[0].tier : firstTier(rng);
+      // Cards come easiest first (a boss's three too): picked by place, a step easier after
+      // each loss.
+      let at = offer.length === 1 ? 0 : 2 - TIER_ORDER.indexOf(firstTier(rng));
+      let tier = offer[at].tier;
       let res;
       let tries = 0;
       let firstKind = null;
       let enc = null;
       do {
-        const idx = offer.findIndex((o) => o.tier === tier);
-        assert.ok(R.chooseChallenge(run, idx), 'challenge taken');
+        tier = offer[at].tier;
+        assert.ok(R.chooseChallenge(run, at), 'challenge taken');
         enc = run.pending.enc;
-        if (!firstKind) firstKind = enc.kind + (offer.length === 1 ? '' : '/' + tier);
+        if (!firstKind) firstKind = enc.kind + (offer.length === 1 ? '' : '/' + ['easy', 'medium', 'elite'][at]);
         res = playBattle(run);
         tries++;
         if (!res.won) {
           R.backToChoice(run);
-          const t = TIER_ORDER.indexOf(tier);
-          if (offer.length > 1 && t < TIER_ORDER.length - 1) tier = TIER_ORDER[t + 1];
+          if (offer.length > 1 && at > 0) at--;
         }
       } while (!res.won && tries < MAX_TRIES);
       const isMega = offer[0].tier === 'mega';

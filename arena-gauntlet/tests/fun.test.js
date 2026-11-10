@@ -759,7 +759,7 @@ test('campaign enemies barely heal: an enemy Champion keeps its punch but not it
   assert.ok(foe.props.dmgMult >= 0.2, 'but still hits like a Champion');
 });
 
-test('War Drum of Ages: one great beat every tenth turn, 25 HP and a 3-turn frenzy for the whole army', () => {
+test('War Drum of Ages: one great beat every fourth round, 25 HP and a 3-turn frenzy for the whole army', () => {
   const s = board(
     [
       { type: 'knight', team: 'P', x: 3, y: 8 },
@@ -773,12 +773,13 @@ test('War Drum of Ages: one great beat every tenth turn, 25 HP and a 3-turn fren
   for (const u of [a, b, s.units[2]]) u.hp = u.maxHp = 999;
   a.hp = b.hp = 900;
   const beats = [];
-  for (let g = 0; g < 200 && s.turn <= 21; g++) {
+  for (let g = 0; g < 400 && s.turn <= 9; g++) {
     const ev = s.events.length;
     E.pass(s);
     for (const e of s.events.slice(ev)) if (e.t === 'wardrum') beats.push(s.turn);
   }
-  assert.deepStrictEqual(beats, [10, 20], 'turns 10 and 20 only');
+  assert.strictEqual(E.DRUM_ROUNDS, 4);
+  assert.deepStrictEqual(beats, [4, 8], 'rounds 4 and 8 only');
   const drumHeals = s.events.filter((e) => e.t === 'heal' && e.why === 'wardrum');
   assert.ok(drumHeals.every((e) => e.amount === 25 || e.amount < 25), 'heals up to 25');
   assert.ok(s.events.filter((e) => e.t === 'status' && e.status === 'frenzy').every((e) => e.quiet && e.turns === 3), 'a quiet 3-turn frenzy');

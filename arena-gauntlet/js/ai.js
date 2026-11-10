@@ -36,6 +36,9 @@
   const delayCache = new WeakMap();
   function delayOf(s, v) {
     if (!s.queue) return E.turnsUntilReady(v);
+    // Rounds: everyone's turn comes every round, so what counts is how many of its own
+    // turns a unit will pass first (cooling down, paralyzed, holding a net).
+    if (s.rounds) return v.wait + v.para + (v.holding ? v.holdLeft : 0);
     let c = delayCache.get(s);
     if (!c || c.ply !== s.ply || c.due !== s.due) {
       c = { ply: s.ply, due: s.due, map: new Map() };
@@ -53,6 +56,7 @@
   // How much a foe's reach counts: whoever acts next fully; in a queue battle the units
   // behind it in the rotation count less the longer they wait.
   function threatWeight(s, delay) {
+    if (s.rounds) return delay === 0 ? 1 : delay === 1 ? 0.5 : delay === 2 ? 0.3 : 0.2;
     if (s.queue) return delay === 0 ? 1 : delay === 1 ? 0.6 : delay === 2 ? 0.4 : delay < 99 ? 0.25 : 0;
     return delay === 0 ? 1 : delay === 1 ? 0.3 : 0;
   }

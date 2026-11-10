@@ -3138,6 +3138,28 @@ body:has(#battle:not([hidden])) {
   font-size: 0.62rem;
 }
 
+/* Cooling down, but it has its turn: it can move, not act. */
+.q-cd.cool {
+  background: #3a4a5c;
+  border-color: #9fc0e0;
+}
+
+/* Where a new turn begins in the turn order. */
+.q-round {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  margin: 0 1px;
+  padding: 0 4px;
+  border-left: 2px solid rgba(214, 178, 94, 0.55);
+  color: var(--brass);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .blog {
   list-style: none;
   margin: 6px 0;
