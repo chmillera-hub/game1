@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds eighty-eight small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 101 small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -275,6 +275,45 @@ The shelf holds eighty-eight small AI-written bug fixes (patch files) for forty 
 
 88. [maximem_synap_core: one passing server error from the cloud service permanently fails a MACA job](spare-token-bug-fixes/fix-88-maximem-synap-core-31.md)
    Project: maximem-ai/maximem_synap_core. Bug report number 31. License: Apache-2.0. Test included: yes. Patch file: [88-maximem-synap-core-31.patch](spare-token-bug-fixes/fixes/88-maximem-synap-core-31.patch)
+
+89. [devswarm: the plan inspector leaves out the description of each API endpoint](spare-token-bug-fixes/fix-89-devswarm-69.md)
+   Project: himanshu748/devswarm. Bug report number 69. License: MIT. Test included: yes. Patch file: [89-devswarm-69.patch](spare-token-bug-fixes/fixes/89-devswarm-69.patch)
+
+90. [Archy: no test covers the 40-character limit on registry literal names](spare-token-bug-fixes/fix-90-archy-867.md)
+   Project: hslee16/Archy. Bug report number 867. License: MIT. Test included: yes. Patch file: [90-archy-867.patch](spare-token-bug-fixes/fixes/90-archy-867.patch)
+
+91. [Archy: a code comment only repeats the line below it](spare-token-bug-fixes/fix-91-archy-849.md)
+   Project: hslee16/Archy. Bug report number 849. License: MIT. Test included: no. Patch file: [91-archy-849.patch](spare-token-bug-fixes/fixes/91-archy-849.patch)
+
+92. [Archy: the README never mentions the archy simulate command and describes archy duplicates incompletely](spare-token-bug-fixes/fix-92-archy-788.md)
+   Project: hslee16/Archy. Bug report number 788. License: MIT. Test included: no. Patch file: [92-archy-788.patch](spare-token-bug-fixes/fixes/92-archy-788.patch)
+
+93. [SMART toolkit: two architecture tests fail in a copy of the code that has no .git folder](spare-token-bug-fixes/fix-93-social-messaging-agent-runtime-toolkit-84.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 84. License: Apache-2.0. Test included: yes. Patch file: [93-social-messaging-agent-runtime-toolkit-84.patch](spare-token-bug-fixes/fixes/93-social-messaging-agent-runtime-toolkit-84.patch)
+
+94. [CONTINUUM: building an attempt lesson can hang forever or exceed its size limit when action ids are long](spare-token-bug-fixes/fix-94-continuum-1966.md)
+   Project: Under-Research-Labs/CONTINUUM. Bug report number 1966. License: Apache-2.0. Test included: yes. Patch file: [94-continuum-1966.patch](spare-token-bug-fixes/fixes/94-continuum-1966.patch)
+
+95. [remitsure-frontend: Copy receipt link does nothing when the browser has no clipboard access](spare-token-bug-fixes/fix-95-remitsure-frontend-3.md)
+   Project: remitsure/remitsure-frontend. Bug report number 3. License: MIT. Test included: yes. Patch file: [95-remitsure-frontend-3.patch](spare-token-bug-fixes/fixes/95-remitsure-frontend-3.patch)
+
+96. [SMART toolkit: voice notes in the personal-assistant blueprint ignore the configured languages](spare-token-bug-fixes/fix-96-social-messaging-agent-runtime-toolkit-90.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 90. License: Apache-2.0. Test included: yes. Patch file: [96-social-messaging-agent-runtime-toolkit-90.patch](spare-token-bug-fixes/fixes/96-social-messaging-agent-runtime-toolkit-90.patch)
+
+97. [SMART toolkit: the zip-mode agent package includes the project's infrastructure folder](spare-token-bug-fixes/fix-97-social-messaging-agent-runtime-toolkit-57.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 57. License: Apache-2.0. Test included: yes. Patch file: [97-social-messaging-agent-runtime-toolkit-57.patch](spare-token-bug-fixes/fixes/97-social-messaging-agent-runtime-toolkit-57.patch)
+
+98. [SMART toolkit: a test meant to cover three blueprints only ever builds the minimal blueprint](spare-token-bug-fixes/fix-98-social-messaging-agent-runtime-toolkit-36.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 36. License: Apache-2.0. Test included: yes. Patch file: [98-social-messaging-agent-runtime-toolkit-36.patch](spare-token-bug-fixes/fixes/98-social-messaging-agent-runtime-toolkit-36.patch)
+
+99. [SMART toolkit: socialagent deploy prints its own header after the Terraform output when the output goes to a file](spare-token-bug-fixes/fix-99-social-messaging-agent-runtime-toolkit-69.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 69. License: Apache-2.0. Test included: yes. Patch file: [99-social-messaging-agent-runtime-toolkit-69.patch](spare-token-bug-fixes/fixes/99-social-messaging-agent-runtime-toolkit-69.patch)
+
+100. [Archy: the documentation says surfaces covers every name defined in several modules but only class names are counted](spare-token-bug-fixes/fix-100-archy-760.md)
+   Project: hslee16/Archy. Bug report number 760. License: MIT. Test included: no. Patch file: [100-archy-760.patch](spare-token-bug-fixes/fixes/100-archy-760.patch)
+
+101. [maximem_synap_core: a fully downloaded leftover .part file makes the first start fail on every boot](spare-token-bug-fixes/fix-101-maximem-synap-core-30.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 30. License: Apache-2.0. Test included: yes. Patch file: [101-maximem-synap-core-30.patch](spare-token-bug-fixes/fixes/101-maximem-synap-core-30.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

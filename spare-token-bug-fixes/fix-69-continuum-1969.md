@@ -44,7 +44,7 @@ src/continuum/recovery/guidance.py now names continuum validate which is the rea
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- The one-word change is the change the bug report itself proposes. The chatbot did not run the new test. The test builds the decision from a plain stand-in object the same way an existing test in tests/test_recovery_guidance.py does. Fix 81 on this shelf changes a line three lines above in the same file and adds a changelog entry at the same spot so the two patches do not apply together: apply one patch and make the other one-line change by hand.
+- The one-word change is the change the bug report itself proposes. The chatbot did not run the new test. The test builds the decision from a plain stand-in object the same way an existing test in tests/test_recovery_guidance.py does. Fix 81 on this shelf changes a line three lines above in the same file and adds a changelog entry at the same spot so the two patches do not apply together: apply one patch and make the other one-line change by hand. Fix 94 on this shelf adds a changelog entry at the same spot so the two patches do not apply together: add the other changelog entry by hand.
 
 ## Search words
 

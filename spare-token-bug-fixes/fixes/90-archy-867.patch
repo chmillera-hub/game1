@@ -1,0 +1,35 @@
+diff --git a/tests/test_conventions_slug_cap.py b/tests/test_conventions_slug_cap.py
+new file mode 100644
+index 0000000..d043e2f
+--- /dev/null
++++ b/tests/test_conventions_slug_cap.py
+@@ -0,0 +1,29 @@
++"""The 40-character cap on registry literal names (#867)."""
++
++from __future__ import annotations
++
++from archy.conventions import compute_conventions
++from tests.conventions_helpers import _tmp
++
++
++def test_registry_literal_name_cap_is_40_characters():
++    """A first argument of 40 characters is a copyable slug; 41 is content.
++
++    The space rule was covered and the length bound was not: changing
++    `len(first) <= 40` to `<= 400` left every test green.
++    """
++    at_cap = "a" * 40
++    over_cap = "b" * 41
++    src = f"""
++class ErrorCode:
++    def __init__(self, code): ...
++A = ErrorCode("{at_cap}")
++B = ErrorCode("{over_cap}")
++C = ErrorCode("short-code")
++"""
++    report = compute_conventions(_tmp(src))
++    entry = next(r for r in report.registries if r.constructor == "ErrorCode")
++    assert entry.count == 3
++    assert at_cap in entry.literal_names
++    assert over_cap not in entry.literal_names
++    assert entry.literal_names == tuple(sorted({at_cap, "short-code"}))

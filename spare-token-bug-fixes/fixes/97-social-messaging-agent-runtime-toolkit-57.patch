@@ -1,0 +1,54 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 6ecb773..b8bbcd9 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -4,6 +4,9 @@ All notable changes to SMART, the Social Messaging Agent Runtime Toolkit, are re
+ 
+ ## [Unreleased]
+ 
++### Fixed
++- The zip-mode agent archive leaves out a project's `infrastructure/` directory, as the Docker-mode archive already does.
++
+ ## [2026.10.0] - 2026-11-05
+ 
+ The first public release. Everything below was in the toolkit when it was published.
+diff --git a/infra-terraform/modules/runtime/codebuild.tf b/infra-terraform/modules/runtime/codebuild.tf
+index 3024f6f..333ab99 100644
+--- a/infra-terraform/modules/runtime/codebuild.tf
++++ b/infra-terraform/modules/runtime/codebuild.tf
+@@ -398,7 +398,7 @@ data "archive_file" "agent_source_zip" {
+   # never read by the agent, and zipping them rebuilt the image on every deploy.
+   # The fixed names only ever match at the project root; caches and
+   # credentials at any depth come from agent_source_filter_excludes.
+-  excludes = concat(["__pycache__", "*.pyc", "*.pyo", ".pytest_cache", ".venv", "handlers", "infra-terraform", "node_modules", ".git", ".socialagent", "socialagent.dev.yaml", "socialagent.test.yaml", "socialagent.prod.yaml"], local.agent_source_filter_excludes)
++  excludes = concat(["__pycache__", "*.pyc", "*.pyo", ".pytest_cache", ".venv", "handlers", "infrastructure", "infra-terraform", "node_modules", ".git", ".socialagent", "socialagent.dev.yaml", "socialagent.test.yaml", "socialagent.prod.yaml"], local.agent_source_filter_excludes)
+ }
+ 
+ resource "aws_s3_object" "agent_source_zip" {
+diff --git a/tests/test_terraform_hardening.py b/tests/test_terraform_hardening.py
+index 7c70ce8..591ffd4 100644
+--- a/tests/test_terraform_hardening.py
++++ b/tests/test_terraform_hardening.py
+@@ -1457,6 +1457,22 @@ def test_agent_source_archive_applies_the_filters(archive: str):
+         assert f'"{name}"' in excludes.group(1), f"{archive} no longer excludes {name}"
+ 
+ 
++def test_both_agent_source_archives_exclude_the_same_fixed_names():
++    """The zip-mode archive kept a project's infrastructure/ directory, which
++    the Docker-mode archive leaves out, so Terraform or CDK code shipped in the
++    package that runs in AgentCore Runtime."""
++    tf = _code(CODEBUILD_TF.read_text())
++    fixed: dict[str, set[str]] = {}
++    for archive in ("agent_source", "agent_source_zip"):
++        block = _block(tf, f'data "archive_file" "{archive}"')
++        names = re.search(r"^\s*excludes\s*=\s*concat\(\[(.*?)\]", block, re.MULTILINE)
++        assert names, f"archive_file.{archive} has no list of fixed names"
++        fixed[archive] = set(re.findall(r'"([^"]+)"', names.group(1)))
++
++    assert "infrastructure" in fixed["agent_source_zip"]
++    assert fixed["agent_source"] == fixed["agent_source_zip"]
++
++
+ # Paths that must still ship, and every dropped path with the `excludes` entry
+ # it yields: the shallowest dropped directory, or the file itself with
+ # filepath.Match syntax escaped.

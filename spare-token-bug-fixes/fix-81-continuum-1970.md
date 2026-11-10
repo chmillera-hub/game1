@@ -44,7 +44,7 @@ src/continuum/recovery/guidance.py now compares the step target with the exact w
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- The one-line change is the first change the bug report proposes. A constraint whose id is exactly registry would still be taken for the registry file and the bug report's second option (a reserved marker) would close that gap. Fix 69 on this shelf changes a line three lines below in the same file and adds a changelog entry at the same spot so the two patches do not apply together: apply one patch and make the other one-line change by hand. The chatbot did not run the new test.
+- The one-line change is the first change the bug report proposes. A constraint whose id is exactly registry would still be taken for the registry file and the bug report's second option (a reserved marker) would close that gap. Fix 69 on this shelf changes a line three lines below in the same file and adds a changelog entry at the same spot so the two patches do not apply together: apply one patch and make the other one-line change by hand. The chatbot did not run the new test. Fix 94 on this shelf adds a changelog entry at the same spot so the two patches do not apply together: add the other changelog entry by hand.
 
 ## Search words
 

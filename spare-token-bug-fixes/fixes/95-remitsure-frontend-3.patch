@@ -1,0 +1,180 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e2100b5..15a4498 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -7,3 +7,7 @@ All notable changes to this repo are listed here. The format follows [Keep a Cha
+ ### Added
+ 
+ - Initial MVP scaffold.
++
++### Fixed
++
++- "Copy receipt link" no longer fails silently where the Clipboard API is missing or denied: it uses the share sheet when the browser has one, then the clipboard, and otherwise shows the link in a field to copy by hand.
+diff --git a/src/app/(app)/r/[id]/page.tsx b/src/app/(app)/r/[id]/page.tsx
+index 350631b..78885bf 100644
+--- a/src/app/(app)/r/[id]/page.tsx
++++ b/src/app/(app)/r/[id]/page.tsx
+@@ -10,6 +10,7 @@ import { api, NotFoundError, type RemittanceDetail } from "@/lib/api";
+ import { config, explorerAccount, explorerTx } from "@/lib/config";
+ import { remitsure } from "@/lib/contract";
+ import { formatDate, fromUnits, relativeTime, shortAddress } from "@/lib/format";
++import { shareLink } from "@/lib/share";
+ 
+ type Action = "claim" | "reject" | "refund";
+ 
+@@ -29,6 +30,7 @@ export default function Receipt() {
+   const [busy, setBusy] = useState<Action | null>(null);
+   const [lastTx, setLastTx] = useState<string | null>(null);
+   const [copied, setCopied] = useState(false);
++  const [manualLink, setManualLink] = useState<string | null>(null);
+   // Ticks with the refresh so the expired check and countdown stay current.
+   const [now, setNow] = useState(() => Date.now());
+ 
+@@ -76,9 +78,16 @@ export default function Receipt() {
+   }
+ 
+   async function share() {
+-    await navigator.clipboard.writeText(window.location.href.split("?")[0]!);
+-    setCopied(true);
+-    setTimeout(() => setCopied(false), 2_000);
++    const url = window.location.href.split("?")[0]!;
++    const outcome = await shareLink(url);
++    if (outcome === "copied") {
++      setManualLink(null);
++      setCopied(true);
++      setTimeout(() => setCopied(false), 2_000);
++    } else if (outcome === "manual") {
++      // No share sheet and no clipboard: show the link so it can be copied by hand.
++      setManualLink(url);
++    }
+   }
+ 
+   if (!r) return <Notice tone={error ? "error" : "info"}>{error ?? "Loading receipt..."}</Notice>;
+@@ -226,6 +235,17 @@ export default function Receipt() {
+           {copied ? "Link copied" : "Copy receipt link"}
+         </button>
+       </div>
++      {manualLink && (
++        <label className="block text-sm">
++          Copy this link
++          <input
++            readOnly
++            value={manualLink}
++            onFocus={(e) => e.currentTarget.select()}
++            className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2"
++          />
++        </label>
++      )}
+     </div>
+   );
+ }
+diff --git a/src/lib/__tests__/share.test.ts b/src/lib/__tests__/share.test.ts
+new file mode 100644
+index 0000000..465f081
+--- /dev/null
++++ b/src/lib/__tests__/share.test.ts
+@@ -0,0 +1,59 @@
++import { describe, expect, it } from "vitest";
++import { shareLink } from "../share";
++
++const url = "https://example.test/r/42";
++
++function abortError(): Error {
++  return Object.assign(new Error("share cancelled"), { name: "AbortError" });
++}
++
++describe("shareLink", () => {
++  it("uses the share sheet when the browser has one", async () => {
++    const seen: string[] = [];
++    const outcome = await shareLink(url, {
++      share: async (data) => void seen.push(data.url),
++      clipboard: { writeText: async () => void seen.push("clipboard") },
++    });
++    expect(outcome).toBe("shared");
++    expect(seen).toEqual([url]);
++  });
++
++  it("copies to the clipboard when there is no share sheet", async () => {
++    const seen: string[] = [];
++    const outcome = await shareLink(url, {
++      clipboard: { writeText: async (text) => void seen.push(text) },
++    });
++    expect(outcome).toBe("copied");
++    expect(seen).toEqual([url]);
++  });
++
++  it("falls back to the clipboard when the share sheet fails", async () => {
++    const outcome = await shareLink(url, {
++      share: async () => Promise.reject(new Error("not allowed")),
++      clipboard: { writeText: async () => undefined },
++    });
++    expect(outcome).toBe("copied");
++  });
++
++  it("does not copy when the user closes the share sheet", async () => {
++    const seen: string[] = [];
++    const outcome = await shareLink(url, {
++      share: async () => Promise.reject(abortError()),
++      clipboard: { writeText: async (text) => void seen.push(text) },
++    });
++    expect(outcome).toBe("cancelled");
++    expect(seen).toEqual([]);
++  });
++
++  it("asks for a manual copy when the clipboard is missing", async () => {
++    expect(await shareLink(url, {})).toBe("manual");
++    expect(await shareLink(url, undefined)).toBe("manual");
++  });
++
++  it("asks for a manual copy when the clipboard rejects, without throwing", async () => {
++    const outcome = await shareLink(url, {
++      clipboard: { writeText: async () => Promise.reject(new Error("denied")) },
++    });
++    expect(outcome).toBe("manual");
++  });
++});
+diff --git a/src/lib/share.ts b/src/lib/share.ts
+new file mode 100644
+index 0000000..f498dfa
+--- /dev/null
++++ b/src/lib/share.ts
+@@ -0,0 +1,39 @@
++export type ShareOutcome = "shared" | "copied" | "cancelled" | "manual";
++
++/** The parts of `navigator` that sharing a link needs. Both are missing in some browsers. */
++export type ShareTarget = {
++  share?: (data: { url: string }) => Promise<void>;
++  clipboard?: { writeText?: (text: string) => Promise<void> };
++};
++
++/**
++ * Hands a link to the user and never rejects.
++ *
++ * Tries the Web Share sheet first (mobile browsers), then the clipboard. The
++ * clipboard is undefined on non secure origins and in some in app browsers,
++ * and `writeText` rejects when permission is denied. When neither works the
++ * result is "manual" and the caller shows the link in a selectable field.
++ */
++export async function shareLink(
++  url: string,
++  target: ShareTarget | undefined = globalThis.navigator,
++): Promise<ShareOutcome> {
++  if (typeof target?.share === "function") {
++    try {
++      await target.share({ url });
++      return "shared";
++    } catch (err) {
++      // Closing the share sheet is a choice, not a failure.
++      if ((err as { name?: string } | null)?.name === "AbortError") return "cancelled";
++    }
++  }
++  if (typeof target?.clipboard?.writeText === "function") {
++    try {
++      await target.clipboard.writeText(url);
++      return "copied";
++    } catch {
++      // Permission denied or the document is not focused: fall through.
++    }
++  }
++  return "manual";
++}

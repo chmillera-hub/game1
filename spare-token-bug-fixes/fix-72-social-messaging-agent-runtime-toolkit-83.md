@@ -44,7 +44,7 @@ src/socialagent/cli/templates.py gains _configured_templates_path which returns 
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- The exact wording of the new message is the chatbot's choice. templates sync is unchanged and still reports a missing file as an error. The chatbot did not run the project's code or tests and did not run a formatter.
+- The exact wording of the new message is the chatbot's choice. templates sync is unchanged and still reports a missing file as an error. The chatbot did not run the project's code or tests and did not run a formatter. Fixes 72 and 96 and 97 and 99 on this shelf each add a line at the same spot of CHANGELOG.md so those patches do not apply one after another: apply one patch and add the other changelog lines by hand. The other files in those patches do not overlap.
 
 ## Search words
 

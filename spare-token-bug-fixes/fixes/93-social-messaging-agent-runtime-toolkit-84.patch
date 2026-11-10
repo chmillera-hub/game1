@@ -1,0 +1,119 @@
+diff --git a/tests/test_architecture.py b/tests/test_architecture.py
+index b4fc0e8..e325d24 100644
+--- a/tests/test_architecture.py
++++ b/tests/test_architecture.py
+@@ -34,6 +34,7 @@ client name held in a variable.
+ from __future__ import annotations
+ 
+ import ast
++import fnmatch
+ import re
+ import subprocess
+ from pathlib import Path
+@@ -380,6 +381,55 @@ def test_layer_rules_cover_real_files():
+         )
+ 
+ 
++def _shipped_files(*globs: str) -> list[str]:
++    """Repo-relative paths of shipped files whose name matches one of *globs*.
++
++    Asks git when it is available, so an untracked local directory cannot
++    fail a test. Without git (a source archive with no .git, or a CI image
++    with no git binary) it walks the tree with the same skips as
++    ``_tracked_markdown``: generated projects, build noise, and every hidden
++    directory except .github.
++    """
++    try:
++        out = subprocess.run(
++            ["git", "ls-files", "-z", "--", *globs],
++            cwd=REPO_ROOT,
++            capture_output=True,
++            check=True,
++        ).stdout.decode()
++    except (OSError, subprocess.CalledProcessError):
++        found = []
++        for path in REPO_ROOT.rglob("*"):
++            rel = path.relative_to(REPO_ROOT)
++            parts = rel.parts[:-1]
++            if _SKIP_PARTS.intersection(parts) or "projects" in parts:
++                continue
++            if any(p.startswith(".") and p != ".github" for p in parts):
++                continue
++            if path.is_file() and any(fnmatch.fnmatch(path.name, g) for g in globs):
++                found.append(rel.as_posix())
++        return sorted(found)
++    return sorted(name for name in out.split("\0") if name)
++
++
++@pytest.mark.architecture
++@pytest.mark.parametrize("failure", ["no-git-binary", "not-a-checkout"])
++def test_shipped_files_falls_back_to_walking_the_tree(monkeypatch, failure):
++    """Without git, or outside a checkout, the shipped-file tests still get a file list."""
++
++    def refuse(cmd, *args, **kwargs):
++        if failure == "no-git-binary":
++            raise FileNotFoundError("git")
++        raise subprocess.CalledProcessError(128, cmd)
++
++    monkeypatch.setattr(subprocess, "run", refuse)
++    found = _shipped_files("*.py", "*.md")
++    assert "README.md" in found
++    assert "tests/test_architecture.py" in found
++    assert all(not name.startswith(".venv/") for name in found)
++    assert all(name.endswith((".py", ".md")) for name in found)
++
++
+ @pytest.mark.architecture
+ def test_shipped_files_name_no_real_product_brands():
+     """The demo domain is fictional: no real car model or make in shipped files.
+@@ -390,31 +440,10 @@ def test_shipped_files_name_no_real_product_brands():
+     from regressing. Tracked files only, so an untracked local directory
+     cannot fail it; this file is the one place the names appear.
+     """
+-    import subprocess
+-
+     brands = ["Honda", "Toyota", "Tesla", "Civic", "RAV4", "Model 3", "Mazda"]
+     pattern = re.compile(r"\b(" + "|".join(brands) + r")\b", re.IGNORECASE)
+     here = Path(__file__).resolve()
+-    tracked = (
+-        subprocess.run(
+-            [
+-                "git",
+-                "ls-files",
+-                "-z",
+-                "--",
+-                "*.py",
+-                "*.md",
+-                "*.yaml",
+-                "*.yml",
+-                "*.json",
+-            ],
+-            cwd=REPO_ROOT,
+-            capture_output=True,
+-            check=True,
+-        )
+-        .stdout.decode()
+-        .split("\0")
+-    )
++    tracked = _shipped_files("*.py", "*.md", "*.yaml", "*.yml", "*.json")
+     offenders = [
+         f"{rel}:{i}"
+         for rel in tracked
+@@ -450,16 +479,7 @@ def test_shipped_files_carry_only_placeholder_mx_numbers():
+     pattern = re.compile(r"(?<!\d)\+?(521?[2-9]\d{9})(?!\d)")
+     globs = ["*.py", "*.md", "*.yaml", "*.yml", "*.json", "*.ts", "*.tsx"]
+     globs += ["*.tf", "*.example", "*.sh", "*.txt"]
+-    tracked = (
+-        subprocess.run(
+-            ["git", "ls-files", "-z", "--", *globs],
+-            cwd=REPO_ROOT,
+-            capture_output=True,
+-            check=True,
+-        )
+-        .stdout.decode()
+-        .split("\0")
+-    )
++    tracked = _shipped_files(*globs)
+     offenders = [
+         f"{rel}:{i}: {number}"
+         for rel in tracked

@@ -45,7 +45,7 @@ src/lib/api.ts gains isFinalStatus. The receipt page loads once and runs the 8 s
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- The test covers the helper function only. The project has no test setup for pages so the stopping of the timer itself has no test. After a person claims or rejects or refunds on the page two follow-up loads (after 4 and 9 seconds) still run once each and one of the two may land after the final status is shown. Fixes 59 and 60 change the same lines of the receipt page. Applying both needs a small manual merge.
+- The test covers the helper function only. The project has no test setup for pages so the stopping of the timer itself has no test. After a person claims or rejects or refunds on the page two follow-up loads (after 4 and 9 seconds) still run once each and one of the two may land after the final status is shown. Fixes 59 and 60 change the same lines of the receipt page. Applying both needs a small manual merge. Fix 95 on this shelf changes the same page and the same spot of CHANGELOG.md so the two patches do not apply together.
 
 ## Search words
 

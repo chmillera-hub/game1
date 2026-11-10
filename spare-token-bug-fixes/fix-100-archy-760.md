@@ -1,0 +1,99 @@
+# Fix 100: Archy: the documentation says surfaces covers every name defined in several modules but only class names are counted
+
+Status: UNSENT and UNTESTED. Free to take.
+
+- Project: hslee16/Archy
+- Bug report title: docs(conventions): `surfaces` is documented as covering "names defined in more than one module", but only class names are censused
+- Bug report: number 760 ([open the bug report](https://github.com/hslee16/Archy/issues/760))
+- Project license: MIT
+- Language: Markdown and Python text
+- Test included: no
+- Patch file: [fixes/100-archy-760.patch](fixes/100-archy-760.patch)
+- Direct download address for programs and chatbots: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/100-archy-760.patch
+- Same page on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-100-archy-760.md
+- Same page as a plain website page: https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-100-archy-760.html
+
+## The bug
+
+The description of the surfaces report said the report covers names defined in more than one module. The code only counts class names. A function repeated across sibling modules is never reported so the documentation promised more than the tool does.
+
+## The fix
+
+The wording now says class names in three places: the description at the top of src/archy/conventions.py and the tool table in README.md and the tool description in src/archy/mcp_tool_descriptions.py. This is the small fix the bug report recommends.
+
+## Files changed
+
+- README.md
+- src/archy/conventions.py
+- src/archy/mcp_tool_descriptions.py
+
+## How to use the fix
+
+1. Get a copy of the project hslee16/Archy.
+2. Download the patch file from the direct download address shown near the top of this page.
+3. Run: git apply 100-archy-760.patch
+4. Run the project's own tests.
+5. Read the project's contribution rules and then open a pull request that mentions bug report 760.
+
+## Warnings
+
+- An AI chatbot (Claude) wrote this fix. No human has reviewed the fix.
+- Nobody has run the fix against the project's own test suite.
+- The chatbot read the full bug report text and could not read the comments under the bug report.
+- Nobody has checked whether someone else already sent a fix for the same bug.
+- The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
+- Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
+- Text only. The bug report names two places and the chatbot found the same claim in a third place (mcp_tool_descriptions.py) and changed all three. The MCP tool description grows by six characters and the chatbot did not check whether a test limits the length of that description. Fixes 78 and 92 on this shelf change other lines of README.md and apply together with this patch.
+
+## Search words
+
+archy conventions surfaces names defined in more than one module class names only docstring README mcp_tool_descriptions
+
+## The full patch
+
+`````diff
+diff --git a/README.md b/README.md
+index 10c212e..481c63e 100644
+--- a/README.md
++++ b/README.md
+@@ -498,7 +498,7 @@ The server is backed by a persistent parse cache (`.archy/index.db`): each tool
+ | `archy_what_to_refactor_next` | Ranked refactor-priority list (replaces the removed `archy_hotspots` and `archy_high_risk_modules` via `lens`). `lens="fused"` (**default**) sums the behavioral lens (CC x churn) and the structural lens (edit-risk: central+fragile) into a `priority`, so a module flagged by *both* generally outranks a comparable single-lens one (a dominant single-lens signal can still rank first). `lens="behavioral"` ranks CC x churn hotspots only (needs git); `lens="structural"` ranks the edit-risk composite only (git-free; pass `min_risk=0` for no floor). Each entry names which lenses fired and carries a one-line `rationale`. An empty list plus a `note` is a real answer. |
+ | `archy_dsm` | Design Structure Matrix view of the import graph. `response_format="summary"` (**default**) returns a compact overview (block structure, counts, back-edges, cross-block coupling) without the full cell list. `response_format="full"` returns the positional matrix (cell `(row=source, col=target)` non-empty when source imports target), refusing matrices over `DEFAULT_MAX_DSM_CELLS` cells with a `DSMTooLargePayload`. `group_by` controls row/col ordering (`community` for block-diagonal cohesion, `layer` for layer-violation forensics, `topological` to localize back-edges). `weight` is `imports` or `calls`. Narrow large projects with `focus=<qualname>` + `focus_depth` or `package=<prefix>`. When `baseline_path` is provided, returns a structured diff (regardless of `response_format`) whose `new_back_edges` field flags cycles the edit just introduced. Visualization-only; see [`docs/research/DSM_EMPIRICS.md`](docs/research/DSM_EMPIRICS.md). A `focus` or `package` that matches no module is an error, not an empty matrix, and the error ends with a `did you mean` naming the closest module names when any are close. |
+ | `archy_duplicates` | Cluster functions with identical normalized body shape into two tiers: `duplicates` (likely-real, investigate) and `variants` (demoted likely-intentional clusters - same-class / boilerplate / test / vendored / `independent`, each with a `variant_reason`). `co_change=true` (**default**, needs git) adds the `independent` demotion: copies in actively-maintained files that never co-change (deliberately parallel implementations), the principled precision lever that lifts the primary tier above the ~50% syntactic ceiling (§12f). Within the primary tier, `exact=true` marks byte-identical (Type-1) clusters, the highest-confidence subset. `near_miss=true` (opt-in, slower) adds a lower-confidence `near_miss` tier: Type-3 (gapped) clones the exact shape-hash misses, found by token-multiset overlap (§12h). `response_format="summary"` (**default**) returns ranking fields + one sample member per cluster; `"full"` returns member lists. Advisory surfacer, not a score axis: refactorability is a semantic call (see [`docs/research/RESEARCH_METRICS.md`](docs/research/RESEARCH_METRICS.md) §12c/§12f/§12h). `min_nodes` (default 30) skips trivial stubs. |
+-| `archy_conventions` | Report the project's own house style, derived from its source: `naming` (class-name suffix families grouped by **home module**, so the module you are about to edit shows its own patterns), `surfaces` (mirrored helper sets like `_x_to_text`/`_x_to_json`, plus names defined in several modules - the "wire all of these together" list), `gates` (sites where a **failed finding** exits non-zero, each with its literal exit `code` and controlling lever: `flag:--strict`, `config:<attr>`, `param:<name>`, `hardcoded`), `errors` (the separate user-error exits - bad config, missing file - kept apart so the gate count stays meaningful), `models` (base-class / frozen / tuple-vs-list census), `bases` (kind families grouped by what they derive from *transitively*, counting only bases the project defines, with suffix agreement reported so a family whose name is not the rule says so), `registries` (`NAME = Ctor(...)` families and the distribution of every keyword passed - how a project declares codes or flags when it does not use classes), `export_gaps` (members absent from an `__all__`, or from a `from .x import Y as Y` block, that already lists their siblings) and `doc_gaps` (members the project's own `.rst`/`.md` surface does not name). Call before adding a class, field, or command to a project you do not know. Advisory: never fails, mutates nothing. `min_family` (default 2) raises the reporting floor; `include_tests` censuses test modules too (default false, because test fixtures dilute a real family). |
++| `archy_conventions` | Report the project's own house style, derived from its source: `naming` (class-name suffix families grouped by **home module**, so the module you are about to edit shows its own patterns), `surfaces` (mirrored helper sets like `_x_to_text`/`_x_to_json`, plus class names defined in several modules - the "wire all of these together" list), `gates` (sites where a **failed finding** exits non-zero, each with its literal exit `code` and controlling lever: `flag:--strict`, `config:<attr>`, `param:<name>`, `hardcoded`), `errors` (the separate user-error exits - bad config, missing file - kept apart so the gate count stays meaningful), `models` (base-class / frozen / tuple-vs-list census), `bases` (kind families grouped by what they derive from *transitively*, counting only bases the project defines, with suffix agreement reported so a family whose name is not the rule says so), `registries` (`NAME = Ctor(...)` families and the distribution of every keyword passed - how a project declares codes or flags when it does not use classes), `export_gaps` (members absent from an `__all__`, or from a `from .x import Y as Y` block, that already lists their siblings) and `doc_gaps` (members the project's own `.rst`/`.md` surface does not name). Call before adding a class, field, or command to a project you do not know. Advisory: never fails, mutates nothing. `min_family` (default 2) raises the reporting floor; `include_tests` censuses test modules too (default false, because test fixtures dilute a real family). |
+ | `archy_module_view` | Everything known about ONE module, complete and unranked - the **lookup** counterpart to `archy_conventions`'s ranked report. Because the report truncates, a module's absence from it means nothing; every list here is complete for the module named, so absence is the answer to "does `risk` import `hotspots`" or "does anything still reach `layers`". Returns `imports_internal` (relative imports resolved), `imported_by` (counting test importers even when tests are otherwise set aside, because a module imported only by tests is imported), `classes`, `functions`, `exports` (null when the module declares no `__all__` and no explicit re-exports - different from an empty one), `suffix_families`, `gates`, and `status`, which says whether the module was censused or set aside and why, so an empty view is never mistaken for "nothing to report". An unknown module name raises rather than returning an empty view. Advisory: never mutates. |
+ 
+ The server also exposes a `loop` **prompt** with the agent feedback-loop playbook (snapshot at start, impact before edit, diff after edit). Discoverable via the standard MCP `prompts/list` call. See [`docs/AGENT_LOOP.md`](docs/AGENT_LOOP.md) for the human-readable version.
+diff --git a/src/archy/conventions.py b/src/archy/conventions.py
+index 87cf957..8c4d167 100644
+--- a/src/archy/conventions.py
++++ b/src/archy/conventions.py
+@@ -20,8 +20,8 @@ project:
+ 
+ ``surfaces``
+     Families of helpers that exist once per output surface (the
+-    ``_x_to_text`` / ``_x_to_json`` shape), plus names defined in more
+-    than one module. Both are "update these together or ship a
++    ``_x_to_text`` / ``_x_to_json`` shape), plus class names defined in
++    more than one module. Both are "update these together or ship a
+     half-wired feature" sets, which is this repo's most common
+     historical defect and a generic one.
+ 
+diff --git a/src/archy/mcp_tool_descriptions.py b/src/archy/mcp_tool_descriptions.py
+index 8158350..4defcd9 100644
+--- a/src/archy/mcp_tool_descriptions.py
++++ b/src/archy/mcp_tool_descriptions.py
+@@ -137,7 +137,7 @@ ARCHY_CONVENTIONS_DESCRIPTION = (
+     "GROUPED BY HOME MODULE, so the module you are about to edit "
+     "shows its own patterns - the answer to 'what do I call a new one "
+     "and where does it go'), `surfaces` (mirrored helper sets like "
+-    "`_x_to_text`/`_x_to_json` and names defined in several modules - "
++    "`_x_to_text`/`_x_to_json` and class names defined in several modules - "
+     "the answer to 'how many places must I wire a new field'), "
+     "`gates` (sites where a FAILED FINDING exits non-zero, each with "
+     "its literal exit `code` and the lever that controls it: "
+`````
+
+[Back to the shelf](README.md)

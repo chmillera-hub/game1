@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-88 small ready-made bug fixes (patch files) for 40 public open source projects. Free to take.
+101 small ready-made bug fixes (patch files) for 40 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 40 of the 88 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 81 of the 88 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 47 of the 101 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 91 of the 101 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -290,6 +290,45 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 88. [maximem_synap_core: one passing server error from the cloud service permanently fails a MACA job](fix-88-maximem-synap-core-31.md)
    Project: maximem-ai/maximem_synap_core. Bug report number 31. License: Apache-2.0. Test included: yes. Patch file: [88-maximem-synap-core-31.patch](fixes/88-maximem-synap-core-31.patch)
+
+89. [devswarm: the plan inspector leaves out the description of each API endpoint](fix-89-devswarm-69.md)
+   Project: himanshu748/devswarm. Bug report number 69. License: MIT. Test included: yes. Patch file: [89-devswarm-69.patch](fixes/89-devswarm-69.patch)
+
+90. [Archy: no test covers the 40-character limit on registry literal names](fix-90-archy-867.md)
+   Project: hslee16/Archy. Bug report number 867. License: MIT. Test included: yes. Patch file: [90-archy-867.patch](fixes/90-archy-867.patch)
+
+91. [Archy: a code comment only repeats the line below it](fix-91-archy-849.md)
+   Project: hslee16/Archy. Bug report number 849. License: MIT. Test included: no. Patch file: [91-archy-849.patch](fixes/91-archy-849.patch)
+
+92. [Archy: the README never mentions the archy simulate command and describes archy duplicates incompletely](fix-92-archy-788.md)
+   Project: hslee16/Archy. Bug report number 788. License: MIT. Test included: no. Patch file: [92-archy-788.patch](fixes/92-archy-788.patch)
+
+93. [SMART toolkit: two architecture tests fail in a copy of the code that has no .git folder](fix-93-social-messaging-agent-runtime-toolkit-84.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 84. License: Apache-2.0. Test included: yes. Patch file: [93-social-messaging-agent-runtime-toolkit-84.patch](fixes/93-social-messaging-agent-runtime-toolkit-84.patch)
+
+94. [CONTINUUM: building an attempt lesson can hang forever or exceed its size limit when action ids are long](fix-94-continuum-1966.md)
+   Project: Under-Research-Labs/CONTINUUM. Bug report number 1966. License: Apache-2.0. Test included: yes. Patch file: [94-continuum-1966.patch](fixes/94-continuum-1966.patch)
+
+95. [remitsure-frontend: Copy receipt link does nothing when the browser has no clipboard access](fix-95-remitsure-frontend-3.md)
+   Project: remitsure/remitsure-frontend. Bug report number 3. License: MIT. Test included: yes. Patch file: [95-remitsure-frontend-3.patch](fixes/95-remitsure-frontend-3.patch)
+
+96. [SMART toolkit: voice notes in the personal-assistant blueprint ignore the configured languages](fix-96-social-messaging-agent-runtime-toolkit-90.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 90. License: Apache-2.0. Test included: yes. Patch file: [96-social-messaging-agent-runtime-toolkit-90.patch](fixes/96-social-messaging-agent-runtime-toolkit-90.patch)
+
+97. [SMART toolkit: the zip-mode agent package includes the project's infrastructure folder](fix-97-social-messaging-agent-runtime-toolkit-57.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 57. License: Apache-2.0. Test included: yes. Patch file: [97-social-messaging-agent-runtime-toolkit-57.patch](fixes/97-social-messaging-agent-runtime-toolkit-57.patch)
+
+98. [SMART toolkit: a test meant to cover three blueprints only ever builds the minimal blueprint](fix-98-social-messaging-agent-runtime-toolkit-36.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 36. License: Apache-2.0. Test included: yes. Patch file: [98-social-messaging-agent-runtime-toolkit-36.patch](fixes/98-social-messaging-agent-runtime-toolkit-36.patch)
+
+99. [SMART toolkit: socialagent deploy prints its own header after the Terraform output when the output goes to a file](fix-99-social-messaging-agent-runtime-toolkit-69.md)
+   Project: awslabs/social-messaging-agent-runtime-toolkit. Bug report number 69. License: Apache-2.0. Test included: yes. Patch file: [99-social-messaging-agent-runtime-toolkit-69.patch](fixes/99-social-messaging-agent-runtime-toolkit-69.patch)
+
+100. [Archy: the documentation says surfaces covers every name defined in several modules but only class names are counted](fix-100-archy-760.md)
+   Project: hslee16/Archy. Bug report number 760. License: MIT. Test included: no. Patch file: [100-archy-760.patch](fixes/100-archy-760.patch)
+
+101. [maximem_synap_core: a fully downloaded leftover .part file makes the first start fail on every boot](fix-101-maximem-synap-core-30.md)
+   Project: maximem-ai/maximem_synap_core. Bug report number 30. License: Apache-2.0. Test included: yes. Patch file: [101-maximem-synap-core-30.patch](fixes/101-maximem-synap-core-30.patch)
 
 ## How to use a fix
 

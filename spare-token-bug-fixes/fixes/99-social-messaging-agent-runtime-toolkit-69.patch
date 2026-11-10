@@ -1,0 +1,85 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 6ecb773..d90cfcf 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -4,6 +4,9 @@ All notable changes to SMART, the Social Messaging Agent Runtime Toolkit, are re
+ 
+ ## [Unreleased]
+ 
++### Fixed
++- The CLI flushes its own output before it starts a command, so `socialagent deploy` prints its header and notices before Terraform's output when stdout is a file or a pipe.
++
+ ## [2026.10.0] - 2026-11-05
+ 
+ The first public release. Everything below was in the toolkit when it was published.
+diff --git a/src/socialagent/cli/_runner.py b/src/socialagent/cli/_runner.py
+index 6dd1266..cc55f7b 100644
+--- a/src/socialagent/cli/_runner.py
++++ b/src/socialagent/cli/_runner.py
+@@ -22,9 +22,11 @@ a fake instead of needing a real ``terraform`` on PATH.
+ 
+ from __future__ import annotations
+ 
++import contextlib
+ import shlex
+ import signal
+ import subprocess
++import sys
+ import threading
+ from collections.abc import Callable, Mapping, Sequence
+ from dataclasses import dataclass
+@@ -79,6 +81,13 @@ def run(
+     argv = [str(c) for c in cmd]
+     shown = shlex.join(argv)
+     pipe = subprocess.PIPE if capture else None
++    # The child writes straight to the inherited file descriptors. When stdout
++    # is a file or a pipe Python block-buffers it, so lines the CLI printed
++    # before this call would otherwise land after the child's output.
++    for stream in (sys.stdout, sys.stderr):
++        # A closed or broken stream must not stop the command.
++        with contextlib.suppress(OSError, ValueError):
++            stream.flush()
+     try:
+         proc = subprocess.Popen(  # noqa: S603 — argv list, no shell
+             argv,
+diff --git a/tests/test_cli_runner_flush.py b/tests/test_cli_runner_flush.py
+new file mode 100644
+index 0000000..17e52dd
+--- /dev/null
++++ b/tests/test_cli_runner_flush.py
+@@ -0,0 +1,35 @@
++# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
++# SPDX-License-Identifier: Apache-2.0
++
++"""``run`` flushes the CLI's own buffered output before the child writes."""
++
++from __future__ import annotations
++
++import subprocess
++import sys
++
++_SCRIPT = """
++import sys
++from socialagent.cli._runner import run
++
++print("parent line")
++print("parent error line", file=sys.stderr)
++run([sys.executable, "-c", "print('child line')"])
++"""
++
++
++def test_lines_printed_before_run_precede_the_child_output_in_a_file(tmp_path):
++    """With stdout redirected to a file Python block-buffers it, so the lines
++    the CLI printed before a command used to appear after the command's output."""
++    log = tmp_path / "out.log"
++    with log.open("w", encoding="utf-8") as fh:
++        subprocess.run(  # noqa: S603 - argv list, no shell
++            [sys.executable, "-c", _SCRIPT],
++            stdout=fh,
++            stderr=subprocess.STDOUT,
++            check=True,
++        )
++
++    lines = log.read_text(encoding="utf-8").splitlines()
++    assert lines.index("parent line") < lines.index("child line")
++    assert lines.index("parent error line") < lines.index("child line")

@@ -1,0 +1,32 @@
+diff --git a/tests/test_cli_init.py b/tests/test_cli_init.py
+index 5e61fea..ea31516 100644
+--- a/tests/test_cli_init.py
++++ b/tests/test_cli_init.py
+@@ -287,12 +287,24 @@ _VENDOR_RULE_DIRS = (".amazonq", ".kiro", ".clinerules", ".cursor", ".windsurf")
+ 
+ 
+ @pytest.mark.parametrize(
+-    "blueprint", ["minimal", "personal-assistant", "appointment-scheduler"]
++    ("blueprint", "ships", "does_not_ship"),
++    [
++        ("minimal", "agent.py", "src"),
++        ("personal-assistant", "src/skills.py", "src/catalog.py"),
++        ("appointment-scheduler", "src/catalog.py", None),
++    ],
+ )
+-def test_init_gives_ai_tools_one_rules_file(tmp_project, blueprint):
++def test_init_gives_ai_tools_one_rules_file(
++    tmp_project, blueprint, ships, does_not_ship
++):
+     """A scaffolded project carries AGENTS.md and CLAUDE.md, and no vendor rule dir."""
+-    cmd_init(_args(name="my-agent", template=blueprint))
++    cmd_init(_args(name="my-agent", blueprint=blueprint))
+     project = tmp_project / "my-agent"
++    # The case must scaffold the blueprint it names. It once passed `template=`,
++    # a key `init` does not read, so all three cases scaffolded `minimal`.
++    assert (project / ships).exists(), f"{blueprint} was not scaffolded"
++    if does_not_ship:
++        assert not (project / does_not_ship).exists(), f"not the {blueprint} blueprint"
+     agents = (project / "AGENTS.md").read_text()
+     assert "## Rules for AI assistants" in agents
+     # Claude Code reads CLAUDE.md; a one-line import keeps AGENTS.md the one file.

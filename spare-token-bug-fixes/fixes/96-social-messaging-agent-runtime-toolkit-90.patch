@@ -1,0 +1,62 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 6ecb773..8e2bf82 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -4,6 +4,9 @@ All notable changes to SMART, the Social Messaging Agent Runtime Toolkit, are re
+ 
+ ## [Unreleased]
+ 
++### Fixed
++- The `personal-assistant` blueprint passes `transcribe_languages` to Amazon Transcribe for voice notes, as the other blueprints already do.
++
+ ## [2026.10.0] - 2026-11-05
+ 
+ The first public release. Everything below was in the toolkit when it was published.
+diff --git a/blueprints/personal-assistant/handlers/webhook.py b/blueprints/personal-assistant/handlers/webhook.py
+index 4440b36..840418e 100644
+--- a/blueprints/personal-assistant/handlers/webhook.py
++++ b/blueprints/personal-assistant/handlers/webhook.py
+@@ -68,6 +68,7 @@ async def handle_media(message) -> str:
+                 poll_interval=config.transcribe_poll_interval,
+                 max_wait=config.transcribe_timeout,
+                 key_prefix=config._transcription_prefix,
++                language_options=config.transcribe_languages,
+             )
+         except Exception as e:  # noqa: BLE001
+             logger.warning("Audio transcription failed: %s", e)
+diff --git a/tests/test_blueprint_handle_media.py b/tests/test_blueprint_handle_media.py
+index fcb40ba..90865c7 100644
+--- a/tests/test_blueprint_handle_media.py
++++ b/tests/test_blueprint_handle_media.py
+@@ -314,3 +314,31 @@ async def test_a_reaction_tells_the_agent_its_emoji_and_message(webhook):
+     )
+     out = await mod.handle_media(reaction)
+     assert out == "[User reacted \U0001f44e to message wamid.sent]"
++
++
++@pytest.mark.asyncio
++async def test_a_voice_note_is_transcribed_in_the_configured_languages(
++    webhook, monkeypatch
++):
++    """The hook called transcribe_audio without ``language_options``, so the
++    documented ``transcribe_languages`` setting did nothing for this blueprint
++    and Amazon Transcribe could pick a language outside the configured list."""
++    mod, _ = webhook
++    monkeypatch.setattr(mod.config, "_transcription_bucket", "transcripts-bucket")
++    monkeypatch.setattr(mod.config, "transcribe_languages", ("es-MX", "en-US"))
++    mod.app.provider.download_media = AsyncMock(return_value=b"ogg-bytes")
++    transcribe = AsyncMock(return_value="hola")
++    monkeypatch.setattr(mod, "transcribe_audio", transcribe)
++    note = InboundMessage(
++        id="wamid.4",
++        sender="+525555550100",
++        timestamp=MagicMock(),
++        type=MessageType.AUDIO,
++        text="",
++        media=MediaContent(id="m4", mime_type="audio/ogg"),
++    )
++
++    out = await mod.handle_media(note)
++
++    assert out == "hola"
++    assert transcribe.await_args.kwargs["language_options"] == ("es-MX", "en-US")

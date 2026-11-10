@@ -1,0 +1,14 @@
+diff --git a/README.md b/README.md
+index 10c212e..c6188ce 100644
+--- a/README.md
++++ b/README.md
+@@ -215,7 +215,8 @@ uvx archy check .        # layer rules from archy.yaml; exits 1 on violation
+ | One-shot score | `archy score` |
+ | Trended score | `archy score --record` + `archy trend` |
+ | Refactor priority | `archy hotspots` (CC x git churn), `archy what-to-refactor-next` (fused hotspots + edit-risk) |
+-| Duplicate detection | `archy duplicates` (two-tier: likely duplicates vs demoted variants - same-class/boilerplate/test/vendored; advisory, not a score axis) |
++| Duplicate detection | `archy duplicates` (two-tier: likely duplicates vs demoted variants - same-class/boilerplate/test/vendored, plus an opt-in `--near-miss` Type-3 tier; advisory, not a score axis) |
++| Pre-edit simulation | `archy simulate . --add a:b --remove c:d` (predicts the structural consequence of adding or removing an import edge before the edit; text and JSON) |
+ | House style | `archy conventions` (naming families by home module, kind families by transitive base, `NAME = Ctor(...)` registries, mirrored surfaces, a gate inventory kept separate from user-error exits, model census, and the members a project's own `__all__` or docs leave out - derived from the source, so an agent stops guessing conventions; advisory, exits 0 on a successful report, and `--module NAME` switches to a complete, unranked lookup on one module - what it imports, what imports it, and whether it was set aside - which answers a negative the ranked report cannot; `--emit-headers` derives a per-module block (what it owns, what mirrors it, whether a finding here gates) from that same report and prints it, `--write` puts it in the module docstring, and `--check` exits 1 when one is stale) |
+ | Change coupling | `archy coupling` (module pairs that co-change in git history but share no import/call edge - hidden dependencies; source-only, advisory) |
+ | CI impact lookup | `archy affected` (`git diff` -> impacted modules + tests, depth-capped) |

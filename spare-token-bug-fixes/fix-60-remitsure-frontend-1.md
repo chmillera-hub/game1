@@ -44,7 +44,7 @@ src/lib/format.ts gains parseReceiptId which accepts only a positive whole numbe
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- The test covers the helper function only. The project has no test setup for pages. Fixes 59 and 60 change the same lines of the receipt page. Applying both needs a small manual merge. The chatbot checked the helper with a scratch script.
+- The test covers the helper function only. The project has no test setup for pages. Fixes 59 and 60 change the same lines of the receipt page. Applying both needs a small manual merge. The chatbot checked the helper with a scratch script. Fix 95 on this shelf changes the same page so the two patches do not apply together.
 
 ## Search words
 
