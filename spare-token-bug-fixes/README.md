@@ -2,7 +2,7 @@
 
 26 small ready-made bug fixes (patch files) for 18 public open source projects. Free to take.
 
-An AI chatbot (Claude Fable 5.2) wrote every fix on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
+An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
@@ -17,10 +17,10 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for fixes 7 and 9 and 10 and 13 and 14 and 16 and 17 and 22 and 25 and 26. Fix 18 got a bash syntax check.
-- The chatbot read the full bug report text for twenty of the twenty-six fixes (fixes 8 to 26 plus one earlier fix). The other fixes came from the bug report title plus the code. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 10 of the 26 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 19 of the 26 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
-- Every patch applied cleanly to the newest code of its project on 9 November 2026. A project may have changed since then.
+- Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
 
 ## The fixes

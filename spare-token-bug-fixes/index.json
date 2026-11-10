@@ -36,6 +36,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": false,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -71,6 +72,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": false,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -106,6 +108,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": false,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -141,6 +144,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": false,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -176,6 +180,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": false,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -213,6 +218,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": false,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -248,6 +254,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": false,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -287,6 +294,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -324,6 +332,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -361,6 +370,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -399,6 +409,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -433,6 +444,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -468,6 +480,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -503,6 +516,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -539,6 +553,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -575,6 +590,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -610,6 +626,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -644,6 +661,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -681,6 +699,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -717,6 +736,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -754,6 +774,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -790,6 +811,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -826,6 +848,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -862,6 +885,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": false,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -897,6 +921,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },
@@ -933,6 +958,7 @@
         "project_tests_run": false,
         "duplicate_check_done": false,
         "full_bug_report_read": true,
+        "logic_checked_with_separate_script": true,
         "bug_report_comments_read": false,
         "patch_applied_cleanly_on": "2026-11-09"
       },

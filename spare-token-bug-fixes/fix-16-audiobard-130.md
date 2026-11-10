@@ -41,8 +41,8 @@ _has_whole_word_clue in src/audiobard/tts/voice_mapper.py no longer counts a clu
 - Nobody has run the fix against the project's own test suite.
 - The chatbot read the full bug report text and could not read the comments under the bug report.
 - Nobody has checked whether someone else already sent a fix for the same bug.
-- The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
-- The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
+- The fix was written against the project's code as of 2026-11-09 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 2026-11-09 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
 - Fix 15 and fix 16 both add text at the same spot in CHANGELOG.md. Applying both needs a small manual merge of CHANGELOG.md.
 

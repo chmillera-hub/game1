@@ -43,8 +43,8 @@ fill_all in src/wheelgap/pypi.py now marks a package with no files and a non-PyP
 - Nobody has run the fix against the project's own test suite.
 - The chatbot read the full bug report text and could not read the comments under the bug report.
 - Nobody has checked whether someone else already sent a fix for the same bug.
-- The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
-- The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
+- The fix was written against the project's code as of 2026-11-09 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 2026-11-09 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
 - The --offline change goes one step beyond the bug report text. A maintainer may prefer to drop that one line.
 

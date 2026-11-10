@@ -42,8 +42,8 @@ RemoteEmbedder.__init__ in packages/huri-module-rag/huri_rag/ingestion.py gains 
 - Nobody has run the fix against the project's own test suite.
 - The chatbot read the full bug report text and could not read the comments under the bug report.
 - Nobody has checked whether someone else already sent a fix for the same bug.
-- The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
-- The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
+- The fix was written against the project's code as of 2026-11-09 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 2026-11-09 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
 - The default behaviour changes: TLS is verified unless --no-verify-ssl is passed. The new test is skipped when the rag extra is not installed.
 

@@ -41,8 +41,8 @@ src/kitden/web/static/style.css gets one rule that hides the block while the blo
 - Nobody has run the fix against the project's own test suite.
 - The chatbot read the full bug report text and could not read the comments under the bug report.
 - Nobody has checked whether someone else already sent a fix for the same bug.
-- The fix was written against the project's code as of 9 November 2026 and may no longer apply cleanly.
-- The patch applied cleanly to the project's newest code on 9 November 2026 (checked with git apply --check).
+- The fix was written against the project's code as of 2026-11-09 and may no longer apply cleanly.
+- The patch applied cleanly to the project's newest code on 2026-11-09 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
 - The bug report asks for the README picture to be made again. The chatbot could not make pictures of the page. The bug report says the maintainer will make the picture in that case.
 
