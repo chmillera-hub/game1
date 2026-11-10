@@ -1,0 +1,44 @@
+diff --git a/jsonrpc/jsonrpc1.py b/jsonrpc/jsonrpc1.py
+index 3fcbe9b..4adca51 100644
+--- a/jsonrpc/jsonrpc1.py
++++ b/jsonrpc/jsonrpc1.py
+@@ -134,8 +134,8 @@ class JSONRPC10Response(JSONRPCBaseResponse):
+ 
+     @error.setter
+     def error(self, value):
+-        self._data.pop('value', None)
+         if value:
++            self._data.pop('result', None)
+             self._data["error"] = value
+             # Test error
+             JSONRPCError(**value)
+diff --git a/jsonrpc/jsonrpc2.py b/jsonrpc/jsonrpc2.py
+index 1231db0..3b84e2b 100644
+--- a/jsonrpc/jsonrpc2.py
++++ b/jsonrpc/jsonrpc2.py
+@@ -228,8 +228,8 @@ class JSONRPC20Response(JSONRPCBaseResponse):
+ 
+     @error.setter
+     def error(self, value):
+-        self._data.pop('value', None)
+         if value:
++            self._data.pop('result', None)
+             self._data["error"] = value
+             # Test error
+             JSONRPCError(**value)
+diff --git a/jsonrpc/tests/test_jsonrpc2.py b/jsonrpc/tests/test_jsonrpc2.py
+index 32c1639..2158550 100644
+--- a/jsonrpc/tests/test_jsonrpc2.py
++++ b/jsonrpc/tests/test_jsonrpc2.py
+@@ -578,6 +578,11 @@ class TestJSONRPC20Response(unittest.TestCase):
+         with self.assertRaises(ValueError):
+             response.result = ""
+ 
++    def test_error_setter_removes_result(self):
++        response = JSONRPC20Response(result="")
++        response.error = {"code": 1, "message": ""}
++        self.assertNotIn("result", response.data)
++
+     def test_validation_error_correct(self):
+         JSONRPC20Response(**self.response_error_params)
+ 

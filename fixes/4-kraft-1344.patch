@@ -1,0 +1,44 @@
+diff --git a/src/kraft/client/actions.py b/src/kraft/client/actions.py
+index 7043869..82b72ba 100644
+--- a/src/kraft/client/actions.py
++++ b/src/kraft/client/actions.py
+@@ -241,13 +241,9 @@ async def ensure_repo(
+ async def update_repo(path: str, fields: dict) -> dict:
+     """Change a connected repo's `fields` (`PATCH /repos`); the entry as saved."""
+     response = await transport._send("PATCH", "/repos", params={"path": path}, json=fields)
+-    try:
+-        body = response.json() if response.content else {}
+-    except ValueError:
+-        body = {"detail": response.text}
+     if response.status_code >= 400:
+-        raise transport.status_error(response.status_code, str(body.get("detail", body)))
+-    return body
++        raise transport.status_error(response.status_code, transport._detail(response))
++    return transport._json(response) if response.content else {}
+ 
+ 
+ async def _connected_path(path: str | None) -> str:
+diff --git a/tests/client/test_transport.py b/tests/client/test_transport.py
+index 2daed93..48c5bde 100644
+--- a/tests/client/test_transport.py
++++ b/tests/client/test_transport.py
+@@ -263,6 +263,11 @@ _ELSEWHERE = httpx.Response(200, json={"run_dir": "/elsewhere"})
+             client.Failure.SERVER_ERROR,
+             httpx.Response(500, text="Internal Server Error"),
+         ),
++        (
++            lambda: client.update_repo("/r", {}),
++            client.Failure.BAD_RESPONSE,
++            httpx.Response(200, text="<html>proxy</html>"),
++        ),
+         (
+             lambda: client.pause(work_item_id="w1"),
+             client.Failure.BAD_RESPONSE,
+@@ -279,6 +284,7 @@ _ELSEWHERE = httpx.Response(200, json={"run_dir": "/elsewhere"})
+         "blank-note",
+         "no-item",
+         "text-500",
++        "text-200-patch",
+         "text-200-post",
+         "update-not-object",
+     ],
