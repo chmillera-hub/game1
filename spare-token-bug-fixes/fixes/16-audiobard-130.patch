@@ -1,0 +1,75 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3ae0b55..680ac00 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,9 @@ adds an entry under the relevant section, in the same commit as the change.
+ 
+ ### Fixed
+ 
++- The Spanish title "don" no longer matches inside the English contraction "don't" when
++  guessing a neutral character's gender, so an alias such as "The girl who don't talk" is
++  no longer given a male voice (#130).
+ - Restrict secret-scan exemptions to exact repository-relative files and explicitly listed
+   directories, so similarly named files and nested copies are still scanned (#132).
+ - Allow only catalog JSON files and the exact `.gitkeep` filename under `data/voices/`,
+diff --git a/src/audiobard/tts/voice_mapper.py b/src/audiobard/tts/voice_mapper.py
+index 44bd3c4..7697830 100644
+--- a/src/audiobard/tts/voice_mapper.py
++++ b/src/audiobard/tts/voice_mapper.py
+@@ -72,8 +72,15 @@ _FEMALE_GENDER_CLUES: tuple[str, ...] = (
+ 
+ 
+ def _has_whole_word_clue(text: str, clues: tuple[str, ...]) -> bool:
+-    """True if any clue appears as a whole word in *text* (case-insensitive)."""
+-    return any(re.search(rf"\b{re.escape(w)}\b", text, flags=re.IGNORECASE) for w in clues)
++    """True if any clue appears as a whole word in *text* (case-insensitive).
++
++    An apostrophe is a non-word character, so ``\\bdon\\b`` also matches inside the
++    English contraction "don't". A clue directly followed by ``'t`` is therefore not a
++    whole word (issue #130). Other apostrophe forms such as "he's" still count.
++    """
++    return any(
++        re.search(rf"\b{re.escape(w)}\b(?!['\u2019]t)", text, flags=re.IGNORECASE) for w in clues
++    )
+ 
+ 
+ # ---------------------------------------------------------------------------
+diff --git a/tests/test_voice_mapper.py b/tests/test_voice_mapper.py
+index b183af1..2557c6e 100644
+--- a/tests/test_voice_mapper.py
++++ b/tests/test_voice_mapper.py
+@@ -193,6 +193,20 @@ def test_neutral_with_whole_word_female_clue_gets_female_voice(mapper: VoiceMapp
+     assert "female" in result.voice_id
+ 
+ 
++def test_contraction_dont_is_not_a_male_clue(mapper: VoiceMapper) -> None:
++    """ "don't" must not match the Spanish title "don" and flip a female alias to male."""
++    char = Character(
++        canonical_id="Character_A",
++        name="Alex",
++        aliases=["The girl who don't talk"],
++        gender_hint=GenderHint.NEUTRAL,
++        age_hint=AgeHint.ADULT,
++        tone=Tone.NEUTRAL,
++    )
++    result = mapper.assign(char)
++    assert "female" in result.voice_id
++
++
+ def test_has_whole_word_clue_helper() -> None:
+     from audiobard.tts.voice_mapper import _has_whole_word_clue
+ 
+@@ -202,6 +216,13 @@ def test_has_whole_word_clue_helper() -> None:
+     assert _has_whole_word_clue("he said", ("he",)) is True
+     assert _has_whole_word_clue("humana", ("man",)) is False
+     assert _has_whole_word_clue("Mr. Darcy", ("mr",)) is True
++    # "don" is a Spanish title, not the start of the contraction "don't" (#130).
++    assert _has_whole_word_clue("The girl who don't talk", ("don",)) is False
++    assert _has_whole_word_clue("The girl who don\u2019t talk", ("don",)) is False
++    assert _has_whole_word_clue("DON'T ASK", ("don",)) is False
++    assert _has_whole_word_clue("Don Quixote", ("don",)) is True
++    assert _has_whole_word_clue("the don", ("don",)) is True
++    assert _has_whole_word_clue("he's late", ("he",)) is True
+ 
+ 
+ # ---------------------------------------------------------------------------

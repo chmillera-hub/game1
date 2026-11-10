@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds twelve small AI-written bug fixes (patch files) for eight public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds seventeen small AI-written bug fixes (patch files) for twelve public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -47,6 +47,21 @@ The shelf holds twelve small AI-written bug fixes (patch files) for eight public
 
 12. [repowise: test_tool_overview.py fails when run alone because ov.health does not exist yet](spare-token-bug-fixes/fix-12-repowise-5368.md)
    Project: repowise-dev/repowise. Bug report number 5368. License: AGPL-3.0. Test included: yes. Patch file: [12-repowise-5368.patch](spare-token-bug-fixes/fixes/12-repowise-5368.patch)
+
+13. [rai-toolkit: malformed JSON dataset errors do not name the file](spare-token-bug-fixes/fix-13-rai-toolkit-131.md)
+   Project: wandb/rai-toolkit. Bug report number 131. License: Apache-2.0. Test included: yes. Patch file: [13-rai-toolkit-131.patch](spare-token-bug-fixes/fixes/13-rai-toolkit-131.patch)
+
+14. [inspect_scout: retry_refusals=True allows one retry instead of the default three](spare-token-bug-fixes/fix-14-inspect-scout-768.md)
+   Project: meridianlabs-ai/inspect_scout. Bug report number 768. License: MIT. Test included: yes. Patch file: [14-inspect-scout-768.patch](spare-token-bug-fixes/fixes/14-inspect-scout-768.patch)
+
+15. [audiobard: export_m4b crashes when the destination folder does not exist](spare-token-bug-fixes/fix-15-audiobard-120.md)
+   Project: oscarbol09/audiobard. Bug report number 120. License: MIT. Test included: yes. Patch file: [15-audiobard-120.patch](spare-token-bug-fixes/fixes/15-audiobard-120.patch)
+
+16. [audiobard: the Spanish title don matches inside the English contraction don't](spare-token-bug-fixes/fix-16-audiobard-130.md)
+   Project: oscarbol09/audiobard. Bug report number 130. License: MIT. Test included: yes. Patch file: [16-audiobard-130.patch](spare-token-bug-fixes/fixes/16-audiobard-130.patch)
+
+17. [spatialmath-python: InterpSplineSE3 rejects negative start times and mishandles a zero time span](spare-token-bug-fixes/fix-17-spatialmath-287.md)
+   Project: rai-opensource/spatialmath-python. Bug report number 287. License: MIT. Test included: yes. Patch file: [17-spatialmath-287.patch](spare-token-bug-fixes/fixes/17-spatialmath-287.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: Robbo-lab/mcp-task-app
+- Bug report title: [BUG] task_started default is fixed at import time
 - Bug report: number 128 ([open the bug report](https://github.com/Robbo-lab/mcp-task-app/issues/128))
 - Project license: MIT
 - Language: Python

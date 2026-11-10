@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: pavlov99/json-rpc
+- Bug report title: Response error setter pops 'value' instead of 'result'
 - Bug report: number 135 ([open the bug report](https://github.com/pavlov99/json-rpc/issues/135))
 - Project license: MIT
 - Language: Python

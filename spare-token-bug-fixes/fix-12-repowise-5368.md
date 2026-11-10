@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: repowise-dev/repowise
+- Bug report title: [Bug] test_tool_overview.py fails when run on its own because `ov.health` only exists after another test imports it
 - Bug report: number 5368 ([open the bug report](https://github.com/repowise-dev/repowise/issues/5368))
 - Project license: AGPL-3.0
 - Language: Python (test only)

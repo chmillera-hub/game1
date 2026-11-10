@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: FROWNINGdev/orm-lens
+- Bug report title: signals: @receiver([post_save, post_delete], ...) becomes one '&lt;unknown>' custom edge
 - Bug report: number 221 ([open the bug report](https://github.com/FROWNINGdev/orm-lens/issues/221))
 - Project license: MIT
 - Language: Python

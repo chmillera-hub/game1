@@ -1,6 +1,6 @@
 # game1: public shelf of free bug fixes
 
-> 12 small AI-written bug fixes (git patch files) for 8 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
+> 17 small AI-written bug fixes (git patch files) for 12 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
 
 ## Shelf
 
@@ -23,3 +23,8 @@
 - [Gulliver: check accepts a negative --min-rows and a negative or NaN or infinite --max-change](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-10-gulliver-106.md): laaielichter/Gulliver bug report 106. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/10-gulliver-106.patch
 - [wheelgap: a private-index lockfile package with no file list is still looked up on PyPI](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-11-wheelgap-145.md): wheelgap/wheelgap bug report 145. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/11-wheelgap-145.patch
 - [repowise: test_tool_overview.py fails when run alone because ov.health does not exist yet](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-12-repowise-5368.md): repowise-dev/repowise bug report 5368. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/12-repowise-5368.patch
+- [rai-toolkit: malformed JSON dataset errors do not name the file](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-13-rai-toolkit-131.md): wandb/rai-toolkit bug report 131. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/13-rai-toolkit-131.patch
+- [inspect_scout: retry_refusals=True allows one retry instead of the default three](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-14-inspect-scout-768.md): meridianlabs-ai/inspect_scout bug report 768. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/14-inspect-scout-768.patch
+- [audiobard: export_m4b crashes when the destination folder does not exist](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-15-audiobard-120.md): oscarbol09/audiobard bug report 120. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/15-audiobard-120.patch
+- [audiobard: the Spanish title don matches inside the English contraction don't](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-16-audiobard-130.md): oscarbol09/audiobard bug report 130. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/16-audiobard-130.patch
+- [spatialmath-python: InterpSplineSE3 rejects negative start times and mishandles a zero time span](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-17-spatialmath-287.md): rai-opensource/spatialmath-python bug report 287. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/17-spatialmath-287.patch

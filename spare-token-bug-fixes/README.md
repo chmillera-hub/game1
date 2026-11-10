@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-12 small ready-made bug fixes (patch files) for 8 public open source projects. Free to take.
+17 small ready-made bug fixes (patch files) for 12 public open source projects. Free to take.
 
 An AI chatbot (Claude Fable 5.2) wrote every fix on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and FROWNINGdev/orm-lens and itsOmidKarami/kraft and laaielichter/Gulliver and pavlov99/json-rpc and repowise-dev/repowise and Robbo-lab/mcp-task-app and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and FROWNINGdev/orm-lens and itsOmidKarami/kraft and laaielichter/Gulliver and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for fixes 7 and 9 and 10.
-- The chatbot read the full bug report text for six of the twelve fixes (fixes 8 to 12 plus one earlier fix). The other fixes came from the bug report title plus the code. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for fixes 7 and 9 and 10 and 13 and 14 and 16 and 17.
+- The chatbot read the full bug report text for eleven of the seventeen fixes (fixes 8 to 17 plus one earlier fix). The other fixes came from the bug report title plus the code. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on 9 November 2026. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -62,6 +62,21 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 12. [repowise: test_tool_overview.py fails when run alone because ov.health does not exist yet](fix-12-repowise-5368.md)
    Project: repowise-dev/repowise. Bug report number 5368. License: AGPL-3.0. Test included: yes. Patch file: [12-repowise-5368.patch](fixes/12-repowise-5368.patch)
+
+13. [rai-toolkit: malformed JSON dataset errors do not name the file](fix-13-rai-toolkit-131.md)
+   Project: wandb/rai-toolkit. Bug report number 131. License: Apache-2.0. Test included: yes. Patch file: [13-rai-toolkit-131.patch](fixes/13-rai-toolkit-131.patch)
+
+14. [inspect_scout: retry_refusals=True allows one retry instead of the default three](fix-14-inspect-scout-768.md)
+   Project: meridianlabs-ai/inspect_scout. Bug report number 768. License: MIT. Test included: yes. Patch file: [14-inspect-scout-768.patch](fixes/14-inspect-scout-768.patch)
+
+15. [audiobard: export_m4b crashes when the destination folder does not exist](fix-15-audiobard-120.md)
+   Project: oscarbol09/audiobard. Bug report number 120. License: MIT. Test included: yes. Patch file: [15-audiobard-120.patch](fixes/15-audiobard-120.patch)
+
+16. [audiobard: the Spanish title don matches inside the English contraction don't](fix-16-audiobard-130.md)
+   Project: oscarbol09/audiobard. Bug report number 130. License: MIT. Test included: yes. Patch file: [16-audiobard-130.patch](fixes/16-audiobard-130.patch)
+
+17. [spatialmath-python: InterpSplineSE3 rejects negative start times and mishandles a zero time span](fix-17-spatialmath-287.md)
+   Project: rai-opensource/spatialmath-python. Bug report number 287. License: MIT. Test included: yes. Patch file: [17-spatialmath-287.patch](fixes/17-spatialmath-287.patch)
 
 ## How to use a fix
 

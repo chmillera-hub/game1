@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: laaielichter/Gulliver
+- Bug report title: Period values such as `prune --older-than 99999999999d` and `check --fresh ts=99999999999d` crash with a traceback
 - Bug report: number 108 ([open the bug report](https://github.com/laaielichter/Gulliver/issues/108))
 - Project license: MIT
 - Language: Python

@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: FROWNINGdev/orm-lens
+- Bug report title: drift fails the build on `objects = models.Manager()`: a manager is parsed as a model field
 - Bug report: number 219 ([open the bug report](https://github.com/FROWNINGdev/orm-lens/issues/219))
 - Project license: MIT
 - Language: Python and TypeScript

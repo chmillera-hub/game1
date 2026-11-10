@@ -1,0 +1,85 @@
+diff --git a/rai_toolkit/evaluation/datasets.py b/rai_toolkit/evaluation/datasets.py
+index 7c0210f..e56b8df 100644
+--- a/rai_toolkit/evaluation/datasets.py
++++ b/rai_toolkit/evaluation/datasets.py
+@@ -46,6 +46,9 @@ class DatasetLoader:
+         JSON files accept an array of objects or an object with a ``data``
+         array. Invalid dataset shapes raise ``ValueError`` with the filename;
+         invalid rows also include their one-based array position, not a line number.
++        Malformed JSON raises ``ValueError`` with the filename, the one-based
++        physical line and column of the syntax error and the parser's reason; the
++        original ``json.JSONDecodeError`` is kept as the cause.
+ 
+         Args:
+             path: Path to CSV, JSON, or JSONL file.
+@@ -96,7 +99,12 @@ class DatasetLoader:
+     @staticmethod
+     def _load_json(path: Path) -> list[dict[str, Any]]:
+         with open(path, encoding="utf-8") as f:
+-            data = json.load(f)
++            try:
++                data = json.load(f)
++            except json.JSONDecodeError as exc:
++                raise ValueError(
++                    f"{path}: line {exc.lineno}, column {exc.colno}: invalid JSON: {exc.msg}"
++                ) from exc
+         if isinstance(data, dict):
+             data = data.get("data")
+         if not isinstance(data, list):
+diff --git a/tests/test_dataset_loader_json.py b/tests/test_dataset_loader_json.py
+index 95dbe83..90cd94f 100644
+--- a/tests/test_dataset_loader_json.py
++++ b/tests/test_dataset_loader_json.py
+@@ -117,3 +117,52 @@ def test_json_empty_arrays_return_empty_list(tmp_path, data):
+     path.write_text(json.dumps(data), encoding="utf-8")
+ 
+     assert DatasetLoader.from_file(path) == []
++
++
++@pytest.mark.parametrize(
++    ("text", "line", "column", "reason"),
++    [
++        # Direct array: a missing comma after earlier valid content.
++        ('[\n  {"prompt": "first"}\n  {"prompt": "second"}\n]\n', 3, 3, "Expecting ',' delimiter"),
++        # ``data`` wrapper: the same mistake one level down.
++        (
++            '{\n  "data": [\n    {"prompt": "first"}\n    {"prompt": "second"}\n  ]\n}\n',
++            4,
++            5,
++            "Expecting ',' delimiter",
++        ),
++        # Empty file.
++        ("", 1, 1, "Expecting value"),
++        # Truncated JSON: the array is never closed.
++        ('[\n  {"prompt": "private-dataset-content"},\n', 3, 1, "Expecting value"),
++        # Truncated JSON: a string is never closed.
++        ('[\n  {"prompt": "private-dataset-content', 2, 14, "Unterminated string starting at"),
++    ],
++    ids=["array", "data-wrapper", "empty-file", "truncated-array", "truncated-string"],
++)
++def test_json_syntax_errors_report_path_line_and_column(tmp_path, text, line, column, reason):
++    path = tmp_path / "rows.json"
++    path.write_text(text, encoding="utf-8")
++
++    with pytest.raises(ValueError) as exc_info:
++        DatasetLoader.from_file(path)
++
++    message = str(exc_info.value)
++    assert message.startswith(f"{path}: line {line}, column {column}: invalid JSON: ")
++    assert reason in message
++    assert "row " not in message
++    assert "private-dataset-content" not in message
++
++    cause = exc_info.value.__cause__
++    assert isinstance(cause, json.JSONDecodeError)
++    assert (cause.lineno, cause.colno) == (line, column)
++
++
++def test_json_syntax_error_is_not_a_bare_decode_error(tmp_path):
++    path = tmp_path / "rows.json"
++    path.write_text("[", encoding="utf-8")
++
++    with pytest.raises(ValueError) as exc_info:
++        DatasetLoader.from_file(path)
++
++    assert not isinstance(exc_info.value, json.JSONDecodeError)

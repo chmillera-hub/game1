@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: laaielichter/Gulliver
+- Bug report title: spend: a very large --days crashes with a Python traceback instead of an error message
 - Bug report: number 107 ([open the bug report](https://github.com/laaielichter/Gulliver/issues/107))
 - Project license: MIT
 - Language: Python

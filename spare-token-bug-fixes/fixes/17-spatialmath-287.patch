@@ -1,0 +1,59 @@
+diff --git a/spatialmath/spline.py b/spatialmath/spline.py
+index c0a99ca..5345c72 100644
+--- a/spatialmath/spline.py
++++ b/spatialmath/spline.py
+@@ -105,17 +105,19 @@ class InterpSplineSE3(SplineSE3):
+         self.control_poses = control_poses
+         self.timepoints = np.array(timepoints)
+ 
+-        if self.timepoints[-1] < self._e:
+-            raise ValueError(
+-                "Difference between start and end timepoints is less than {self._e}"
+-            )
+-
+         if len(self.control_poses) != len(self.timepoints):
+             raise ValueError("Length of control_poses and timepoints must be equal.")
+ 
+         if len(self.timepoints) < 2:
+             raise ValueError("Need at least 2 data points to make a trajectory.")
+ 
++        # Check the span between the first and last time, not the last time itself:
++        # a trajectory may start at a negative or offset time.
++        if self.timepoints[-1] - self.timepoints[0] < self._e:
++            raise ValueError(
++                f"Difference between start and end timepoints is less than {self._e}"
++            )
++
+         if normalize_time:
+             self.timepoints = self.timepoints - self.timepoints[0]
+             self.timepoints = self.timepoints / self.timepoints[-1]
+diff --git a/tests/test_spline.py b/tests/test_spline.py
+index e1fb56c..05f426a 100644
+--- a/tests/test_spline.py
++++ b/tests/test_spline.py
+@@ -73,6 +73,25 @@ class TestInterpSplineSE3:
+             np.linspace(0, InterpSplineSE3._e, len(self.waypoints)), self.waypoints
+         )
+ 
++    @pytest.mark.parametrize("start, end", [(-10.0, -1.0), (-5.0, 5.0), (100.0, 110.0)])
++    @pytest.mark.parametrize("normalize_time", [False, True])
++    def test_negative_and_offset_start_times(self, start, end, normalize_time):
++        times = np.linspace(start, end, len(self.waypoints))
++        spline = InterpSplineSE3(times, self.waypoints, normalize_time=normalize_time)
++        if normalize_time:
++            nt.assert_almost_equal(spline.timepoints[0], 0.0)
++            nt.assert_almost_equal(spline.timepoints[-1], 1.0)
++        for time, pose in zip(spline.timepoints, self.waypoints):
++            nt.assert_almost_equal(spline(time).angdist(pose), 0.0)
++            nt.assert_almost_equal(np.linalg.norm(spline(time).t - pose.t), 0.0)
++
++    @pytest.mark.parametrize("time", [0.0, 3.0, -3.0])
++    @pytest.mark.parametrize("normalize_time", [False, True])
++    def test_zero_time_span_is_rejected(self, time, normalize_time):
++        times = np.full(len(self.waypoints), time)
++        with pytest.raises(ValueError, match=f"less than {InterpSplineSE3._e}"):
++            InterpSplineSE3(times, self.waypoints, normalize_time=normalize_time)
++
+     @pytest.mark.skipif(
+         plt.get_backend().lower() == "agg" or os.environ.get("CI") == "true",
+         reason="animate=True busy-waits on a timer callback that never "

@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: itsOmidKarami/kraft
+- Bug report title: update_repo reports an answer that isn't JSON as success
 - Bug report: number 1344 ([open the bug report](https://github.com/itsOmidKarami/kraft/issues/1344))
 - Project license: Apache-2.0
 - Language: Python

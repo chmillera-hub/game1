@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: wheelgap/wheelgap
+- Bug report title: Lockfiles: a private-index package with no file list is still looked up on PyPI
 - Bug report: number 145 ([open the bug report](https://github.com/wheelgap/wheelgap/issues/145))
 - Project license: MIT
 - Language: Python

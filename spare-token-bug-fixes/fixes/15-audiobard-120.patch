@@ -1,0 +1,71 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3ae0b55..e2e3e4d 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,9 @@ adds an entry under the relevant section, in the same commit as the change.
+ 
+ ### Fixed
+ 
++- `export_m4b` creates the destination folder when it does not exist, so
++  `audiobard generate book.txt -o ./new_folder/book.m4b` no longer fails with FFmpeg's
++  "No such file or directory" (#120).
+ - Restrict secret-scan exemptions to exact repository-relative files and explicitly listed
+   directories, so similarly named files and nested copies are still scanned (#132).
+ - Allow only catalog JSON files and the exact `.gitkeep` filename under `data/voices/`,
+diff --git a/src/audiobard/audio/processor.py b/src/audiobard/audio/processor.py
+index bbc6666..3c4c857 100644
+--- a/src/audiobard/audio/processor.py
++++ b/src/audiobard/audio/processor.py
+@@ -542,6 +542,10 @@ class AudioProcessor:
+         if not ffmpeg_bin:
+             raise FileNotFoundError(FFMPEG_MISSING_MESSAGE)
+ 
++        # FFmpeg does not create missing folders: without this, ``-o new_folder/book.m4b``
++        # fails with "No such file or directory" (the MP3 path already does the same).
++        path.parent.mkdir(parents=True, exist_ok=True)
++
+         with tempfile.TemporaryDirectory() as tmpdir:
+             tmp_path = Path(tmpdir)
+             raw_m4b = tmp_path / "raw.m4b"
+diff --git a/tests/test_audio.py b/tests/test_audio.py
+index daf7236..5c92b8d 100644
+--- a/tests/test_audio.py
++++ b/tests/test_audio.py
+@@ -250,6 +250,37 @@ async def test_audio_processor_export_m4b(mock_subproc: AsyncMock, mock_find: An
+         assert "copy" in call2_args
+ 
+ 
++@pytest.mark.asyncio
++@patch("audiobard.audio.processor.find_ffmpeg", return_value="/usr/bin/ffmpeg")
++@patch("asyncio.create_subprocess_exec")
++async def test_audio_processor_export_m4b_creates_missing_parent_dirs(
++    mock_subproc: AsyncMock, mock_find: Any
++) -> None:
++    """export_m4b must create the destination folder: FFmpeg will not."""
++    mock_proc1 = AsyncMock()
++    mock_proc1.returncode = 0
++    mock_proc1.communicate.return_value = (b"", b"")
++
++    mock_proc2 = AsyncMock()
++    mock_proc2.returncode = 0
++    mock_proc2.communicate.return_value = (b"", b"")
++
++    mock_subproc.side_effect = [mock_proc1, mock_proc2]
++
++    processor = AudioProcessor()
++    chapters = [ChapterMarker(title="Ch 1", start_ms=0, end_ms=5000)]
++
++    with tempfile.TemporaryDirectory() as tmpdir:
++        out_path = Path(tmpdir) / "new_folder" / "nested" / "book.m4b"
++        assert not out_path.parent.exists()
++
++        await processor.export_m4b(b"audio-data", out_path, chapters)
++
++        assert out_path.parent.is_dir()
++        # The folder exists before FFmpeg is asked to write into it.
++        assert mock_subproc.call_args_list[1][0][-1] == str(out_path)
++
++
+ # 64x64 JPEG generated with ffmpeg; used to prove cover art is really attached.
+ _DUMMY_COVER_JPEG = base64.b64decode(
+     "/9j/4AAQSkZJRgABAgAAAQABAAD//gAQTGF2YzYyLjE1LjEwMAD/2wBDAAgEBAQEBAUFBQUFBQYGBgYGBgYG"

@@ -1,9 +1,9 @@
 {
   "name": "Spare token bug fixes: a public shelf",
-  "description": "12 small AI-written bug fixes for 8 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
+  "description": "17 small AI-written bug fixes for 12 public open source projects. None have been sent to the projects. Anyone (human or AI) may test a fix and submit the fix.",
   "repository": "https://github.com/chmillera-hub/spare-token-bug-fixes",
   "website": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/",
-  "fix_count": 12,
+  "fix_count": 17,
   "fixes": [
     {
       "id": 1,
@@ -12,6 +12,8 @@
       "project_url": "https://github.com/pavlov99/json-rpc",
       "bug_report_number": 135,
       "bug_report_url": "https://github.com/pavlov99/json-rpc/issues/135",
+      "bug_report_title": "Response error setter pops 'value' instead of 'result'",
+      "search_keywords": "JSONRPC20Response JSONRPC10Response error setter result and error both present _data.pop value json-rpc python",
       "license": "MIT",
       "language": "Python",
       "files_changed": [
@@ -46,6 +48,8 @@
       "project_url": "https://github.com/Robbo-lab/mcp-task-app",
       "bug_report_number": 128,
       "bug_report_url": "https://github.com/Robbo-lab/mcp-task-app/issues/128",
+      "bug_report_title": "[BUG] task_started default is fixed at import time",
+      "search_keywords": "task_started default datetime.now() evaluated once at import SQLAlchemy Column default Pydantic default_factory same timestamp every row",
       "license": "MIT",
       "language": "Python",
       "files_changed": [
@@ -79,6 +83,8 @@
       "project_url": "https://github.com/laaielichter/Gulliver",
       "bug_report_number": 107,
       "bug_report_url": "https://github.com/laaielichter/Gulliver/issues/107",
+      "bug_report_title": "spend: a very large --days crashes with a Python traceback instead of an error message",
+      "search_keywords": "gulliver spend --days OverflowError date value out of range timedelta runaway.py",
       "license": "MIT",
       "language": "Python",
       "files_changed": [
@@ -112,6 +118,8 @@
       "project_url": "https://github.com/itsOmidKarami/kraft",
       "bug_report_number": 1344,
       "bug_report_url": "https://github.com/itsOmidKarami/kraft/issues/1344",
+      "bug_report_title": "update_repo reports an answer that isn't JSON as success",
+      "search_keywords": "kraft client update_repo BAD_RESPONSE non-JSON 200 response proxy html transport._json transport._detail status_error",
       "license": "Apache-2.0",
       "language": "Python",
       "files_changed": [
@@ -145,6 +153,8 @@
       "project_url": "https://github.com/laaielichter/Gulliver",
       "bug_report_number": 108,
       "bug_report_url": "https://github.com/laaielichter/Gulliver/issues/108",
+      "bug_report_title": "Period values such as `prune --older-than 99999999999d` and `check --fresh ts=99999999999d` crash with a traceback",
+      "search_keywords": "gulliver parse_period OverflowError timedelta days too large incremental.py period is too large",
       "license": "MIT",
       "language": "Python",
       "files_changed": [
@@ -178,6 +188,8 @@
       "project_url": "https://github.com/AgenticResourceRegistry/AgenticResourceRegistry",
       "bug_report_number": 1971,
       "bug_report_url": "https://github.com/AgenticResourceRegistry/AgenticResourceRegistry/issues/1971",
+      "bug_report_title": null,
+      "search_keywords": "observal pull observal agent pull wrong command in UI No such command registry home teamspaces preview panel",
       "license": "Apache-2.0",
       "language": "TypeScript (text only)",
       "files_changed": [
@@ -213,6 +225,8 @@
       "project_url": "https://github.com/repowise-dev/repowise",
       "bug_report_number": 5357,
       "bug_report_url": "https://github.com/repowise-dev/repowise/issues/5357",
+      "bug_report_title": null,
+      "search_keywords": "repowise embed_section heading inside fenced code block markdown section boundary overview_tables.py",
       "license": "AGPL-3.0",
       "language": "Python",
       "files_changed": [
@@ -246,6 +260,8 @@
       "project_url": "https://github.com/FROWNINGdev/orm-lens",
       "bug_report_number": 219,
       "bug_report_url": "https://github.com/FROWNINGdev/orm-lens/issues/219",
+      "bug_report_title": "drift fails the build on `objects = models.Manager()`: a manager is parsed as a model field",
+      "search_keywords": "orm-lens drift declared but never migrated: objects models.Manager() parsed as a field Manager objects ER diagram blocking exit code 1 Django",
       "license": "MIT",
       "language": "Python and TypeScript",
       "files_changed": [
@@ -283,6 +299,8 @@
       "project_url": "https://github.com/FROWNINGdev/orm-lens",
       "bug_report_number": 221,
       "bug_report_url": "https://github.com/FROWNINGdev/orm-lens/issues/221",
+      "bug_report_title": "signals: @receiver([post_save, post_delete], ...) becomes one '<unknown>' custom edge",
+      "search_keywords": "orm-lens signals @receiver([post_save, post_delete]) list tuple of signals <unknown> custom edge skipped_receivers DB_CASCADE signal_graph Django",
       "license": "MIT",
       "language": "Python",
       "files_changed": [
@@ -318,6 +336,8 @@
       "project_url": "https://github.com/laaielichter/Gulliver",
       "bug_report_number": 106,
       "bug_report_url": "https://github.com/laaielichter/Gulliver/issues/106",
+      "bug_report_title": "check: refuse a negative --min-rows and a negative, NaN or infinite --max-change",
+      "search_keywords": "gulliver check --min-rows negative --max-change nan inf parse_spec CheckSpec threshold validation",
       "license": "MIT",
       "language": "Python",
       "files_changed": [
@@ -353,6 +373,8 @@
       "project_url": "https://github.com/wheelgap/wheelgap",
       "bug_report_number": 145,
       "bug_report_url": "https://github.com/wheelgap/wheelgap/issues/145",
+      "bug_report_title": "Lockfiles: a private-index package with no file list is still looked up on PyPI",
+      "search_keywords": "wheelgap poetry.lock metadata.hashes private index dependency confusion fill_all PyPI lookup skipped private index",
       "license": "MIT",
       "language": "Python",
       "files_changed": [
@@ -389,6 +411,8 @@
       "project_url": "https://github.com/repowise-dev/repowise",
       "bug_report_number": 5368,
       "bug_report_url": "https://github.com/repowise-dev/repowise/issues/5368",
+      "bug_report_title": "[Bug] test_tool_overview.py fails when run on its own because `ov.health` only exists after another test imports it",
+      "search_keywords": "repowise test_tool_overview AttributeError has no attribute health lazy_exports monkeypatch test order dependent",
       "license": "AGPL-3.0",
       "language": "Python (test only)",
       "files_changed": [
@@ -402,6 +426,183 @@
       "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-12-repowise-5368.md",
       "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-12-repowise-5368.md",
       "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-12-repowise-5368.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 13,
+      "title": "rai-toolkit: malformed JSON dataset errors do not name the file",
+      "project": "wandb/rai-toolkit",
+      "project_url": "https://github.com/wandb/rai-toolkit",
+      "bug_report_number": 131,
+      "bug_report_url": "https://github.com/wandb/rai-toolkit/issues/131",
+      "bug_report_title": "fix(datasets): include source paths in JSON syntax errors",
+      "search_keywords": "rai-toolkit DatasetLoader from_file JSONDecodeError Expecting delimiter missing filename path line column invalid JSON",
+      "license": "Apache-2.0",
+      "language": "Python",
+      "files_changed": [
+        "rai_toolkit/evaluation/datasets.py",
+        "tests/test_dataset_loader_json.py"
+      ],
+      "test_included": true,
+      "symptom": "DatasetLoader.from_file() names the source file when a JSON dataset has the wrong shape. For malformed JSON the loader lets a bare JSONDecodeError through such as \"Expecting ',' delimiter: line 3 column 3 (char 26)\" with no file name. Failures are hard to trace when several datasets are loaded.",
+      "change": "DatasetLoader._load_json in rai_toolkit/evaluation/datasets.py now catches json.JSONDecodeError and raises ValueError with the path and the one-based line and column and the parser's short reason. The original error is kept as the cause. No dataset content appears in the message. New tests cover a direct array and a data wrapper and an empty file and two kinds of truncated JSON. The chatbot checked the expected line and column numbers with a separate script.",
+      "note": "The bug report asks contributors to check linked pull requests first. The chatbot could not see linked pull requests.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/13-rai-toolkit-131.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-13-rai-toolkit-131.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-13-rai-toolkit-131.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-13-rai-toolkit-131.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 14,
+      "title": "inspect_scout: retry_refusals=True allows one retry instead of the default three",
+      "project": "meridianlabs-ai/inspect_scout",
+      "project_url": "https://github.com/meridianlabs-ai/inspect_scout",
+      "bug_report_number": 768,
+      "bug_report_url": "https://github.com/meridianlabs-ai/inspect_scout/issues/768",
+      "bug_report_title": "retry_refusals=True allows one retry instead of the default three",
+      "search_keywords": "inspect_scout llm_scanner retry_refusals True RefusalError isinstance bool int content_filter one retry instead of three",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "src/inspect_scout/_llm_scanner/_llm_scanner.py",
+        "tests/llm_scanner/test_retry_refusals.py"
+      ],
+      "test_included": true,
+      "symptom": "llm_scanner(retry_refusals=True) gives up after two refused responses and raises RefusalError. retry_refusals=3 recovers. The option accepts a bool or an int and Python treats True as the integer 1 so the branch that maps True to 3 never runs.",
+      "change": "The resolution code in src/inspect_scout/_llm_scanner/_llm_scanner.py now checks for a bool before an int. True means 3 retries and False means 0 and an explicit integer keeps its meaning. The docstring says so. A new test passes retry_refusals=True with three refusals followed by a success.",
+      "note": "The person who reported the bug offered to prepare a fix. Please check the bug report for a linked pull request before sending this one. The project builds its changelog automatically so the patch adds no changelog line.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/14-inspect-scout-768.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-14-inspect-scout-768.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-14-inspect-scout-768.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-14-inspect-scout-768.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 15,
+      "title": "audiobard: export_m4b crashes when the destination folder does not exist",
+      "project": "oscarbol09/audiobard",
+      "project_url": "https://github.com/oscarbol09/audiobard",
+      "bug_report_number": 120,
+      "bug_report_url": "https://github.com/oscarbol09/audiobard/issues/120",
+      "bug_report_title": "[BUG] AudioProcessor.export_m4b crashes if destination parent directory does not exist",
+      "search_keywords": "audiobard export_m4b ffmpeg No such file or directory output folder missing parent directory mkdir m4b",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "CHANGELOG.md",
+        "src/audiobard/audio/processor.py",
+        "tests/test_audio.py"
+      ],
+      "test_included": true,
+      "symptom": "Running audiobard generate book.txt -o ./new_folder/book.m4b fails with the FFmpeg error \"new_folder/book.m4b: No such file or directory\". The MP3 export path creates missing folders and the M4B export path does not.",
+      "change": "export_m4b in src/audiobard/audio/processor.py now creates the destination folder before calling FFmpeg. A new test exports into a nested folder that does not exist yet. A changelog line is included.",
+      "note": "Fix 15 and fix 16 both add text at the same spot in CHANGELOG.md. Applying both needs a small manual merge of CHANGELOG.md.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/15-audiobard-120.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-15-audiobard-120.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-15-audiobard-120.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-15-audiobard-120.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 16,
+      "title": "audiobard: the Spanish title don matches inside the English contraction don't",
+      "project": "oscarbol09/audiobard",
+      "project_url": "https://github.com/oscarbol09/audiobard",
+      "bug_report_number": 130,
+      "bug_report_url": "https://github.com/oscarbol09/audiobard/issues/130",
+      "bug_report_title": "[BUG] Word-boundary contraction bug in VoiceMapper matches 'don' inside 'don't'",
+      "search_keywords": "audiobard VoiceMapper gender clue don don't contraction word boundary apostrophe GenderHint MALE wrong voice",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "CHANGELOG.md",
+        "src/audiobard/tts/voice_mapper.py",
+        "tests/test_voice_mapper.py"
+      ],
+      "test_included": true,
+      "symptom": "VoiceMapper guesses the gender of a neutral character from clue words in names and aliases. The male clue list holds the Spanish title don. An apostrophe counts as a word break so the clue also matches inside don't. An alias such as \"The girl who don't talk\" gets a male voice.",
+      "change": "_has_whole_word_clue in src/audiobard/tts/voice_mapper.py no longer counts a clue that is directly followed by an apostrophe and the letter t. Both the plain apostrophe and the curly apostrophe are covered. Other forms such as he's still count. New tests cover the helper and a full voice assignment. A changelog line is included. The chatbot checked the pattern with a separate script on twelve phrases.",
+      "note": "Fix 15 and fix 16 both add text at the same spot in CHANGELOG.md. Applying both needs a small manual merge of CHANGELOG.md.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/16-audiobard-130.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-16-audiobard-130.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-16-audiobard-130.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-16-audiobard-130.html",
+      "status": {
+        "sent_to_project": false,
+        "ai_written": true,
+        "human_reviewed": false,
+        "project_tests_run": false,
+        "duplicate_check_done": false,
+        "full_bug_report_read": true,
+        "bug_report_comments_read": false,
+        "patch_applied_cleanly_on": "2026-11-09"
+      },
+      "written_on": "2026-11-09"
+    },
+    {
+      "id": 17,
+      "title": "spatialmath-python: InterpSplineSE3 rejects negative start times and mishandles a zero time span",
+      "project": "rai-opensource/spatialmath-python",
+      "project_url": "https://github.com/rai-opensource/spatialmath-python",
+      "bug_report_number": 287,
+      "bug_report_url": "https://github.com/rai-opensource/spatialmath-python/issues/287",
+      "bug_report_title": "InterpSplineSE3 rejects negative start times and mishandles a zero time span",
+      "search_keywords": "spatialmath InterpSplineSE3 negative timepoints ValueError Difference between start and end timepoints is less than {self._e} zero time span normalize_time",
+      "license": "MIT",
+      "language": "Python",
+      "files_changed": [
+        "spatialmath/spline.py",
+        "tests/test_spline.py"
+      ],
+      "test_included": true,
+      "symptom": "InterpSplineSE3([-5, -3, -1], poses) raises ValueError because the constructor tests the last time point instead of the span between the first and the last. A span of zero is not caught and fails later with an unrelated SciPy error when normalize_time is on. The error message prints {self._e} literally because the f prefix is missing.",
+      "change": "The constructor in spatialmath/spline.py now checks the last time minus the first time and the message is a real f-string. The two length checks now run before the span check so a single time point still gets the message about needing two data points. New tests cover negative and offset start times with and without normalize_time and a zero span.",
+      "note": "The bug report had one comment on 9 November 2026 and the chatbot could not read comments.",
+      "patch_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/17-spatialmath-287.patch",
+      "page_raw_url": "https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-17-spatialmath-287.md",
+      "github_page_url": "https://github.com/chmillera-hub/spare-token-bug-fixes/blob/main/fix-17-spatialmath-287.md",
+      "website_page_url": "https://chmillera-hub.github.io/game1/spare-token-bug-fixes/fix-17-spatialmath-287.html",
       "status": {
         "sent_to_project": false,
         "ai_written": true,

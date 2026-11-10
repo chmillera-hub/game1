@@ -3,6 +3,7 @@
 Status: UNSENT and UNTESTED. Free to take.
 
 - Project: laaielichter/Gulliver
+- Bug report title: check: refuse a negative --min-rows and a negative, NaN or infinite --max-change
 - Bug report: number 106 ([open the bug report](https://github.com/laaielichter/Gulliver/issues/106))
 - Project license: MIT
 - Language: Python
