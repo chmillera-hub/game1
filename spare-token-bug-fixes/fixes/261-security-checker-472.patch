@@ -1,0 +1,56 @@
+diff --git a/tests/unit/test_cli_overrides.py b/tests/unit/test_cli_overrides.py
+new file mode 100644
+index 0000000..2351905
+--- /dev/null
++++ b/tests/unit/test_cli_overrides.py
+@@ -0,0 +1,50 @@
++"""cli._cli_overrides: 指定されたオプションだけを設定の上書きにすること."""
++
++from __future__ import annotations
++
++from pathlib import Path
++from typing import Any
++
++from security_checker.cli import _cli_overrides
++from security_checker.models.enums import Severity
++
++
++def _overrides(**given: Any) -> dict[str, Any]:
++    options: dict[str, Any] = {
++        "fail_on": None,
++        "min_score": None,
++        "strict": None,
++        "exclude": None,
++        "output_dir": None,
++        "formats": None,
++        "semgrep_config": None,
++    }
++    options.update(given)
++    return _cli_overrides(**options)
++
++
++def test_nothing_given_is_no_override() -> None:
++    assert _overrides() == {}
++
++
++def test_policy_options_go_under_policy() -> None:
++    overrides = _overrides(fail_on=Severity.CRITICAL, min_score=70, strict=False)
++
++    assert overrides == {"policy": {"fail_on": "critical", "min_score": 70, "strict": False}}
++
++
++def test_exclude_goes_under_target() -> None:
++    assert _overrides(exclude=["tests/**"]) == {"target": {"exclude": ["tests/**"]}}
++    assert _overrides(exclude=[]) == {}
++
++
++def test_output_options_go_under_output() -> None:
++    overrides = _overrides(output_dir=Path("out"), formats=["json", "sarif"])
++
++    assert overrides == {"output": {"dir": "out", "formats": ["json", "sarif"]}}
++
++
++def test_semgrep_config_goes_under_scanners() -> None:
++    overrides = _overrides(semgrep_config="p/default")
++
++    assert overrides == {"scanners": {"semgrep": {"config": "p/default"}}}

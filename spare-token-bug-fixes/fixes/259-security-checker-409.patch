@@ -1,0 +1,52 @@
+diff --git a/src/security_checker/providers/check.py b/src/security_checker/providers/check.py
+index 65ce9d8..9b16783 100644
+--- a/src/security_checker/providers/check.py
++++ b/src/security_checker/providers/check.py
+@@ -39,6 +39,8 @@ PROBE_CODE = "import subprocess\n\ndef run(cmd):\n    return subprocess.run(cmd,
+ 
+ @dataclass
+ class Step:
++    """確認の 1 段階 (設定・到達性・構造化出力など) と、その成否."""
++
+     label: str
+     ok: bool
+     detail: str = ""
+@@ -46,6 +48,8 @@ class Step:
+ 
+ @dataclass
+ class CheckResult:
++    """Reviewer 1 つ分の `providers check` の結果. 段階ごとの成否と、次に取れる行動."""
++
+     name: str
+     transport: str
+     steps: list[Step] = field(default_factory=list)
+@@ -53,10 +57,12 @@ class CheckResult:
+ 
+     @property
+     def ok(self) -> bool:
++        """1 段階以上を実行し、すべて成功したか."""
+         return bool(self.steps) and all(step.ok for step in self.steps)
+ 
+ 
+ def probe_task() -> ReviewTask:
++    """疎通確認に使う合成の ReviewTask. 実在のコードは含まない."""
+     candidate = Candidate(
+         id="providers-check",
+         scanner="security-checker",
+@@ -101,6 +107,7 @@ def _suggest(exc: Exception, reviewer: ReviewerConfig) -> str:
+ async def check_reviewer(
+     reviewer: ReviewerConfig, *, environ: dict[str, str] | None = None, probe: bool = True
+ ) -> CheckResult:
++    """Reviewer 1 つを段階的に確かめる. 失敗は例外にせず、結果と案内に入れて返す."""
+     result = CheckResult(name=reviewer.name, transport=reviewer.transport)
+     warnings: list[str] = []
+     try:
+@@ -175,6 +182,8 @@ async def check_reviewer(
+ 
+ @dataclass
+ class ProviderCatalog:
++    """`providers list` に出す一覧. 方言・プリセット・プラグインと、読み込み時の警告."""
++
+     dialects: list[str]
+     http_presets: dict[str, str]
+     process_presets: dict[str, str]

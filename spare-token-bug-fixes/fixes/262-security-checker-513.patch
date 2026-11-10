@@ -1,0 +1,43 @@
+diff --git a/tests/unit/test_comment_plan_inline_disabled.py b/tests/unit/test_comment_plan_inline_disabled.py
+new file mode 100644
+index 0000000..085b864
+--- /dev/null
++++ b/tests/unit/test_comment_plan_inline_disabled.py
+@@ -0,0 +1,37 @@
++"""plan_inline: inline コメントが無効なら何も計画しないこと."""
++
++from __future__ import annotations
++
++from security_checker.config.schema import GithubConfig
++from security_checker.github.comment import plan_inline
++from security_checker.models.enums import FindingStatus
++from security_checker.models.report import Report
++from tests.factories import make_candidate, make_finding, make_report
++
++
++def _report() -> Report:
++    candidate = make_candidate(path="src/app.py", line=42)
++    return make_report([candidate], [make_finding(candidate, FindingStatus.CONFIRMED)])
++
++
++COMMENTABLE = {"src/app.py": [(40, 45)]}
++
++
++def test_disabled_inline_comments_plan_nothing() -> None:
++    plan = plan_inline(_report(), GithubConfig(inline_comments=False), COMMENTABLE, set())
++
++    assert plan.comments == []
++    assert (plan.already_posted, plan.outside_diff, plan.over_limit) == (0, 0, 0)
++
++
++def test_min_status_that_is_never_posted_inline_plans_nothing() -> None:
++    settings = GithubConfig(inline_min_status=FindingStatus.FALSE_POSITIVE)
++
++    assert plan_inline(_report(), settings, COMMENTABLE, set()).comments == []
++
++
++def test_enabled_inline_comments_plan_the_confirmed_finding() -> None:
++    """対になるケース. 有効なら、変更行にある confirmed の検出を 1 件計画する."""
++    plan = plan_inline(_report(), GithubConfig(), COMMENTABLE, set())
++
++    assert [(c.path, c.line, c.finding_id) for c in plan.comments] == [("src/app.py", 42, "c1")]

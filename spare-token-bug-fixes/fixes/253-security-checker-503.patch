@@ -1,0 +1,24 @@
+diff --git a/tests/unit/test_eval_runner_usd.py b/tests/unit/test_eval_runner_usd.py
+new file mode 100644
+index 0000000..47a4ce7
+--- /dev/null
++++ b/tests/unit/test_eval_runner_usd.py
+@@ -0,0 +1,18 @@
++"""eval.runner._usd: コストが測れないとき・無いとき・あるときの表記."""
++
++from __future__ import annotations
++
++from security_checker.eval.metrics import Metrics
++from security_checker.eval.runner import _usd
++
++
++def test_unmeasurable_cost_is_not_shown_as_a_number() -> None:
++    assert _usd(Metrics(cost_known=False, total_usd=1.0)).startswith("unknown")
++
++
++def test_missing_total_is_a_dash() -> None:
++    assert _usd(Metrics(cost_known=True, total_usd=None)) == "—"
++
++
++def test_known_total_has_four_decimals() -> None:
++    assert _usd(Metrics(cost_known=True, total_usd=1.5)) == "$1.5000"

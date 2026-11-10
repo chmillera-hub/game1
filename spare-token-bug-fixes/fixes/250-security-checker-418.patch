@@ -1,0 +1,28 @@
+diff --git a/src/security_checker/review/prompts/__init__.py b/src/security_checker/review/prompts/__init__.py
+index 7b36d5d..939bad8 100644
+--- a/src/security_checker/review/prompts/__init__.py
++++ b/src/security_checker/review/prompts/__init__.py
+@@ -44,6 +44,7 @@ def render_system(language: str = DEFAULT_LANGUAGE) -> str:
+ 
+ 
+ def render_user(task: ReviewTask, schema: dict[str, object]) -> str:
++    """Reviewer に送る user プロンプトを作る. 候補・コードの文脈・応答のスキーマを含む."""
+     primary = task.code_context.primary
+     return (
+         _environment()
+@@ -130,6 +131,7 @@ class PeerOpinion:
+     needs_more_context: list[str] = field(default_factory=list)
+ 
+     def sanitized(self) -> dict[str, Any]:
++        """テンプレートに渡す形. 自由記述の項目はデリミタをエスケープしてある."""
+         return {
+             "label": self.label,
+             "vulnerable": self.vulnerable,
+@@ -144,6 +146,7 @@ class PeerOpinion:
+ 
+ 
+ def render_judge_system(language: str = DEFAULT_LANGUAGE) -> str:
++    """Judge 用の system プロンプトを作る. `language` に応じて出力言語の指示を足す."""
+     base = _environment().get_template(f"judge_system.{PROMPT_VERSION}.jinja").render()
+     instruction = output_language_instruction(language)
+     return f"{base}\n{instruction}\n" if instruction else base

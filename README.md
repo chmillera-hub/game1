@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds 247 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 271 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -752,6 +752,78 @@ The shelf holds 247 small AI-written bug fixes (patch files) for forty-seven pub
 
 247. [security-checker: no test covers the advice texts of the provider check](spare-token-bug-fixes/fix-247-security-checker-531.md)
    Project: Sh1n1230/security-checker. Bug report number 531. License: MIT. Test included: yes. Patch file: [247-security-checker-531.patch](spare-token-bug-fixes/fixes/247-security-checker-531.patch)
+
+248. [security-checker: public names in models/report.py have no docstring (count_by_severity and count_by_status and dump and has_failed_scanner and utcnow)](spare-token-bug-fixes/fix-248-security-checker-399.md)
+   Project: Sh1n1230/security-checker. Bug report number 399. License: MIT. Test included: no. Patch file: [248-security-checker-399.patch](spare-token-bug-fixes/fixes/248-security-checker-399.patch)
+
+249. [security-checker: public names in github/comment.py have no docstring (InlineComment and InlinePlan and finding_marker and render_inline)](spare-token-bug-fixes/fix-249-security-checker-396.md)
+   Project: Sh1n1230/security-checker. Bug report number 396. License: MIT. Test included: no. Patch file: [249-security-checker-396.patch](spare-token-bug-fixes/fixes/249-security-checker-396.patch)
+
+250. [security-checker: public names in review/prompts/__init__.py have no docstring (render_judge_system and render_user and sanitized)](spare-token-bug-fixes/fix-250-security-checker-418.md)
+   Project: Sh1n1230/security-checker. Bug report number 418. License: MIT. Test included: no. Patch file: [250-security-checker-418.patch](spare-token-bug-fixes/fixes/250-security-checker-418.patch)
+
+251. [security-checker: public names in testing/cassette.py have no docstring (__init__ and aclose and capabilities and complete and health_check and request_key)](spare-token-bug-fixes/fix-251-security-checker-428.md)
+   Project: Sh1n1230/security-checker. Bug report number 428. License: MIT. Test included: no. Patch file: [251-security-checker-428.patch](spare-token-bug-fixes/fixes/251-security-checker-428.patch)
+
+252. [security-checker: public names in review/scheduler.py have no docstring (three __init__ methods and two acquire methods and name and remaining)](spare-token-bug-fixes/fix-252-security-checker-421.md)
+   Project: Sh1n1230/security-checker. Bug report number 421. License: MIT. Test included: no. Patch file: [252-security-checker-421.patch](spare-token-bug-fixes/fixes/252-security-checker-421.patch)
+
+253. [security-checker: no test covers the cost text of the evaluation report](spare-token-bug-fixes/fix-253-security-checker-503.md)
+   Project: Sh1n1230/security-checker. Bug report number 503. License: MIT. Test included: yes. Patch file: [253-security-checker-503.patch](spare-token-bug-fixes/fixes/253-security-checker-503.patch)
+
+254. [security-checker: no test covers evaluation cases that cannot be read or have the wrong shape](spare-token-bug-fixes/fix-254-security-checker-499.md)
+   Project: Sh1n1230/security-checker. Bug report number 499. License: MIT. Test included: yes. Patch file: [254-security-checker-499.patch](spare-token-bug-fixes/fixes/254-security-checker-499.patch)
+
+255. [security-checker: no test covers the edge cases of settings taken from environment variables](spare-token-bug-fixes/fix-255-security-checker-490.md)
+   Project: Sh1n1230/security-checker. Bug report number 490. License: MIT. Test included: yes. Patch file: [255-security-checker-490.patch](spare-token-bug-fixes/fixes/255-security-checker-490.patch)
+
+256. [security-checker: no test covers the log level option of the command line](spare-token-bug-fixes/fix-256-security-checker-473.md)
+   Project: Sh1n1230/security-checker. Bug report number 473. License: MIT. Test included: yes. Patch file: [256-security-checker-473.patch](spare-token-bug-fixes/fixes/256-security-checker-473.patch)
+
+257. [security-checker: no test covers a tiktoken dictionary that cannot be loaded](spare-token-bug-fixes/fix-257-security-checker-491.md)
+   Project: Sh1n1230/security-checker. Bug report number 491. License: MIT. Test included: yes. Patch file: [257-security-checker-491.patch](spare-token-bug-fixes/fixes/257-security-checker-491.patch)
+
+258. [security-checker: public names in scanners/base.py have no docstring (__init__ and elapsed_ms and failed and ok and probe and scan and skipped)](spare-token-bug-fixes/fix-258-security-checker-422.md)
+   Project: Sh1n1230/security-checker. Bug report number 422. License: MIT. Test included: no. Patch file: [258-security-checker-422.patch](spare-token-bug-fixes/fixes/258-security-checker-422.patch)
+
+259. [security-checker: public names in providers/check.py have no docstring (CheckResult and ProviderCatalog and Step and check_reviewer and ok and probe_task)](spare-token-bug-fixes/fix-259-security-checker-409.md)
+   Project: Sh1n1230/security-checker. Bug report number 409. License: MIT. Test included: no. Patch file: [259-security-checker-409.patch](spare-token-bug-fixes/fixes/259-security-checker-409.patch)
+
+260. [security-checker: no test covers the lookup of evaluation results by case id](spare-token-bug-fixes/fix-260-security-checker-504.md)
+   Project: Sh1n1230/security-checker. Bug report number 504. License: MIT. Test included: yes. Patch file: [260-security-checker-504.patch](spare-token-bug-fixes/fixes/260-security-checker-504.patch)
+
+261. [security-checker: no test covers the settings overrides built from command line options](spare-token-bug-fixes/fix-261-security-checker-472.md)
+   Project: Sh1n1230/security-checker. Bug report number 472. License: MIT. Test included: yes. Patch file: [261-security-checker-472.patch](spare-token-bug-fixes/fixes/261-security-checker-472.patch)
+
+262. [security-checker: no test covers inline comment planning when inline comments are turned off](spare-token-bug-fixes/fix-262-security-checker-513.md)
+   Project: Sh1n1230/security-checker. Bug report number 513. License: MIT. Test included: yes. Patch file: [262-security-checker-513.patch](spare-token-bug-fixes/fixes/262-security-checker-513.patch)
+
+263. [security-checker: public names in policy/ignore.py have no docstring (Annotation and IgnoreFile and RuleIgnore and __init__ and find and load_ignore_file and matches and parse_annotation and rule_matches)](spare-token-bug-fixes/fix-263-security-checker-407.md)
+   Project: Sh1n1230/security-checker. Bug report number 407. License: MIT. Test included: no. Patch file: [263-security-checker-407.patch](spare-token-bug-fixes/fixes/263-security-checker-407.patch)
+
+264. [security-checker: public names in github/client.py have no docstring (__enter__ and __exit__ and two __init__ methods and close and create_issue_comment and create_review and head_sha and issue_comments and pull_files and review_comments and update_issue_comment)](spare-token-bug-fixes/fix-264-security-checker-395.md)
+   Project: Sh1n1230/security-checker. Bug report number 395. License: MIT. Test included: no. Patch file: [264-security-checker-395.patch](spare-token-bug-fixes/fixes/264-security-checker-395.patch)
+
+265. [security-checker: no test covers reading the head commit of a pull request](spare-token-bug-fixes/fix-265-security-checker-507.md)
+   Project: Sh1n1230/security-checker. Bug report number 507. License: MIT. Test included: yes. Patch file: [265-security-checker-507.patch](spare-token-bug-fixes/fixes/265-security-checker-507.patch)
+
+266. [security-checker: no test covers a connection failure or a non-JSON error body in the GitHub client](spare-token-bug-fixes/fix-266-security-checker-506.md)
+   Project: Sh1n1230/security-checker. Bug report number 506. License: MIT. Test included: yes. Patch file: [266-security-checker-506.patch](spare-token-bug-fixes/fixes/266-security-checker-506.patch)
+
+267. [security-checker: public names in testing/fakes.py have no docstring (two __init__ methods and aclose and capabilities and complete and health_check and probe and scan)](spare-token-bug-fixes/fix-267-security-checker-429.md)
+   Project: Sh1n1230/security-checker. Bug report number 429. License: MIT. Test included: no. Patch file: [267-security-checker-429.patch](spare-token-bug-fixes/fixes/267-security-checker-429.patch)
+
+268. [security-checker: public names in testing/provider_contract.py have no docstring (make_provider and make_request and test_aclose_is_idempotent and test_capabilities_are_valid and test_complete_returns_response and test_identity_fields)](spare-token-bug-fixes/fix-268-security-checker-430.md)
+   Project: Sh1n1230/security-checker. Bug report number 430. License: MIT. Test included: no. Patch file: [268-security-checker-430.patch](spare-token-bug-fixes/fixes/268-security-checker-430.patch)
+
+269. [security-checker: public names in testing/scanner_contract.py have no docstring (make_scanner and test_candidates_are_well_formed and test_identity and test_ids_are_stable_across_runs and test_probe_does_not_raise and test_status_is_explicit)](spare-token-bug-fixes/fix-269-security-checker-431.md)
+   Project: Sh1n1230/security-checker. Bug report number 431. License: MIT. Test included: no. Patch file: [269-security-checker-431.patch](spare-token-bug-fixes/fixes/269-security-checker-431.patch)
+
+270. [security-checker: no test covers the summary of the weighted strategy when no reviewer said vulnerable](spare-token-bug-fixes/fix-270-security-checker-471.md)
+   Project: Sh1n1230/security-checker. Bug report number 471. License: MIT. Test included: yes. Patch file: [270-security-checker-471.patch](spare-token-bug-fixes/fixes/270-security-checker-471.patch)
+
+271. [security-checker: no test covers the combined detection of process and HTTP reviewers](spare-token-bug-fixes/fix-271-security-checker-534.md)
+   Project: Sh1n1230/security-checker. Bug report number 534. License: MIT. Test included: yes. Patch file: [271-security-checker-534.patch](spare-token-bug-fixes/fixes/271-security-checker-534.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

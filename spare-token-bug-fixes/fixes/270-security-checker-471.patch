@@ -1,0 +1,25 @@
+diff --git a/tests/unit/test_weighted_summary_without_vulnerable.py b/tests/unit/test_weighted_summary_without_vulnerable.py
+new file mode 100644
+index 0000000..2932717
+--- /dev/null
++++ b/tests/unit/test_weighted_summary_without_vulnerable.py
+@@ -0,0 +1,19 @@
++"""WeightedAggregator._summary: 「脆弱」の判定が無いときはスコアだけを見出しにすること."""
++
++from __future__ import annotations
++
++from security_checker.aggregate.weighted import WeightedAggregator
++from tests.factories import make_verdict
++
++
++def test_summary_without_vulnerable_verdicts_is_the_score_alone() -> None:
++    assert WeightedAggregator()._summary([], -0.25) == "重み付きスコア -0.25。"
++    assert WeightedAggregator()._summary([], 0.5) == "重み付きスコア +0.50。"
++
++
++def test_summary_with_a_vulnerable_verdict_leads_with_its_headline() -> None:
++    """対になるケース. 「脆弱」の判定があれば、その見出しの後ろにスコアを添える."""
++    summary = WeightedAggregator()._summary([make_verdict("r1")], 0.5)
++
++    assert summary.endswith(" (重み付きスコア +0.50)")
++    assert not summary.startswith("重み付きスコア")

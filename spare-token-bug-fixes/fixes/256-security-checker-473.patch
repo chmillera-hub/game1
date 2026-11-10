@@ -1,0 +1,27 @@
+diff --git a/tests/unit/test_cli_logging_overrides.py b/tests/unit/test_cli_logging_overrides.py
+new file mode 100644
+index 0000000..eada46f
+--- /dev/null
++++ b/tests/unit/test_cli_logging_overrides.py
+@@ -0,0 +1,21 @@
++"""cli._logging_overrides: 指定されたログの設定だけを上書きにすること."""
++
++from __future__ import annotations
++
++from security_checker.cli import _logging_overrides
++
++
++def test_level_alone_overrides_only_the_level() -> None:
++    assert _logging_overrides(None, "debug") == {"logging": {"level": "debug"}}
++
++
++def test_format_alone_overrides_only_the_format() -> None:
++    assert _logging_overrides("json", None) == {"logging": {"format": "json"}}
++
++
++def test_both_are_combined() -> None:
++    assert _logging_overrides("json", "warn") == {"logging": {"format": "json", "level": "warn"}}
++
++
++def test_nothing_given_is_no_override() -> None:
++    assert _logging_overrides(None, None) == {}

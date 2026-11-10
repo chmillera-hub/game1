@@ -1,0 +1,51 @@
+diff --git a/src/security_checker/testing/provider_contract.py b/src/security_checker/testing/provider_contract.py
+index 6ccbe96..e4f9133 100644
+--- a/src/security_checker/testing/provider_contract.py
++++ b/src/security_checker/testing/provider_contract.py
+@@ -44,6 +44,7 @@ class ProviderContractTests:
+     """すべての Provider が満たすべき契約."""
+ 
+     def make_provider(self) -> LLMProvider:  # pragma: no cover - サブクラスが実装する
++        """検証する Provider を作る. 正常な応答を 1 回返せる状態にしておく."""
+         raise NotImplementedError
+ 
+     def make_http_provider(
+@@ -70,6 +71,7 @@ class ProviderContractTests:
+         return provider
+ 
+     def make_request(self, **overrides: Any) -> CompletionRequest:
++        """契約テストで送る最小の CompletionRequest. 項目は `overrides` で差し替えられる."""
+         payload: dict[str, Any] = {
+             "system": "system",
+             "user": "user",
+@@ -81,6 +83,7 @@ class ProviderContractTests:
+         return CompletionRequest(**payload)
+ 
+     def test_capabilities_are_valid(self) -> None:
++        """capabilities が Capabilities 型で、上限が正の値であること."""
+         provider = self.make_provider()
+         capabilities = provider.capabilities
+         assert isinstance(capabilities, Capabilities)
+@@ -89,12 +92,14 @@ class ProviderContractTests:
+         assert isinstance(capabilities.structured_output, StructuredMode)
+ 
+     def test_identity_fields(self) -> None:
++        """transport と dialect が名乗られていること."""
+         provider = self.make_provider()
+         assert provider.transport in ("http", "process")
+         assert isinstance(provider.dialect, str) and provider.dialect
+ 
+     @pytest.mark.asyncio
+     async def test_complete_returns_response(self) -> None:
++        """complete が CompletionResponse を返し、usage が埋まっていること."""
+         provider = self.make_provider()
+         response = await provider.complete(self.make_request())
+         assert isinstance(response, CompletionResponse)
+@@ -104,6 +109,7 @@ class ProviderContractTests:
+ 
+     @pytest.mark.asyncio
+     async def test_aclose_is_idempotent(self) -> None:
++        """aclose を 2 回呼んでも失敗しないこと."""
+         provider = self.make_provider()
+         await provider.aclose()
+         await provider.aclose()

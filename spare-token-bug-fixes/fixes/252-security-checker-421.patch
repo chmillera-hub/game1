@@ -1,0 +1,57 @@
+diff --git a/src/security_checker/review/scheduler.py b/src/security_checker/review/scheduler.py
+index 880e550..82640bd 100644
+--- a/src/security_checker/review/scheduler.py
++++ b/src/security_checker/review/scheduler.py
+@@ -47,12 +47,14 @@ class RateLimiter:
+     """rpm のトークンバケット. 送信直前に 1 リクエスト分を確保する."""
+ 
+     def __init__(self, rpm: int) -> None:
++        """`rpm` は 1 分あたりに送れるリクエスト数."""
+         self.rpm = rpm
+         self.base_rpm = rpm
+         self._events: deque[float] = deque()
+         self._lock = asyncio.Lock()
+ 
+     async def acquire(self, sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> None:
++        """1 リクエスト分の枠が空くまで待って確保する. `sleep` はテストで差し替える."""
+         while True:
+             async with self._lock:
+                 now = time.monotonic()
+@@ -86,11 +88,13 @@ class TokenLimiter:
+     """
+ 
+     def __init__(self, tpm: int) -> None:
++        """`tpm` は 1 分あたりに送れるトークン数."""
+         self.tpm = tpm
+         self._events: deque[tuple[float, int]] = deque()
+         self._lock = asyncio.Lock()
+ 
+     async def acquire(self, tokens: int) -> None:
++        """`tokens` 分の枠が空くまで待って確保する."""
+         while True:
+             async with self._lock:
+                 now = time.monotonic()
+@@ -113,6 +117,7 @@ class DailyQuota:
+     limit: int
+ 
+     def remaining(self) -> int:
++        """当日の残り回数."""
+         return self.store.remaining(self.key, self.limit)
+ 
+ 
+@@ -132,6 +137,7 @@ class ReviewerRuntime:
+ 
+     @property
+     def name(self) -> str:
++        """Reviewer の名前."""
+         return self.reviewer.name
+ 
+ 
+@@ -191,6 +197,7 @@ class ReviewScheduler:
+         deadline_s: float = DEFAULT_DEADLINE_S,
+         sleep: Callable[[float], Awaitable[None]] | None = None,
+     ) -> None:
++        """`deadline_s` は run 全体の制限時間. `sleep` はテストで待ち時間を差し替える."""
+         self.runtimes = runtimes
+         self.budget = budget
+         self.deadline_s = deadline_s

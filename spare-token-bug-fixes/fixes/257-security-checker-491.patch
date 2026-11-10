@@ -1,0 +1,63 @@
+diff --git a/tests/unit/test_budget_encode_fn_fallback.py b/tests/unit/test_budget_encode_fn_fallback.py
+new file mode 100644
+index 0000000..3a2a436
+--- /dev/null
++++ b/tests/unit/test_budget_encode_fn_fallback.py
+@@ -0,0 +1,57 @@
++"""budget._encode_fn: tiktoken の辞書を取得できない環境では None を返し、概算に落とすこと."""
++
++from __future__ import annotations
++
++import sys
++from collections.abc import Iterator
++from types import ModuleType
++
++import pytest
++
++from security_checker.context import budget
++
++
++@pytest.fixture(autouse=True)
++def _fresh_cache() -> Iterator[None]:
++    """_encode_fn は結果を覚えるので、前後で消す (他のテストに偽物を残さない)."""
++    budget._encode_fn.cache_clear()
++    yield
++    budget._encode_fn.cache_clear()
++
++
++def _fake_tiktoken(get_encoding: object) -> ModuleType:
++    module = ModuleType("tiktoken")
++    module.get_encoding = get_encoding  # type: ignore[attr-defined]
++    return module
++
++
++def test_failed_dictionary_download_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
++    def fail(_name: str) -> object:
++        raise OSError("辞書をダウンロードできません")
++
++    monkeypatch.setitem(sys.modules, "tiktoken", _fake_tiktoken(fail))
++
++    assert budget._encode_fn() is None
++    assert budget.estimate_tokens("abcd" * 10) == 10
++
++
++def test_available_encoder_is_returned(monkeypatch: pytest.MonkeyPatch) -> None:
++    """対になるケース. 辞書が取れれば、その encode を返す."""
++
++    class _Encoder:
++        def encode(self, text: str) -> list[int]:
++            return [0] * len(text)
++
++    requested: list[str] = []
++
++    def get_encoding(name: str) -> _Encoder:
++        requested.append(name)
++        return _Encoder()
++
++    monkeypatch.setitem(sys.modules, "tiktoken", _fake_tiktoken(get_encoding))
++
++    encode = budget._encode_fn()
++
++    assert encode is not None
++    assert encode("abc") == [0, 0, 0]
++    assert requested == ["cl100k_base"]

@@ -1,0 +1,38 @@
+diff --git a/tests/unit/test_detect_all.py b/tests/unit/test_detect_all.py
+new file mode 100644
+index 0000000..3e78fc1
+--- /dev/null
++++ b/tests/unit/test_detect_all.py
+@@ -0,0 +1,32 @@
++"""detect.detect_all: process と http の検出結果を、この順でつなげて返すこと."""
++
++from __future__ import annotations
++
++from typing import Any
++
++import pytest
++
++from security_checker.providers import detect
++from security_checker.providers.detect import detect_all
++
++
++def test_process_detections_come_before_http_detections(monkeypatch: pytest.MonkeyPatch) -> None:
++    seen: list[Any] = []
++
++    def fake_http(*, environ: Any = None) -> list[str]:
++        seen.append(environ)
++        return ["http-a", "http-b"]
++
++    monkeypatch.setattr(detect, "detect_process", lambda: ["process-a"])
++    monkeypatch.setattr(detect, "detect_http", fake_http)
++    environ = {"EXAMPLE_API_KEY": "x"}
++
++    assert detect_all(environ=environ) == ["process-a", "http-a", "http-b"]
++    assert seen == [environ]
++
++
++def test_nothing_detected_is_an_empty_list(monkeypatch: pytest.MonkeyPatch) -> None:
++    monkeypatch.setattr(detect, "detect_process", lambda: [])
++    monkeypatch.setattr(detect, "detect_http", lambda *, environ=None: [])
++
++    assert detect_all(environ={}) == []

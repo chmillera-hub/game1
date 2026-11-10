@@ -1,0 +1,34 @@
+diff --git a/src/security_checker/models/report.py b/src/security_checker/models/report.py
+index cc5ece4..a554f0d 100644
+--- a/src/security_checker/models/report.py
++++ b/src/security_checker/models/report.py
+@@ -160,17 +160,21 @@ class Report(BaseModel):
+ 
+     @property
+     def has_failed_scanner(self) -> bool:
++        """失敗 (failed) で終わったスキャナが 1 つでもあるか."""
+         return any(run.status is ScanStatus.FAILED for run in self.scanners)
+ 
+     def dump(self) -> dict[str, Any]:
++        """report.json に書く形 (JSON にできる値だけの辞書). None の項目も残す."""
+         return self.model_dump(mode="json", exclude_none=False)
+ 
+ 
+ def utcnow() -> datetime:
++    """タイムゾーン付きの現在時刻 (UTC)."""
+     return datetime.now(UTC)
+ 
+ 
+ def count_by_status(findings: list[Finding]) -> dict[str, int]:
++    """Finding を status ごとに数える. 0 件の status も 0 として入れる."""
+     counts = {status.value: 0 for status in FindingStatus}
+     for finding in findings:
+         counts[finding.status.value] += 1
+@@ -178,6 +182,7 @@ def count_by_status(findings: list[Finding]) -> dict[str, int]:
+ 
+ 
+ def count_by_severity(candidates: list[Candidate]) -> dict[str, int]:
++    """候補をスキャナの報告した重大度ごとに数える. 重大度が無いものは info に数える."""
+     counts = {severity.value: 0 for severity in Severity}
+     for candidate in candidates:
+         key = (candidate.severity_reported or Severity.INFO).value

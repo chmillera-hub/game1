@@ -1,0 +1,34 @@
+diff --git a/tests/unit/test_eval_outcomes_by_case.py b/tests/unit/test_eval_outcomes_by_case.py
+new file mode 100644
+index 0000000..00a8e0d
+--- /dev/null
++++ b/tests/unit/test_eval_outcomes_by_case.py
+@@ -0,0 +1,28 @@
++"""eval.runner.outcomes_by_case: ケース ID から結果を引けること."""
++
++from __future__ import annotations
++
++from security_checker.eval.metrics import CaseOutcome
++from security_checker.eval.runner import outcomes_by_case
++from security_checker.models.enums import FindingStatus, Severity
++
++
++def _outcome(case_id: str, status: FindingStatus) -> CaseOutcome:
++    return CaseOutcome(
++        case_id=case_id,
++        expected_vulnerable=True,
++        expected_severity=Severity.HIGH,
++        status=status,
++        severity=Severity.HIGH,
++    )
++
++
++def test_outcomes_are_indexed_by_case_id() -> None:
++    first = _outcome("hand-0001", FindingStatus.CONFIRMED)
++    second = _outcome("hand-0002", FindingStatus.FALSE_POSITIVE)
++
++    assert outcomes_by_case([first, second]) == {"hand-0001": first, "hand-0002": second}
++
++
++def test_no_outcomes_is_an_empty_mapping() -> None:
++    assert outcomes_by_case([]) == {}

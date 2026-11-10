@@ -1,0 +1,28 @@
+diff --git a/tests/unit/test_github_client_head_sha.py b/tests/unit/test_github_client_head_sha.py
+new file mode 100644
+index 0000000..61098d0
+--- /dev/null
++++ b/tests/unit/test_github_client_head_sha.py
+@@ -0,0 +1,22 @@
++"""GithubClient.head_sha: PR の head の SHA を API から取ること."""
++
++from __future__ import annotations
++
++import httpx
++
++from security_checker.github.client import GithubClient, PullRequestContext
++
++PR = PullRequestContext(repository="owner/repo", number=7)
++
++
++def test_head_sha_is_read_from_the_pull_request() -> None:
++    seen: list[tuple[str, str]] = []
++
++    def handler(request: httpx.Request) -> httpx.Response:
++        seen.append((request.method, request.url.path))
++        return httpx.Response(200, json={"number": 7, "head": {"sha": "abc123"}})
++
++    with GithubClient("token", transport=httpx.MockTransport(handler)) as client:
++        assert client.head_sha(PR) == "abc123"
++
++    assert seen == [("GET", "/repos/owner/repo/pulls/7")]
