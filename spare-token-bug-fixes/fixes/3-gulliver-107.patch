@@ -1,0 +1,35 @@
+diff --git a/src/gulliver/runaway.py b/src/gulliver/runaway.py
+index 03a55d5..4e2bebd 100644
+--- a/src/gulliver/runaway.py
++++ b/src/gulliver/runaway.py
+@@ -314,7 +314,10 @@ def spend(settings: Settings, by: str = "agent", days: int = 7) -> dict[str, Any
+     if days < 1:
+         return _error("--days must be at least 1.", "Give a positive number of days, for example --days 7.")
+     days = int(days)
+-    first = now_utc().date() - timedelta(days=days - 1)
++    try:
++        first = now_utc().date() - timedelta(days=days - 1)
++    except OverflowError:
++        return _error("--days is too large.", "Give a smaller number of days, for example --days 365.")
+     groups: dict[str, dict[str, Any]] = {}
+     total = {"usd": 0.0, "executions": 0, "bytes": 0}
+     for e in read_ledger(Store(settings.state_dir)):
+diff --git a/tests/test_runaway.py b/tests/test_runaway.py
+index ef1dbf1..27a763a 100644
+--- a/tests/test_runaway.py
++++ b/tests/test_runaway.py
+@@ -414,6 +414,14 @@ def test_spend_refuses_a_window_below_one_day(settings, demo_db, capsys):
+     assert runaway.spend(settings, by="agent", days=1)["status"] == "ok"  # one day is still a window
+ 
+ 
++def test_spend_refuses_a_window_too_large_for_a_date(settings, demo_db, capsys):
++    for days in (10**7, 10**12):
++        res = runaway.spend(settings, by="agent", days=days)
++        assert res["status"] == "error" and "--days" in res["error"] and res["next_step"]
++        assert main(["--dsn", demo_db, "spend", "--days", str(days)]) == 1
++        assert "--days" in capsys.readouterr().out
++
++
+ # -- audit chain ------------------------------------------------------------------------------------------
+ def _some_history(settings):
+     core.preflight(settings, Q)

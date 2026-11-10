@@ -1,0 +1,41 @@
+diff --git a/src/gulliver/incremental.py b/src/gulliver/incremental.py
+index 144fb64..6707e3d 100644
+--- a/src/gulliver/incremental.py
++++ b/src/gulliver/incremental.py
+@@ -28,13 +28,16 @@ def parse_period(text: str) -> timedelta:
+     if not m:
+         raise ValueError("period looks like '1d', '24h', '7 days' or '30 min'")
+     n, unit = int(m.group(1)), m.group(2).lower()
+-    if unit.startswith("m"):
+-        return timedelta(minutes=n)
+-    if unit.startswith("h"):
+-        return timedelta(hours=n)
+-    if unit.startswith("w"):
+-        return timedelta(weeks=n)
+-    return timedelta(days=n)
++    try:
++        if unit.startswith("m"):
++            return timedelta(minutes=n)
++        if unit.startswith("h"):
++            return timedelta(hours=n)
++        if unit.startswith("w"):
++            return timedelta(weeks=n)
++        return timedelta(days=n)
++    except OverflowError:
++        raise ValueError("period is too large") from None
+ 
+ 
+ def _batch_size(period: timedelta) -> str:
+diff --git a/tests/test_features.py b/tests/test_features.py
+index baeb3f7..1634998 100644
+--- a/tests/test_features.py
++++ b/tests/test_features.py
+@@ -294,6 +294,8 @@ def test_parse_period():
+     assert incremental.parse_period("24h").total_seconds() == 86400
+     with pytest.raises(ValueError):
+         incremental.parse_period("soon")
++    with pytest.raises(ValueError):
++        incremental.parse_period("99999999999d")
+ 
+ 
+ # -- checks -------------------------------------------------------------------------------------------------
