@@ -1,6 +1,6 @@
 # game1: public shelf of free bug fixes
 
-> 60 small AI-written bug fixes (git patch files) for 29 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
+> 63 small AI-written bug fixes (git patch files) for 30 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
 
 ## Shelf
 
@@ -71,3 +71,6 @@
 - [klicky: the docs checker reports a broken link for a Markdown link in angle brackets that has spaces](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-58-klicky-125.md): Muneer320/klicky bug report 125. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/58-klicky-125.patch
 - [remitsure-frontend: the receipt page keeps polling after the remittance is settled](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-59-remitsure-frontend-2.md): remitsure/remitsure-frontend bug report 2. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/59-remitsure-frontend-2.patch
 - [remitsure-frontend: an invalid receipt link says Could not reach the API instead of saying the link is not valid](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-60-remitsure-frontend-1.md): remitsure/remitsure-frontend bug report 1. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/60-remitsure-frontend-1.patch
+- [remitsure-frontend: dashboard payee names only cover the first 20 payees](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-61-remitsure-frontend-5.md): remitsure/remitsure-frontend bug report 5. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/61-remitsure-frontend-5.patch
+- [loop: session titles split a joined emoji by removing the zero width joiner](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-62-loop-116.md): JimmyDi/loop bug report 116. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/62-loop-116.patch
+- [loop: a stale clipboard result overwrites the latest copy status](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-63-loop-115.md): JimmyDi/loop bug report 115. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/63-loop-115.patch

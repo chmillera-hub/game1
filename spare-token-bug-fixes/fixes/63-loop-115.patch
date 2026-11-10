@@ -1,0 +1,169 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index b4bfee1..aa97596 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -18,6 +18,8 @@ Notable changes across Agent, coding-agent, and Web UI are recorded here. Pendin
+ 
+ - Website: eliminate the dark gap above the homepage background on mobile.
+ 
++- Web UI: keep copy feedback on the latest copy; an older copy that finishes late no longer replaces it, and none schedules a reset after unmount.
++
+ ## [0.6.0] - 2026-11-06
+ 
+ ### Added
+diff --git a/packages/web-ui/src/frontend/hooks/useCopy.test.tsx b/packages/web-ui/src/frontend/hooks/useCopy.test.tsx
+index 07e0a66..32aec4d 100644
+--- a/packages/web-ui/src/frontend/hooks/useCopy.test.tsx
++++ b/packages/web-ui/src/frontend/hooks/useCopy.test.tsx
+@@ -1,4 +1,4 @@
+-import { expect, test } from "vitest";
++import { expect, test, vi } from "vitest";
+ import { Window } from "happy-dom";
+ 
+ test("copy hook reports clipboard failure without throwing into the UI", async () => {
+@@ -85,3 +85,98 @@ test("rich clipboard failure falls back to readable plain text", async () => {
+     await window.happyDOM.close();
+   }
+ });
++
++function deferred() {
++  let resolve!: () => void;
++  let reject!: (error: Error) => void;
++  const promise = new Promise<void>((res, rej) => {
++    resolve = res;
++    reject = rej;
++  });
++  return { promise, resolve, reject };
++}
++
++async function withClipboard(
++  writeText: (text: string) => Promise<void>,
++  run: (hooks: typeof import("@testing-library/react/pure")) => Promise<void>,
++) {
++  const window = new Window();
++  const previous = {
++    window: globalThis.window,
++    document: globalThis.document,
++    navigator: globalThis.navigator,
++  };
++  Object.assign(globalThis, { window, document: window.document });
++  Object.defineProperty(globalThis, "navigator", {
++    configurable: true,
++    value: { userAgent: window.navigator.userAgent, clipboard: { writeText } },
++  });
++  const hooks = await import("@testing-library/react/pure");
++  try {
++    await run(hooks);
++  } finally {
++    hooks.cleanup();
++    Object.assign(globalThis, { window: previous.window, document: previous.document });
++    Object.defineProperty(globalThis, "navigator", {
++      configurable: true,
++      value: previous.navigator,
++    });
++    await window.happyDOM.close();
++  }
++}
++
++test("an older copy finishing late does not replace the latest copy status", async () => {
++  const pending = { first: deferred(), second: deferred() };
++  await withClipboard(
++    (text) => pending[text as "first" | "second"].promise,
++    async ({ renderHook, act }) => {
++      const { useCopy } = await import("./useCopy");
++      const { result } = renderHook(useCopy);
++
++      let first!: Promise<void>;
++      let second!: Promise<void>;
++      act(() => {
++        first = result.current.copy("first");
++        second = result.current.copy("second");
++      });
++
++      await act(async () => {
++        pending.second.resolve();
++        await second;
++      });
++      expect(result.current.status).toBe("copied");
++
++      await act(async () => {
++        pending.first.reject(new Error("Denied"));
++        await first;
++      });
++      expect(result.current.status).toBe("copied");
++    },
++  );
++});
++
++test("a copy that finishes after unmount schedules no reset timer", async () => {
++  const pending = deferred();
++  await withClipboard(
++    () => pending.promise,
++    async ({ renderHook, act }) => {
++      const { useCopy } = await import("./useCopy");
++      const { result, unmount } = renderHook(useCopy);
++
++      let copy!: Promise<void>;
++      act(() => {
++        copy = result.current.copy("late");
++      });
++      unmount();
++
++      const timers = vi.spyOn(globalThis, "setTimeout");
++      try {
++        pending.resolve();
++        await copy;
++        expect(timers.mock.calls.filter(([, delay]) => delay === 1600)).toHaveLength(0);
++      } finally {
++        timers.mockRestore();
++      }
++    },
++  );
++});
+diff --git a/packages/web-ui/src/frontend/hooks/useCopy.ts b/packages/web-ui/src/frontend/hooks/useCopy.ts
+index 1fac8e1..146d16b 100644
+--- a/packages/web-ui/src/frontend/hooks/useCopy.ts
++++ b/packages/web-ui/src/frontend/hooks/useCopy.ts
+@@ -3,12 +3,23 @@ import { useEffect, useRef, useState } from "react";
+ export const useCopy = () => {
+   const [status, setStatus] = useState<"copy" | "copied" | "copyFailed">("copy");
+   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
++  // Counts copy operations, so a completion can tell whether a newer copy started after it.
++  const revision = useRef(0);
++  const disposed = useRef(false);
+ 
+-  useEffect(() => () => clearTimeout(timer.current), []);
++  useEffect(() => {
++    disposed.current = false;
++    return () => {
++      disposed.current = true;
++      clearTimeout(timer.current);
++    };
++  }, []);
+ 
+   const copy = async (text: string, html?: string) => {
++    const mine = ++revision.current;
+     clearTimeout(timer.current);
+ 
++    let outcome: "copied" | "copyFailed";
+     try {
+       if (html && typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+         try {
+@@ -22,11 +33,15 @@ export const useCopy = () => {
+           await navigator.clipboard.writeText(text);
+         }
+       } else await navigator.clipboard.writeText(text);
+-      setStatus("copied");
++      outcome = "copied";
+     } catch {
+-      setStatus("copyFailed");
++      outcome = "copyFailed";
+     }
+ 
++    // Only the most recent copy reports and schedules the reset: an older one finishing late
++    // must not replace the newer feedback, and nothing is scheduled after unmount.
++    if (disposed.current || mine !== revision.current) return;
++    setStatus(outcome);
+     timer.current = setTimeout(() => setStatus("copy"), 1600);
+   };
+ 
