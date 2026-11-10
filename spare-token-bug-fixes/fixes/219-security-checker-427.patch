@@ -1,0 +1,32 @@
+diff --git a/src/security_checker/scanners/untrusted.py b/src/security_checker/scanners/untrusted.py
+index 21acf27..631319a 100644
+--- a/src/security_checker/scanners/untrusted.py
++++ b/src/security_checker/scanners/untrusted.py
+@@ -39,6 +39,10 @@ class UntrustedOverrides:
+     osv_config: Path
+ 
+     def gitleaks_args(self) -> list[str]:
++        """gitleaks に渡す引数.
++
++        検査対象の .gitleaks.toml・.gitleaksignore・行内の allow 注釈を読ませない。
++        """
+         return [
+             "--config",
+             str(self.gitleaks_config),
+@@ -48,13 +52,16 @@ class UntrustedOverrides:
+         ]
+ 
+     def semgrep_args(self) -> list[str]:
++        """semgrep に渡す引数. 検査対象のコードにある nosemgrep 注釈を無効にする."""
+         return ["--disable-nosem"]
+ 
+     def trivy_args(self) -> list[str]:
++        """trivy に渡す引数. 検査対象の trivy.yaml と .trivyignore を読ませない."""
+         # 空文字列は「読み込まない」(trivy の公式の指定方法)
+         return ["--config", str(self.trivy_config), "--ignorefile", ""]
+ 
+     def osv_args(self) -> list[str]:
++        """osv-scanner に渡す引数. 検査対象の osv-scanner.toml を読ませない."""
+         return ["--config", str(self.osv_config)]
+ 
+ 

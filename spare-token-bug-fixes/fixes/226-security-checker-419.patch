@@ -1,0 +1,28 @@
+diff --git a/src/security_checker/review/reviewer.py b/src/security_checker/review/reviewer.py
+index 9d760bb..95912aa 100644
+--- a/src/security_checker/review/reviewer.py
++++ b/src/security_checker/review/reviewer.py
+@@ -54,6 +54,7 @@ class ReviewOutcome:
+         attempts: int = 1,
+         trace: dict[str, Any] | None = None,
+     ) -> None:
++        """`attempts` は送信した回数 (修復の再送を含む). `raw_text` は最後の応答の原文."""
+         self.verdict = verdict
+         self.warnings = warnings or []
+         self.raw_text = raw_text
+@@ -77,6 +78,7 @@ class Reviewer:
+         save_prompts: bool = False,
+         language: str = DEFAULT_LANGUAGE,
+     ) -> None:
++        """`name` は設定上の Reviewer 名. `price` が None ならコストは不明として扱う."""
+         self.name = name
+         self.provider = provider
+         self.weight = weight
+@@ -89,6 +91,7 @@ class Reviewer:
+ 
+     @property
+     def model(self) -> str:
++        """Provider が名乗るモデル名. 持たない Provider では "unknown"."""
+         return getattr(self.provider, "model", "unknown")
+ 
+     async def review(

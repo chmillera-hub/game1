@@ -1,0 +1,35 @@
+diff --git a/src/security_checker/observability/estimate.py b/src/security_checker/observability/estimate.py
+index e0100c7..bcb593f 100644
+--- a/src/security_checker/observability/estimate.py
++++ b/src/security_checker/observability/estimate.py
+@@ -24,6 +24,8 @@ from security_checker.review.structured import verdict_schema
+ 
+ @dataclass
+ class ReviewerEstimate:
++    """Reviewer 1 つ分の見積り. `usd` が None なら価格が分からない."""
++
+     name: str
+     calls: int
+     input_tokens: int
+@@ -34,17 +36,21 @@ class ReviewerEstimate:
+ 
+ @dataclass
+ class Estimate:
++    """review 全体の見積り. 候補の数と Reviewer ごとの内訳."""
++
+     tasks: int
+     reviewers: list[ReviewerEstimate] = field(default_factory=list)
+ 
+     @property
+     def total_usd(self) -> float | None:
++        """全 Reviewer の合計 (USD). 価格の分からない Reviewer が 1 つでもあれば None."""
+         if any(r.usd is None for r in self.reviewers):
+             return None
+         return sum(r.usd or 0.0 for r in self.reviewers)
+ 
+     @property
+     def total_input_tokens(self) -> int:
++        """全 Reviewer の入力トークン数の合計."""
+         return sum(r.input_tokens for r in self.reviewers)
+ 
+ 

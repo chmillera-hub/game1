@@ -1,0 +1,12 @@
+diff --git a/src/security_checker/context/builder.py b/src/security_checker/context/builder.py
+index 5fa69f4..949eb30 100644
+--- a/src/security_checker/context/builder.py
++++ b/src/security_checker/context/builder.py
+@@ -52,6 +52,7 @@ class ContextBuilder:
+         self.repo_facts = repo_facts if config.include_repo_facts else RepoFacts()
+ 
+     def build(self, candidate: Candidate) -> ReviewTask:
++        """候補 1 件の ReviewTask を作る. コード本文を出せない理由や切り詰めは notes に残す."""
+         notes: list[str] = []
+         primary: CodeSlice | None = None
+         truncated = False

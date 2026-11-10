@@ -43,7 +43,7 @@ Both fields now refuse values below zero. A new file tests/unit/test_cost_negati
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- The chatbot did not run the tests. Fix 186 on this shelf changes the same file in another spot and both patches apply together.
+- The chatbot did not run the tests. Fix 186 on this shelf changes the same file in another spot and both patches apply together. Fix 225 on this shelf adds a docstring on the lines right below so patches 185 and 225 do not apply together: apply one and add the other change by hand.
 
 ## Search words
 

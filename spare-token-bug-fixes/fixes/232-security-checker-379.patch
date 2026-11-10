@@ -1,0 +1,21 @@
+diff --git a/src/security_checker/aggregate/base.py b/src/security_checker/aggregate/base.py
+index 5bbf3d5..d56f9e3 100644
+--- a/src/security_checker/aggregate/base.py
++++ b/src/security_checker/aggregate/base.py
+@@ -75,6 +75,8 @@ class AggregationOutcome(BaseModel):
+ 
+ 
+ class Aggregator(Protocol):
++    """複数の Reviewer の判定を 1 つの結論にまとめる戦略. `name` が設定の strategy に対応する."""
++
+     name: str
+ 
+     def aggregate(
+@@ -82,4 +84,6 @@ class Aggregator(Protocol):
+         candidate: Candidate,
+         verdicts: list[ReviewVerdict],
+         cfg: AggregationConfig,
+-    ) -> AggregationOutcome: ...
++    ) -> AggregationOutcome:
++        """候補 1 件に対する全 Reviewer の判定 (失敗したものを含む) から結論を作る."""
++        ...

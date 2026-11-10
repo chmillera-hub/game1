@@ -1,0 +1,25 @@
+diff --git a/src/security_checker/aggregate/weighted.py b/src/security_checker/aggregate/weighted.py
+index b8fa4ea..bf119fc 100644
+--- a/src/security_checker/aggregate/weighted.py
++++ b/src/security_checker/aggregate/weighted.py
+@@ -37,10 +37,12 @@ class WeightedAggregator:
+     name = "weighted"
+ 
+     def __init__(self, weights: Mapping[str, float] | None = None) -> None:
++        """`weights` は Reviewer 名 → 重み. 書かれていない Reviewer は等倍."""
+         # 設定に書かれていない Reviewer は等倍。重みの解決はここに閉じる
+         self.weights = dict(weights or {})
+ 
+     def weight_of(self, verdict: ReviewVerdict) -> float:
++        """この判定を出した Reviewer の重み."""
+         return self.weights.get(verdict.reviewer, DEFAULT_WEIGHT)
+ 
+     def aggregate(
+@@ -49,6 +51,7 @@ class WeightedAggregator:
+         verdicts: list[ReviewVerdict],
+         cfg: AggregationConfig,
+     ) -> AggregationOutcome:
++        """有効な判定を Reviewer の重みで足し合わせ、1 つの結論にまとめる."""
+         valid = [verdict for verdict in verdicts if verdict.status is VerdictStatus.OK]
+         if not valid:
+             return AggregationOutcome(

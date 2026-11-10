@@ -1,0 +1,34 @@
+diff --git a/src/security_checker/observability/trace.py b/src/security_checker/observability/trace.py
+index 66459d2..b735b0a 100644
+--- a/src/security_checker/observability/trace.py
++++ b/src/security_checker/observability/trace.py
+@@ -15,6 +15,7 @@ from security_checker.context.redact import redact_known_patterns
+ 
+ 
+ def sha256_text(text: str) -> str:
++    """UTF-8 にした文字列の SHA-256 (16 進). プロンプト全文の代わりにトレースへ残す."""
+     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+ 
+ 
+@@ -22,11 +23,13 @@ class TraceWriter:
+     """run 単位のトレース出力."""
+ 
+     def __init__(self, output_dir: Path, run_id: str, *, enabled: bool = True) -> None:
++        """出力先は `<output_dir>/trace/<run_id>/`. `enabled` が False なら何も書かない."""
+         self.root = output_dir / "trace" / run_id
+         self.enabled = enabled
+         self._index = 0
+ 
+     def write_run(self, payload: dict[str, Any]) -> Path | None:
++        """run 全体の記録を run.json に書く. 無効なら None."""
+         if not self.enabled:
+             return None
+         self.root.mkdir(parents=True, exist_ok=True)
+@@ -35,6 +38,7 @@ class TraceWriter:
+         return path
+ 
+     def write_call(self, payload: dict[str, Any]) -> Path | None:
++        """LLM 呼び出し 1 回の記録を calls/NNNN.json に書く. 番号は書いた順. 無効なら None."""
+         if not self.enabled:
+             return None
+         calls = self.root / "calls"

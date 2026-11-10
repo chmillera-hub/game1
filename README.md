@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds 218 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds 232 small AI-written bug fixes (patch files) for forty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -665,6 +665,48 @@ The shelf holds 218 small AI-written bug fixes (patch files) for forty-seven pub
 
 218. [security-checker: no test covers a pricing file that is not valid YAML](spare-token-bug-fixes/fix-218-security-checker-522.md)
    Project: Sh1n1230/security-checker. Bug report number 522. License: MIT. Test included: yes. Patch file: [218-security-checker-522.patch](spare-token-bug-fixes/fixes/218-security-checker-522.patch)
+
+219. [security-checker: public names in scanners/untrusted.py have no docstring (gitleaks_args and osv_args and semgrep_args and trivy_args)](spare-token-bug-fixes/fix-219-security-checker-427.md)
+   Project: Sh1n1230/security-checker. Bug report number 427. License: MIT. Test included: no. Patch file: [219-security-checker-427.patch](spare-token-bug-fixes/fixes/219-security-checker-427.patch)
+
+220. [security-checker: public names in observability/quota.py have no docstring (__init__ and default_quota_path and remaining and used)](spare-token-bug-fixes/fix-220-security-checker-405.md)
+   Project: Sh1n1230/security-checker. Bug report number 405. License: MIT. Test included: no. Patch file: [220-security-checker-405.patch](spare-token-bug-fixes/fixes/220-security-checker-405.patch)
+
+221. [security-checker: public names in eval/metrics.py have no docstring (deferred and dismissed and errored and reported)](spare-token-bug-fixes/fix-221-security-checker-394.md)
+   Project: Sh1n1230/security-checker. Bug report number 394. License: MIT. Test included: no. Patch file: [221-security-checker-394.patch](spare-token-bug-fixes/fixes/221-security-checker-394.patch)
+
+222. [security-checker: public names in eval/dataset.py have no docstring (negatives and positives)](spare-token-bug-fixes/fix-222-security-checker-393.md)
+   Project: Sh1n1230/security-checker. Bug report number 393. License: MIT. Test included: no. Patch file: [222-security-checker-393.patch](spare-token-bug-fixes/fixes/222-security-checker-393.patch)
+
+223. [security-checker: public names in models/candidate.py have no docstring (__init__ and as_key and make)](spare-token-bug-fixes/fix-223-security-checker-397.md)
+   Project: Sh1n1230/security-checker. Bug report number 397. License: MIT. Test included: no. Patch file: [223-security-checker-397.patch](spare-token-bug-fixes/fixes/223-security-checker-397.patch)
+
+224. [security-checker: public names in models/enums.py have no docstring (__ge__ and __gt__ and __le__ and __lt__)](spare-token-bug-fixes/fix-224-security-checker-398.md)
+   Project: Sh1n1230/security-checker. Bug report number 398. License: MIT. Test included: no. Patch file: [224-security-checker-398.patch](spare-token-bug-fixes/fixes/224-security-checker-398.patch)
+
+225. [security-checker: public names in observability/cost.py have no docstring (apply and default_pricing_paths and estimate and lookup)](spare-token-bug-fixes/fix-225-security-checker-400.md)
+   Project: Sh1n1230/security-checker. Bug report number 400. License: MIT. Test included: no. Patch file: [225-security-checker-400.patch](spare-token-bug-fixes/fixes/225-security-checker-400.patch)
+
+226. [security-checker: public names in review/reviewer.py have no docstring (two __init__ methods and model)](spare-token-bug-fixes/fix-226-security-checker-419.md)
+   Project: Sh1n1230/security-checker. Bug report number 419. License: MIT. Test included: no. Patch file: [226-security-checker-419.patch](spare-token-bug-fixes/fixes/226-security-checker-419.patch)
+
+227. [security-checker: public names in observability/trace.py have no docstring (__init__ and sha256_text and write_call and write_run)](spare-token-bug-fixes/fix-227-security-checker-406.md)
+   Project: Sh1n1230/security-checker. Bug report number 406. License: MIT. Test included: no. Patch file: [227-security-checker-406.patch](spare-token-bug-fixes/fixes/227-security-checker-406.patch)
+
+228. [security-checker: public names in observability/estimate.py have no docstring (Estimate and ReviewerEstimate and total_input_tokens and total_usd)](spare-token-bug-fixes/fix-228-security-checker-401.md)
+   Project: Sh1n1230/security-checker. Bug report number 401. License: MIT. Test included: no. Patch file: [228-security-checker-401.patch](spare-token-bug-fixes/fixes/228-security-checker-401.patch)
+
+229. [security-checker: public names in context/builder.py have no docstring (build)](spare-token-bug-fixes/fix-229-security-checker-383.md)
+   Project: Sh1n1230/security-checker. Bug report number 383. License: MIT. Test included: no. Patch file: [229-security-checker-383.patch](spare-token-bug-fixes/fixes/229-security-checker-383.patch)
+
+230. [security-checker: public names in aggregate/weighted.py have no docstring (__init__ and aggregate and weight_of)](spare-token-bug-fixes/fix-230-security-checker-381.md)
+   Project: Sh1n1230/security-checker. Bug report number 381. License: MIT. Test included: no. Patch file: [230-security-checker-381.patch](spare-token-bug-fixes/fixes/230-security-checker-381.patch)
+
+231. [security-checker: public names in aggregate/consensus.py have no docstring (__init__ and aggregate)](spare-token-bug-fixes/fix-231-security-checker-380.md)
+   Project: Sh1n1230/security-checker. Bug report number 380. License: MIT. Test included: no. Patch file: [231-security-checker-380.patch](spare-token-bug-fixes/fixes/231-security-checker-380.patch)
+
+232. [security-checker: public names in aggregate/base.py have no docstring (Aggregator and aggregate)](spare-token-bug-fixes/fix-232-security-checker-379.md)
+   Project: Sh1n1230/security-checker. Bug report number 379. License: MIT. Test included: no. Patch file: [232-security-checker-379.patch](spare-token-bug-fixes/fixes/232-security-checker-379.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

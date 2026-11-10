@@ -1,0 +1,24 @@
+diff --git a/src/security_checker/models/candidate.py b/src/security_checker/models/candidate.py
+index 14be518..fe47edc 100644
+--- a/src/security_checker/models/candidate.py
++++ b/src/security_checker/models/candidate.py
+@@ -50,6 +50,7 @@ class PackageRef(BaseModel):
+     manifest: str | None = None
+ 
+     def as_key(self) -> str:
++        """`ecosystem:name@version` の形の表記. 版が無ければ `*`."""
+         return f"{self.ecosystem}:{self.name}@{self.version or '*'}"
+ 
+ 
+@@ -114,9 +115,11 @@ class IdFactory:
+     """同一 (scanner, rule_id, path, snippet) の重複に出現順の連番を振る (設計書 §6.1)."""
+ 
+     def __init__(self) -> None:
++        """出現回数の記録を空で始める. 1 回のスキャン結果ごとに 1 つ作る."""
+         self._seen: dict[tuple[str, str, str, str], int] = {}
+ 
+     def make(self, scanner: str, rule_id: str, path: str, fingerprint_source: str) -> str:
++        """候補の安定 ID を作る. 同じ内容の 2 つ目以降には出現順の連番が入り、別の ID になる."""
+         key = (scanner, rule_id, path, normalize_snippet(fingerprint_source))
+         occurrence = self._seen.get(key, 0)
+         self._seen[key] = occurrence + 1

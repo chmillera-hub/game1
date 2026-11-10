@@ -1,0 +1,20 @@
+diff --git a/src/security_checker/aggregate/consensus.py b/src/security_checker/aggregate/consensus.py
+index eb5bd04..64272df 100644
+--- a/src/security_checker/aggregate/consensus.py
++++ b/src/security_checker/aggregate/consensus.py
+@@ -32,6 +32,7 @@ class ConsensusAggregator:
+     name = "consensus"
+ 
+     def __init__(self, weights: Mapping[str, float] | None = None) -> None:
++        """`weights` は Reviewer 名 → 重み. 票の数え方には使わず、severity の加重平均にだけ使う."""
+         # 票の数え方に重みは使わない。使うのは severity: weighted_mean のときだけ (§14.1)
+         self.weights = dict(weights or {})
+ 
+@@ -44,6 +45,7 @@ class ConsensusAggregator:
+         verdicts: list[ReviewVerdict],
+         cfg: AggregationConfig,
+     ) -> AggregationOutcome:
++        """有効な判定の多数決で 1 つの結論にまとめる (設計書 §14.1)."""
+         valid = [verdict for verdict in verdicts if verdict.status is VerdictStatus.OK]
+         if not valid:
+             return AggregationOutcome(

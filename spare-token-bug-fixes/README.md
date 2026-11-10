@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-218 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
+232 small ready-made bug fixes (patch files) for 47 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 70 of the 218 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 206 of the 218 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 70 of the 232 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 220 of the 232 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -680,6 +680,48 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 218. [security-checker: no test covers a pricing file that is not valid YAML](fix-218-security-checker-522.md)
    Project: Sh1n1230/security-checker. Bug report number 522. License: MIT. Test included: yes. Patch file: [218-security-checker-522.patch](fixes/218-security-checker-522.patch)
+
+219. [security-checker: public names in scanners/untrusted.py have no docstring (gitleaks_args and osv_args and semgrep_args and trivy_args)](fix-219-security-checker-427.md)
+   Project: Sh1n1230/security-checker. Bug report number 427. License: MIT. Test included: no. Patch file: [219-security-checker-427.patch](fixes/219-security-checker-427.patch)
+
+220. [security-checker: public names in observability/quota.py have no docstring (__init__ and default_quota_path and remaining and used)](fix-220-security-checker-405.md)
+   Project: Sh1n1230/security-checker. Bug report number 405. License: MIT. Test included: no. Patch file: [220-security-checker-405.patch](fixes/220-security-checker-405.patch)
+
+221. [security-checker: public names in eval/metrics.py have no docstring (deferred and dismissed and errored and reported)](fix-221-security-checker-394.md)
+   Project: Sh1n1230/security-checker. Bug report number 394. License: MIT. Test included: no. Patch file: [221-security-checker-394.patch](fixes/221-security-checker-394.patch)
+
+222. [security-checker: public names in eval/dataset.py have no docstring (negatives and positives)](fix-222-security-checker-393.md)
+   Project: Sh1n1230/security-checker. Bug report number 393. License: MIT. Test included: no. Patch file: [222-security-checker-393.patch](fixes/222-security-checker-393.patch)
+
+223. [security-checker: public names in models/candidate.py have no docstring (__init__ and as_key and make)](fix-223-security-checker-397.md)
+   Project: Sh1n1230/security-checker. Bug report number 397. License: MIT. Test included: no. Patch file: [223-security-checker-397.patch](fixes/223-security-checker-397.patch)
+
+224. [security-checker: public names in models/enums.py have no docstring (__ge__ and __gt__ and __le__ and __lt__)](fix-224-security-checker-398.md)
+   Project: Sh1n1230/security-checker. Bug report number 398. License: MIT. Test included: no. Patch file: [224-security-checker-398.patch](fixes/224-security-checker-398.patch)
+
+225. [security-checker: public names in observability/cost.py have no docstring (apply and default_pricing_paths and estimate and lookup)](fix-225-security-checker-400.md)
+   Project: Sh1n1230/security-checker. Bug report number 400. License: MIT. Test included: no. Patch file: [225-security-checker-400.patch](fixes/225-security-checker-400.patch)
+
+226. [security-checker: public names in review/reviewer.py have no docstring (two __init__ methods and model)](fix-226-security-checker-419.md)
+   Project: Sh1n1230/security-checker. Bug report number 419. License: MIT. Test included: no. Patch file: [226-security-checker-419.patch](fixes/226-security-checker-419.patch)
+
+227. [security-checker: public names in observability/trace.py have no docstring (__init__ and sha256_text and write_call and write_run)](fix-227-security-checker-406.md)
+   Project: Sh1n1230/security-checker. Bug report number 406. License: MIT. Test included: no. Patch file: [227-security-checker-406.patch](fixes/227-security-checker-406.patch)
+
+228. [security-checker: public names in observability/estimate.py have no docstring (Estimate and ReviewerEstimate and total_input_tokens and total_usd)](fix-228-security-checker-401.md)
+   Project: Sh1n1230/security-checker. Bug report number 401. License: MIT. Test included: no. Patch file: [228-security-checker-401.patch](fixes/228-security-checker-401.patch)
+
+229. [security-checker: public names in context/builder.py have no docstring (build)](fix-229-security-checker-383.md)
+   Project: Sh1n1230/security-checker. Bug report number 383. License: MIT. Test included: no. Patch file: [229-security-checker-383.patch](fixes/229-security-checker-383.patch)
+
+230. [security-checker: public names in aggregate/weighted.py have no docstring (__init__ and aggregate and weight_of)](fix-230-security-checker-381.md)
+   Project: Sh1n1230/security-checker. Bug report number 381. License: MIT. Test included: no. Patch file: [230-security-checker-381.patch](fixes/230-security-checker-381.patch)
+
+231. [security-checker: public names in aggregate/consensus.py have no docstring (__init__ and aggregate)](fix-231-security-checker-380.md)
+   Project: Sh1n1230/security-checker. Bug report number 380. License: MIT. Test included: no. Patch file: [231-security-checker-380.patch](fixes/231-security-checker-380.patch)
+
+232. [security-checker: public names in aggregate/base.py have no docstring (Aggregator and aggregate)](fix-232-security-checker-379.md)
+   Project: Sh1n1230/security-checker. Bug report number 379. License: MIT. Test included: no. Patch file: [232-security-checker-379.patch](fixes/232-security-checker-379.patch)
 
 ## How to use a fix
 

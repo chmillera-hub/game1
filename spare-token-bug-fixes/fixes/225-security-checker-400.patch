@@ -1,0 +1,32 @@
+diff --git a/src/security_checker/observability/cost.py b/src/security_checker/observability/cost.py
+index 2ec7b56..f5bc966 100644
+--- a/src/security_checker/observability/cost.py
++++ b/src/security_checker/observability/cost.py
+@@ -27,6 +27,7 @@ class ModelPrice(BaseModel):
+     output_per_1m: float = 0.0
+ 
+     def estimate(self, usage: Usage) -> float:
++        """`usage` の入力・出力トークン数にこの単価を掛けた見積り (USD)."""
+         return (
+             usage.input_tokens * self.input_per_1m + usage.output_tokens * self.output_per_1m
+         ) / PER_TOKENS
+@@ -40,9 +41,11 @@ class PriceTable(BaseModel):
+     prices: dict[str, ModelPrice] = {}
+ 
+     def lookup(self, model: str) -> ModelPrice | None:
++        """モデル名の完全一致で価格を引く. 無ければ None (推測しない)."""
+         return self.prices.get(model)
+ 
+     def apply(self, usage: Usage, model: str) -> Usage:
++        """`usage` に見積り額を入れた写しを返す. 価格が不明なら cost_known を False にする."""
+         price = self.lookup(model)
+         if price is None:
+             return usage.model_copy(update={"estimated_usd": None, "cost_known": False})
+@@ -50,6 +53,7 @@ class PriceTable(BaseModel):
+ 
+ 
+ def default_pricing_paths(config_dir: Path | None) -> list[Path]:
++    """pricing.yml を探す場所. 設定ファイルの隣が先、次にユーザーの設定ディレクトリ."""
+     base = os.environ.get("XDG_CONFIG_HOME")
+     root = Path(base) if base else Path.home() / ".config"
+     paths = [root / "security-checker" / PRICING_FILENAME]

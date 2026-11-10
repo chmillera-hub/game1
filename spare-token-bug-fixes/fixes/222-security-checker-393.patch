@@ -1,0 +1,17 @@
+diff --git a/src/security_checker/eval/dataset.py b/src/security_checker/eval/dataset.py
+index afc618b..c6ae656 100644
+--- a/src/security_checker/eval/dataset.py
++++ b/src/security_checker/eval/dataset.py
+@@ -90,10 +90,12 @@ class Dataset(BaseModel):
+ 
+     @property
+     def positives(self) -> int:
++        """正解が「脆弱」のケースの数."""
+         return sum(1 for case in self.cases if case.ground_truth.vulnerable)
+ 
+     @property
+     def negatives(self) -> int:
++        """正解が「脆弱ではない」のケースの数."""
+         return len(self.cases) - self.positives
+ 
+ 
