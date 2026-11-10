@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-36 small ready-made bug fixes (patch files) for 20 public open source projects. Free to take.
+46 small ready-made bug fixes (patch files) for 21 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mila-iqia/cluv and oscarbol09/audiobard and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 17 of the 36 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 29 of the 36 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 21 of the 46 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 39 of the 46 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -134,6 +134,36 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 36. [Archy: the tree-sitter version floor admits versions that lack QueryCursor so every command crashes at import](fix-36-archy-764.md)
    Project: hslee16/Archy. Bug report number 764. License: MIT. Test included: no. Patch file: [36-archy-764.patch](fixes/36-archy-764.patch)
+
+37. [Archy: check and brief with --format json leave out coverage.governs_nothing](fix-37-archy-796.md)
+   Project: hslee16/Archy. Bug report number 796. License: MIT. Test included: yes. Patch file: [37-archy-796.patch](fixes/37-archy-796.patch)
+
+38. [kraft: the document viewer adds a second banner landmark](fix-38-kraft-1116.md)
+   Project: itsOmidKarami/kraft. Bug report number 1116. License: Apache-2.0. Test included: yes. Patch file: [38-kraft-1116.patch](fixes/38-kraft-1116.patch)
+
+39. [orm-lens: a plain class above an if block hides every model declared below it](fix-39-orm-lens-226.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 226. License: MIT. Test included: yes. Patch file: [39-orm-lens-226.patch](fixes/39-orm-lens-226.patch)
+
+40. [orm-lens: inherited fields come from the wrong abstract base when two apps define a base with the same name](fix-40-orm-lens-227.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 227. License: MIT. Test included: yes. Patch file: [40-orm-lens-227.patch](fixes/40-orm-lens-227.patch)
+
+41. [Archy: a module with a non-ASCII file name is dropped from churn and co-change](fix-41-archy-761.md)
+   Project: hslee16/Archy. Bug report number 761. License: MIT. Test included: yes. Patch file: [41-archy-761.patch](fixes/41-archy-761.patch)
+
+42. [Archy: a module that imports itself counts as its own importer and ranks first as central and fragile](fix-42-archy-752.md)
+   Project: hslee16/Archy. Bug report number 752. License: MIT. Test included: yes. Patch file: [42-archy-752.patch](fixes/42-archy-752.patch)
+
+43. [Archy: score --strict with no recorded history says passed with no reason in JSON and on MCP](fix-43-archy-642.md)
+   Project: hslee16/Archy. Bug report number 642. License: MIT. Test included: yes. Patch file: [43-archy-642.patch](fixes/43-archy-642.patch)
+
+44. [kraft: a changed file with a non-ASCII name shows no diff on the review page](fix-44-kraft-1348.md)
+   Project: itsOmidKarami/kraft. Bug report number 1348. License: Apache-2.0. Test included: yes. Patch file: [44-kraft-1348.patch](fixes/44-kraft-1348.patch)
+
+45. [Archy: simulate still says overall +0.000 in JSON and on MCP when no edge resolved](fix-45-archy-795.md)
+   Project: hslee16/Archy. Bug report number 795. License: MIT. Test included: yes. Patch file: [45-archy-795.patch](fixes/45-archy-795.patch)
+
+46. [cluv: submit exits with code 0 when every submission failed](fix-46-cluv-257.md)
+   Project: mila-iqia/cluv. Bug report number 257. License: MIT. Test included: yes. Patch file: [46-cluv-257.patch](fixes/46-cluv-257.patch)
 
 ## How to use a fix
 

@@ -1,0 +1,129 @@
+diff --git a/src/archy/coupling.py b/src/archy/coupling.py
+index e7886f8..5d6a61c 100644
+--- a/src/archy/coupling.py
++++ b/src/archy/coupling.py
+@@ -37,9 +37,9 @@ numerator and the denominator; the displayed `support` (commit count) is the
+ honest evidence base and `min_support` is the backstop. Merge-commit conflict
+ resolutions are invisible under the default `git log` (which shows no diff for
+ merges), so co-change that happens only in an evil merge is undercounted.
+-Non-ASCII module filenames may be undercounted: git's default `core.quotePath`
+-escapes them, and the git-vs-filesystem path encoding does not always join to a
+-graph node - a pre-existing limitation shared with `hotspots.git_churn`.
++Non-ASCII module filenames are counted: the log is read with
++`core.quotePath=false`, so git prints them as they are on disk (as
++`hotspots.git_churn` does).
+ 
+ archy:owns        CoChangeData, CoChangeHint, CouplingPair, co_changed_with,
+                   compute_coupling, git_cochange, internal_module_paths
+@@ -173,7 +173,19 @@ def git_cochange(
+ 
+     # `-M` forces rename detection regardless of the user's `diff.renames` config
+     # so the `R` lines the rename-folding relies on are always present.
+-    cmd = ["git", "-C", str(repo_root), "log", "-M", "--name-status", "--format=%H"]
++    # `core.quotePath=false`: by default git prints a non-ASCII path quoted and
++    # octal-escaped (`"pkg/caf\303\251.py"`), which never joins to a graph node.
++    cmd = [
++        "git",
++        "-C",
++        str(repo_root),
++        "-c",
++        "core.quotePath=false",
++        "log",
++        "-M",
++        "--name-status",
++        "--format=%H",
++    ]
+     if since:
+         cmd.extend(resolve_since_log_args(repo_root, since))
+     try:
+diff --git a/src/archy/hotspots.py b/src/archy/hotspots.py
+index 8e45c79..95311f5 100644
+--- a/src/archy/hotspots.py
++++ b/src/archy/hotspots.py
+@@ -103,7 +103,19 @@ def git_churn(root: Path, *, since: str | None = None) -> dict[str, int] | None:
+ 
+     # `-M` forces rename detection regardless of the user's `diff.renames`
+     # config so the `R` lines we rely on are always present.
+-    cmd = ["git", "-C", str(repo_root), "log", "-M", "--name-status", "--format="]
++    # `core.quotePath=false`: by default git prints a non-ASCII path quoted and
++    # octal-escaped (`"pkg/caf\303\251.py"`), which never joins to a graph node.
++    cmd = [
++        "git",
++        "-C",
++        str(repo_root),
++        "-c",
++        "core.quotePath=false",
++        "log",
++        "-M",
++        "--name-status",
++        "--format=",
++    ]
+     if since:
+         cmd.extend(resolve_since_log_args(repo_root, since))
+     try:
+diff --git a/tests/test_coupling.py b/tests/test_coupling.py
+index 5f0772c..571c77d 100644
+--- a/tests/test_coupling.py
++++ b/tests/test_coupling.py
+@@ -222,6 +222,24 @@ def test_git_cochange_counts_pair_support(tmp_path: Path):
+     assert data.pair_support[_key(a, b)] == 3
+ 
+ 
++def test_git_cochange_pairs_a_non_ascii_filename(tmp_path: Path):
++    """A non-ASCII filename co-changes like any other, under git's default quoting (#761)."""
++    repo = tmp_path
++    _init_repo(repo)
++    _git(repo, "config", "core.quotePath", "true")
++    for i in range(4):
++        _write(repo, "café.py", f"x = {i}\n")
++        _write(repo, "plain.py", f"y = {i}\n")
++        _git(repo, "add", "-A")
++        _git(repo, "commit", "-q", "-m", f"both {i}")
++
++    data = git_cochange(repo)
++    assert data is not None
++    cafe, plain = _p(repo, "café.py"), _p(repo, "plain.py")
++    assert data.counts[cafe] == 4 and data.counts[plain] == 4
++    assert data.pair_support[_key(cafe, plain)] == 4
++
++
+ def test_git_cochange_folds_rename_into_pair(tmp_path: Path):
+     repo = tmp_path
+     _init_repo(repo)
+diff --git a/tests/test_hotspots.py b/tests/test_hotspots.py
+index a5b55f8..643ce11 100644
+--- a/tests/test_hotspots.py
++++ b/tests/test_hotspots.py
+@@ -126,6 +126,32 @@ def test_git_churn_counts_commits_per_file(tmp_path: Path):
+     assert churn[b_key] == 1
+ 
+ 
++def test_git_churn_counts_a_non_ascii_filename(tmp_path: Path):
++    """git quotes and octal-escapes a non-ASCII path by default; churn must still join (#761)."""
++    repo = tmp_path
++    _init_repo(repo)
++    # Force git's default, so the test reaches the bug on a machine whose
++    # global config already sets core.quotePath=false.
++    _git(repo, "config", "core.quotePath", "true")
++    for i in range(4):
++        (repo / "café.py").write_text(f"x = {i}\n")
++        (repo / "plain.py").write_text(f"y = {i}\n")
++        _git(repo, "add", "-A")
++        _git(repo, "commit", "-q", "-m", f"edit {i}")
++    raw = subprocess.run(
++        ["git", "-C", str(repo), "log", "--name-only", "--format="],
++        check=True,
++        capture_output=True,
++        text=True,
++    ).stdout
++    assert '"caf\\303\\251.py"' in raw, "the fixture must reach git's quoted form"
++
++    churn = git_churn(repo)
++    assert churn is not None
++    assert churn[str((repo / "café.py").resolve())] == 4
++    assert churn[str((repo / "plain.py").resolve())] == 4
++
++
+ def test_git_churn_folds_renamed_file_history_onto_current_path(tmp_path: Path):
+     """Regression for #166: a renamed file must keep its full churn on the
+     current path. Without rename folding, `git log` splits the history across

@@ -78,10 +78,10 @@ index 5e25b90..44bb2f6 100644
      lines.append("}")
      return "\n".join(lines)
 diff --git a/tests/test_cli_graph.py b/tests/test_cli_graph.py
-index 8ba19c1..5b40cf9 100644
+index 8ba19c1..bcbc8e4 100644
 --- a/tests/test_cli_graph.py
 +++ b/tests/test_cli_graph.py
-@@ -672,3 +672,53 @@ def test_impact_headline_is_unchanged_when_any_file_resolves(tmp_path: Path):
+@@ -672,3 +672,52 @@ def test_impact_headline_is_unchanged_when_any_file_resolves(tmp_path: Path):
      result = CliRunner().invoke(main, args)
      assert result.output.startswith("# 1 module(s) depend on 1 changed module(s)")
      assert "(did you mean" in result.output
@@ -134,7 +134,6 @@ index 8ba19c1..5b40cf9 100644
 +    for name in g.nodes:
 +        assert name in strings
 +    assert dot.count('"pkg.q"x') == 0
-+
 `````
 
 [Back to the shelf](README.md)

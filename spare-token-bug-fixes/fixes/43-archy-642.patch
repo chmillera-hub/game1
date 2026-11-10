@@ -1,0 +1,107 @@
+diff --git a/src/archy/cli_render_common.py b/src/archy/cli_render_common.py
+index b8b94c9..b570f93 100644
+--- a/src/archy/cli_render_common.py
++++ b/src/archy/cli_render_common.py
+@@ -41,10 +41,19 @@ def _gate_to_dict(gate: dict, tolerance: float) -> dict:
+     delta = gate["delta"]
+     return {
+         "previous": gate["previous"],
++        "previous_commit": gate.get("previous_commit"),
++        "previous_timestamp": gate.get("previous_timestamp"),
+         "current": gate["current"],
+         "delta": delta,
+         "tolerance": tolerance,
+         "passed": delta is None or delta >= -tolerance,
++        # Why nothing was compared; None when a comparison happened. The same
++        # sentence as the MCP gate (`mcp_runs_check._score_gate`).
++        "reason": (
++            "no prior score recorded; nothing to compare. Record a baseline first."
++            if delta is None
++            else None
++        ),
+     }
+ 
+ 
+diff --git a/src/archy/mcp_payloads.py b/src/archy/mcp_payloads.py
+index 4e92160..a5d35a9 100644
+--- a/src/archy/mcp_payloads.py
++++ b/src/archy/mcp_payloads.py
+@@ -70,6 +70,9 @@ class ScoreGate(BaseModel):
+     delta: float | None
+     tolerance: float
+     passed: bool
++    # Why nothing was compared; None when a comparison happened. Without it
++    # `passed: true` on a first run reads as "no regression" when no check ran.
++    reason: str | None = None
+ 
+ 
+ class ScorePayload(BaseModel):
+diff --git a/src/archy/mcp_runs_check.py b/src/archy/mcp_runs_check.py
+index 45ad65e..0682602 100644
+--- a/src/archy/mcp_runs_check.py
++++ b/src/archy/mcp_runs_check.py
+@@ -245,7 +245,13 @@ def _score_gate(history_path: Path, current: float, tolerance: float) -> ScoreGa
+     rows = read_history(history_path)
+     if not rows:
+         return ScoreGate(
+-            previous=None, current=current, delta=None, tolerance=tolerance, passed=True
++            previous=None,
++            current=current,
++            delta=None,
++            tolerance=tolerance,
++            passed=True,
++            # The same sentence as the CLI (`cli_render_common._gate_to_dict`).
++            reason="no prior score recorded; nothing to compare. Record a baseline first.",
+         )
+     previous = rows[-1]
+     delta = current - previous.overall
+diff --git a/tests/test_cli_score.py b/tests/test_cli_score.py
+index 6da320f..dc813cc 100644
+--- a/tests/test_cli_score.py
++++ b/tests/test_cli_score.py
+@@ -287,6 +287,30 @@ def test_score_strict_json_includes_gate_block(tmp_path: Path):
+     assert payload["gate"]["tolerance"] == 0.02
+ 
+ 
++def test_score_strict_json_says_why_nothing_was_compared(tmp_path: Path):
++    """No history: `passed` alone would read as "no regression" (#642)."""
++    project = _make_acyclic_project(tmp_path)
++    result = CliRunner().invoke(main, ["score", str(project), "--strict", "--format", "json"])
++    assert result.exit_code == 0
++    gate = json.loads(result.output)["gate"]
++    assert gate["previous"] is None and gate["delta"] is None
++    assert "nothing to compare" in gate["reason"]
++    assert gate["previous_commit"] is None and gate["previous_timestamp"] is None
++
++
++def test_score_strict_json_has_no_reason_once_a_row_is_recorded(tmp_path: Path):
++    project = _make_acyclic_project(tmp_path)
++    runner = CliRunner()
++    runner.invoke(main, ["score", str(project), "--record"])
++    result = runner.invoke(main, ["score", str(project), "--strict", "--format", "json"])
++    gate = json.loads(result.output)["gate"]
++    assert gate["reason"] is None
++    assert gate["previous"] is not None
++    # The row's own metadata reaches the CLI JSON, as it reaches MCP.
++    assert gate["previous_timestamp"]
++    assert "previous_commit" in gate
++
++
+ def test_trend_json_output(tmp_path: Path):
+     project = _make_acyclic_project(tmp_path)
+     runner = CliRunner()
+diff --git a/tests/test_mcp_scorehist.py b/tests/test_mcp_scorehist.py
+index 2f2798c..1d77dc7 100644
+--- a/tests/test_mcp_scorehist.py
++++ b/tests/test_mcp_scorehist.py
+@@ -149,6 +149,10 @@ def test_run_score_strict_includes_gate_block(acyclic_project: Path):
+     )
+     assert payload.gate is not None
+     assert payload.gate.tolerance == 0.02
++    # No history yet: the dumped gate says why nothing was compared (#642).
++    dumped = payload.model_dump()["gate"]
++    assert dumped["previous"] is None and dumped["passed"] is True
++    assert "nothing to compare" in dumped["reason"]
+ 
+ 
+ def test_archy_score_rejects_strict_tolerance_outside_unit_interval(acyclic_project: Path):

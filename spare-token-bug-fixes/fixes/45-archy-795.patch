@@ -1,0 +1,80 @@
+diff --git a/src/archy/cli_render_history.py b/src/archy/cli_render_history.py
+index 85e3d08..9479421 100644
+--- a/src/archy/cli_render_history.py
++++ b/src/archy/cli_render_history.py
+@@ -217,11 +217,9 @@ def _simulate_to_text(result: SimulateReport) -> str:
+     lines.append("")
+     if a.coverage == "none":
+         # Every number below would describe the unchanged graph: a `+0.000` that
+-        # reads as "this edit is free" when no edit was simulated.
+-        lines.append(
+-            "# summary: nothing simulated: no edge resolved, so no score, cycle or "
+-            "violation delta was computed"
+-        )
++        # reads as "this edit is free" when no edit was simulated. `simulate`
++        # put the reason in the headline; JSON and MCP carry the same one.
++        lines.append(f"# summary: {result.summary.headline}")
+         return "\n".join(lines)
+     if a.coverage == "partial":
+         lines.append(
+diff --git a/src/archy/simulate.py b/src/archy/simulate.py
+index 0fbf2d3..95a034c 100644
+--- a/src/archy/simulate.py
++++ b/src/archy/simulate.py
+@@ -144,6 +144,11 @@ class SimulateReport(BaseModel):
+     summary: DiffSummary
+ 
+ 
++_NOTHING_SIMULATED = (
++    "nothing simulated: no edge resolved, so no score, cycle or violation delta was computed"
++)
++
++
+ def find_simulate(
+     graph: nx.DiGraph,
+     *,
+@@ -191,6 +196,12 @@ def find_simulate(
+     after = take_snapshot(hypo, config_path=config_path, reach_graph=hypo_reach)
+     report = compute_diff(before, after)
+     summary = summarize_diff(report, hypo, hypothetical=True)
++    if applied.coverage == "none":
++        # No edge resolved, so the delta describes the unchanged graph: an
++        # "overall +0.000" headline would read as "this edit is free" for an
++        # import that was never simulated. Decided here, where coverage is
++        # known, so text, JSON and MCP all carry the same sentence.
++        summary = summary.model_copy(update={"headline": _NOTHING_SIMULATED})
+ 
+     prop_before = compute_propagation_cost(graph)[0]
+     prop_after = compute_propagation_cost(hypo)[0]
+diff --git a/tests/test_simulate.py b/tests/test_simulate.py
+index 8b7cb31..da6f7cc 100644
+--- a/tests/test_simulate.py
++++ b/tests/test_simulate.py
+@@ -312,6 +312,27 @@ def test_a_file_path_endpoint_is_answered_with_a_file_path_in_the_form_typed(tmp
+     )
+ 
+ 
++def test_headline_says_nothing_was_simulated_when_no_edge_resolved(tmp_path: Path):
++    """`overall +0.000` beside `coverage: none` reads as "free edit" (#795)."""
++    project = _make_pkg(tmp_path, {"a.py": "", "b.py": ""})
++    g = _internal(project)
++    result = find_simulate(g, add=[("app.nope", "app.a")], remove=[], project_root=project)
++    assert result.applied.coverage == "none"
++    headline = result.model_dump()["summary"]["headline"]
++    assert "nothing simulated" in headline
++    assert "+0.000" not in headline
++
++
++def test_headline_stays_numeric_when_an_edge_resolved(tmp_path: Path):
++    project = _make_pkg(tmp_path, {"a.py": "", "b.py": ""})
++    g = _internal(project)
++    result = find_simulate(g, add=[("app.a", "app.b")], remove=[], project_root=project)
++    assert result.applied.coverage == "complete"
++    headline = result.model_dump()["summary"]["headline"]
++    assert headline.startswith("overall ")
++    assert "nothing simulated" not in headline
++
++
+ def test_coverage_survives_model_dump(tmp_path: Path):
+     """FastMCP sends `model_dump()`; a plain property would drop the verdict."""
+     project = _make_pkg(tmp_path, {"a.py": "", "b.py": ""})

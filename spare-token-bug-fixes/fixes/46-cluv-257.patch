@@ -1,0 +1,61 @@
+diff --git a/cluv/__main__.py b/cluv/__main__.py
+index ff697ad..d483315 100644
+--- a/cluv/__main__.py
++++ b/cluv/__main__.py
+@@ -159,9 +159,9 @@ def main(argv: list[str] | None = None) -> None:
+ 
+     try:
+         if inspect.iscoroutinefunction(function):
+-            asyncio.run(function(**args_dict))
++            result = asyncio.run(function(**args_dict))
+         else:
+-            function(**args_dict)
++            result = function(**args_dict)
+     except subprocess.CalledProcessError as err:
+         logger.error(f"Command '{err.cmd}' failed with exit code {err.returncode}:")
+         if err.output:
+@@ -174,6 +174,11 @@ def main(argv: list[str] | None = None) -> None:
+             logger.error("No standard error.")
+         sys.exit(err.returncode)
+ 
++    if subcommand == "submit" and result is None:
++        # `submit` returns None when every submission failed (it has already logged why).
++        # Exit non-zero so scripts and agents can tell that from a submitted job.
++        sys.exit(1)
++
+ 
+ def add_submit_args(subparsers: Subparsers):
+     submit_parser = subparsers.add_parser(
+diff --git a/tests/test_submit.py b/tests/test_submit.py
+index 8f2025f..a143ed8 100644
+--- a/tests/test_submit.py
++++ b/tests/test_submit.py
+@@ -937,6 +937,28 @@ class TestSubmitCliParsing:
+             }
+         )
+ 
++    @pytest.mark.parametrize("cluster", ["first", "tamia"])
++    def test_exits_non_zero_when_every_submission_failed(
++        self, monkeypatch: pytest.MonkeyPatch, cluster: str
++    ) -> None:
++        """`submit` returns None when all submissions failed; the command must not exit 0."""
++        monkeypatch.setattr(
++            cluv_main, "submit", mock.AsyncMock(spec=cluv_main.submit, return_value=None)
++        )
++
++        with pytest.raises(SystemExit) as exc_info:
++            cluv_main.main(["submit", cluster, "--", "python", "main.py"])
++
++        assert exc_info.value.code == 1
++
++    def test_exits_zero_when_a_job_was_submitted(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        monkeypatch.setattr(
++            cluv_main, "submit", mock.AsyncMock(spec=cluv_main.submit, return_value=mock.Mock())
++        )
++
++        # No SystemExit: `main` returns normally.
++        assert cluv_main.main(["submit", "tamia", "--", "python", "main.py"]) is None
++
+     def test_chunking_with_value_is_recovered_from_sbatch_args(
+         self, monkeypatch: pytest.MonkeyPatch
+     ) -> None:

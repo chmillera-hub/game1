@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds thirty-six small AI-written bug fixes (patch files) for twenty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds forty-six small AI-written bug fixes (patch files) for twenty-one public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -119,6 +119,36 @@ The shelf holds thirty-six small AI-written bug fixes (patch files) for twenty p
 
 36. [Archy: the tree-sitter version floor admits versions that lack QueryCursor so every command crashes at import](spare-token-bug-fixes/fix-36-archy-764.md)
    Project: hslee16/Archy. Bug report number 764. License: MIT. Test included: no. Patch file: [36-archy-764.patch](spare-token-bug-fixes/fixes/36-archy-764.patch)
+
+37. [Archy: check and brief with --format json leave out coverage.governs_nothing](spare-token-bug-fixes/fix-37-archy-796.md)
+   Project: hslee16/Archy. Bug report number 796. License: MIT. Test included: yes. Patch file: [37-archy-796.patch](spare-token-bug-fixes/fixes/37-archy-796.patch)
+
+38. [kraft: the document viewer adds a second banner landmark](spare-token-bug-fixes/fix-38-kraft-1116.md)
+   Project: itsOmidKarami/kraft. Bug report number 1116. License: Apache-2.0. Test included: yes. Patch file: [38-kraft-1116.patch](spare-token-bug-fixes/fixes/38-kraft-1116.patch)
+
+39. [orm-lens: a plain class above an if block hides every model declared below it](spare-token-bug-fixes/fix-39-orm-lens-226.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 226. License: MIT. Test included: yes. Patch file: [39-orm-lens-226.patch](spare-token-bug-fixes/fixes/39-orm-lens-226.patch)
+
+40. [orm-lens: inherited fields come from the wrong abstract base when two apps define a base with the same name](spare-token-bug-fixes/fix-40-orm-lens-227.md)
+   Project: FROWNINGdev/orm-lens. Bug report number 227. License: MIT. Test included: yes. Patch file: [40-orm-lens-227.patch](spare-token-bug-fixes/fixes/40-orm-lens-227.patch)
+
+41. [Archy: a module with a non-ASCII file name is dropped from churn and co-change](spare-token-bug-fixes/fix-41-archy-761.md)
+   Project: hslee16/Archy. Bug report number 761. License: MIT. Test included: yes. Patch file: [41-archy-761.patch](spare-token-bug-fixes/fixes/41-archy-761.patch)
+
+42. [Archy: a module that imports itself counts as its own importer and ranks first as central and fragile](spare-token-bug-fixes/fix-42-archy-752.md)
+   Project: hslee16/Archy. Bug report number 752. License: MIT. Test included: yes. Patch file: [42-archy-752.patch](spare-token-bug-fixes/fixes/42-archy-752.patch)
+
+43. [Archy: score --strict with no recorded history says passed with no reason in JSON and on MCP](spare-token-bug-fixes/fix-43-archy-642.md)
+   Project: hslee16/Archy. Bug report number 642. License: MIT. Test included: yes. Patch file: [43-archy-642.patch](spare-token-bug-fixes/fixes/43-archy-642.patch)
+
+44. [kraft: a changed file with a non-ASCII name shows no diff on the review page](spare-token-bug-fixes/fix-44-kraft-1348.md)
+   Project: itsOmidKarami/kraft. Bug report number 1348. License: Apache-2.0. Test included: yes. Patch file: [44-kraft-1348.patch](spare-token-bug-fixes/fixes/44-kraft-1348.patch)
+
+45. [Archy: simulate still says overall +0.000 in JSON and on MCP when no edge resolved](spare-token-bug-fixes/fix-45-archy-795.md)
+   Project: hslee16/Archy. Bug report number 795. License: MIT. Test included: yes. Patch file: [45-archy-795.patch](spare-token-bug-fixes/fixes/45-archy-795.patch)
+
+46. [cluv: submit exits with code 0 when every submission failed](spare-token-bug-fixes/fix-46-cluv-257.md)
+   Project: mila-iqia/cluv. Bug report number 257. License: MIT. Test included: yes. Patch file: [46-cluv-257.patch](spare-token-bug-fixes/fixes/46-cluv-257.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 
