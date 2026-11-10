@@ -1,0 +1,90 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e2100b5..0833ea4 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -7,3 +7,7 @@ All notable changes to this repo are listed here. The format follows [Keep a Cha
+ ### Added
+ 
+ - Initial MVP scaffold.
++
++### Fixed
++
++- The receipt page stops polling the API once a remittance is claimed, rejected or refunded.
+diff --git a/src/app/(app)/r/[id]/page.tsx b/src/app/(app)/r/[id]/page.tsx
+index 350631b..8889ca0 100644
+--- a/src/app/(app)/r/[id]/page.tsx
++++ b/src/app/(app)/r/[id]/page.tsx
+@@ -6,7 +6,7 @@ import { CategoryTag, StatusBadge, VerifiedBadge } from "@/components/Badges";
+ import { Notice } from "@/components/Notice";
+ import { TxError } from "@/components/TxError";
+ import { useWallet } from "@/components/WalletProvider";
+-import { api, NotFoundError, type RemittanceDetail } from "@/lib/api";
++import { api, isFinalStatus, NotFoundError, type RemittanceDetail } from "@/lib/api";
+ import { config, explorerAccount, explorerTx } from "@/lib/config";
+ import { remitsure } from "@/lib/contract";
+ import { formatDate, fromUnits, relativeTime, shortAddress } from "@/lib/format";
+@@ -50,14 +50,22 @@ export default function Receipt() {
+     [id],
+   );
+ 
++  // A settled remittance never changes again, so the refresh stops with it: no more API
++  // requests from an open receipt tab, and no clock tick (it only drives the countdown).
++  const settled = r !== null && isFinalStatus(r.status);
++
+   useEffect(() => {
+     load();
++  }, [load]);
++
++  useEffect(() => {
++    if (settled) return;
+     const t = setInterval(() => {
+       setNow(Date.now());
+       load();
+     }, 8_000);
+     return () => clearInterval(t);
+-  }, [load]);
++  }, [load, settled]);
+ 
+   async function run(action: Action) {
+     if (!address) return connect();
+diff --git a/src/lib/__tests__/api.test.ts b/src/lib/__tests__/api.test.ts
+index 0f231bd..dc85534 100644
+--- a/src/lib/__tests__/api.test.ts
++++ b/src/lib/__tests__/api.test.ts
+@@ -1,5 +1,5 @@
+ import { afterEach, describe, expect, it, vi } from "vitest";
+-import { get, NotFoundError } from "../api";
++import { get, isFinalStatus, NotFoundError } from "../api";
+ 
+ const json = (status: number, body: unknown = {}) =>
+   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+@@ -36,3 +36,13 @@ describe("get", () => {
+     expect(fetchMock).toHaveBeenCalledTimes(2);
+   });
+ });
++
++describe("isFinalStatus", () => {
++  it("is false only while a remittance is pending, so the receipt keeps refreshing", () => {
++    expect(isFinalStatus("PENDING")).toBe(false);
++  });
++
++  it.each(["CLAIMED", "REJECTED", "REFUNDED"] as const)("is true for %s, so the receipt stops polling", (status) => {
++    expect(isFinalStatus(status)).toBe(true);
++  });
++});
+diff --git a/src/lib/api.ts b/src/lib/api.ts
+index 56fafd5..b23b47b 100644
+--- a/src/lib/api.ts
++++ b/src/lib/api.ts
+@@ -3,6 +3,11 @@ import { config } from "./config";
+ export type PayeeCategory = "SCHOOL" | "LANDLORD" | "HOSPITAL" | "UTILITY" | "OTHER";
+ export type RemittanceStatus = "PENDING" | "CLAIMED" | "REJECTED" | "REFUNDED";
+ 
++/** A claimed, rejected or refunded remittance can never change again; only a pending one can. */
++export function isFinalStatus(status: RemittanceStatus): boolean {
++  return status !== "PENDING";
++}
++
+ export interface Payee {
+   address: string;
+   name: string;

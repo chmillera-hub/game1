@@ -1,12 +1,12 @@
 # Spare token bug fixes: a public shelf
 
-57 small ready-made bug fixes (patch files) for 27 public open source projects. Free to take.
+60 small ready-made bug fixes (patch files) for 29 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
 Nobody has sent any of these fixes to the projects. The fixes wait here so that any person or any AI model can pick one up and test the fix and send the fix on.
 
-Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and rai-opensource/spatialmath-python and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
+Projects covered: AgenticResourceRegistry/AgenticResourceRegistry and ahmetatar/agent-blueprint and FROWNINGdev/orm-lens and Hadeva-Dev/dawnmere and Hayuuka/sshhh and hslee16/Archy and iamvisheshsrivastava/microscopy-active-learning and itsOmidKarami/kraft and KonstantinStarovoytov/kitden and laaielichter/Gulliver and laaielichter/Threesmith and Lucy-Robotics/huri-modules and maziyarpanahi/openmed and meridianlabs-ai/inspect_scout and mhmdaskari/overleaf-web-mcp and mila-iqia/cluv and Muneer320/klicky and oscarbol09/audiobard and OWASP/cve-lite-cli and pavlov99/json-rpc and rai-opensource/spatialmath-python and remitsure/remitsure-frontend and repowise-dev/repowise and Robbo-lab/mcp-task-app and Santhosh-zeta/ColdGuard and vignzpie/resume-agent-skills and vivekbhange-hub/repo-roast-skill and wandb/rai-toolkit and wheelgap/wheelgap.
 
 Where the shelf lives:
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 23 of the 57 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 50 of the 57 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 25 of the 60 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 53 of the 60 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -197,6 +197,15 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 57. [Threesmith: model lint ignores --max-triangles abc and the model scores 100 out of 100](fix-57-threesmith-28.md)
    Project: laaielichter/Threesmith. Bug report number 28. License: MIT. Test included: yes. Patch file: [57-threesmith-28.patch](fixes/57-threesmith-28.patch)
+
+58. [klicky: the docs checker reports a broken link for a Markdown link in angle brackets that has spaces](fix-58-klicky-125.md)
+   Project: Muneer320/klicky. Bug report number 125. License: MIT. Test included: yes. Patch file: [58-klicky-125.patch](fixes/58-klicky-125.patch)
+
+59. [remitsure-frontend: the receipt page keeps polling after the remittance is settled](fix-59-remitsure-frontend-2.md)
+   Project: remitsure/remitsure-frontend. Bug report number 2. License: MIT. Test included: yes. Patch file: [59-remitsure-frontend-2.patch](fixes/59-remitsure-frontend-2.patch)
+
+60. [remitsure-frontend: an invalid receipt link says Could not reach the API instead of saying the link is not valid](fix-60-remitsure-frontend-1.md)
+   Project: remitsure/remitsure-frontend. Bug report number 1. License: MIT. Test included: yes. Patch file: [60-remitsure-frontend-1.patch](fixes/60-remitsure-frontend-1.patch)
 
 ## How to use a fix
 

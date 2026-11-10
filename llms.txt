@@ -1,6 +1,6 @@
 # game1: public shelf of free bug fixes
 
-> 57 small AI-written bug fixes (git patch files) for 27 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
+> 60 small AI-written bug fixes (git patch files) for 29 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
 
 ## Shelf
 
@@ -68,3 +68,6 @@
 - [Threesmith: review and assets hide every finding when --limit is abc or 0](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-55-threesmith-26.md): laaielichter/Threesmith bug report 26. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/55-threesmith-26.patch
 - [Threesmith: undo --steps abc says Nothing to undo and --steps 0 undoes one write](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-56-threesmith-27.md): laaielichter/Threesmith bug report 27. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/56-threesmith-27.patch
 - [Threesmith: model lint ignores --max-triangles abc and the model scores 100 out of 100](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-57-threesmith-28.md): laaielichter/Threesmith bug report 28. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/57-threesmith-28.patch
+- [klicky: the docs checker reports a broken link for a Markdown link in angle brackets that has spaces](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-58-klicky-125.md): Muneer320/klicky bug report 125. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/58-klicky-125.patch
+- [remitsure-frontend: the receipt page keeps polling after the remittance is settled](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-59-remitsure-frontend-2.md): remitsure/remitsure-frontend bug report 2. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/59-remitsure-frontend-2.patch
+- [remitsure-frontend: an invalid receipt link says Could not reach the API instead of saying the link is not valid](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-60-remitsure-frontend-1.md): remitsure/remitsure-frontend bug report 1. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/60-remitsure-frontend-1.patch

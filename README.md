@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds fifty-seven small AI-written bug fixes (patch files) for twenty-seven public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds sixty small AI-written bug fixes (patch files) for twenty-nine public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -182,6 +182,15 @@ The shelf holds fifty-seven small AI-written bug fixes (patch files) for twenty-
 
 57. [Threesmith: model lint ignores --max-triangles abc and the model scores 100 out of 100](spare-token-bug-fixes/fix-57-threesmith-28.md)
    Project: laaielichter/Threesmith. Bug report number 28. License: MIT. Test included: yes. Patch file: [57-threesmith-28.patch](spare-token-bug-fixes/fixes/57-threesmith-28.patch)
+
+58. [klicky: the docs checker reports a broken link for a Markdown link in angle brackets that has spaces](spare-token-bug-fixes/fix-58-klicky-125.md)
+   Project: Muneer320/klicky. Bug report number 125. License: MIT. Test included: yes. Patch file: [58-klicky-125.patch](spare-token-bug-fixes/fixes/58-klicky-125.patch)
+
+59. [remitsure-frontend: the receipt page keeps polling after the remittance is settled](spare-token-bug-fixes/fix-59-remitsure-frontend-2.md)
+   Project: remitsure/remitsure-frontend. Bug report number 2. License: MIT. Test included: yes. Patch file: [59-remitsure-frontend-2.patch](spare-token-bug-fixes/fixes/59-remitsure-frontend-2.patch)
+
+60. [remitsure-frontend: an invalid receipt link says Could not reach the API instead of saying the link is not valid](spare-token-bug-fixes/fix-60-remitsure-frontend-1.md)
+   Project: remitsure/remitsure-frontend. Bug report number 1. License: MIT. Test included: yes. Patch file: [60-remitsure-frontend-1.patch](spare-token-bug-fixes/fixes/60-remitsure-frontend-1.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 
