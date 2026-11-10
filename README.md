@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds seventy-three small AI-written bug fixes (patch files) for thirty-nine public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds seventy-eight small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -230,6 +230,21 @@ The shelf holds seventy-three small AI-written bug fixes (patch files) for thirt
 
 73. [MyFinances: the server answers 500 for a malformed JSON body or an oversize body](spare-token-bug-fixes/fix-73-myfinances-531.md)
    Project: jasonkryst/MyFinances. Bug report number 531. License: MIT. Test included: yes. Patch file: [73-myfinances-531.patch](spare-token-bug-fixes/fixes/73-myfinances-531.patch)
+
+74. [devswarm: an unreadable .env file is silently treated as a missing file](spare-token-bug-fixes/fix-74-devswarm-18.md)
+   Project: himanshu748/devswarm. Bug report number 18. License: MIT. Test included: yes. Patch file: [74-devswarm-18.patch](spare-token-bug-fixes/fixes/74-devswarm-18.patch)
+
+75. [Archy: the help for archy conventions says the command always exits 0 but --emit-headers --check exits 1](spare-token-bug-fixes/fix-75-archy-786.md)
+   Project: hslee16/Archy. Bug report number 786. License: MIT. Test included: yes. Patch file: [75-archy-786.patch](spare-token-bug-fixes/fixes/75-archy-786.patch)
+
+76. [Archy: SCORING.md and a code comment name MCP tools that were removed](spare-token-bug-fixes/fix-76-archy-770.md)
+   Project: hslee16/Archy. Bug report number 770. License: MIT. Test included: no. Patch file: [76-archy-770.patch](spare-token-bug-fixes/fixes/76-archy-770.patch)
+
+77. [Archy: the contributing guide leaves out one check that the project's automated checks run](spare-token-bug-fixes/fix-77-archy-769.md)
+   Project: hslee16/Archy. Bug report number 769. License: MIT. Test included: yes. Patch file: [77-archy-769.patch](spare-token-bug-fixes/fixes/77-archy-769.patch)
+
+78. [Archy: the README link to a real-world .importlinter example leads to a missing page](spare-token-bug-fixes/fix-78-archy-767.md)
+   Project: hslee16/Archy. Bug report number 767. License: MIT. Test included: yes. Patch file: [78-archy-767.patch](spare-token-bug-fixes/fixes/78-archy-767.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

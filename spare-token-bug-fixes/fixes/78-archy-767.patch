@@ -1,0 +1,51 @@
+diff --git a/README.md b/README.md
+index 10c212e..d49e7b3 100644
+--- a/README.md
++++ b/README.md
+@@ -351,7 +351,7 @@ Two configs, one concern each:
+ - **`archy.yaml`** owns layer definitions, direct-edge gating (`archy check`), required-reach rules (`required:`), `sdp:`, `exclude:`, and `roots:`.
+ - **`.importlinter`** owns transitive contracts: all five contract types (Forbidden, Layers, Independence, Protected, AcyclicSiblings) and `ignore_imports` whitelists.
+ 
+-Reach for `.importlinter` as soon as you need transitive enforcement at all; the archy.yaml fallback is a zero-config onramp, not a feature target. See [`.importlinter`](.importlinter) in this repo for a real-world example, and the [import-linter contract types reference](https://import-linter.readthedocs.io/en/stable/contract_types.html) for the full grammar.
++Reach for `.importlinter` as soon as you need transitive enforcement at all; the archy.yaml fallback is a zero-config onramp, not a feature target. See [`bench/fixtures/flask_realworld.importlinter`](bench/fixtures/flask_realworld.importlinter) in this repo for a real-world example, and the [import-linter contract types reference](https://import-linter.readthedocs.io/en/stable/contract_types.html) for the full grammar.
+ 
+ Common case: forbid services from reaching `psycopg` but allow the sanctioned db library to do so:
+ 
+diff --git a/tests/test_readme_relative_links.py b/tests/test_readme_relative_links.py
+new file mode 100644
+index 0000000..608c853
+--- /dev/null
++++ b/tests/test_readme_relative_links.py
+@@ -0,0 +1,32 @@
++"""Every relative link in README.md points at a file or directory in the repo (#767).
++
++The "real-world example" link to `.importlinter` 404ed after the file was
++deleted, at the point where a reader follows the recommended path.
++"""
++
++from __future__ import annotations
++
++import re
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++
++_LINK_TARGET = re.compile(r"\]\(([^)\s]+)\)")
++_HAS_SCHEME = re.compile(r"[a-z][a-z0-9+.-]*:")
++
++
++def _relative_link_targets(markdown: str) -> list[str]:
++    targets = _LINK_TARGET.findall(markdown)
++    return [t for t in targets if not t.startswith("#") and not _HAS_SCHEME.match(t)]
++
++
++def test_readme_relative_links_resolve():
++    targets = _relative_link_targets((ROOT / "README.md").read_text())
++    assert targets, "README.md should contain relative links"
++    dead = [t for t in targets if not (ROOT / t.split("#", 1)[0]).exists()]
++    assert not dead, f"README.md links to paths that do not exist: {dead}"
++
++
++def test_the_link_extractor_skips_anchors_and_absolute_urls():
++    sample = "[a](docs/A.md) [b](#top) [c](https://example.com/x) [d](mailto:x@example.com)"
++    assert _relative_link_targets(sample) == ["docs/A.md"]

@@ -1,0 +1,45 @@
+diff --git a/src/archy/cli_conventions.py b/src/archy/cli_conventions.py
+index ff50aba..bf6dd65 100644
+--- a/src/archy/cli_conventions.py
++++ b/src/archy/cli_conventions.py
+@@ -147,8 +147,9 @@ def conventions(
+     as a vendored copy of a previous major version. The header says what
+     was set aside and why. Pass `--include-tests` to census them too.
+ 
+-    Advisory, never a gate: it reports and always exits 0. Only `check`,
+-    `contracts` and the `--strict` variants fail a build.
++    Advisory: the report always exits 0. `--emit-headers --check` is the one
++    exception and exits 1 when a header is missing or stale. Otherwise only
++    `check`, `contracts` and the `--strict` variants fail a build.
+     """
+     _require(top_n >= 1, "top", ">= 1", top_n)
+     _require(min_family >= 2, "min-family", ">= 2", min_family)
+diff --git a/tests/test_conventions_help_exit_code.py b/tests/test_conventions_help_exit_code.py
+new file mode 100644
+index 0000000..eb798ad
+--- /dev/null
++++ b/tests/test_conventions_help_exit_code.py
+@@ -0,0 +1,23 @@
++"""`archy conventions --help` states the one exit-1 case of the command (#786)."""
++
++from __future__ import annotations
++
++from click.testing import CliRunner
++
++from archy.cli import main
++
++
++def test_conventions_help_names_the_emit_headers_check_exit_code():
++    """The help used to say the command "always exits 0" with no exception.
++
++    `--emit-headers --check` exits 1 on a missing or stale header, and archy's
++    own CI gates on it, so a reader of `--help` must see that exception beside
++    the exit-code claim.
++    """
++    r = CliRunner().invoke(main, ["conventions", "--help"])
++    assert r.exit_code == 0, r.output
++    # Click re-wraps the docstring and may break a line at a hyphen, so compare
++    # with every run of whitespace removed.
++    squeezed = "".join(r.output.split())
++    assert "alwaysexits0.Only" not in squeezed
++    assert "`--emit-headers--check`istheoneexceptionandexits1" in squeezed

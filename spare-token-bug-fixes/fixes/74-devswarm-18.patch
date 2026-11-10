@@ -1,0 +1,96 @@
+diff --git a/src/env.js b/src/env.js
+index fa0e4c4..8b5fa6d 100644
+--- a/src/env.js
++++ b/src/env.js
+@@ -1,7 +1,24 @@
+ // Imported first so .env is applied before telemetry reads its endpoint.
+ // Real environment variables win over .env values.
+-try {
+-  process.loadEnvFile('.env');
+-} catch {
+-  /* no .env file; env comes from the shell */
++
++// Returns 'loaded', 'missing' or 'failed'. A missing .env is the normal case:
++// env then comes from the shell. Any other failure (permissions, a directory
++// named .env, a read error) is reported once. The message carries only the
++// error code, never err.message or file contents, so no .env value or token
++// can reach the log.
++export function loadEnv({
++  loadEnvFile = (file) => process.loadEnvFile(file),
++  warn = (message) => console.warn(message),
++} = {}) {
++  try {
++    loadEnvFile('.env');
++    return 'loaded';
++  } catch (err) {
++    if (err?.code === 'ENOENT') return 'missing';
++    const code = typeof err?.code === 'string' && /^[A-Z0-9_]+$/.test(err.code) ? err.code : 'unknown error';
++    warn(`[env] could not load .env (${code}); continuing with the shell environment`);
++    return 'failed';
++  }
+ }
++
++loadEnv();
+diff --git a/test/env.test.js b/test/env.test.js
+new file mode 100644
+index 0000000..7649d00
+--- /dev/null
++++ b/test/env.test.js
+@@ -0,0 +1,57 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { loadEnv } from '../src/env.js';
++
++function enoent() {
++  return Object.assign(new Error("ENOENT: no such file or directory, open '.env'"), { code: 'ENOENT' });
++}
++
++test('a missing .env stays silent', () => {
++  const warnings = [];
++  const result = loadEnv({
++    loadEnvFile: () => {
++      throw enoent();
++    },
++    warn: (message) => warnings.push(message),
++  });
++  assert.equal(result, 'missing');
++  assert.deepEqual(warnings, []);
++});
++
++test('an unreadable .env is reported by error code', () => {
++  const warnings = [];
++  const result = loadEnv({
++    loadEnvFile: () => {
++      throw Object.assign(new Error("EACCES: permission denied, open '.env'"), { code: 'EACCES' });
++    },
++    warn: (message) => warnings.push(message),
++  });
++  assert.equal(result, 'failed');
++  assert.equal(warnings.length, 1);
++  assert.match(warnings[0], /could not load \.env \(EACCES\)/);
++});
++
++test('the diagnostic never repeats the error message or .env values', () => {
++  const warnings = [];
++  loadEnv({
++    loadEnvFile: () => {
++      throw Object.assign(new Error('HF_TOKEN=hf_synthetic_secret is not valid'), { code: 'hf_synthetic_secret' });
++    },
++    warn: (message) => warnings.push(message),
++  });
++  assert.equal(warnings.length, 1);
++  assert.doesNotMatch(warnings[0], /hf_synthetic_secret|HF_TOKEN/);
++  assert.match(warnings[0], /unknown error/);
++});
++
++test('a loaded .env reports nothing', () => {
++  const warnings = [];
++  const seen = [];
++  const result = loadEnv({
++    loadEnvFile: (file) => seen.push(file),
++    warn: (message) => warnings.push(message),
++  });
++  assert.equal(result, 'loaded');
++  assert.deepEqual(seen, ['.env']);
++  assert.deepEqual(warnings, []);
++});

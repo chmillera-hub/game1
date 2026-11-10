@@ -1,0 +1,58 @@
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+index 4d488bb..060801d 100644
+--- a/CONTRIBUTING.md
++++ b/CONTRIBUTING.md
+@@ -103,11 +103,12 @@ uv run ty check
+ uv run pytest
+ uv run archy check .       # archy enforces its own layer rules
+ uv run archy cycles . --strict
++uv run archy contracts .      # transitive forbid rules, derived from archy.yaml
+ uv run archy conventions . --emit-headers --check   # derived headers still true
+ ```
+ 
+ `ruff check some/file.py` is a different command from `ruff check` and will pass
+-while CI fails. The last three commands are archy checking itself: a new fixture
++while CI fails. The last four commands are archy checking itself: a new fixture
+ or sample tree can introduce a real cycle or layer violation, and the fix is to
+ add it to `exclude:` in `archy.yaml` with a note saying why, not to weaken a
+ rule. The headers check fails when a public symbol or a mirror set changes
+diff --git a/tests/test_contributing_ci_gates.py b/tests/test_contributing_ci_gates.py
+new file mode 100644
+index 0000000..dc21643
+--- /dev/null
++++ b/tests/test_contributing_ci_gates.py
+@@ -0,0 +1,34 @@
++"""CONTRIBUTING's "Before you push" block lists every command the CI check job runs (#769).
++
++The block says "Run what CI runs, not a subset". It once missed
++`uv run archy contracts .`, so a contributor ran the documented list green
++and then failed CI on a step the guide never named.
++"""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def _ci_run_commands() -> list[str]:
++    ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
++    runs = [step.get("run", "") for step in ci["jobs"]["check"]["steps"]]
++    return [run.strip() for run in runs if run.strip().startswith("uv run ")]
++
++
++def _documented_commands() -> list[str]:
++    text = (ROOT / "CONTRIBUTING.md").read_text()
++    block = text.split("### Before you push", 1)[1].split("```bash", 1)[1].split("```", 1)[0]
++    return [line.split("#", 1)[0].strip() for line in block.splitlines() if line.strip()]
++
++
++def test_before_you_push_block_has_every_ci_run_command():
++    ci_commands = _ci_run_commands()
++    assert "uv run archy contracts ." in ci_commands  # the fixture still has the gate
++    documented = _documented_commands()
++    missing = [command for command in ci_commands if command not in documented]
++    assert not missing, f"CONTRIBUTING.md 'Before you push' omits: {missing}"
