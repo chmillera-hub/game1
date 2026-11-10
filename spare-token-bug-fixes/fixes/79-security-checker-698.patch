@@ -1,0 +1,41 @@
+diff --git a/src/security_checker/run.py b/src/security_checker/run.py
+index cefc183..ff0122b 100644
+--- a/src/security_checker/run.py
++++ b/src/security_checker/run.py
+@@ -480,16 +480,17 @@ async def run_review(
+     started_at = utcnow()
+     identifier = run_id or new_run_id()
+     log.set_run_id(identifier)
+-    output_dir = resolve_output_dir(config, base_dir or Path.cwd())
+-    raw_dir = output_dir / "raw"
+-    raw_dir.mkdir(parents=True, exist_ok=True)
+-
++    # 設定エラーは出力ディレクトリを作る前に検出する (空の raw/ を残さない)。
+     if not config.reviewers and reviewer_setup is None:
+         raise ConfigError(
+             "reviewers が設定されていません。security-checker.yml に reviewer を定義するか、"
+             "LLM を使わない `security-checker scan` を実行してください"
+         )
+ 
++    output_dir = resolve_output_dir(config, base_dir or Path.cwd())
++    raw_dir = output_dir / "raw"
++    raw_dir.mkdir(parents=True, exist_ok=True)
++
+     results, runs, warnings = await _execute_scanners(
+         config,
+         root,
+diff --git a/tests/e2e/test_review_pipeline.py b/tests/e2e/test_review_pipeline.py
+index 28944a3..70f79c9 100644
+--- a/tests/e2e/test_review_pipeline.py
++++ b/tests/e2e/test_review_pipeline.py
+@@ -226,3 +226,10 @@ async def test_missing_reviewers_is_config_error(workspace, tmp_path):
+     config = make_config(tmp_path, reviewers=[])
+     with pytest.raises(ConfigError, match="reviewers"):
+         await run_review(config, workspace, base_dir=tmp_path, scanners=[])
++
++
++async def test_missing_reviewers_creates_no_output_dir(workspace, tmp_path):
++    config = make_config(tmp_path, reviewers=[])
++    with pytest.raises(ConfigError, match="reviewers"):
++        await run_review(config, workspace, base_dir=tmp_path, scanners=[])
++    assert not (tmp_path / "out").exists()

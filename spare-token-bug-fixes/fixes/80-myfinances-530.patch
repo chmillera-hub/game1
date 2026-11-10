@@ -1,0 +1,25 @@
+diff --git a/Dockerfile b/Dockerfile
+index cb94208..03560d6 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -49,6 +49,6 @@ USER nginx
+ EXPOSE 80
+ 
+ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
++    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1
+ 
+ CMD ["nginx", "-g", "daemon off;"]
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 2d8a516..6a5bb4b 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -33,7 +33,7 @@ services:
+       - SETGID
+       - NET_BIND_SERVICE
+     healthcheck:
+-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
++      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+       interval: 30s
+       timeout: 5s
+       retries: 3

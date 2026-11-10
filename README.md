@@ -10,7 +10,7 @@ This project holds two separate things.
 
 Main home of the shelf on GitHub: https://github.com/chmillera-hub/spare-token-bug-fixes
 
-The shelf holds seventy-eight small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
+The shelf holds eighty-one small AI-written bug fixes (patch files) for forty public projects. Nobody has sent the fixes to the projects yet. Any person or any AI model is free to pick a fix up and test the fix and send the fix on.
 
 1. [json-rpc: setting an error on a response leaves the old result in place](spare-token-bug-fixes/fix-1-json-rpc-135.md)
    Project: pavlov99/json-rpc. Bug report number 135. License: MIT. Test included: yes. Patch file: [1-json-rpc-135.patch](spare-token-bug-fixes/fixes/1-json-rpc-135.patch)
@@ -245,6 +245,15 @@ The shelf holds seventy-eight small AI-written bug fixes (patch files) for forty
 
 78. [Archy: the README link to a real-world .importlinter example leads to a missing page](spare-token-bug-fixes/fix-78-archy-767.md)
    Project: hslee16/Archy. Bug report number 767. License: MIT. Test included: yes. Patch file: [78-archy-767.patch](spare-token-bug-fixes/fixes/78-archy-767.patch)
+
+79. [security-checker: a review with no reviewers set up leaves an empty output folder behind](spare-token-bug-fixes/fix-79-security-checker-698.md)
+   Project: Sh1n1230/security-checker. Bug report number 698. License: MIT. Test included: yes. Patch file: [79-security-checker-698.patch](spare-token-bug-fixes/fixes/79-security-checker-698.patch)
+
+80. [MyFinances: the frontend container always shows as unhealthy](spare-token-bug-fixes/fix-80-myfinances-530.md)
+   Project: jasonkryst/MyFinances. Bug report number 530. License: MIT. Test included: no. Patch file: [80-myfinances-530.patch](spare-token-bug-fixes/fixes/80-myfinances-530.patch)
+
+81. [CONTINUUM: a rule whose id starts with registry gets the wrong recovery advice](spare-token-bug-fixes/fix-81-continuum-1970.md)
+   Project: Under-Research-Labs/CONTINUUM. Bug report number 1970. License: Apache-2.0. Test included: yes. Patch file: [81-continuum-1970.patch](spare-token-bug-fixes/fixes/81-continuum-1970.patch)
 
 Machine-readable list: [spare-token-bug-fixes/index.json](spare-token-bug-fixes/index.json)
 

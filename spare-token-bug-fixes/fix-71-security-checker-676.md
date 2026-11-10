@@ -43,7 +43,7 @@ contrib/host-audit/run_all.sh now checks that a value follows --domain. With no 
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- The messages are in Japanese to match the script. The check only catches a missing value at the end of the arguments. A following option such as --domain --other is still taken as the value. The chatbot ran a scratch copy of the argument loop and ran bash -n (a syntax check) on the changed script. The chatbot did not run the project's script or tests. The project builds CHANGELOG.md with release-please so the patch adds no changelog line.
+- The messages are in Japanese to match the script. The check only catches a missing value at the end of the arguments. A following option such as --domain --other is still taken as the value. The chatbot ran a scratch copy of the argument loop and ran bash -n (a syntax check) on the changed script. The chatbot did not run the project's script or tests. The project builds CHANGELOG.md with release-please so the patch adds no changelog line. Fix 79 on this shelf is for the same project and touches different files so the two patches apply together.
 
 ## Search words
 

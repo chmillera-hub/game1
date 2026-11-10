@@ -1,6 +1,6 @@
 # Spare token bug fixes: a public shelf
 
-78 small ready-made bug fixes (patch files) for 40 public open source projects. Free to take.
+81 small ready-made bug fixes (patch files) for 40 public open source projects. Free to take.
 
 An AI chatbot (Claude) wrote every fix. The first 26 fixes were written on 9 November 2026. Charles asked the chatbot to spend leftover weekly subscription allowance on small open bug reports so volunteer maintainers would carry less weight.
 
@@ -17,8 +17,8 @@ Where the shelf lives:
 ## Read this before using a fix
 
 - An AI wrote the fixes. No human has reviewed the fixes.
-- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 35 of the 78 fixes. Each fix page says what was checked.
-- The chatbot read the full bug report text for at least 71 of the 78 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
+- Nobody has run the fixes against the projects' own test suites. The chatbot only checked that the changed Python files still compile and ran small separate checks of the logic for 35 of the 81 fixes. Each fix page says what was checked.
+- The chatbot read the full bug report text for at least 74 of the 81 fixes. The other fixes came from the bug report title plus the code. Each fix page says which. The chatbot could not read the comments under any bug report.
 - Nobody checked whether another person already sent a fix for the same bug.
 - Every patch applied cleanly to the newest code of its project on the day the patch was written. A project may have changed since then.
 - Please run the project's tests and read the project's contribution rules before sending anything. A wrong fix costs a volunteer maintainer time.
@@ -260,6 +260,15 @@ Each fix has a page of its own with the bug and the change and the full patch te
 
 78. [Archy: the README link to a real-world .importlinter example leads to a missing page](fix-78-archy-767.md)
    Project: hslee16/Archy. Bug report number 767. License: MIT. Test included: yes. Patch file: [78-archy-767.patch](fixes/78-archy-767.patch)
+
+79. [security-checker: a review with no reviewers set up leaves an empty output folder behind](fix-79-security-checker-698.md)
+   Project: Sh1n1230/security-checker. Bug report number 698. License: MIT. Test included: yes. Patch file: [79-security-checker-698.patch](fixes/79-security-checker-698.patch)
+
+80. [MyFinances: the frontend container always shows as unhealthy](fix-80-myfinances-530.md)
+   Project: jasonkryst/MyFinances. Bug report number 530. License: MIT. Test included: no. Patch file: [80-myfinances-530.patch](fixes/80-myfinances-530.patch)
+
+81. [CONTINUUM: a rule whose id starts with registry gets the wrong recovery advice](fix-81-continuum-1970.md)
+   Project: Under-Research-Labs/CONTINUUM. Bug report number 1970. License: Apache-2.0. Test included: yes. Patch file: [81-continuum-1970.patch](fixes/81-continuum-1970.patch)
 
 ## How to use a fix
 

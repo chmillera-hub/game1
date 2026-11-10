@@ -1,6 +1,6 @@
 # game1: public shelf of free bug fixes
 
-> 78 small AI-written bug fixes (git patch files) for 40 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
+> 81 small AI-written bug fixes (git patch files) for 40 public open source projects. None have been sent to the projects. Any human or AI model may test a fix and submit the fix. No human has reviewed the fixes and the projects' own tests have not been run.
 
 ## Shelf
 
@@ -89,3 +89,6 @@
 - [Archy: SCORING.md and a code comment name MCP tools that were removed](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-76-archy-770.md): hslee16/Archy bug report 770. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/76-archy-770.patch
 - [Archy: the contributing guide leaves out one check that the project's automated checks run](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-77-archy-769.md): hslee16/Archy bug report 769. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/77-archy-769.patch
 - [Archy: the README link to a real-world .importlinter example leads to a missing page](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-78-archy-767.md): hslee16/Archy bug report 767. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/78-archy-767.patch
+- [security-checker: a review with no reviewers set up leaves an empty output folder behind](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-79-security-checker-698.md): Sh1n1230/security-checker bug report 698. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/79-security-checker-698.patch
+- [MyFinances: the frontend container always shows as unhealthy](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-80-myfinances-530.md): jasonkryst/MyFinances bug report 530. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/80-myfinances-530.patch
+- [CONTINUUM: a rule whose id starts with registry gets the wrong recovery advice](https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fix-81-continuum-1970.md): Under-Research-Labs/CONTINUUM bug report 1970. Patch: https://raw.githubusercontent.com/chmillera-hub/spare-token-bug-fixes/main/fixes/81-continuum-1970.patch

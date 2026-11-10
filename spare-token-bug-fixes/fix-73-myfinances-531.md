@@ -43,7 +43,7 @@ The last error handler in server/src/app.js now reads the status on the error. A
 - The fix was written against the project's code as of 2026-11-10 and may no longer apply cleanly.
 - The patch applied cleanly to the project's newest code on 2026-11-10 (checked with git apply --check).
 - Nobody has sent the fix to the project. Anyone is free to test the fix and send the fix.
-- Every client error other than 413 gets the code BAD_REQUEST including statuses such as 404 raised by middleware. The wording of the two messages is the chatbot's choice. The patch adds no changelog entry because the project ties each changelog entry to a version number that the maintainer chooses. The chatbot checked the rule with a scratch copy of the handler and did not start the server or run the project's tests.
+- Every client error other than 413 gets the code BAD_REQUEST including statuses such as 404 raised by middleware. The wording of the two messages is the chatbot's choice. The patch adds no changelog entry because the project ties each changelog entry to a version number that the maintainer chooses. The chatbot checked the rule with a scratch copy of the handler and did not start the server or run the project's tests. Fix 80 on this shelf is for the same project and touches different files.
 
 ## Search words
 
